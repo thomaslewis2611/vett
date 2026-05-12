@@ -504,6 +504,15 @@ function LockedSection({ title, children }: { title: string; children: React.Rea
   );
 }
 
+function UnlockedSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+      <h3 className="mb-4 font-semibold tracking-tight">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
 function CostBreakdown({ analysis }: { analysis: AnalysisResult }) {
   const c = analysis.costs;
   const rows = [
