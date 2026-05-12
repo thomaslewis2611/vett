@@ -26,10 +26,21 @@ export const Route = createFileRoute("/")({
 function Index() {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
+  const [showPaste, setShowPaste] = useState(false);
+  const [pasted, setPasted] = useState("");
 
   const handleAnalyse = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/results" });
+    const trimmedUrl = url.trim();
+    const trimmedText = pasted.trim();
+    if (!trimmedUrl && !trimmedText) return;
+    navigate({
+      to: "/results",
+      search: {
+        url: trimmedUrl || undefined,
+        text: trimmedText || undefined,
+      },
+    });
   };
 
   return (
@@ -77,6 +88,26 @@ function Index() {
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
+
+          {showPaste ? (
+            <div className="mx-auto mt-3 max-w-2xl rounded-2xl border border-border bg-card p-3 shadow-soft">
+              <textarea
+                value={pasted}
+                onChange={(e) => setPasted(e.target.value)}
+                placeholder="Or paste the full listing text here…"
+                rows={5}
+                className="w-full resize-none rounded-lg bg-transparent p-2 text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowPaste(true)}
+              className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Or paste listing text instead
+            </button>
+          )}
 
           <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
             {[
@@ -145,6 +176,7 @@ function Index() {
           </p>
           <Link
             to="/results"
+            search={{ url: "https://www.rightmove.co.uk/properties/example" }}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
           >
             See a sample report
