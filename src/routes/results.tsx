@@ -489,12 +489,12 @@ function PaywallGate() {
           cadence="one-time"
           cta="Get Buyer Pass"
           highlight
-          subnote="Average buyer analyses 8 properties before making an offer."
+          subnote="Average buyer analyses 8 properties — works out at £3.75 each."
           features={[
-            "Unlimited property analyses",
+            "Unlimited analyses for your entire property search",
             "AI chat on every property",
             "Save & compare up to 50 properties",
-            "PDF export",
+            "All red flags, costs & negotiation strategy",
           ]}
           footnote="One-time payment for your entire property search — not a subscription."
         />
