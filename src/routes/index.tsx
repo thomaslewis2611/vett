@@ -176,6 +176,7 @@ function Index() {
           </p>
           <Link
             to="/results"
+            search={{ url: "https://www.rightmove.co.uk/properties/example" }}
             className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
           >
             See a sample report
