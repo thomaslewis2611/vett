@@ -623,6 +623,18 @@ function PaywallGate({ onUnlockDemo }: { onUnlockDemo?: () => void }) {
           footnote="One-time payment for your entire property search — not a subscription."
         />
       </div>
+
+      {onUnlockDemo && (
+        <div className="mt-5 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={onUnlockDemo}
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+          >
+            Demo: unlock Buyer Pass without paying
+          </button>
+        </div>
+      )}
     </div>
   );
 }
