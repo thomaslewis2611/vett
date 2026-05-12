@@ -94,7 +94,40 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
 
 If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for (return empty array instead).`;
 
+function extractMetaContent(html: string, names: string[]): string[] {
+  const out: string[] = [];
+  for (const name of names) {
+    // Match <meta property="og:title" content="..."> or name="..." in either attr order.
+    const patterns = [
+      new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']+)["']`, "i"),
+      new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${name}["']`, "i"),
+    ];
+    for (const p of patterns) {
+      const m = html.match(p);
+      if (m?.[1]) {
+        out.push(m[1].trim());
+        break;
+      }
+    }
+  }
+  return out;
+}
+
+function htmlToText(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&pound;/g, "£")
+    .replace(/&#163;/g, "£")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 async function fetchListingText(url: string): Promise<string> {
+  let html = "";
   try {
     const res = await fetch(url, {
       headers: {
@@ -104,21 +137,40 @@ async function fetchListingText(url: string): Promise<string> {
         "Accept-Language": "en-GB,en;q=0.9",
       },
     });
-    if (!res.ok) return "";
-    const html = await res.text();
-    const text = html
-      .replace(/<script[\s\S]*?<\/script>/gi, " ")
-      .replace(/<style[\s\S]*?<\/style>/gi, " ")
-      .replace(/<[^>]+>/g, " ")
-      .replace(/&nbsp;/g, " ")
-      .replace(/&amp;/g, "&")
-      .replace(/&pound;/g, "£")
-      .replace(/\s+/g, " ")
-      .trim();
-    return text.slice(0, 25000);
+    if (res.ok) html = await res.text();
   } catch {
-    return "";
+    html = "";
   }
+
+  const lower = html.toLowerCase();
+  const blocked =
+    html.length < 500 ||
+    lower.includes("enable javascript") ||
+    lower.includes("access denied");
+
+  if (!blocked) {
+    const text = htmlToText(html);
+    if (text.length >= 200) return text.slice(0, 25000);
+  }
+
+  // Fallback: try to read structured metadata from the head — Rightmove/Zoopla
+  // commonly expose address, price and beds in og: / twitter: tags even when
+  // the body is blocked.
+  if (html.length > 0) {
+    const metas = extractMetaContent(html, [
+      "og:title",
+      "og:description",
+      "twitter:title",
+      "twitter:description",
+      "description",
+    ]);
+    const combined = metas.filter(Boolean).join("\n").trim();
+    if (combined.length >= 100) {
+      return `[Limited content — extracted from page metadata only]\n\n${combined}`;
+    }
+  }
+
+  return "";
 }
 
 export const analyseListing = createServerFn({ method: "POST" })
@@ -140,8 +192,11 @@ export const analyseListing = createServerFn({ method: "POST" })
     if (!listingContent && url) {
       listingContent = await fetchListingText(url);
     }
-    if (!listingContent || listingContent.length < 200) {
-      listingContent = `[Could not fetch full page content. URL: ${url}]\n\nAnalyse based on what is reasonable for a typical UK listing at this URL and flag the lack of disclosed information as a red flag.`;
+    if (!listingContent || listingContent.length < 100) {
+      // Signal to the UI that we need pasted text — handled inline on the results page.
+      throw new Error(
+        "FETCH_BLOCKED: We couldn't automatically read this listing. You can paste the listing description below to get your full analysis."
+      );
     }
 
     try {

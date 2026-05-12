@@ -1,6 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -88,28 +89,38 @@ function ResultsPage() {
   }
 
   if (query.isError) {
+    const rawMsg = (query.error as Error)?.message || "Something went wrong while analysing this listing.";
+    const isBlocked = rawMsg.startsWith("FETCH_BLOCKED");
+    const friendlyMsg = isBlocked
+      ? "We couldn't automatically read this listing. You can paste the listing description below to get your full analysis."
+      : rawMsg;
+
     return (
       <div className="min-h-screen bg-background">
         <SiteHeader />
-        <main className="mx-auto max-w-xl px-6 py-24 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Analysis failed</h1>
-          <p className="mt-3 text-sm text-muted-foreground">
-            {(query.error as Error)?.message || "Something went wrong while analysing this listing."}
-          </p>
-          <div className="mt-6 flex justify-center gap-3">
-            <button
-              onClick={() => query.refetch()}
-              className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
-            >
-              Try again
-            </button>
-            <button
-              onClick={() => navigate({ to: "/" })}
-              className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-medium hover:bg-accent"
-            >
-              Start over
-            </button>
-          </div>
+        <main className="mx-auto max-w-xl px-6 py-20">
+          {isBlocked ? (
+            <BlockedFallback url={url} message={friendlyMsg} />
+          ) : (
+            <div className="text-center">
+              <h1 className="text-2xl font-semibold tracking-tight">Analysis failed</h1>
+              <p className="mt-3 text-sm text-muted-foreground">{friendlyMsg}</p>
+              <div className="mt-6 flex justify-center gap-3">
+                <button
+                  onClick={() => query.refetch()}
+                  className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
+                  Try again
+                </button>
+                <button
+                  onClick={() => navigate({ to: "/" })}
+                  className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-medium hover:bg-accent"
+                >
+                  Start over
+                </button>
+              </div>
+            </div>
+          )}
         </main>
         <SiteFooter />
       </div>
@@ -117,6 +128,55 @@ function ResultsPage() {
   }
 
   return <ReportView analysis={query.data!} />;
+}
+
+function BlockedFallback({ url, message }: { url?: string; message: string }) {
+  const navigate = useNavigate();
+  const [text, setText] = useState("");
+  const trimmed = text.trim();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (trimmed.length < 50) return;
+    navigate({ to: "/results", search: { url, text: trimmed } });
+  };
+
+  return (
+    <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
+      <div className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
+        <AlertTriangle className="h-3.5 w-3.5" /> Couldn't read the listing
+      </div>
+      <h1 className="mt-3 text-2xl font-semibold tracking-tight">
+        Paste the listing description to continue
+      </h1>
+      <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+      {url && (
+        <p className="mt-2 truncate text-xs text-muted-foreground">{url}</p>
+      )}
+
+      <form onSubmit={handleSubmit} className="mt-5 space-y-3">
+        <textarea
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          rows={10}
+          placeholder="Paste the full listing description here — address, price, beds, key features, agent copy…"
+          className="w-full resize-y rounded-xl border border-border bg-background p-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-xs text-muted-foreground">
+            Tip: select the description on the listing page and copy-paste it here.
+          </p>
+          <button
+            type="submit"
+            disabled={trimmed.length < 50}
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+          >
+            Analyse pasted text
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 }
 
 function LoadingState({ url }: { url?: string }) {
