@@ -58,23 +58,25 @@ function PricingPage() {
               "Full report on one property",
               "All red flags",
               "True cost breakdown",
-              "AI chat for that property",
               "PDF export",
             ]}
+            footnote="No AI chat included."
           />
           <Plan
-            title="Monthly"
-            price="£9.99"
-            cadence="per month"
-            cta="Start monthly"
+            title="Buyer Pass"
+            price="£29.99"
+            cadence="one-time"
+            cta="Get Buyer Pass"
             highlight
             features={[
-              "Unlimited reports",
+              "Unlimited property analyses",
+              "Full results on every property",
               "AI chat on every property",
-              "Comparable sales lookup",
-              "Save & revisit reports",
-              "Cancel anytime",
+              "Save & compare up to 50 properties",
+              "PDF export",
             ]}
+            footnote="One-time payment for your entire property search — not a subscription."
+            subnote="Average buyer analyses 8 properties before making an offer."
           />
         </div>
 
@@ -99,6 +101,8 @@ function Plan({
   features,
   cta,
   highlight,
+  footnote,
+  subnote,
 }: {
   title: string;
   price: string;
@@ -106,6 +110,8 @@ function Plan({
   features: string[];
   cta: string;
   highlight?: boolean;
+  footnote?: string;
+  subnote?: string;
 }) {
   return (
     <div
@@ -127,6 +133,11 @@ function Plan({
           {cadence}
         </span>
       </div>
+      {subnote && (
+        <p className={`mt-2 text-xs ${highlight ? "text-primary-foreground/85" : "text-muted-foreground"}`}>
+          {subnote}
+        </p>
+      )}
       <ul className="mt-5 space-y-2 text-sm">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2">
@@ -137,6 +148,11 @@ function Plan({
           </li>
         ))}
       </ul>
+      {footnote && (
+        <p className={`mt-4 text-xs ${highlight ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+          {footnote}
+        </p>
+      )}
       <Link
         to="/"
         className={`mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-opacity hover:opacity-90 ${
