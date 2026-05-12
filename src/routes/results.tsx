@@ -244,6 +244,7 @@ function LoadingState({ url }: { url?: string }) {
 }
 
 function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
+  const [hasBuyerPass, setBuyerPass] = useBuyerPass();
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
