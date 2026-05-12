@@ -349,24 +349,28 @@ function PaywallGate() {
           title="Single report"
           price="£4.99"
           cadence="one-off"
+          cta="Unlock this report"
           features={[
             "Unlock this report",
             "Full red flags & costs",
-            "AI chat for this property",
             "PDF export",
           ]}
+          footnote="No AI chat included."
         />
         <PlanCard
-          title="Monthly"
-          price="£9.99"
-          cadence="per month"
+          title="Buyer Pass"
+          price="£29.99"
+          cadence="one-time"
+          cta="Get Buyer Pass"
           highlight
+          subnote="Average buyer analyses 8 properties before making an offer."
           features={[
-            "Unlimited reports",
+            "Unlimited property analyses",
             "AI chat on every property",
-            "Comparable sales lookup",
-            "Cancel anytime",
+            "Save & compare up to 50 properties",
+            "PDF export",
           ]}
+          footnote="One-time payment for your entire property search — not a subscription."
         />
       </div>
     </div>
@@ -379,12 +383,18 @@ function PlanCard({
   cadence,
   features,
   highlight,
+  cta,
+  footnote,
+  subnote,
 }: {
   title: string;
   price: string;
   cadence: string;
   features: string[];
   highlight?: boolean;
+  cta: string;
+  footnote?: string;
+  subnote?: string;
 }) {
   return (
     <div
@@ -408,6 +418,11 @@ function PlanCard({
           {cadence}
         </span>
       </div>
+      {subnote && (
+        <p className={`mt-2 text-xs ${highlight ? "text-primary-foreground/85" : "text-muted-foreground"}`}>
+          {subnote}
+        </p>
+      )}
       <ul className="mt-5 space-y-2 text-sm">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2">
@@ -416,6 +431,11 @@ function PlanCard({
           </li>
         ))}
       </ul>
+      {footnote && (
+        <p className={`mt-4 text-xs ${highlight ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+          {footnote}
+        </p>
+      )}
       <button
         type="button"
         className={`mt-6 w-full rounded-xl px-4 py-3 text-sm font-medium transition-opacity hover:opacity-90 ${
@@ -424,7 +444,7 @@ function PlanCard({
             : "bg-primary text-primary-foreground"
         }`}
       >
-        {title === "Monthly" ? "Start monthly plan" : "Unlock this report"}
+        {cta}
       </button>
     </div>
   );
