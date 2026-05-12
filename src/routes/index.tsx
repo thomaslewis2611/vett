@@ -26,10 +26,21 @@ export const Route = createFileRoute("/")({
 function Index() {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
+  const [showPaste, setShowPaste] = useState(false);
+  const [pasted, setPasted] = useState("");
 
   const handleAnalyse = (e: React.FormEvent) => {
     e.preventDefault();
-    navigate({ to: "/results" });
+    const trimmedUrl = url.trim();
+    const trimmedText = pasted.trim();
+    if (!trimmedUrl && !trimmedText) return;
+    navigate({
+      to: "/results",
+      search: {
+        url: trimmedUrl || undefined,
+        text: trimmedText || undefined,
+      },
+    });
   };
 
   return (
