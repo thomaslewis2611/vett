@@ -9,12 +9,13 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "Try Propwise free, then unlock unlimited AI property analysis from £4.99.",
+          "One-time payment, no subscription. £4.99 for a single report or £29.99 for a Buyer Pass with unlimited analyses.",
       },
       { property: "og:title", content: "Propwise pricing" },
       {
         property: "og:description",
-        content: "Free first analysis. £4.99 per report or £9.99 per month for unlimited.",
+        content:
+          "£4.99 single report or £29.99 Buyer Pass — unlimited analyses, AI chat, save & compare. One-time payments.",
       },
     ],
   }),
@@ -26,41 +27,30 @@ function PricingPage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="mx-auto max-w-5xl px-6 py-20">
+      <main className="mx-auto max-w-4xl px-6 py-20">
         <div className="text-center">
           <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
             Simple, honest pricing
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            Try one analysis on us. Pay per report or go unlimited — no hidden fees, cancel anytime.
+            One-time payments. No subscriptions, no auto-renewals, no hidden fees.
           </p>
         </div>
 
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
-          <Plan
-            title="Free"
-            price="£0"
-            cadence="one analysis"
-            cta="Try free"
-            features={[
-              "One full analysis",
-              "Value score & key metrics",
-              "Top 2 red flags",
-              "No account needed",
-            ]}
-          />
+        <div className="mt-14 grid gap-6 md:grid-cols-2">
           <Plan
             title="Single report"
             price="£4.99"
             cadence="one-off"
             cta="Buy a report"
             features={[
-              "Full report on one property",
+              "Full analysis for 1 property",
               "All red flags",
               "True cost breakdown",
-              "PDF export",
+              "Viewing questions tailored to the listing",
+              "Negotiation strategy",
             ]}
-            footnote="No AI chat included."
+            footnote="No AI chat. No saving or comparing."
           />
           <Plan
             title="Buyer Pass"
@@ -69,14 +59,13 @@ function PricingPage() {
             cta="Get Buyer Pass"
             highlight
             features={[
-              "Unlimited property analyses",
-              "Full results on every property",
+              "Unlimited analyses for your entire property search",
+              "All red flags, costs, viewing questions & negotiation strategy",
               "AI chat on every property",
               "Save & compare up to 50 properties",
-              "PDF export",
             ]}
+            subnote="Average buyer analyses 8 properties — works out at £3.75 each."
             footnote="One-time payment for your entire property search — not a subscription."
-            subnote="Average buyer analyses 8 properties before making an offer."
           />
         </div>
 
