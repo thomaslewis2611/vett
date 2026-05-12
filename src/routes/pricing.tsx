@@ -58,23 +58,25 @@ function PricingPage() {
               "Full report on one property",
               "All red flags",
               "True cost breakdown",
-              "AI chat for that property",
               "PDF export",
             ]}
+            footnote="No AI chat included."
           />
           <Plan
-            title="Monthly"
-            price="£9.99"
-            cadence="per month"
-            cta="Start monthly"
+            title="Buyer Pass"
+            price="£29.99"
+            cadence="one-time"
+            cta="Get Buyer Pass"
             highlight
             features={[
-              "Unlimited reports",
+              "Unlimited property analyses",
+              "Full results on every property",
               "AI chat on every property",
-              "Comparable sales lookup",
-              "Save & revisit reports",
-              "Cancel anytime",
+              "Save & compare up to 50 properties",
+              "PDF export",
             ]}
+            footnote="One-time payment for your entire property search — not a subscription."
+            subnote="Average buyer analyses 8 properties before making an offer."
           />
         </div>
 
