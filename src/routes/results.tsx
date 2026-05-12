@@ -341,46 +341,76 @@ function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
           </div>
         </section>
 
-        {/* Paywall + locked content */}
+        {/* Paywall + locked / unlocked content */}
         <section className="mt-10">
-          <PaywallGate />
+          {!hasBuyerPass && <PaywallGate onUnlockDemo={() => setBuyerPass(true)} />}
 
-          <div className="relative mt-10">
-            <div
-              aria-hidden
-              className="pointer-events-none select-none space-y-8 opacity-60 blur-[6px]"
-            >
-              <LockedSection title="Full red flags list">
+          {hasBuyerPass ? (
+            <div className="space-y-8">
+              <UnlockedSection title="Full red flags list">
                 <div className="space-y-3">
                   {a.redFlags.slice(2).map((f, i) => (
                     <RedFlagItem key={i} flag={f} />
                   ))}
                 </div>
-              </LockedSection>
+              </UnlockedSection>
 
-              <LockedSection title="True cost breakdown">
+              <UnlockedSection title="True cost breakdown">
                 <CostBreakdown analysis={a} />
-              </LockedSection>
+              </UnlockedSection>
 
-              <LockedSection title="Negotiation strategy">
+              <UnlockedSection title="Negotiation strategy">
                 <Negotiation analysis={a} />
-              </LockedSection>
+              </UnlockedSection>
 
-              <LockedSection title="8 questions to ask at the viewing">
+              <UnlockedSection title="8 questions to ask at the viewing">
                 <ol className="list-decimal space-y-2 pl-5 text-sm">
                   {a.viewingQuestions.map((q, i) => (
                     <li key={i}>{q}</li>
                   ))}
                 </ol>
-              </LockedSection>
+              </UnlockedSection>
 
-              <LockedSection title="Ask the AI about this property">
-                <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-                  Chat about the area, the price, the risks and how to negotiate.
-                </div>
-              </LockedSection>
+              <PropertyChat analysis={a} />
             </div>
-          </div>
+          ) : (
+            <div className="relative mt-10">
+              <div
+                aria-hidden
+                className="pointer-events-none select-none space-y-8 opacity-60 blur-[6px]"
+              >
+                <LockedSection title="Full red flags list">
+                  <div className="space-y-3">
+                    {a.redFlags.slice(2).map((f, i) => (
+                      <RedFlagItem key={i} flag={f} />
+                    ))}
+                  </div>
+                </LockedSection>
+
+                <LockedSection title="True cost breakdown">
+                  <CostBreakdown analysis={a} />
+                </LockedSection>
+
+                <LockedSection title="Negotiation strategy">
+                  <Negotiation analysis={a} />
+                </LockedSection>
+
+                <LockedSection title="8 questions to ask at the viewing">
+                  <ol className="list-decimal space-y-2 pl-5 text-sm">
+                    {a.viewingQuestions.map((q, i) => (
+                      <li key={i}>{q}</li>
+                    ))}
+                  </ol>
+                </LockedSection>
+
+                <LockedSection title="Ask the AI about this property">
+                  <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                    Chat about the area, the price, the risks and how to negotiate.
+                  </div>
+                </LockedSection>
+              </div>
+            </div>
+          )}
         </section>
       </main>
 
