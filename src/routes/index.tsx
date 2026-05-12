@@ -89,6 +89,26 @@ function Index() {
             </button>
           </form>
 
+          {showPaste ? (
+            <div className="mx-auto mt-3 max-w-2xl rounded-2xl border border-border bg-card p-3 shadow-soft">
+              <textarea
+                value={pasted}
+                onChange={(e) => setPasted(e.target.value)}
+                placeholder="Or paste the full listing text here…"
+                rows={5}
+                className="w-full resize-none rounded-lg bg-transparent p-2 text-sm outline-none placeholder:text-muted-foreground"
+              />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowPaste(true)}
+              className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Or paste listing text instead
+            </button>
+          )}
+
           <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
             {[
               "Free for your first analysis",
