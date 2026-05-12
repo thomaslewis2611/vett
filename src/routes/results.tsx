@@ -20,6 +20,30 @@ import {
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
 import { analyseListing } from "@/lib/analyse.functions";
+import { PropertyChat } from "@/components/property-chat";
+
+const BUYER_PASS_KEY = "propwise_buyer_pass";
+
+function useBuyerPass(): [boolean, (v: boolean) => void] {
+  const [hasPass, setHasPass] = useState(false);
+  useEffect(() => {
+    try {
+      setHasPass(localStorage.getItem(BUYER_PASS_KEY) === "true");
+    } catch {
+      // ignore
+    }
+  }, []);
+  const update = (v: boolean) => {
+    setHasPass(v);
+    try {
+      if (v) localStorage.setItem(BUYER_PASS_KEY, "true");
+      else localStorage.removeItem(BUYER_PASS_KEY);
+    } catch {
+      // ignore
+    }
+  };
+  return [hasPass, update];
+}
 
 const searchSchema = z.object({
   url: z.string().optional(),
