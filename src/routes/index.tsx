@@ -111,9 +111,9 @@ function Index() {
 
           <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
             {[
-              "Free for your first analysis",
+              "One-time payment, no subscription",
               "Works with Rightmove & Zoopla",
-              "No account needed to try",
+              "Reports from £4.99",
             ].map((t) => (
               <li key={t} className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-primary" />
