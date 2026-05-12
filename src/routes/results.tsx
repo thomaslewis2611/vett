@@ -577,7 +577,7 @@ function Negotiation({ analysis }: { analysis: AnalysisResult }) {
   );
 }
 
-function PaywallGate() {
+function PaywallGate({ onUnlockDemo }: { onUnlockDemo?: () => void }) {
   return (
     <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
