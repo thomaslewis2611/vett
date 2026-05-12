@@ -101,6 +101,8 @@ function Plan({
   features,
   cta,
   highlight,
+  footnote,
+  subnote,
 }: {
   title: string;
   price: string;
@@ -108,6 +110,8 @@ function Plan({
   features: string[];
   cta: string;
   highlight?: boolean;
+  footnote?: string;
+  subnote?: string;
 }) {
   return (
     <div
@@ -129,6 +133,11 @@ function Plan({
           {cadence}
         </span>
       </div>
+      {subnote && (
+        <p className={`mt-2 text-xs ${highlight ? "text-primary-foreground/85" : "text-muted-foreground"}`}>
+          {subnote}
+        </p>
+      )}
       <ul className="mt-5 space-y-2 text-sm">
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2">
@@ -139,6 +148,11 @@ function Plan({
           </li>
         ))}
       </ul>
+      {footnote && (
+        <p className={`mt-4 text-xs ${highlight ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+          {footnote}
+        </p>
+      )}
       <Link
         to="/"
         className={`mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-opacity hover:opacity-90 ${
