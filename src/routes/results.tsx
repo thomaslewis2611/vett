@@ -477,11 +477,11 @@ function PaywallGate() {
           cadence="one-off"
           cta="Unlock this report"
           features={[
-            "Unlock this report",
-            "Full red flags & costs",
-            "PDF export",
+            "Full analysis for this property",
+            "All red flags & true costs",
+            "Viewing questions & negotiation strategy",
           ]}
-          footnote="No AI chat included."
+          footnote="No AI chat. No saving or comparing."
         />
         <PlanCard
           title="Buyer Pass"
