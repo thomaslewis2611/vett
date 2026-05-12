@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -20,6 +20,30 @@ import {
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
 import { analyseListing } from "@/lib/analyse.functions";
+import { PropertyChat } from "@/components/property-chat";
+
+const BUYER_PASS_KEY = "propwise_buyer_pass";
+
+function useBuyerPass(): [boolean, (v: boolean) => void] {
+  const [hasPass, setHasPass] = useState(false);
+  useEffect(() => {
+    try {
+      setHasPass(localStorage.getItem(BUYER_PASS_KEY) === "true");
+    } catch {
+      // ignore
+    }
+  }, []);
+  const update = (v: boolean) => {
+    setHasPass(v);
+    try {
+      if (v) localStorage.setItem(BUYER_PASS_KEY, "true");
+      else localStorage.removeItem(BUYER_PASS_KEY);
+    } catch {
+      // ignore
+    }
+  };
+  return [hasPass, update];
+}
 
 const searchSchema = z.object({
   url: z.string().optional(),
@@ -220,6 +244,7 @@ function LoadingState({ url }: { url?: string }) {
 }
 
 function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
+  const [hasBuyerPass, setBuyerPass] = useBuyerPass();
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -316,46 +341,76 @@ function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
           </div>
         </section>
 
-        {/* Paywall + locked content */}
+        {/* Paywall + locked / unlocked content */}
         <section className="mt-10">
-          <PaywallGate />
+          {!hasBuyerPass && <PaywallGate onUnlockDemo={() => setBuyerPass(true)} />}
 
-          <div className="relative mt-10">
-            <div
-              aria-hidden
-              className="pointer-events-none select-none space-y-8 opacity-60 blur-[6px]"
-            >
-              <LockedSection title="Full red flags list">
+          {hasBuyerPass ? (
+            <div className="space-y-8">
+              <UnlockedSection title="Full red flags list">
                 <div className="space-y-3">
                   {a.redFlags.slice(2).map((f, i) => (
                     <RedFlagItem key={i} flag={f} />
                   ))}
                 </div>
-              </LockedSection>
+              </UnlockedSection>
 
-              <LockedSection title="True cost breakdown">
+              <UnlockedSection title="True cost breakdown">
                 <CostBreakdown analysis={a} />
-              </LockedSection>
+              </UnlockedSection>
 
-              <LockedSection title="Negotiation strategy">
+              <UnlockedSection title="Negotiation strategy">
                 <Negotiation analysis={a} />
-              </LockedSection>
+              </UnlockedSection>
 
-              <LockedSection title="8 questions to ask at the viewing">
+              <UnlockedSection title="8 questions to ask at the viewing">
                 <ol className="list-decimal space-y-2 pl-5 text-sm">
                   {a.viewingQuestions.map((q, i) => (
                     <li key={i}>{q}</li>
                   ))}
                 </ol>
-              </LockedSection>
+              </UnlockedSection>
 
-              <LockedSection title="Ask the AI about this property">
-                <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-                  Chat about the area, the price, the risks and how to negotiate.
-                </div>
-              </LockedSection>
+              <PropertyChat analysis={a} />
             </div>
-          </div>
+          ) : (
+            <div className="relative mt-10">
+              <div
+                aria-hidden
+                className="pointer-events-none select-none space-y-8 opacity-60 blur-[6px]"
+              >
+                <LockedSection title="Full red flags list">
+                  <div className="space-y-3">
+                    {a.redFlags.slice(2).map((f, i) => (
+                      <RedFlagItem key={i} flag={f} />
+                    ))}
+                  </div>
+                </LockedSection>
+
+                <LockedSection title="True cost breakdown">
+                  <CostBreakdown analysis={a} />
+                </LockedSection>
+
+                <LockedSection title="Negotiation strategy">
+                  <Negotiation analysis={a} />
+                </LockedSection>
+
+                <LockedSection title="8 questions to ask at the viewing">
+                  <ol className="list-decimal space-y-2 pl-5 text-sm">
+                    {a.viewingQuestions.map((q, i) => (
+                      <li key={i}>{q}</li>
+                    ))}
+                  </ol>
+                </LockedSection>
+
+                <LockedSection title="Ask the AI about this property">
+                  <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+                    Chat about the area, the price, the risks and how to negotiate.
+                  </div>
+                </LockedSection>
+              </div>
+            </div>
+          )}
         </section>
       </main>
 
@@ -449,6 +504,15 @@ function LockedSection({ title, children }: { title: string; children: React.Rea
   );
 }
 
+function UnlockedSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
+      <h3 className="mb-4 font-semibold tracking-tight">{title}</h3>
+      {children}
+    </div>
+  );
+}
+
 function CostBreakdown({ analysis }: { analysis: AnalysisResult }) {
   const c = analysis.costs;
   const rows = [
@@ -513,7 +577,7 @@ function Negotiation({ analysis }: { analysis: AnalysisResult }) {
   );
 }
 
-function PaywallGate() {
+function PaywallGate({ onUnlockDemo }: { onUnlockDemo?: () => void }) {
   return (
     <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
@@ -559,6 +623,18 @@ function PaywallGate() {
           footnote="One-time payment for your entire property search — not a subscription."
         />
       </div>
+
+      {onUnlockDemo && (
+        <div className="mt-5 flex items-center justify-center">
+          <button
+            type="button"
+            onClick={onUnlockDemo}
+            className="text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+          >
+            Demo: unlock Buyer Pass without paying
+          </button>
+        </div>
+      )}
     </div>
   );
 }
