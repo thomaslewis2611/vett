@@ -1,7 +1,6 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { createServerFn } from "@tanstack/react-start";
-import { generateText, Output } from "ai";
 import { z } from "zod";
-import { createLovableAiGatewayProvider } from "./ai-gateway";
 import type { AnalysisResult } from "./mock-analysis";
 
 const analysisSchema = z.object({
@@ -80,7 +79,20 @@ You must:
 - Tailor the 8 viewing questions to specific things in this listing, not generic boilerplate.
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
 
-Always return the structured object. If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for (return empty array instead).`;
+Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
+{
+  "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "image": string, "listingUrl": string },
+  "score": number (0-10, one decimal),
+  "scoreLabel": string,
+  "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
+  "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ] (3-8 items),
+  "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
+  "viewingQuestions": string[] (exactly 8),
+  "negotiation": { "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] (3-6) },
+  "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4)
+}
+
+If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for (return empty array instead).`;
 
 async function fetchListingText(url: string): Promise<string> {
   try {
@@ -94,7 +106,6 @@ async function fetchListingText(url: string): Promise<string> {
     });
     if (!res.ok) return "";
     const html = await res.text();
-    // Strip tags + collapse whitespace; cap to keep prompt manageable
     const text = html
       .replace(/<script[\s\S]*?<\/script>/gi, " ")
       .replace(/<style[\s\S]*?<\/style>/gi, " ")
@@ -118,8 +129,8 @@ export const analyseListing = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ data }): Promise<AnalysisResult> => {
-    const apiKey = process.env.LOVABLE_API_KEY;
-    if (!apiKey) throw new Error("Missing LOVABLE_API_KEY");
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
 
     const url = data.url?.trim() ?? "";
     const pastedText = data.text?.trim() ?? "";
@@ -130,22 +141,36 @@ export const analyseListing = createServerFn({ method: "POST" })
       listingContent = await fetchListingText(url);
     }
     if (!listingContent || listingContent.length < 200) {
-      // Fallback: still let Claude reason from the URL alone (it knows the format).
       listingContent = `[Could not fetch full page content. URL: ${url}]\n\nAnalyse based on what is reasonable for a typical UK listing at this URL and flag the lack of disclosed information as a red flag.`;
     }
 
-    const gateway = createLovableAiGatewayProvider(apiKey);
-    const model = gateway("google/gemini-3-pro-preview");
-
     try {
-      const { experimental_output: output } = await generateText({
-        model,
+      const client = new Anthropic({ apiKey });
+
+      const message = await client.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 2000,
         system: SYSTEM_PROMPT,
-        prompt: `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`,
-        experimental_output: Output.object({ schema: analysisSchema }),
+        messages: [
+          {
+            role: "user",
+            content: `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`,
+          },
+        ],
       });
 
-      // Ensure listingUrl reflects the user-provided URL.
+      const responseText =
+        message.content[0].type === "text" ? message.content[0].text : "";
+
+      // Defensive: strip any accidental code fences before parsing.
+      const cleaned = responseText
+        .trim()
+        .replace(/^```(?:json)?\s*/i, "")
+        .replace(/\s*```$/i, "");
+
+      const parsed = JSON.parse(cleaned);
+      const output = analysisSchema.parse(parsed);
+
       return {
         ...output,
         property: {
@@ -157,12 +182,16 @@ export const analyseListing = createServerFn({ method: "POST" })
         },
       } as AnalysisResult;
     } catch (err: unknown) {
-      const e = err as { statusCode?: number; message?: string };
-      if (e?.statusCode === 429) {
-        throw new Error("RATE_LIMIT: AI is busy right now. Please try again in a moment.");
+      const e = err as { status?: number; statusCode?: number; message?: string };
+      const status = e?.status ?? e?.statusCode;
+      if (status === 429) {
+        throw new Error("RATE_LIMIT: Claude is busy right now. Please try again in a moment.");
       }
-      if (e?.statusCode === 402) {
-        throw new Error("CREDITS: Workspace is out of AI credits. Add credits in Lovable settings.");
+      if (status === 401 || status === 403) {
+        throw new Error("AUTH: Invalid ANTHROPIC_API_KEY.");
+      }
+      if (status === 402) {
+        throw new Error("CREDITS: Anthropic account is out of credits.");
       }
       throw new Error(e?.message || "Analysis failed");
     }
