@@ -76,6 +76,7 @@ You must:
 - Read the listing carefully (description, photos captions, key features, agent copy).
 - Translate UK estate agent euphemisms into honest red flags ("scope to modernise" = dated; "deceptively spacious" = small; "convenient for transport" = noisy; "no chain" can be good or distressed; etc.).
 - Estimate UK stamp duty using current rates for the buyer profile (assume an additional / second property buyer for a conservative figure unless stated otherwise).
+- For daysOnMarket: if the listing content begins with or contains a line like "Date listed: DD/MM/YYYY (X days on market)", use that X value directly. Do NOT infer or guess otherwise — return 0 if no such line is present.
 - Estimate monthly mortgage on 15% deposit, 25-year term at 4.8% fixed.
 - Give a value score out of 10 reflecting price vs local market, condition, lease, location risks, and negotiation room.
 - Suggest a recommended offer range that is realistic for the UK market — usually 2-8% under asking depending on days-on-market and red flags.
