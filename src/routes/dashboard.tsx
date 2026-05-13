@@ -85,16 +85,16 @@ function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="mx-auto max-w-4xl px-6 py-12">
-        <div className="flex items-start justify-between gap-4">
-          <div>
+      <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12" style={{ boxSizing: "border-box" }}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+          <div className="min-w-0">
             <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
-            <p className="mt-1 text-sm" style={{ color: "#5F5E5A" }}>{email}</p>
+            <p className="mt-1 truncate text-sm" style={{ color: "#5F5E5A" }}>{email}</p>
           </div>
           <button
             type="button"
             onClick={onSignOut}
-            className="inline-flex items-center gap-2"
+            className="inline-flex w-fit items-center gap-2"
             style={{ fontSize: 13, color: "#5F5E5A" }}
           >
             <LogOut className="h-4 w-4" /> Sign out
@@ -103,32 +103,34 @@ function DashboardPage() {
 
         <form
           onSubmit={onAnalyse}
-          className="mt-8 flex items-center gap-2"
-          style={{
-            background: "#F1EFE8",
-            borderRadius: 100,
-            padding: 6,
-            border: "0.5px solid rgba(26,17,8,0.12)",
-          }}
+          className="mt-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center"
+          style={{ boxSizing: "border-box" }}
         >
           <input
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             type="url"
             placeholder="Paste a Rightmove or Zoopla listing URL"
-            className="flex-1 bg-transparent px-4 py-2 outline-none"
-            style={{ fontSize: 14, color: "#1A1108" }}
+            className="w-full bg-transparent px-4 py-3 outline-none sm:flex-1"
+            style={{
+              fontSize: 14,
+              color: "#1A1108",
+              background: "#F1EFE8",
+              borderRadius: 100,
+              border: "0.5px solid rgba(26,17,8,0.12)",
+              boxSizing: "border-box",
+            }}
           />
           <button
             type="submit"
-            className="inline-flex items-center gap-1"
+            className="inline-flex w-full items-center justify-center gap-1 sm:w-auto"
             style={{
               background: "#D85A30",
               color: "#FFFDF9",
               fontSize: 13,
               fontWeight: 500,
               borderRadius: 100,
-              padding: "10px 20px",
+              padding: "12px 20px",
             }}
           >
             Analyse <ArrowRight className="h-4 w-4" />
@@ -154,17 +156,17 @@ function DashboardPage() {
                 return (
                   <li
                     key={r.id}
-                    className="flex items-center justify-between gap-4 p-4"
-                    style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)" }}
+                    className="flex w-full flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                    style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)", boxSizing: "border-box" }}
                   >
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
-                      <div className="mt-1 flex items-center gap-3 text-xs" style={{ color: "#888780" }}>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
                         {price > 0 && <span>{formatGBP(price)}</span>}
                         <span>{new Date(r.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center justify-between gap-3 sm:justify-end">
                       {score !== null && (
                         <span
                           style={{
