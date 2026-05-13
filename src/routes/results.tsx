@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -21,34 +21,67 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
 import { analyseListing } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
+import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser } from "@/lib/checkout.functions";
+import { validateSingleReportToken, checkBuyerPassByEmail } from "@/lib/access.functions";
+import { supabase } from "@/integrations/supabase/client";
 
-const BUYER_PASS_KEY = "roovr_buyer_pass";
+const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
+const PRICE_PASS = "price_1TWXv1CfTT0mXB2clPmEQyob";
 
-function useBuyerPass(): [boolean, (v: boolean) => void] {
-  const [hasPass, setHasPass] = useState(false);
+type AccessLevel = "none" | "single" | "pass";
+
+function useAccess(listingUrl: string | undefined, token: string | undefined): { level: AccessLevel; email: string | null; loading: boolean } {
+  const [state, setState] = useState<{ level: AccessLevel; email: string | null; loading: boolean }>({
+    level: "none",
+    email: null,
+    loading: true,
+  });
+  const validateToken = useServerFn(validateSingleReportToken);
+  const checkPass = useServerFn(checkBuyerPassByEmail);
+
   useEffect(() => {
-    try {
-      setHasPass(localStorage.getItem(BUYER_PASS_KEY) === "true");
-    } catch {
-      // ignore
-    }
-  }, []);
-  const update = (v: boolean) => {
-    setHasPass(v);
-    try {
-      if (v) localStorage.setItem(BUYER_PASS_KEY, "true");
-      else localStorage.removeItem(BUYER_PASS_KEY);
-    } catch {
-      // ignore
-    }
-  };
-  return [hasPass, update];
+    let cancelled = false;
+    (async () => {
+      // 1. Buyer Pass (auth)
+      try {
+        const { data } = await supabase.auth.getUser();
+        const email = data.user?.email ?? null;
+        if (email) {
+          const r = await checkPass({ data: { email } });
+          if (cancelled) return;
+          if (r.hasPass) {
+            setState({ level: "pass", email, loading: false });
+            return;
+          }
+        }
+      } catch { /* ignore */ }
+
+      // 2. Single token
+      if (token) {
+        try {
+          const r = await validateToken({ data: { token, listingUrl: listingUrl ?? null } });
+          if (cancelled) return;
+          if (r.valid) {
+            setState({ level: "single", email: null, loading: false });
+            return;
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (!cancelled) setState({ level: "none", email: null, loading: false });
+    })();
+    return () => { cancelled = true; };
+  }, [listingUrl, token, validateToken, checkPass]);
+
+  return state;
 }
 
 const searchSchema = z.object({
   url: z.string().optional(),
   text: z.string().optional(),
+  token: z.string().optional(),
 });
+
 
 export const Route = createFileRoute("/results")({
   validateSearch: searchSchema,
@@ -66,7 +99,7 @@ export const Route = createFileRoute("/results")({
 });
 
 function ResultsPage() {
-  const { url, text } = Route.useSearch();
+  const { url, text, token } = Route.useSearch();
   const navigate = useNavigate();
   const analyseFn = useServerFn(analyseListing);
 
@@ -151,7 +184,7 @@ function ResultsPage() {
     );
   }
 
-  return <ReportView analysis={query.data!} />;
+  return <ReportView analysis={query.data!} listingUrl={url} token={token} />;
 }
 
 function BlockedFallback({ url, message }: { url?: string; message: string }) {
@@ -243,8 +276,21 @@ function LoadingState({ url }: { url?: string }) {
   );
 }
 
-function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
-  const [hasBuyerPass, setBuyerPass] = useBuyerPass();
+function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResult; listingUrl?: string; token?: string }) {
+  const access = useAccess(listingUrl, token);
+  const unlocked = access.level !== "none";
+  const showChat = access.level === "pass";
+
+  // Auto-save analysis for Buyer Pass users
+  const saveFn = useServerFn(saveAnalysisForUser);
+  const savedRef = useRef(false);
+  useEffect(() => {
+    if (showChat && access.email && !savedRef.current && listingUrl) {
+      savedRef.current = true;
+      saveFn({ data: { email: access.email, listingUrl, analysis: a } }).catch(() => { /* ignore */ });
+    }
+  }, [showChat, access.email, listingUrl, a, saveFn]);
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -343,9 +389,9 @@ function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
 
         {/* Paywall + locked / unlocked content */}
         <section className="mt-10">
-          {!hasBuyerPass && <PaywallGate onUnlockDemo={() => setBuyerPass(true)} />}
+          {!unlocked && <PaywallGate listingUrl={listingUrl} />}
 
-          {hasBuyerPass ? (
+          {unlocked ? (
             <div className="space-y-8">
               <UnlockedSection title="Full red flags list">
                 <div className="space-y-3">
@@ -371,7 +417,15 @@ function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
                 </ol>
               </UnlockedSection>
 
-              <PropertyChat analysis={a} />
+              {showChat && <PropertyChat analysis={a} />}
+
+              {access.level === "pass" && (
+                <div className="text-center">
+                  <Link to="/dashboard" style={{ fontSize: 13, color: "#D85A30" }}>
+                    Go to your dashboard →
+                  </Link>
+                </div>
+              )}
             </div>
           ) : (
             <div className="relative mt-10">
@@ -386,27 +440,11 @@ function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
                     ))}
                   </div>
                 </LockedSection>
-
                 <LockedSection title="True cost breakdown">
                   <CostBreakdown analysis={a} />
                 </LockedSection>
-
                 <LockedSection title="Negotiation strategy">
                   <Negotiation analysis={a} />
-                </LockedSection>
-
-                <LockedSection title="8 questions to ask at the viewing">
-                  <ol className="list-decimal space-y-2 pl-5 text-sm">
-                    {a.viewingQuestions.map((q, i) => (
-                      <li key={i}>{q}</li>
-                    ))}
-                  </ol>
-                </LockedSection>
-
-                <LockedSection title="Ask the AI about this property">
-                  <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-                    Chat about the area, the price, the risks and how to negotiate.
-                  </div>
                 </LockedSection>
               </div>
             </div>
@@ -577,64 +615,119 @@ function Negotiation({ analysis }: { analysis: AnalysisResult }) {
   );
 }
 
-function PaywallGate({ onUnlockDemo }: { onUnlockDemo?: () => void }) {
+function PaywallGate({ listingUrl }: { listingUrl?: string }) {
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const restoreFn = useServerFn(sendBuyerPassMagicLink);
+  const [loadingTier, setLoadingTier] = useState<"single" | "pass" | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [showRestore, setShowRestore] = useState(false);
+  const [restoreEmail, setRestoreEmail] = useState("");
+  const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+
+  const handleBuy = async (tier: "single" | "pass") => {
+    setErr(null);
+    setLoadingTier(tier);
+    try {
+      const priceId = tier === "single" ? PRICE_SINGLE : PRICE_PASS;
+      const res = await checkoutFn({ data: { priceId, listingUrl: listingUrl ?? "", tier } });
+      window.location.href = res.url;
+    } catch (e) {
+      setErr((e as Error).message || "Couldn't start checkout. Try again.");
+      setLoadingTier(null);
+    }
+  };
+
+  const handleRestore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRestoreMsg(null);
+    try {
+      const r = await restoreFn({ data: { email: restoreEmail.trim() } });
+      if (r.found) setRestoreMsg("Magic link sent — check your inbox.");
+      else setRestoreMsg("No Buyer Pass found for that email. If you bought a Single Report, check your original results link.");
+    } catch {
+      setRestoreMsg("Couldn't send right now. Try again shortly.");
+    }
+  };
+
   return (
-    <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
-            <Sparkles className="h-3.5 w-3.5" /> Unlock the full report
-          </div>
-          <h3 className="mt-3 text-2xl font-semibold tracking-tight">
-            See every red flag, the true cost and how to negotiate
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Plus an AI chat that knows this exact property.
-          </p>
-        </div>
+    <div className="p-6 sm:p-8" style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)" }}>
+      <div className="inline-flex items-center gap-2" style={{ background: "#FAECE7", color: "#993C1D", borderRadius: 100, padding: "4px 10px", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em" }}>
+        <Sparkles className="h-3 w-3" /> UNLOCK THE FULL REPORT
       </div>
+      <h3 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        See every red flag, the true cost and how to negotiate
+      </h3>
+      <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>Pick the option that suits you.</p>
 
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         <PlanCard
           title="Single report"
           price="£4.99"
-          cadence="one-off"
-          cta="Unlock this report"
+          cadence="One-off payment"
+          cta="Get this report"
+          loading={loadingTier === "single"}
+          onClick={() => handleBuy("single")}
           features={[
             "Full analysis for this property",
-            "All red flags & true costs",
-            "Viewing questions & negotiation strategy",
+            "All red flags and costs",
+            "Viewing questions and negotiation strategy",
           ]}
-          footnote="No AI chat. No saving or comparing."
+          footnote="No AI chat, no saving."
         />
         <PlanCard
           title="Buyer Pass"
           price="£29.99"
-          cadence="one-time"
+          cadence="One-off payment · your entire search"
           cta="Get Buyer Pass"
           highlight
-          subnote="Average buyer analyses 8 properties — works out at £3.75 each."
+          loading={loadingTier === "pass"}
+          onClick={() => handleBuy("pass")}
+          subnote="Average buyer views 8 properties — works out at £3.75 each."
           features={[
-            "Unlimited analyses for your entire property search",
+            "Unlimited analyses",
+            "All red flags, costs and negotiation",
             "AI chat on every property",
-            "Save & compare up to 50 properties",
-            "All red flags, costs & negotiation strategy",
+            "Save and compare up to 50 properties",
           ]}
-          footnote="One-time payment for your entire property search — not a subscription."
         />
       </div>
 
-      {onUnlockDemo && (
-        <div className="mt-5 flex items-center justify-center">
+      {err && <p className="mt-4 text-sm" style={{ color: "#993C1D" }}>{err}</p>}
+
+      <div className="mt-6 text-center">
+        {!showRestore ? (
           <button
             type="button"
-            onClick={onUnlockDemo}
-            className="text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
+            onClick={() => setShowRestore(true)}
+            className="text-xs underline-offset-4 hover:underline"
+            style={{ color: "#5F5E5A" }}
           >
-            Demo: unlock Buyer Pass without paying
+            Already purchased? Restore your access →
           </button>
-        </div>
-      )}
+        ) : (
+          <form onSubmit={handleRestore} className="mx-auto mt-2 max-w-sm text-left">
+            <label className="block text-xs" style={{ color: "#5F5E5A" }}>Enter your email</label>
+            <div className="mt-2 flex gap-2">
+              <input
+                type="email"
+                required
+                value={restoreEmail}
+                onChange={(e) => setRestoreEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="flex-1 px-3 py-2 outline-none"
+                style={{ background: "#F1EFE8", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(26,17,8,0.12)" }}
+              />
+              <button
+                type="submit"
+                style={{ background: "#1A1108", color: "#FFFDF9", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "8px 18px" }}
+              >
+                Send access link
+              </button>
+            </div>
+            {restoreMsg && <p className="mt-2 text-xs" style={{ color: "#5F5E5A" }}>{restoreMsg}</p>}
+          </form>
+        )}
+      </div>
     </div>
   );
 }
@@ -648,6 +741,8 @@ function PlanCard({
   cta,
   footnote,
   subnote,
+  onClick,
+  loading,
 }: {
   title: string;
   price: string;
@@ -657,55 +752,56 @@ function PlanCard({
   cta: string;
   footnote?: string;
   subnote?: string;
+  onClick?: () => void;
+  loading?: boolean;
 }) {
   return (
     <div
-      className={`relative rounded-2xl border p-6 ${
-        highlight
-          ? "border-primary bg-primary text-primary-foreground shadow-glow"
-          : "border-border bg-card"
-      }`}
+      className="relative p-6"
+      style={{
+        background: "#FFFDF9",
+        borderRadius: 12,
+        border: highlight ? "2px solid #D85A30" : "0.5px solid rgba(26,17,8,0.12)",
+      }}
     >
       {highlight && (
-        <span className="absolute -top-3 right-5 rounded-full bg-card px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary border border-primary/20 shadow-soft">
+        <span
+          className="absolute -top-3 right-6 uppercase"
+          style={{ background: "#FAECE7", color: "#993C1D", fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", borderRadius: 100, padding: "4px 10px" }}
+        >
           Most popular
         </span>
       )}
-      <div className="flex items-baseline justify-between">
-        <h4 className="text-lg font-semibold">{title}</h4>
-      </div>
+      <h4 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>{title}</h4>
       <div className="mt-3 flex items-baseline gap-1">
-        <span className="text-4xl font-semibold tracking-tight">{price}</span>
-        <span className={`text-sm ${highlight ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-          {cadence}
-        </span>
+        <span style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>{price}</span>
       </div>
-      {subnote && (
-        <p className={`mt-2 text-xs ${highlight ? "text-primary-foreground/85" : "text-muted-foreground"}`}>
-          {subnote}
-        </p>
-      )}
-      <ul className="mt-5 space-y-2 text-sm">
+      <p className="mt-1" style={{ fontSize: 12, color: "#888780" }}>{cadence}</p>
+      {subnote && <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A" }}>{subnote}</p>}
+      <ul className="mt-5 space-y-2.5">
         {features.map((f) => (
-          <li key={f} className="flex items-start gap-2">
-            <Check className={`mt-0.5 h-4 w-4 shrink-0 ${highlight ? "text-primary-foreground" : "text-primary"}`} />
+          <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
+            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#D85A30" }} />
             {f}
           </li>
         ))}
       </ul>
-      {footnote && (
-        <p className={`mt-4 text-xs ${highlight ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-          {footnote}
-        </p>
-      )}
+      {footnote && <p className="mt-4" style={{ fontSize: 12, color: "#888780" }}>{footnote}</p>}
       <button
         type="button"
-        className={`mt-6 w-full rounded-xl px-4 py-3 text-sm font-medium transition-opacity hover:opacity-90 ${
-          highlight
-            ? "bg-card text-primary"
-            : "bg-primary text-primary-foreground"
-        }`}
+        onClick={onClick}
+        disabled={loading}
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+        style={{
+          background: highlight ? "#D85A30" : "#1A1108",
+          color: "#FFFDF9",
+          fontSize: 13,
+          fontWeight: 500,
+          borderRadius: 100,
+          padding: "12px 24px",
+        }}
       >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
         {cta}
       </button>
     </div>

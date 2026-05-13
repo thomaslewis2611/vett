@@ -14,13 +14,99 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      buyer_pass_users: {
+        Row: {
+          activated_at: string
+          created_at: string
+          email: string
+          id: string
+          stripe_customer_id: string | null
+          stripe_session_id: string | null
+        }
+        Insert: {
+          activated_at?: string
+          created_at?: string
+          email: string
+          id?: string
+          stripe_customer_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Update: {
+          activated_at?: string
+          created_at?: string
+          email?: string
+          id?: string
+          stripe_customer_id?: string | null
+          stripe_session_id?: string | null
+        }
+        Relationships: []
+      }
+      saved_analyses: {
+        Row: {
+          analysis_json: Json | null
+          created_at: string
+          id: string
+          listing_url: string | null
+          user_email: string
+        }
+        Insert: {
+          analysis_json?: Json | null
+          created_at?: string
+          id?: string
+          listing_url?: string | null
+          user_email: string
+        }
+        Update: {
+          analysis_json?: Json | null
+          created_at?: string
+          id?: string
+          listing_url?: string | null
+          user_email?: string
+        }
+        Relationships: []
+      }
+      single_report_tokens: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          listing_url: string | null
+          stripe_session_id: string | null
+          token: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          listing_url?: string | null
+          stripe_session_id?: string | null
+          token: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          listing_url?: string | null
+          stripe_session_id?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      buyer_pass_email_exists: { Args: { _email: string }; Returns: boolean }
+      get_single_report_token: {
+        Args: { _token: string }
+        Returns: {
+          expires_at: string
+          listing_url: string
+          stripe_session_id: string
+          token: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

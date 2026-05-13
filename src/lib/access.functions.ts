@@ -1,0 +1,35 @@
+import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+
+export const validateSingleReportToken = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      token: z.string().min(1).max(200),
+      listingUrl: z.string().max(2000).optional().nullable(),
+    })
+  )
+  .handler(async ({ data }): Promise<{ valid: boolean; listingUrl: string | null }> => {
+    const { data: row } = await supabaseAdmin
+      .from("single_report_tokens")
+      .select("token, listing_url, expires_at")
+      .eq("token", data.token)
+      .maybeSingle();
+    if (!row) return { valid: false, listingUrl: null };
+    if (new Date(row.expires_at).getTime() < Date.now()) return { valid: false, listingUrl: null };
+    if (data.listingUrl && row.listing_url && row.listing_url !== data.listingUrl) {
+      return { valid: false, listingUrl: row.listing_url };
+    }
+    return { valid: true, listingUrl: row.listing_url };
+  });
+
+export const checkBuyerPassByEmail = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ email: z.string().email().max(320) }))
+  .handler(async ({ data }): Promise<{ hasPass: boolean }> => {
+    const { data: row } = await supabaseAdmin
+      .from("buyer_pass_users")
+      .select("email")
+      .ilike("email", data.email)
+      .maybeSingle();
+    return { hasPass: Boolean(row) };
+  });
