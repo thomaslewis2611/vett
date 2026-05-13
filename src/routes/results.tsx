@@ -462,38 +462,14 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
   );
 }
 
-function PropertyImagePlaceholder() {
+function PropertyPill({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="flex h-64 w-full flex-col items-center justify-center gap-3 md:h-full"
-      style={{ background: "#F1EFE8" }}
-      role="img"
-      aria-label="No property photo available"
+    <span
+      className="inline-flex items-center rounded-full px-3 py-1"
+      style={{ background: "#F1EFE8", color: "#5F5E5A", fontSize: 12, fontWeight: 500 }}
     >
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D85A30" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 12 12 3l9 9" />
-        <path d="M5 10v10h14V10" />
-        <path d="M10 20v-6h4v6" />
-      </svg>
-      <span style={{ fontSize: 12, color: "#888780" }}>No photo available</span>
-    </div>
-  );
-}
-
-function PropertyImage({ src, alt }: { src: string | null | undefined; alt: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed || !src || typeof src !== "string" || !src.startsWith("https://")) {
-    return <PropertyImagePlaceholder />;
-  }
-  const proxied = `/api/public/property-image?url=${encodeURIComponent(src)}`;
-  return (
-    <img
-      src={proxied}
-      alt={alt}
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className="h-64 w-full object-cover md:h-full"
-    />
+      {children}
+    </span>
   );
 }
 
