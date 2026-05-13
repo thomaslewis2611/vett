@@ -412,6 +412,9 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
           </div>
         </section>
 
+        {/* EPC */}
+        <EpcSection analysis={a} />
+
         {/* Area context */}
         <AreaContextSection analysis={a} />
 
