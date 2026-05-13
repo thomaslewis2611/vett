@@ -514,9 +514,6 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
         {/* Price history (free + paid) */}
         <PriceHistorySection analysis={a} />
 
-        {/* Flood risk — Buyer Pass only (free/single see locked teaser) */}
-        <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
-
         {/* Area context */}
         <AreaContextSection analysis={a} />
 
@@ -545,9 +542,16 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
 
         {/* Paywall + locked / unlocked content */}
         <section className="mt-10">
-          {!unlocked && <PaywallGate listingUrl={listingUrl} />}
+          {!unlocked && (
+            <>
+              <LockedFeaturesGrid />
+              <div className="mt-8">
+                <PaywallGate listingUrl={listingUrl} />
+              </div>
+            </>
+          )}
 
-          {unlocked ? (
+          {unlocked && (
             <div className="space-y-8">
               <UnlockedSection title="Full red flags list">
                 <div className="space-y-3">
@@ -573,6 +577,9 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
                 </ol>
               </UnlockedSection>
 
+              {/* Flood risk — full for Buyer Pass, locked teaser for Single Report */}
+              <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
+
               {showChat && <PropertyChat analysis={a} />}
 
               {access.level === "pass" && (
@@ -582,27 +589,6 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
                   </Link>
                 </div>
               )}
-            </div>
-          ) : (
-            <div className="relative mt-10">
-              <div
-                aria-hidden
-                className="pointer-events-none select-none space-y-8 opacity-60 blur-[6px]"
-              >
-                <LockedSection title="Full red flags list">
-                  <div className="space-y-3">
-                    {a.redFlags.slice(2).map((f, i) => (
-                      <RedFlagItem key={i} flag={f} />
-                    ))}
-                  </div>
-                </LockedSection>
-                <LockedSection title="True cost breakdown">
-                  <CostBreakdown analysis={a} />
-                </LockedSection>
-                <LockedSection title="Negotiation strategy">
-                  <Negotiation analysis={a} />
-                </LockedSection>
-              </div>
             </div>
           )}
         </section>
@@ -697,17 +683,109 @@ function RedFlagItem({
   );
 }
 
-function LockedSection({ title, children }: { title: string; children: React.ReactNode }) {
+function LockedFeatureCard({
+  title,
+  sub,
+  comingSoon,
+  children,
+}: {
+  title: string;
+  sub: string;
+  comingSoon?: boolean;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-6 shadow-soft">
-      <div className="mb-4 flex items-center justify-between">
-        <h3 className="font-semibold tracking-tight">{title}</h3>
-        <Lock className="h-4 w-4 text-muted-foreground" />
+    <div
+      className="relative overflow-hidden"
+      style={{
+        background: "#F1EFE8",
+        borderRadius: 12,
+        padding: 16,
+        opacity: comingSoon ? 0.6 : 1,
+      }}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-1.5">
+            <Lock className="h-3.5 w-3.5" style={{ color: "#D85A30" }} />
+            <h4 className="text-sm font-semibold tracking-tight truncate" style={{ color: "#1A1108" }}>
+              {title}
+            </h4>
+          </div>
+          <p className="mt-0.5 text-[12px]" style={{ color: "#5F5E5A" }}>
+            {sub}
+          </p>
+        </div>
       </div>
-      {children}
+      <div
+        aria-hidden
+        className="mt-3 pointer-events-none select-none"
+        style={{
+          filter: comingSoon ? "none" : "blur(4px)",
+          color: "#5F5E5A",
+          fontSize: 12,
+          lineHeight: 1.5,
+        }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
+
+function LockedFeaturesGrid() {
+  return (
+    <div>
+      <div className="mb-4">
+        <h2 className="text-xl font-semibold tracking-tight">What's included in the full report</h2>
+        <p className="text-sm text-muted-foreground">A preview of everything you unlock below.</p>
+      </div>
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <LockedFeatureCard title="All red flags" sub="See every issue we found">
+          <div>• Lease has 89 years remaining — below mortgage threshold</div>
+          <div>• EPC rating not disclosed — possible E/F/G</div>
+          <div>• Photos taken in poor light — north-facing rooms?</div>
+        </LockedFeatureCard>
+        <LockedFeatureCard title="True cost breakdown" sub="Total upfront + monthly costs">
+          <div>Total upfront: £710,600</div>
+          <div>Monthly mortgage: £3,120</div>
+          <div>Stamp duty: £21,750</div>
+        </LockedFeatureCard>
+        <LockedFeatureCard title="Negotiation strategy" sub="Recommended offer and your leverage">
+          <div>Recommended offer: £635,000 – £655,000</div>
+          <div>4–7% below asking — 47 days on market</div>
+        </LockedFeatureCard>
+        <LockedFeatureCard
+          title="Flood risk"
+          sub="Environment Agency data — insurance and mortgage implications"
+        >
+          <span
+            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
+            style={{ background: "#FCE5DD", color: "#D85A30" }}
+          >
+            Medium risk
+          </span>
+        </LockedFeatureCard>
+        <LockedFeatureCard
+          title="Nearby schools"
+          sub="Ofsted ratings within 1 mile — coming soon"
+          comingSoon
+        >
+          <div>Coming soon</div>
+        </LockedFeatureCard>
+        <LockedFeatureCard title="AI chat" sub="Ask anything about this property — Buyer Pass only">
+          <div
+            className="inline-block rounded-2xl px-3 py-2"
+            style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)" }}
+          >
+            Is this a good price for the area?
+          </div>
+        </LockedFeatureCard>
+      </div>
+    </div>
+  );
+}
+
 
 function UnlockedSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
