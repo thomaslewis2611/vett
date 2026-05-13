@@ -17,11 +17,26 @@ const analysisSchema = z.object({
   }),
   score: z.number().min(0).max(10).describe("Overall value score out of 10, one decimal place"),
   scoreLabel: z.string().describe("Short verdict, max 8 words"),
+  subScores: z.object({
+    valueForMoney: z.number().min(0).max(10),
+    locationQuality: z.number().min(0).max(10),
+    listingTransparency: z.number().min(0).max(10),
+    marketTiming: z.number().min(0).max(10),
+    riskLevel: z.number().min(0).max(10).describe("Higher = LOWER risk (10 = very safe, 0 = very risky)"),
+    resalePotential: z.number().min(0).max(10),
+  }),
   metrics: z.object({
     pricePerSqFt: z.number().describe("Price per sq ft in GBP, 0 if unknown"),
     daysOnMarket: z.number().describe("Days listed, estimate from 'added/reduced' date if visible, 0 if unknown"),
     councilTaxBand: z.string().describe("A-H letter, or 'Unknown'"),
     estimatedStampDuty: z.number().describe("Estimated UK stamp duty in GBP for a second-home / additional property buyer"),
+  }),
+  areaContext: z.object({
+    avgPricePerSqFtArea: z.number().nullable(),
+    avgSoldPriceArea: z.number().nullable(),
+    priceVsAreaPercent: z.number().nullable().describe("Positive = above area avg, negative = below"),
+    areaDescription: z.string().describe("2 sentences on the area: desirability, trends, transport"),
+    comparableNote: z.string().describe("1 sentence on how this property compares to typical area listings"),
   }),
   redFlags: z
     .array(
