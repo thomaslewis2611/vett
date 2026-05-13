@@ -13,6 +13,7 @@ import {
   Check,
   TrendingDown,
   Loader2,
+  Download,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
