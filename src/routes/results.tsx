@@ -1323,20 +1323,30 @@ function EpcSection({ analysis }: { analysis: AnalysisResult }) {
                 {EPC_BANDS.map((b, i) => {
                   const active = b.letter === rating;
                   return (
-                    <div
-                      key={b.letter}
-                      className="flex items-center justify-between rounded-md px-3 py-1.5 text-sm font-semibold transition-all"
-                      style={{
-                        background: b.bg,
-                        color: b.fg,
-                        opacity: active ? 1 : 0.4,
-                        outline: active ? "2px solid #1A1108" : "none",
-                        outlineOffset: active ? 2 : 0,
-                        width: `${45 + (6 - i) * 7}%`,
-                        minWidth: 110,
-                      }}
-                    >
-                      <span>{b.letter}</span>
+                    <div key={b.letter} className="flex items-center gap-2">
+                      <div
+                        className="flex shrink-0 items-center justify-center text-base"
+                        style={{ width: 18, color: active ? "#1A1108" : "transparent" }}
+                        aria-hidden="true"
+                      >
+                        ▶
+                      </div>
+                      <div
+                        className="flex flex-1 items-center justify-between rounded-md px-3 py-2 text-sm font-semibold transition-all"
+                        style={{
+                          background: b.bg,
+                          color: b.fg,
+                          width: `${55 + (6 - i) * 6}%`,
+                          minWidth: 110,
+                          borderLeft: active ? "6px solid #1A1108" : "6px solid transparent",
+                          boxShadow: active ? "0 2px 8px rgba(26,17,8,0.25)" : "none",
+                          transform: active ? "scale(1.02)" : "none",
+                          transformOrigin: "left center",
+                        }}
+                      >
+                        <span>{b.letter}</span>
+                        {active && <span className="text-[10px] font-bold uppercase tracking-wider">This property</span>}
+                      </div>
                     </div>
                   );
                 })}
