@@ -14,6 +14,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PaymentSuccessRouteImport } from './routes/payment-success'
 import { Route as MyReportRouteImport } from './routes/my-report'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as BuyerLoginRouteImport } from './routes/buyer-login'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
@@ -44,6 +45,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BuyerLoginRoute = BuyerLoginRouteImport.update({
+  id: '/buyer-login',
+  path: '/buyer-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -68,6 +74,7 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/buyer-login': typeof BuyerLoginRoute
   '/dashboard': typeof DashboardRoute
   '/my-report': typeof MyReportRoute
   '/payment-success': typeof PaymentSuccessRoute
@@ -79,6 +86,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/buyer-login': typeof BuyerLoginRoute
   '/dashboard': typeof DashboardRoute
   '/my-report': typeof MyReportRoute
   '/payment-success': typeof PaymentSuccessRoute
@@ -91,6 +99,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/buyer-login': typeof BuyerLoginRoute
   '/dashboard': typeof DashboardRoute
   '/my-report': typeof MyReportRoute
   '/payment-success': typeof PaymentSuccessRoute
@@ -104,6 +113,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/buyer-login'
     | '/dashboard'
     | '/my-report'
     | '/payment-success'
@@ -115,6 +125,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/buyer-login'
     | '/dashboard'
     | '/my-report'
     | '/payment-success'
@@ -126,6 +137,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/buyer-login'
     | '/dashboard'
     | '/my-report'
     | '/payment-success'
@@ -138,6 +150,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  BuyerLoginRoute: typeof BuyerLoginRoute
   DashboardRoute: typeof DashboardRoute
   MyReportRoute: typeof MyReportRoute
   PaymentSuccessRoute: typeof PaymentSuccessRoute
@@ -185,6 +198,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/buyer-login': {
+      id: '/buyer-login'
+      path: '/buyer-login'
+      fullPath: '/buyer-login'
+      preLoaderRoute: typeof BuyerLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -218,6 +238,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  BuyerLoginRoute: BuyerLoginRoute,
   DashboardRoute: DashboardRoute,
   MyReportRoute: MyReportRoute,
   PaymentSuccessRoute: PaymentSuccessRoute,
@@ -230,3 +251,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
