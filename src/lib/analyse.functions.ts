@@ -63,11 +63,13 @@ const analysisSchema = z.object({
     .length(8)
     .describe("Exactly 8 specific questions tailored to this listing"),
   negotiation: z.object({
+    isAuction: z.boolean().optional().describe("True if this is an auction property"),
+    maxBid: z.number().optional().describe("Single max bid figure for auction properties"),
     recommendedOffer: z.object({
       low: z.number(),
       high: z.number(),
     }),
-    rationale: z.string().describe("2-3 sentence justification"),
+    rationale: z.string().describe("2-3 sentence justification (or auction bidding strategy if isAuction)"),
     leverage: z.array(z.string()).min(3).max(6).describe("Concrete negotiating points"),
   }),
   comparables: z
