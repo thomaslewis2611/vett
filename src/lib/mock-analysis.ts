@@ -58,6 +58,7 @@ export type AnalysisResult = {
     commentary: string;
     source?: "land_registry" | null;
     nearbyMode?: boolean | null;
+    scotland?: boolean | null;
   } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
