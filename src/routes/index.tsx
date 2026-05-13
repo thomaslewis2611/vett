@@ -62,8 +62,7 @@ function Index() {
             <span className="text-primary">estate agents won't show you</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground">
-            Paste any Rightmove or Zoopla listing and Flagr returns a value score, red flags,
-            true buying costs and a negotiation strategy in under 30 seconds.
+            Every listing. Analysed. Instantly.
           </p>
 
           <form
