@@ -1203,3 +1203,89 @@ function AuctionWarning({ analysis }: { analysis: AnalysisResult }) {
     </section>
   );
 }
+
+const EPC_BANDS: { letter: string; bg: string; fg: string }[] = [
+  { letter: "A", bg: "#0E7A3D", fg: "#FFFFFF" },
+  { letter: "B", bg: "#2E9E4B", fg: "#FFFFFF" },
+  { letter: "C", bg: "#8DC63F", fg: "#1A1108" },
+  { letter: "D", bg: "#F5D63D", fg: "#1A1108" },
+  { letter: "E", bg: "#F4A93C", fg: "#1A1108" },
+  { letter: "F", bg: "#E97A4A", fg: "#FFFFFF" },
+  { letter: "G", bg: "#D43A2F", fg: "#FFFFFF" },
+];
+
+function EpcSection({ analysis }: { analysis: AnalysisResult }) {
+  const epc = analysis.epc;
+  const rating =
+    epc?.rating && /^[A-G]$/i.test(epc.rating.trim())
+      ? epc.rating.trim().toUpperCase()
+      : null;
+  const activeBand = rating ? EPC_BANDS.find((b) => b.letter === rating) : null;
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight">Energy performance (EPC)</h2>
+      <div className="mt-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+        {!rating ? (
+          <p className="text-sm" style={{ color: "#1A1108" }}>
+            EPC rating not shown in this listing — ask the agent before viewing. An EPC is legally required for all sales.
+          </p>
+        ) : (
+          <>
+            <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
+              <div className="space-y-1.5">
+                {EPC_BANDS.map((b, i) => {
+                  const active = b.letter === rating;
+                  return (
+                    <div
+                      key={b.letter}
+                      className="flex items-center justify-between rounded-md px-3 py-1.5 text-sm font-semibold transition-all"
+                      style={{
+                        background: b.bg,
+                        color: b.fg,
+                        opacity: active ? 1 : 0.4,
+                        outline: active ? "2px solid #1A1108" : "none",
+                        outlineOffset: active ? 2 : 0,
+                        width: `${45 + (6 - i) * 7}%`,
+                        minWidth: 110,
+                      }}
+                    >
+                      <span>{b.letter}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <div
+                className="flex flex-col items-center justify-center rounded-xl px-6 py-5"
+                style={{
+                  background: activeBand?.bg ?? "#F1EFE8",
+                  color: activeBand?.fg ?? "#1A1108",
+                  minWidth: 130,
+                }}
+              >
+                <div className="text-5xl font-bold leading-none tracking-tight">{rating}</div>
+                {epc?.score != null && (
+                  <div className="mt-2 text-sm opacity-90">Score {epc.score}</div>
+                )}
+                {epc?.potentialRating && (
+                  <div className="mt-1 text-xs opacity-90">Potential: {epc.potentialRating}</div>
+                )}
+              </div>
+            </div>
+            {epc?.estimatedAnnualEnergyCost && (
+              <div className="mt-4 text-sm" style={{ color: "#5F5E5A" }}>
+                Estimated annual energy cost:{" "}
+                <span style={{ color: "#1A1108", fontWeight: 500 }}>
+                  {epc.estimatedAnnualEnergyCost}
+                </span>
+              </div>
+            )}
+            {epc?.commentary && (
+              <p className="mt-3 text-sm" style={{ color: "#1A1108" }}>{epc.commentary}</p>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
