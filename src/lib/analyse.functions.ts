@@ -471,7 +471,7 @@ export const analyseListing = createServerFn({ method: "POST" })
       const client = new Anthropic({ apiKey });
       const message = await client.messages.create({
         model: "claude-sonnet-4-5",
-        max_tokens: 2000,
+        max_tokens: 3500,
         system: SYSTEM_PROMPT,
         messages: [
           {
