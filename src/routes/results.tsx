@@ -60,6 +60,45 @@ function writeCachedAnalysis(analysis: AnalysisResult, url?: string, text?: stri
   } catch { /* ignore quota */ }
 }
 
+type StampDutyMode = "main" | "additional" | "ftb";
+
+function calcStampDuty(price: number, mode: StampDutyMode): number {
+  if (!price || price <= 0) return 0;
+  // First-time buyer relief (England, only if price ≤ £625,000)
+  if (mode === "ftb" && price <= 625000) {
+    if (price <= 425000) return 0;
+    return Math.round((price - 425000) * 0.05);
+  }
+  // Standard residential bands (England)
+  const bands: { upTo: number; rate: number }[] = [
+    { upTo: 125000, rate: 0 },
+    { upTo: 250000, rate: 0.02 },
+    { upTo: 925000, rate: 0.05 },
+    { upTo: 1500000, rate: 0.10 },
+    { upTo: Infinity, rate: 0.12 },
+  ];
+  let duty = 0;
+  let prev = 0;
+  for (const b of bands) {
+    if (price > b.upTo) {
+      duty += (b.upTo - prev) * b.rate;
+      prev = b.upTo;
+    } else {
+      duty += (price - prev) * b.rate;
+      break;
+    }
+  }
+  // Additional property surcharge: +5% on full price (England, from Oct 2024)
+  if (mode === "additional") duty += price * 0.05;
+  return Math.round(duty);
+}
+
+const STAMP_DUTY_LABELS: Record<StampDutyMode, string> = {
+  main: "Main residence",
+  additional: "Additional property",
+  ftb: "First-time buyer",
+};
+
 type AccessLevel = "none" | "single" | "pass";
 
 function useAccess(listingUrl: string | undefined, token: string | undefined): { level: AccessLevel; email: string | null; loading: boolean } {
