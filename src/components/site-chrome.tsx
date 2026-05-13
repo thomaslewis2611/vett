@@ -235,7 +235,7 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
 export function SiteHeader() {
   const { email, hasPass, ready } = useAuthUser();
   const [magicOpen, setMagicOpen] = useState(false);
-  const loggedIn = ready && email && hasPass;
+  const loggedIn = ready && Boolean(email);
 
   return (
     <header
@@ -266,7 +266,7 @@ export function SiteHeader() {
           {loggedIn ? (
             <>
               <Link
-                to="/dashboard"
+                to={hasPass ? "/dashboard" : "/my-report"}
                 className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
                 style={{
                   background: "#1A1108",
@@ -277,9 +277,9 @@ export function SiteHeader() {
                   padding: "10px 20px",
                 }}
               >
-                My analyses
+                {hasPass ? "My analyses" : "My report"}
               </Link>
-              <UserMenu email={email!} />
+              <UserMenu email={email!} hasPass={hasPass} />
             </>
           ) : (
             <>
