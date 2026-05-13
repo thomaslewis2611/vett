@@ -65,7 +65,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
       setMsg(
         r.found
           ? "Magic link sent — check your inbox (and spam folder)."
-          : "We couldn't find a Buyer Pass for that email. If you just paid, wait a moment and try again."
+          : "We couldn't find a purchase for that email. If you just paid, wait a moment and try again."
       );
     } catch {
       setMsg("Could not send right now. Try again shortly.");
