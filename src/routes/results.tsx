@@ -1916,6 +1916,63 @@ function FloodRiskSection({ analysis, isBuyerPass }: { analysis: AnalysisResult;
       );
     }
 
+    // No data returned by EA for this postcode (API responded but no risk values)
+    const hasNoData =
+      !fr.overallRisk &&
+      !fr.riversAndSea &&
+      !fr.surfaceWater &&
+      !fr.groundwater &&
+      fr.reservoir == null;
+    if (hasNoData) {
+      return (
+        <section className="mt-10">
+          {headingNode}
+          <div
+            className="mt-4"
+            style={{
+              background: "#F1EFE8",
+              border: "0.5px solid rgba(26,17,8,0.12)",
+              borderRadius: 12,
+              padding: 20,
+            }}
+          >
+            <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 600 }}>
+              Flood risk not returned for this postcode
+            </p>
+            <p className="mt-2" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+              The Environment Agency returned no specific flood risk data for this property. This
+              may indicate a low-risk area, but we recommend verifying directly before making an
+              offer.
+            </p>
+            <a
+              href="https://check-long-term-flood-risk.service.gov.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-4 inline-flex items-center gap-1"
+              style={{
+                background: "#D85A30",
+                color: "#FFFDF9",
+                fontSize: 13,
+                fontWeight: 500,
+                borderRadius: 100,
+                padding: "10px 18px",
+                textDecoration: "none",
+              }}
+            >
+              Check your flood risk at check-long-term-flood-risk.service.gov.uk →
+            </a>
+            <p className="mt-3" style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
+              Enter the property postcode on the Government's official flood risk checker for a
+              confirmed result.
+            </p>
+            <div style={{ fontSize: 10, color: "#888780", marginTop: 12 }}>
+              Source: Environment Agency
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     const badgeStyle = (level: string | null): CSSProperties => {
       const v = (level ?? "").toLowerCase();
       if (v === "high") return { background: "#FAECE7", color: "#A32D2D" };
