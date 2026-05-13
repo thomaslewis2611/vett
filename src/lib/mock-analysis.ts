@@ -13,11 +13,26 @@ export type AnalysisResult = {
   };
   score: number;
   scoreLabel: string;
+  subScores: {
+    valueForMoney: number;
+    locationQuality: number;
+    listingTransparency: number;
+    marketTiming: number;
+    riskLevel: number;
+    resalePotential: number;
+  };
   metrics: {
     pricePerSqFt: number;
     daysOnMarket: number;
     councilTaxBand: string;
     estimatedStampDuty: number;
+  };
+  areaContext: {
+    avgPricePerSqFtArea: number | null;
+    avgSoldPriceArea: number | null;
+    priceVsAreaPercent: number | null;
+    areaDescription: string;
+    comparableNote: string;
   };
   redFlags: {
     severity: "high" | "medium" | "low";
