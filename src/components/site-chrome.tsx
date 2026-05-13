@@ -88,7 +88,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
         <div className="flex items-start justify-between">
           <div>
             <h2 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>
-              Buyer Pass Login
+              Buyer Login
             </h2>
             <p className="mt-1" style={{ fontSize: 13, color: "#5F5E5A" }}>
               Enter the email you used at checkout (Buyer Pass or single report).
@@ -289,7 +289,7 @@ export function SiteHeader() {
                 className="hidden sm:inline transition-colors hover:text-foreground"
                 style={{ fontSize: 13, color: "#888780" }}
               >
-                Buyer Pass Login
+                Buyer Login
               </button>
               <Link
                 to="/"
