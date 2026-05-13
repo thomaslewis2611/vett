@@ -312,11 +312,16 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
         {/* Property summary */}
         <section className="mt-6 overflow-hidden rounded-3xl border border-border bg-card shadow-card">
           <div className="grid md:grid-cols-[1.2fr_1fr]">
-            <img
-              src={a.property.image}
-              alt={a.property.address}
-              className="h-64 w-full object-cover md:h-full"
-            />
+            {a.property.image ? (
+              <img
+                src={a.property.image}
+                alt={`${a.property.address} — property photo`}
+                loading="lazy"
+                className="h-64 w-full object-cover md:h-full"
+              />
+            ) : (
+              <PropertyImagePlaceholder />
+            )}
             <div className="flex flex-col justify-between gap-6 p-6 sm:p-8">
               <div className="flex items-start justify-between gap-4">
                 <div>
