@@ -56,6 +56,8 @@ export type AnalysisResult = {
     annualGrowthRate: number | null;
     yearsHeld: number | null;
     commentary: string;
+    source?: "land_registry" | null;
+    nearbyMode?: boolean | null;
   } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
