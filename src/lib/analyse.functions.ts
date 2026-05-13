@@ -414,46 +414,18 @@ function formatMonthYear(iso: string): string {
   return `${MONTH_NAMES[dt.getUTCMonth()]} ${dt.getUTCFullYear()}`;
 }
 
-function escapeSparql(s: string): string {
-  return s.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-}
-
-async function runSparql(query: string, timeoutMs = 10_000): Promise<unknown | null> {
-  const url = `https://landregistry.data.gov.uk/landregistry/query?output=json&query=${encodeURIComponent(query)}`;
-  const ctrl = new AbortController();
-  const t = setTimeout(() => ctrl.abort(), timeoutMs);
-  try {
-    const res = await fetch(url, {
-      headers: { Accept: "application/sparql-results+json" },
-      signal: ctrl.signal,
-    });
-    clearTimeout(t);
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    clearTimeout(t);
-    return null;
-  }
-}
-
-function parseSparqlBindings(json: unknown): { date: string; price: number }[] {
-  try {
-    const bindings = (json as { results?: { bindings?: Array<Record<string, { value: string }>> } })
-      ?.results?.bindings ?? [];
-    const out: { date: string; price: number }[] = [];
-    for (const b of bindings) {
-      const price = parseInt(b.amount?.value ?? "", 10);
-      const date = b.date?.value ?? "";
-      if (Number.isFinite(price) && price > 0 && date) {
-        out.push({ date, price });
-      }
-    }
-    out.sort((a, b) => a.date.localeCompare(b.date));
-    return out;
-  } catch {
-    return [];
-  }
-}
+type PpiItem = {
+  pricePaid?: number;
+  transactionDate?: string;
+  propertyAddress?: {
+    paon?: string;
+    saon?: string;
+    street?: string;
+    postcode?: string;
+  };
+  // Some responses use a different shape; tolerate it.
+  primaryAddressobject?: { paon?: string; saon?: string };
+};
 
 async function fetchLandRegistryPriceHistory(
   postcode: string,
@@ -461,7 +433,11 @@ async function fetchLandRegistryPriceHistory(
   saon: string | null,
   street: string | null,
 ): Promise<LandRegistryResult> {
-  if (!postcode) return null;
+  console.log(`fetchPriceHistory called with postcode: ${postcode}`);
+  if (!postcode) {
+    console.log("fetchPriceHistory returned 0 results");
+    return null;
+  }
 
   const cacheKey = landRegistryCacheKey(postcode, paon, saon, street);
   // Cache lookup
@@ -477,102 +453,77 @@ async function fetchLandRegistryPriceHistory(
     ) {
       try {
         const parsed = JSON.parse(cached.text_content);
-        if (parsed && Array.isArray(parsed.entries)) return parsed as LandRegistryResult;
+        if (parsed && Array.isArray(parsed.entries)) {
+          console.log(`fetchPriceHistory returned ${parsed.entries.length} results (cached)`);
+          return parsed as LandRegistryResult;
+        }
       } catch { /* ignore */ }
     }
   } catch (err) {
     console.error("[landRegistry] cache lookup failed:", err);
   }
 
-  const PREFIXES = `PREFIX lrppi: <http://landregistry.data.gov.uk/def/ppi/>
-PREFIX lrcommon: <http://landregistry.data.gov.uk/def/common/>`;
+  const pcParam = postcode.replace(/\s+/g, "+");
+  const url = `https://landregistry.data.gov.uk/data/ppi/transaction-record.json?propertyAddress.postcode=${pcParam}&_page=0&_pageSize=10&_sort=-transactionDate`;
 
-  const pcEsc = escapeSparql(postcode);
+  let items: PpiItem[] = [];
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10_000);
+    const res = await fetch(url, {
+      headers: { Accept: "application/json" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) {
+      console.error(`[landRegistry] HTTP ${res.status} for ${url}`);
+      console.log("fetchPriceHistory returned 0 results");
+      return null;
+    }
+    const json = (await res.json()) as { result?: { items?: PpiItem[] } };
+    items = json?.result?.items ?? [];
+  } catch (err) {
+    console.error("[landRegistry] fetch failed:", err);
+    console.log("fetchPriceHistory returned 0 results");
+    return null;
+  }
 
-  // Exact-match query (paon required, saon optional)
+  const toEntry = (it: PpiItem): LandRegistryEntry | null => {
+    const price = typeof it.pricePaid === "number" ? it.pricePaid : NaN;
+    const date = it.transactionDate ?? "";
+    if (!Number.isFinite(price) || price <= 0 || !date) return null;
+    return { date: formatMonthYear(date), price, event: "sold" as const };
+  };
+
+  const itemPaon = (it: PpiItem): string =>
+    (it.propertyAddress?.paon ?? it.primaryAddressobject?.paon ?? "").toString().toUpperCase();
+
   let entries: LandRegistryEntry[] = [];
   let nearbyMode = false;
 
   if (paon) {
-    const paonEsc = escapeSparql(paon);
-    const saonClause = saon ? `?addr lrcommon:saon "${escapeSparql(saon)}" .` : "";
-    const exactQuery = `${PREFIXES}
-SELECT ?amount ?date WHERE {
-  ?transx lrppi:pricePaid ?amount ;
-          lrppi:transactionDate ?date ;
-          lrppi:propertyAddress ?addr .
-  ?addr lrcommon:postcode "${pcEsc}" ;
-        lrcommon:paon "${paonEsc}" .
-  ${saonClause}
-}
-ORDER BY ?date`;
-    const json = await runSparql(exactQuery);
-    if (json) {
-      const rows = parseSparqlBindings(json);
-      entries = rows.map((r) => ({
-        date: formatMonthYear(r.date),
-        price: r.price,
-        event: "sold" as const,
-      }));
-    }
+    const target = paon.toUpperCase();
+    const matched = items.filter((it) => itemPaon(it) === target);
+    entries = matched.map(toEntry).filter((x): x is LandRegistryEntry => x !== null);
   }
 
-  // Fallback: same street, postcode-only
-  if (entries.length === 0 && street) {
-    const streetEsc = escapeSparql(street);
-    const broadQuery = `${PREFIXES}
-SELECT ?amount ?date ?paon WHERE {
-  ?transx lrppi:pricePaid ?amount ;
-          lrppi:transactionDate ?date ;
-          lrppi:propertyAddress ?addr .
-  ?addr lrcommon:postcode "${pcEsc}" ;
-        lrcommon:street ?streetName ;
-        lrcommon:paon ?paon .
-  FILTER(REGEX(STR(?streetName), "${streetEsc}", "i"))
-}
-ORDER BY DESC(?date)
-LIMIT 5`;
-    const json = await runSparql(broadQuery);
-    if (json) {
-      const rows = parseSparqlBindings(json);
-      if (rows.length > 0) {
-        nearbyMode = true;
-        entries = rows
-          .slice(0, 5)
-          .map((r) => ({ date: formatMonthYear(r.date), price: r.price, event: "sold" as const }))
-          .sort((a, b) => a.date.localeCompare(b.date));
-      }
-    }
+  if (entries.length === 0 && items.length > 0) {
+    nearbyMode = true;
+    entries = items
+      .slice(0, 5)
+      .map(toEntry)
+      .filter((x): x is LandRegistryEntry => x !== null);
   }
 
-  // Postcode-only ultimate fallback
+  // Sort oldest-first for the timeline UI
+  entries.sort((a, b) => a.date.localeCompare(b.date));
+
   if (entries.length === 0) {
-    const pcQuery = `${PREFIXES}
-SELECT ?amount ?date WHERE {
-  ?transx lrppi:pricePaid ?amount ;
-          lrppi:transactionDate ?date ;
-          lrppi:propertyAddress ?addr .
-  ?addr lrcommon:postcode "${pcEsc}" .
-}
-ORDER BY DESC(?date)
-LIMIT 5`;
-    const json = await runSparql(pcQuery);
-    if (json) {
-      const rows = parseSparqlBindings(json);
-      if (rows.length > 0) {
-        nearbyMode = true;
-        entries = rows
-          .slice(0, 5)
-          .map((r) => ({ date: formatMonthYear(r.date), price: r.price, event: "sold" as const }))
-          .sort((a, b) => a.date.localeCompare(b.date));
-      }
-    }
+    console.log("fetchPriceHistory returned 0 results");
+    return null;
   }
-
-  if (entries.length === 0) return null;
 
   const result: LandRegistryResult = { entries, nearbyMode };
-  // Cache (best-effort)
   try {
     await supabaseAdmin
       .from("listing_cache")
@@ -583,6 +534,8 @@ LIMIT 5`;
   } catch (err) {
     console.error("[landRegistry] cache upsert failed:", err);
   }
+
+  console.log(`fetchPriceHistory returned ${entries.length} results${nearbyMode ? " (nearby)" : ""}`);
   return result;
 }
 
