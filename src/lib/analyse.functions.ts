@@ -58,6 +58,8 @@ const analysisSchema = z.object({
     annualGrowthRate: z.number().nullable().describe("% per year compounded from first sale to now"),
     yearsHeld: z.number().nullable(),
     commentary: z.string().describe("2-3 sentences: vs UK ~5%/yr, aggressive pricing concerns, relist gaps, etc."),
+    source: z.enum(["land_registry"]).nullable().optional(),
+    nearbyMode: z.boolean().nullable().optional(),
   }).nullable(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
