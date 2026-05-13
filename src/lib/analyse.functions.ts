@@ -585,11 +585,13 @@ LIMIT 5`;
   return result;
 }
 
-async function fetchListingText(url: string): Promise<string> {
+async function fetchListingText(url: string): Promise<{ text: string; landRegistry: LandRegistryResult }> {
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
 
-  // 1. Cache lookup (24h TTL)
+  // 1. Cache lookup (24h TTL) — listing text only. Land Registry has its own
+  // longer-lived cache keyed by postcode+paon.
+  let cachedText: string | null = null;
   try {
     const { data: cached } = await supabaseAdmin
       .from("listing_cache")
@@ -602,18 +604,39 @@ async function fetchListingText(url: string): Promise<string> {
       Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
     ) {
       console.log(`[analyseListing] cache hit for ${url}`);
-      return cached.text_content;
+      cachedText = cached.text_content;
     }
   } catch (err) {
     console.error("[analyseListing] cache lookup failed:", err);
   }
 
-  // 2. Basic fetch with browser-like headers
-  const html = await basicFetchListingHtml(url);
+  // We need either cached text or fresh HTML to extract postcode for the
+  // Land Registry call.
+  let html = "";
+  if (!cachedText) {
+    html = await basicFetchListingHtml(url);
+  }
+  const sourceForExtraction = cachedText ?? (html ? htmlToCleanText(html) : "");
+  const { postcode, paon, saon, street } = extractAddressBits(sourceForExtraction);
+
+  // Run Land Registry lookup in parallel with the rest of the work.
+  const landRegistryPromise: Promise<LandRegistryResult> = postcode
+    ? fetchLandRegistryPriceHistory(postcode, paon, saon, street).catch((err) => {
+        console.error("[landRegistry] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
+  if (cachedText) {
+    const landRegistry = await landRegistryPromise;
+    return { text: cachedText, landRegistry };
+  }
+
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
-  const priceHistory = html ? extractPriceHistory(html) : null;
   let text = html ? htmlToListingText(html) : "";
+  const landRegistry = await landRegistryPromise;
+
   const notes: string[] = [];
   if (listed) {
     notes.push(`LISTING DATE: ${listed.dateStr} — ${listed.daysOnMarket} days on market as of today`);
@@ -628,33 +651,34 @@ async function fetchListingText(url: string): Promise<string> {
   if (councilTax) {
     notes.push(`EXTRACTED FROM PAGE HTML — Council Tax Band: ${councilTax}`);
   }
-  if (priceHistory && priceHistory.length) {
-    const lines = priceHistory.map((p) => `${p.event} ${p.date}: £${p.price.toLocaleString("en-GB")}`);
-    notes.push(`PRICE HISTORY DATA:\n${lines.join("\n")}`);
+  if (landRegistry && landRegistry.entries.length) {
+    const header = landRegistry.nearbyMode
+      ? "LAND REGISTRY PRICE HISTORY (official data — nearby sales on the same street, no exact match for this property):"
+      : "LAND REGISTRY PRICE HISTORY (official data):";
+    const lines = landRegistry.entries.map(
+      (p) => `Sold ${p.date}: £${p.price.toLocaleString("en-GB")}`,
+    );
+    notes.push(`${header}\n${lines.join("\n")}`);
   }
   if (text && notes.length) {
     text = `${notes.join("\n")}\n\n${text}`.slice(0, 25_700);
   }
 
-  // 3. Cache successful results.
+  // 3. Cache successful listing text.
   if (text && text.length >= 200) {
     try {
       await supabaseAdmin
         .from("listing_cache")
         .upsert(
-          {
-            url,
-            text_content: text,
-            fetched_at: new Date().toISOString(),
-          },
-          { onConflict: "url" }
+          { url, text_content: text, fetched_at: new Date().toISOString() },
+          { onConflict: "url" },
         );
     } catch (err) {
       console.error("[analyseListing] cache upsert failed:", err);
     }
   }
 
-  return text;
+  return { text, landRegistry };
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
