@@ -6,13 +6,13 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Propwise — Know exactly what you're buying before you offer" },
+      { title: "Flagr — The red flags estate agents won't show you" },
       {
         name: "description",
         content:
-          "Paste any Rightmove or Zoopla listing and get an AI-powered value score, red flags, true cost breakdown and negotiation strategy in seconds.",
+          "Paste any Rightmove or Zoopla listing and Flagr surfaces the red flags estate agents won't show you — value score, true cost and negotiation strategy in seconds.",
       },
-      { property: "og:title", content: "Propwise — UK property listing analyser" },
+      { property: "og:title", content: "Flagr — UK property listing analyser" },
       {
         property: "og:description",
         content:
@@ -58,11 +58,11 @@ function Index() {
             Powered by Claude AI
           </div>
           <h1 className="mt-6 text-balance text-5xl font-semibold tracking-tight sm:text-6xl">
-            Know exactly what you're buying{" "}
-            <span className="text-primary">before you make an offer</span>
+            The red flags{" "}
+            <span className="text-primary">estate agents won't show you</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground">
-            Paste any Rightmove or Zoopla listing and Propwise returns a value score, red flags,
+            Paste any Rightmove or Zoopla listing and Flagr returns a value score, red flags,
             true buying costs and a negotiation strategy in under 30 seconds.
           </p>
 
