@@ -699,6 +699,17 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
     try {
       const priceId = tier === "single" ? PRICE_SINGLE : PRICE_PASS;
       const res = await checkoutFn({ data: { priceId, listingUrl: listingUrl ?? "", tier } });
+      // Persist current results URL in history so the browser back button from
+      // Stripe returns to this exact page with the listing URL param intact.
+      try {
+        if (typeof window !== "undefined") {
+          window.history.replaceState(
+            { ...(window.history.state ?? {}), roovrListingUrl: listingUrl ?? null },
+            "",
+            window.location.href
+          );
+        }
+      } catch { /* ignore */ }
       window.location.href = res.url;
     } catch (e) {
       setErr((e as Error).message || "Couldn't start checkout. Try again.");
