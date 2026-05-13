@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   AlertTriangle,
   Calendar,
+  Info,
   Lock,
   PoundSterling,
   Sparkles,
