@@ -22,7 +22,7 @@ import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
 import { analyseListing } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
 
-const BUYER_PASS_KEY = "propwise_buyer_pass";
+const BUYER_PASS_KEY = "flagr_buyer_pass";
 
 function useBuyerPass(): [boolean, (v: boolean) => void] {
   const [hasPass, setHasPass] = useState(false);
@@ -54,7 +54,7 @@ export const Route = createFileRoute("/results")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Property analysis — Propwise" },
+      { title: "Property analysis — Flagr" },
       {
         name: "description",
         content:
@@ -434,7 +434,7 @@ function ScoreBadge({ score, label }: { score: number; label: string }) {
         </div>
       </div>
       <div className="hidden max-w-[160px] sm:block">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">Propwise score</div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">Flagr score</div>
         <div className="text-sm font-medium leading-tight">{label}</div>
       </div>
     </div>
