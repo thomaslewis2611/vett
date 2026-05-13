@@ -371,6 +371,12 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
           </div>
         </section>
 
+        {/* Area context */}
+        <AreaContextSection analysis={a} />
+
+        {/* Auction warning (free + paid) */}
+        <AuctionWarning analysis={a} />
+
         {/* Top red flags (free) */}
         <section className="mt-10">
           <div className="flex items-end justify-between">
