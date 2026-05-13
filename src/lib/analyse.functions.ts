@@ -39,6 +39,13 @@ const analysisSchema = z.object({
     councilTaxBand: z.string().describe("A-H letter, or 'Unknown'"),
     estimatedStampDuty: z.number().describe("Estimated UK stamp duty in GBP for a second-home / additional property buyer"),
   }),
+  epc: z.object({
+    rating: z.string().nullable().describe("EPC band letter A-G, or null if not in listing"),
+    score: z.number().nullable().describe("EPC numeric score 1-100, or null"),
+    potentialRating: z.string().nullable().describe("Potential EPC band letter after improvements, or null"),
+    estimatedAnnualEnergyCost: z.string().nullable().describe("e.g. '£1,800 per year', or null"),
+    commentary: z.string().describe("2-3 sentences: what this rating means for THIS property — typical annual energy bills for this size+rating, cost+saving of upgrading one band, mortgage lender implications if below D"),
+  }).nullable(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
