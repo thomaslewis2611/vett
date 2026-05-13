@@ -72,14 +72,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { title: "Propwise" },
+      { name: "description", content: "Online reports and tools for UK property buyers. Single property analysis reports at £4.99 and unlimited buyer passes at £29.99, delivered digitally via web app" },
       { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:title", content: "Propwise" },
+      { property: "og:description", content: "Online reports and tools for UK property buyers. Single property analysis reports at £4.99 and unlimited buyer passes at £29.99, delivered digitally via web app" },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Propwise" },
+      { name: "twitter:description", content: "Online reports and tools for UK property buyers. Single property analysis reports at £4.99 and unlimited buyer passes at £29.99, delivered digitally via web app" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/255de182-edb0-4d96-8a07-3e73806ff312/id-preview-e28ee195--e239acee-68b4-47c9-912e-3378d99dae28.lovable.app-1778654002429.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/255de182-edb0-4d96-8a07-3e73806ff312/id-preview-e28ee195--e239acee-68b4-47c9-912e-3378d99dae28.lovable.app-1778654002429.png" },
     ],
     links: [
       {
