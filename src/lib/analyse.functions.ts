@@ -261,12 +261,14 @@ function htmlToListingText(html: string): string {
 
 function extractListedDate(html: string): { dateStr: string; daysOnMarket: number } | null {
   if (!html) return null;
-  const patterns = [
-    /Added on (\d{2}\/\d{2}\/\d{4})/i,
-    /Listed on (\d{2}\/\d{2}\/\d{4})/i,
-    /First listed (\d{2}\/\d{2}\/\d{4})/i,
-    /Added on (\d{2}\/\d{2}\/\d{4})/i,
-    /Reduced on (\d{2}\/\d{2}\/\d{4})/i,
+  const patterns: RegExp[] = [
+    /Added on (\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /Listed on (\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /First listed[: ]+(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /available from[: ]+(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /Reduced on (\d{1,2}\/\d{1,2}\/\d{4})/i,
+    // Fallback: any date within ~40 chars of "added" or "listed"
+    /(?:added|listed)[^<>]{0,40}?(\d{1,2}\/\d{1,2}\/\d{4})/i,
   ];
   for (const p of patterns) {
     const m = html.match(p);
