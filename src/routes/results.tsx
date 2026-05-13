@@ -399,12 +399,15 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
 
       <main className="mx-auto max-w-5xl px-6 py-10">
 
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← Analyse another property
-        </Link>
+        <div className="flex items-center justify-between gap-4 no-print">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← Analyse another property
+          </Link>
+          <DownloadPdfButton />
+        </div>
 
         {/* Property header */}
         <section
