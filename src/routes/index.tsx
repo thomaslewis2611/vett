@@ -6,17 +6,17 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Flagr — The red flags estate agents won't show you" },
+      { title: "Roovr — Every listing. Analysed. Instantly." },
       {
         name: "description",
         content:
-          "Paste any Rightmove or Zoopla listing and Flagr surfaces the red flags estate agents won't show you — value score, true cost and negotiation strategy in seconds.",
+          "Paste any Rightmove or Zoopla listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in seconds.",
       },
-      { property: "og:title", content: "Flagr — UK property listing analyser" },
+      { property: "og:title", content: "Roovr — AI property analysis for smarter buyers" },
       {
         property: "og:description",
         content:
-          "AI analysis of UK property listings: value score, red flags, true costs and negotiation strategy.",
+          "Paste any Rightmove or Zoopla listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in seconds.",
       },
     ],
   }),
@@ -62,8 +62,7 @@ function Index() {
             <span className="text-primary">estate agents won't show you</span>
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground">
-            Paste any Rightmove or Zoopla listing and Flagr returns a value score, red flags,
-            true buying costs and a negotiation strategy in under 30 seconds.
+            Every listing. Analysed. Instantly.
           </p>
 
           <form

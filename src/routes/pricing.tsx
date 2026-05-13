@@ -5,13 +5,13 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — Flagr" },
+      { title: "Pricing — Roovr" },
       {
         name: "description",
         content:
           "One-time payment, no subscription. £4.99 for a single report or £29.99 for a Buyer Pass with unlimited analyses.",
       },
-      { property: "og:title", content: "Flagr pricing" },
+      { property: "og:title", content: "Roovr pricing" },
       {
         property: "og:description",
         content:
@@ -71,7 +71,7 @@ function PricingPage() {
 
         <div className="mt-16 text-center text-sm text-muted-foreground">
           Need it for your team or agency?{" "}
-          <a href="mailto:hello@flagr.app" className="text-primary hover:underline">
+          <a href="mailto:hello@roovr.co.uk" className="text-primary hover:underline">
             Get in touch
           </a>
           .
