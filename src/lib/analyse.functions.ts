@@ -777,8 +777,11 @@ export const analyseListing = createServerFn({ method: "POST" })
     }
 
     let listingContent = pastedText;
+    let landRegistry: LandRegistryResult = null;
     if (!listingContent && url) {
-      listingContent = await fetchListingText(url);
+      const fetched = await fetchListingText(url);
+      listingContent = fetched.text;
+      landRegistry = fetched.landRegistry;
     }
     if (!listingContent || listingContent.length < 100) {
       throw new Error(
