@@ -136,19 +136,24 @@ function ResultsPage() {
 
   const hasInput = Boolean(url || text);
 
+  const cached = readCachedAnalysis(url, text, token);
+
   const query = useQuery({
     queryKey: ["analysis", url ?? "", text ?? "", token ?? ""],
     queryFn: async () => {
       const { data: sess } = await supabase.auth.getSession();
       const sessionJwt = sess.session?.access_token ?? null;
-      return analyseFn({
+      const result = await analyseFn({
         data: { url, text, accessToken: token ?? null, sessionJwt },
       });
+      writeCachedAnalysis(result, url, text, token);
+      return result;
     },
     enabled: hasInput,
     retry: false,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
+    initialData: cached,
   });
 
   if (!hasInput) {
