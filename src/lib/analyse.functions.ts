@@ -284,6 +284,9 @@ function extractEpcAndCouncilTax(html: string): { epc: string | null; councilTax
   let epc: string | null = null;
   let councilTax: string | null = null;
   const epcPatterns: RegExp[] = [
+    // Plain-text bullet pattern commonly found in Rightmove descriptions
+    // e.g. "* EPC rating D", "* EPC Rating: C", "EPC rating: D"
+    /\*?\s*EPC\s+rating[:\s]+([A-G])\b/i,
     /EPC[\s_-]*rating[^A-Za-z0-9]{0,10}([A-G])\b/i,
     /Energy[\s_-]*rating[^A-Za-z0-9]{0,10}([A-G])\b/i,
     /Energy[\s_-]*Performance[^<>]{0,60}?\b([A-G])\b/i,
