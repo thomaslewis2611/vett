@@ -693,7 +693,7 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
     }
   }
 
-  return { text, landRegistry };
+  return { text, landRegistry, scotland };
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
