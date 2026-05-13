@@ -210,12 +210,13 @@ function UserMenu({ email }: { email: string }) {
             </div>
           </div>
           <Link
-            to="/dashboard"
+            to={hasPass ? "/dashboard" : "/my-report"}
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-[#F1EFE8]"
             style={{ fontSize: 13, color: "#1A1108" }}
           >
-            <LayoutDashboard className="h-4 w-4" style={{ color: "#5F5E5A" }} /> My analyses
+            <LayoutDashboard className="h-4 w-4" style={{ color: "#5F5E5A" }} />{" "}
+            {hasPass ? "My analyses" : "My report"}
           </Link>
           <button
             type="button"
