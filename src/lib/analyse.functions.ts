@@ -233,9 +233,7 @@ function htmlToListingText(html: string): string {
   return text;
 }
 
-async function fetchListingData(
-  url: string
-): Promise<{ text: string; image: string | null }> {
+async function fetchListingText(url: string): Promise<string> {
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
 
@@ -243,7 +241,7 @@ async function fetchListingData(
   try {
     const { data: cached } = await supabaseAdmin
       .from("listing_cache")
-      .select("text_content, image_url, fetched_at")
+      .select("text_content, fetched_at")
       .eq("url", url)
       .maybeSingle();
     if (
@@ -252,10 +250,7 @@ async function fetchListingData(
       Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
     ) {
       console.log(`[analyseListing] cache hit for ${url}`);
-      return {
-        text: cached.text_content,
-        image: cached.image_url ?? null,
-      };
+      return cached.text_content;
     }
   } catch (err) {
     console.error("[analyseListing] cache lookup failed:", err);
@@ -263,7 +258,7 @@ async function fetchListingData(
 
   // 2. ScraperAPI (with JS rendering, GB country)
   const scraperKey = process.env.SCRAPERAPI_KEY;
-  let payload: { text: string; image: string | null } = { text: "", image: null };
+  let text = "";
   let html = "";
   let timedOut = false;
 
@@ -294,7 +289,7 @@ async function fetchListingData(
         console.error(
           `[analyseListing] ScraperAPI timeout (${SCRAPER_TIMEOUT_MS}ms) for ${url}`
         );
-        return { text: "", image: null };
+        return "";
       }
       console.error(`[analyseListing] ScraperAPI error after ${elapsed}ms:`, err);
     } finally {
@@ -304,49 +299,23 @@ async function fetchListingData(
     console.warn("[analyseListing] SCRAPERAPI_KEY missing — falling back to basic fetch");
   }
 
-  if (html) payload = htmlToListingPayload(html);
+  if (html) text = htmlToListingText(html);
 
   // 3. Fallback to basic fetch if ScraperAPI failed or yielded nothing useful.
-  if (!payload.text) {
+  if (!text) {
     const fallbackHtml = await basicFetchListingHtml(url);
-    if (fallbackHtml) {
-      const fallback = htmlToListingPayload(fallbackHtml);
-      payload = {
-        text: fallback.text,
-        image: payload.image ?? fallback.image,
-      };
-    }
+    if (fallbackHtml) text = htmlToListingText(fallbackHtml);
   }
 
-  // 3b. If we still have no image, try a head-only basic fetch — Rightmove's
-  // og:image is often readable even when the body is JS-gated.
-  if (!payload.image) {
-    try {
-      const headHtml = await basicFetchListingHtml(url);
-      if (headHtml) {
-        const headOnly = headHtml.split(/<\/head>/i)[0] ?? headHtml;
-        const found = extractPropertyImage(headOnly);
-        if (found) {
-          console.log(`[analyseListing] recovered og:image via basic fetch for ${url}`);
-          payload = { ...payload, image: found };
-        } else {
-          console.log(`[analyseListing] basic-fetch og:image retry found nothing for ${url}`);
-        }
-      }
-    } catch (err) {
-      console.error("[analyseListing] basic-fetch image retry failed:", err);
-    }
-  }
-  // 4. Cache successful results (only when we got real text).
-  if (payload.text && payload.text.length >= 200) {
+  // 4. Cache successful results.
+  if (text && text.length >= 200) {
     try {
       await supabaseAdmin
         .from("listing_cache")
         .upsert(
           {
             url,
-            text_content: payload.text,
-            image_url: payload.image,
+            text_content: text,
             fetched_at: new Date().toISOString(),
           },
           { onConflict: "url" }
@@ -356,7 +325,7 @@ async function fetchListingData(
     }
   }
 
-  return payload;
+  return text;
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
