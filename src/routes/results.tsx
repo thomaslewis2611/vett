@@ -1534,6 +1534,14 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
       <section className="mt-10">
         {headingNode}
         <div className="mt-4" style={cardStyle}>
+          {ph.nearbyMode && (
+            <p
+              className="mb-3"
+              style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.5 }}
+            >
+              No exact match found — showing recent sales nearby on the same street.
+            </p>
+          )}
           {/* Timeline */}
           <div className="relative" style={{ paddingTop: 8, paddingBottom: 4 }}>
             <div
