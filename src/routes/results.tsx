@@ -1482,6 +1482,32 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
     const entries = ph.entries ?? [];
     const currentPrice = analysis.property?.price ?? 0;
 
+    // Scotland — Land Registry doesn't hold Scottish data
+    if (ph.scotland) {
+      return (
+        <section className="mt-10">
+          {headingNode}
+          <div className="mt-4" style={cardStyle}>
+            <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
+              This property is in Scotland.
+            </p>
+            <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
+              Sold price data is held by Registers of Scotland — search at{" "}
+              <a
+                href="https://www.ros.gov.uk/property-information"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#185FA5", textDecoration: "underline" }}
+              >
+                ros.gov.uk/property-information
+              </a>{" "}
+              to find previous sale prices for this address.
+            </p>
+          </div>
+        </section>
+      );
+    }
+
     // Empty state — no historical data
     if (entries.length === 0) {
       return (
