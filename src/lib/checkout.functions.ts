@@ -183,18 +183,13 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
       }
     }
 
-    if (!found) return { ok: true, found: false };
-
-    const { error } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: { redirectTo },
-    });
-    if (error) {
-      console.error("magic link error", error.message);
-      return { ok: false, found: true };
+    if (!found) {
+      console.log("Magic link: no account found for", email);
+      return { ok: true, found: false };
     }
-    return { ok: true, found: true };
+
+    const res = await sendMagicLinkViaQueue(email, redirectTo);
+    return { ok: res.ok, found: true };
   });
 
 
