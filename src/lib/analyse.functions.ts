@@ -487,8 +487,11 @@ export const analyseListing = createServerFn({ method: "POST" })
     }
 
     let listingContent = pastedText;
+    let scrapedImage: string | null = null;
     if (!listingContent && url) {
-      listingContent = await fetchListingText(url);
+      const fetched = await fetchListingData(url);
+      listingContent = fetched.text;
+      scrapedImage = fetched.image;
     }
     if (!listingContent || listingContent.length < 100) {
       throw new Error(
@@ -528,14 +531,19 @@ export const analyseListing = createServerFn({ method: "POST" })
       );
     }
 
+    // Prefer the scraped CDN image; fall back to whatever Claude pulled out of
+    // the description; otherwise null (UI shows a placeholder).
+    const claudeImage = isValidPropertyImage(output.property.image)
+      ? output.property.image
+      : null;
+    const finalImage = scrapedImage ?? claudeImage;
+
     const full: AnalysisResult = {
       ...output,
       property: {
         ...output.property,
         listingUrl: url || output.property.listingUrl || "",
-        image:
-          output.property.image ||
-          "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&q=80",
+        image: finalImage,
       },
     } as AnalysisResult;
 
