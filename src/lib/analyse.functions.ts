@@ -897,11 +897,13 @@ export const analyseListing = createServerFn({ method: "POST" })
     let listingContent = pastedText;
     let landRegistry: LandRegistryResult = null;
     let scotland = false;
+    let floodRiskRaw: FloodRiskRaw | null = null;
     if (!listingContent && url) {
       const fetched = await fetchListingText(url);
       listingContent = fetched.text;
       landRegistry = fetched.landRegistry;
       scotland = fetched.scotland;
+      floodRiskRaw = fetched.floodRisk;
     }
     if (!listingContent || listingContent.length < 100) {
       throw new Error(
