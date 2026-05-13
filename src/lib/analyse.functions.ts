@@ -235,7 +235,7 @@ function htmlToListingText(html: string): string {
 function extractListedDate(html: string): { dateStr: string; daysOnMarket: number } | null {
   if (!html) return null;
   const patterns = [
-    /Added on (\d{2}\/\d{2}/\d{4})/i,
+    /Added on (\d{2}\/\d{2}\/\d{4})/i,
     /Listed on (\d{2}\/\d{2}\/\d{4})/i,
     /First listed (\d{2}\/\d{2}\/\d{4})/i,
     /Added on (\d{2}\/\d{2}\/\d{4})/i,
