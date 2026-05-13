@@ -164,6 +164,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
   "epc": { "rating": string|null, "score": number|null, "potentialRating": string|null, "estimatedAnnualEnergyCost": string|null, "commentary": string } | null,
   "priceHistory": { "entries": [{ "date": string, "price": number, "event": "sold"|"listed"|"reduced"|"relisted" }]|null, "firstSalePrice": number|null, "firstSaleDate": string|null, "totalAppreciation": number|null, "annualGrowthRate": number|null, "yearsHeld": number|null, "commentary": string } | null,
+  "floodRisk": { "riversAndSea": "Very Low"|"Low"|"Medium"|"High"|null, "surfaceWater": "Very Low"|"Low"|"Medium"|"High"|null, "reservoir": boolean|null, "groundwater": "Very Low"|"Low"|"Medium"|"High"|null, "overallRisk": "Very Low"|"Low"|"Medium"|"High"|null, "commentary": string, "autoRedFlag": boolean } | null,
   "areaContext": { "avgPricePerSqFtArea": number|null, "avgSoldPriceArea": number|null, "priceVsAreaPercent": number|null, "areaDescription": string, "comparableNote": string },
   "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ] (3-8 items),
   "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
