@@ -232,6 +232,32 @@ function htmlToListingText(html: string): string {
   return text;
 }
 
+function extractListedDate(html: string): { dateStr: string; daysOnMarket: number } | null {
+  if (!html) return null;
+  const patterns = [
+    /Added on (\d{2}\/\d{2}/\d{4})/i,
+    /Listed on (\d{2}\/\d{2}\/\d{4})/i,
+    /First listed (\d{2}\/\d{2}\/\d{4})/i,
+    /Added on (\d{2}\/\d{2}\/\d{4})/i,
+    /Reduced on (\d{2}\/\d{2}\/\d{4})/i,
+  ];
+  for (const p of patterns) {
+    const m = html.match(p);
+    if (m?.[1]) {
+      const [dd, mm, yyyy] = m[1].split("/").map(Number);
+      const listed = new Date(Date.UTC(yyyy, mm - 1, dd));
+      if (!isNaN(listed.getTime())) {
+        const days = Math.max(
+          0,
+          Math.floor((Date.now() - listed.getTime()) / (1000 * 60 * 60 * 24))
+        );
+        return { dateStr: m[1], daysOnMarket: days };
+      }
+    }
+  }
+  return null;
+}
+
 async function fetchListingText(url: string): Promise<string> {
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
@@ -257,7 +283,11 @@ async function fetchListingText(url: string): Promise<string> {
 
   // 2. Basic fetch with browser-like headers
   const html = await basicFetchListingHtml(url);
-  const text = html ? htmlToListingText(html) : "";
+  const listed = html ? extractListedDate(html) : null;
+  let text = html ? htmlToListingText(html) : "";
+  if (text && listed) {
+    text = `Date listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)\n\n${text}`.slice(0, 25_500);
+  }
 
   // 3. Cache successful results.
   if (text && text.length >= 200) {
