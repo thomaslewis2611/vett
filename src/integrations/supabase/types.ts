@@ -41,6 +41,27 @@ export type Database = {
         }
         Relationships: []
       }
+      listing_cache: {
+        Row: {
+          fetched_at: string
+          image_url: string | null
+          text_content: string | null
+          url: string
+        }
+        Insert: {
+          fetched_at?: string
+          image_url?: string | null
+          text_content?: string | null
+          url: string
+        }
+        Update: {
+          fetched_at?: string
+          image_url?: string | null
+          text_content?: string | null
+          url?: string
+        }
+        Relationships: []
+      }
       saved_analyses: {
         Row: {
           analysis_json: Json | null
