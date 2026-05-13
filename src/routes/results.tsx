@@ -99,7 +99,7 @@ export const Route = createFileRoute("/results")({
 });
 
 function ResultsPage() {
-  const { url, text } = Route.useSearch();
+  const { url, text, token } = Route.useSearch();
   const navigate = useNavigate();
   const analyseFn = useServerFn(analyseListing);
 
