@@ -357,7 +357,7 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
             <MetricCard
               label="Council tax band"
               value={a.metrics.councilTaxBand}
-              icon={MapPin}
+              icon={PoundSterling}
             />
             <MetricCard
               label="Stamp duty est."
