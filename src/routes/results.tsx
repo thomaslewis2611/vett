@@ -383,6 +383,7 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
 
       {access.level === "pass" && (
         <div
+          className="no-print"
           style={{
             background: "#FAECE7",
             borderBottom: "0.5px solid rgba(153,60,29,0.15)",
