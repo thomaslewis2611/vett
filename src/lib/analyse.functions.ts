@@ -76,6 +76,7 @@ You must:
 - Read the listing carefully (description, photos captions, key features, agent copy).
 - Translate UK estate agent euphemisms into honest red flags ("scope to modernise" = dated; "deceptively spacious" = small; "convenient for transport" = noisy; "no chain" can be good or distressed; etc.).
 - Estimate UK stamp duty using current rates for the buyer profile (assume an additional / second property buyer for a conservative figure unless stated otherwise).
+- For daysOnMarket: if the listing content begins with or contains a line like "Date listed: DD/MM/YYYY (X days on market)", use that X value directly. Do NOT infer or guess otherwise — return 0 if no such line is present.
 - Estimate monthly mortgage on 15% deposit, 25-year term at 4.8% fixed.
 - Give a value score out of 10 reflecting price vs local market, condition, lease, location risks, and negotiation room.
 - Suggest a recommended offer range that is realistic for the UK market — usually 2-8% under asking depending on days-on-market and red flags.
@@ -232,6 +233,32 @@ function htmlToListingText(html: string): string {
   return text;
 }
 
+function extractListedDate(html: string): { dateStr: string; daysOnMarket: number } | null {
+  if (!html) return null;
+  const patterns = [
+    /Added on (\d{2}\/\d{2}\/\d{4})/i,
+    /Listed on (\d{2}\/\d{2}\/\d{4})/i,
+    /First listed (\d{2}\/\d{2}\/\d{4})/i,
+    /Added on (\d{2}\/\d{2}\/\d{4})/i,
+    /Reduced on (\d{2}\/\d{2}\/\d{4})/i,
+  ];
+  for (const p of patterns) {
+    const m = html.match(p);
+    if (m?.[1]) {
+      const [dd, mm, yyyy] = m[1].split("/").map(Number);
+      const listed = new Date(Date.UTC(yyyy, mm - 1, dd));
+      if (!isNaN(listed.getTime())) {
+        const days = Math.max(
+          0,
+          Math.floor((Date.now() - listed.getTime()) / (1000 * 60 * 60 * 24))
+        );
+        return { dateStr: m[1], daysOnMarket: days };
+      }
+    }
+  }
+  return null;
+}
+
 async function fetchListingText(url: string): Promise<string> {
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
@@ -257,7 +284,11 @@ async function fetchListingText(url: string): Promise<string> {
 
   // 2. Basic fetch with browser-like headers
   const html = await basicFetchListingHtml(url);
-  const text = html ? htmlToListingText(html) : "";
+  const listed = html ? extractListedDate(html) : null;
+  let text = html ? htmlToListingText(html) : "";
+  if (text && listed) {
+    text = `Date listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)\n\n${text}`.slice(0, 25_500);
+  }
 
   // 3. Cache successful results.
   if (text && text.length >= 200) {
