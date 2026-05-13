@@ -384,6 +384,25 @@ async function fetchListingData(
     }
   }
 
+  // 3b. If we still have no image, try a head-only basic fetch — Rightmove's
+  // og:image is often readable even when the body is JS-gated.
+  if (!payload.image) {
+    try {
+      const headHtml = await basicFetchListingHtml(url);
+      if (headHtml) {
+        const headOnly = headHtml.split(/<\/head>/i)[0] ?? headHtml;
+        const found = extractPropertyImage(headOnly);
+        if (found) {
+          console.log(`[analyseListing] recovered og:image via basic fetch for ${url}`);
+          payload = { ...payload, image: found };
+        } else {
+          console.log(`[analyseListing] basic-fetch og:image retry found nothing for ${url}`);
+        }
+      }
+    } catch (err) {
+      console.error("[analyseListing] basic-fetch image retry failed:", err);
+    }
+  }
   // 4. Cache successful results (only when we got real text).
   if (payload.text && payload.text.length >= 200) {
     try {
