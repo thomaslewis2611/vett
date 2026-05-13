@@ -468,6 +468,24 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
   );
 }
 
+function PropertyImagePlaceholder() {
+  return (
+    <div
+      className="flex h-64 w-full flex-col items-center justify-center gap-3 md:h-full"
+      style={{ background: "#F1EFE8" }}
+      role="img"
+      aria-label="No property photo available"
+    >
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D85A30" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 12 12 3l9 9" />
+        <path d="M5 10v10h14V10" />
+        <path d="M10 20v-6h4v6" />
+      </svg>
+      <span style={{ fontSize: 12, color: "#888780" }}>No photo available</span>
+    </div>
+  );
+}
+
 function ScoreBadge({ score, label }: { score: number; label: string }) {
   const pct = (score / 10) * 100;
   const ring = `conic-gradient(var(--primary) ${pct}%, var(--primary-soft) ${pct}%)`;
