@@ -542,9 +542,16 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
 
         {/* Paywall + locked / unlocked content */}
         <section className="mt-10">
-          {!unlocked && <PaywallGate listingUrl={listingUrl} />}
+          {!unlocked && (
+            <>
+              <LockedFeaturesGrid />
+              <div className="mt-8">
+                <PaywallGate listingUrl={listingUrl} />
+              </div>
+            </>
+          )}
 
-          {unlocked ? (
+          {unlocked && (
             <div className="space-y-8">
               <UnlockedSection title="Full red flags list">
                 <div className="space-y-3">
@@ -570,6 +577,9 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
                 </ol>
               </UnlockedSection>
 
+              {/* Flood risk — full for Buyer Pass, locked teaser for Single Report */}
+              <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
+
               {showChat && <PropertyChat analysis={a} />}
 
               {access.level === "pass" && (
@@ -579,27 +589,6 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
                   </Link>
                 </div>
               )}
-            </div>
-          ) : (
-            <div className="relative mt-10">
-              <div
-                aria-hidden
-                className="pointer-events-none select-none space-y-8 opacity-60 blur-[6px]"
-              >
-                <LockedSection title="Full red flags list">
-                  <div className="space-y-3">
-                    {a.redFlags.slice(2).map((f, i) => (
-                      <RedFlagItem key={i} flag={f} />
-                    ))}
-                  </div>
-                </LockedSection>
-                <LockedSection title="True cost breakdown">
-                  <CostBreakdown analysis={a} />
-                </LockedSection>
-                <LockedSection title="Negotiation strategy">
-                  <Negotiation analysis={a} />
-                </LockedSection>
-              </div>
             </div>
           )}
         </section>
