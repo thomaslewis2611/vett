@@ -511,6 +511,9 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
         {/* EPC */}
         <EpcSection analysis={a} />
 
+        {/* Price history (free + paid) */}
+        <PriceHistorySection analysis={a} />
+
         {/* Area context */}
         <AreaContextSection analysis={a} />
 
