@@ -312,16 +312,7 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
         {/* Property summary */}
         <section className="mt-6 overflow-hidden rounded-3xl border border-border bg-card shadow-card">
           <div className="grid md:grid-cols-[1.2fr_1fr]">
-            {a.property.image ? (
-              <img
-                src={a.property.image}
-                alt={`${a.property.address} — property photo`}
-                loading="lazy"
-                className="h-64 w-full object-cover md:h-full"
-              />
-            ) : (
-              <PropertyImagePlaceholder />
-            )}
+            <PropertyImage src={a.property.image} alt={`${a.property.address} — property photo`} />
             <div className="flex flex-col justify-between gap-6 p-6 sm:p-8">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -483,6 +474,21 @@ function PropertyImagePlaceholder() {
       </svg>
       <span style={{ fontSize: 12, color: "#888780" }}>No photo available</span>
     </div>
+  );
+}
+
+function PropertyImage({ src, alt }: { src: string | null | undefined; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return <PropertyImagePlaceholder />;
+  const proxied = `/api/public/property-image?url=${encodeURIComponent(src)}`;
+  return (
+    <img
+      src={proxied}
+      alt={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-64 w-full object-cover md:h-full"
+    />
   );
 }
 
