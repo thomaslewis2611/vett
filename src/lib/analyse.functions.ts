@@ -187,6 +187,7 @@ const IMAGE_CDN_HOSTS = ["media.rightmove.co.uk", "lid.zoocdn.com"];
 
 function isValidPropertyImage(url: string | null | undefined): url is string {
   if (!url) return false;
+  if (url === "Unknown" || url.trim() === "") return false;
   if (!url.startsWith("https://")) return false;
   const lower = url.toLowerCase();
   if (IMAGE_BLOCKLIST.some((b) => lower.includes(b))) return false;
