@@ -39,6 +39,13 @@ const analysisSchema = z.object({
     councilTaxBand: z.string().describe("A-H letter, or 'Unknown'"),
     estimatedStampDuty: z.number().describe("Estimated UK stamp duty in GBP for a second-home / additional property buyer"),
   }),
+  epc: z.object({
+    rating: z.string().nullable().describe("EPC band letter A-G, or null if not in listing"),
+    score: z.number().nullable().describe("EPC numeric score 1-100, or null"),
+    potentialRating: z.string().nullable().describe("Potential EPC band letter after improvements, or null"),
+    estimatedAnnualEnergyCost: z.string().nullable().describe("e.g. '£1,800 per year', or null"),
+    commentary: z.string().describe("2-3 sentences: what this rating means for THIS property — typical annual energy bills for this size+rating, cost+saving of upgrading one band, mortgage lender implications if below D"),
+  }).nullable(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
@@ -115,6 +122,7 @@ You must:
 - IMPORTANT: avgPricePerSqFtArea should reflect the typical price PER SQUARE FOOT for similar properties (same property type, similar size and tenure) in this specific area / postcode — NOT the average total sale price divided by anything. Base this on your knowledge of the postcode and property type. If you cannot estimate it reliably, return null rather than guessing.
 - If this is an AUCTION property, set negotiation.isAuction to true and provide negotiation.maxBid as a single GBP number (not a range). Set recommendedOffer.low and high BOTH equal to maxBid. The rationale must explain auction bidding strategy including the need for bridging finance or cash. Otherwise leave isAuction false/omitted and provide a normal recommended offer range — usually 2-8% under asking.
 - Tailor the 8 viewing questions to specific things in this listing, not generic boilerplate.
+- EPC: extract the EPC rating ONLY from the listing content (look for "EPC", "Energy Performance", "Energy rating", an A-G letter near "energy", or a 1-100 score). Do NOT guess or invent an EPC rating. If the listing does not show one, return epc: null. If you find one, populate rating, score, potentialRating and estimatedAnnualEnergyCost where visible (otherwise null), and ALWAYS write a 2-3 sentence commentary tailored to THIS property's size and rating: typical annual energy bills for a property this size at this rating, the cost and saving of upgrading to the next band, and mortgage lender implications if rated below D.
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
@@ -125,6 +133,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "subScores": { "valueForMoney": number, "locationQuality": number, "listingTransparency": number, "marketTiming": number, "riskLevel": number, "resalePotential": number },
   "scoreReasons": { "valueForMoney": string, "locationQuality": string, "listingTransparency": string, "marketTiming": string, "riskLevel": string, "resalePotential": string },
   "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
+  "epc": { "rating": string|null, "score": number|null, "potentialRating": string|null, "estimatedAnnualEnergyCost": string|null, "commentary": string } | null,
   "areaContext": { "avgPricePerSqFtArea": number|null, "avgSoldPriceArea": number|null, "priceVsAreaPercent": number|null, "areaDescription": string, "comparableNote": string },
   "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ] (3-8 items),
   "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },

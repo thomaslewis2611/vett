@@ -35,6 +35,13 @@ export type AnalysisResult = {
     councilTaxBand: string;
     estimatedStampDuty: number;
   };
+  epc?: {
+    rating: string | null;
+    score: number | null;
+    potentialRating: string | null;
+    estimatedAnnualEnergyCost: string | null;
+    commentary: string | null;
+  } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
     avgSoldPriceArea: number | null;
@@ -113,6 +120,14 @@ export const mockAnalysis: AnalysisResult = {
     priceVsAreaPercent: -3,
     areaDescription: "SW18 is a well-connected south London postcode with strong transport links and good schools. Prices have softened slightly in the last 12 months.",
     comparableNote: "This property is priced just below the local average but needs cosmetic work that comparable refurbished homes already have.",
+  },
+  epc: {
+    rating: "D",
+    score: 62,
+    potentialRating: "B",
+    estimatedAnnualEnergyCost: "£1,850 per year",
+    commentary:
+      "A D rating means typical energy bills around £1,800–£2,000 per year for a 1,180 sq ft end-of-terrace. Upgrading to a C (loft + cavity wall insulation, modern boiler) costs roughly £4–7k and would save ~£300/year. Below-D ratings are starting to attract higher rates from green-focused lenders, though most mainstream lenders are unaffected today.",
   },
   redFlags: [
     {
