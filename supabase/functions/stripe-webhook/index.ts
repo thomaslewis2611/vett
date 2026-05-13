@@ -143,12 +143,11 @@ Deno.serve(async (req) => {
 
       // Send a magic link so the customer can log in and revisit the report
       if (customerEmail) {
-        const { error: linkErr } = await supabase.auth.admin.generateLink({
-          type: "magiclink",
-          email: customerEmail.toLowerCase(),
-          options: { redirectTo: `${SITE_URL}/my-report` },
-        });
-        if (linkErr) console.error("single magic link error:", linkErr.message);
+        try {
+          await sendBuyerPassMagicLinkEdge(customerEmail.toLowerCase(), `${SITE_URL}/my-report`);
+        } catch (e) {
+          console.error("single magic link error:", (e as Error).message);
+        }
       }
 
       return new Response(JSON.stringify({ ok: true, token }), {
