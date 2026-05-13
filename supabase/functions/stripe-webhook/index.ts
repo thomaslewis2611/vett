@@ -14,27 +14,25 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 const SITE_URL = "https://roovr.co";
-const SITE_NAME = "roovr";
-const SENDER_DOMAIN = "notify.roovr.co";
-const FROM_DOMAIN = "roovr.co";
+const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
 
 function buildMagicLinkHtml(actionLink: string): { html: string; text: string } {
   const html = `<!doctype html><html><body style="margin:0;padding:32px 0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:0 20px;">
-    <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#D85A30;letter-spacing:-0.01em;">Roovr</div></div>
+    <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#D85A30;letter-spacing:-0.01em;">● Roovr</div></div>
     <div style="background:#FFFDF9;border:1px solid rgba(26,17,8,0.12);border-radius:12px;padding:32px;">
       <h1 style="font-size:24px;font-weight:700;color:#1A1108;margin:0 0 12px;line-height:1.3;">Activate your Buyer Pass</h1>
       <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses, flood risk data, AI chat, and more.</p>
       <a href="${actionLink}" style="background:#D85A30;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 22px;text-decoration:none;display:inline-block;">Activate my Buyer Pass →</a>
       <hr style="border:none;border-top:1px solid rgba(26,17,8,0.12);margin:28px 0 20px;" />
-      <p style="font-size:13px;color:#888780;line-height:1.5;margin:0 0 8px;">If the button doesn't work, copy and paste this link into your browser:</p>
+      <p style="font-size:13px;color:#888780;line-height:1.5;margin:0 0 8px;">If the button does not work, copy and paste this link into your browser:</p>
       <a href="${actionLink}" style="font-size:13px;color:#D85A30;word-break:break-all;">${actionLink}</a>
-      <p style="font-size:13px;color:#888780;line-height:1.5;margin:20px 0 0;">If you didn't request this, you can safely ignore this email.</p>
+      <p style="font-size:13px;color:#888780;line-height:1.5;margin:20px 0 0;">If you did not request this, you can safely ignore this email.</p>
     </div>
     <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.</p></div>
   </div>
 </body></html>`;
-  const text = `Activate your Roovr Buyer Pass\n\nThanks for purchasing a Roovr Buyer Pass. Activate your account here:\n${actionLink}\n\nIf you didn't request this, you can safely ignore this email.`;
+  const text = `Activate your Roovr Buyer Pass\n\nThanks for purchasing a Roovr Buyer Pass. Activate your account here:\n${actionLink}\n\nIf you did not request this, you can safely ignore this email.`;
   return { html, text };
 }
 
@@ -56,6 +54,7 @@ async function sendBuyerPassMagicLinkEdge(email: string, redirectTo: string): Pr
     email,
     options: { redirectTo },
   });
+  // deno-lint-ignore no-explicit-any
   const actionLink = (linkData as any)?.properties?.action_link as string | undefined;
   console.log("Magic link generated:", actionLink ? "yes" : "no");
   if (linkErr || !actionLink) {
@@ -63,45 +62,46 @@ async function sendBuyerPassMagicLinkEdge(email: string, redirectTo: string): Pr
     return;
   }
 
-  const { html, text } = buildMagicLinkHtml(actionLink);
-  const messageId = crypto.randomUUID();
-
-  await supabase.from("email_send_log").insert({
-    message_id: messageId,
-    template_name: "magiclink",
-    recipient_email: email,
-    status: "pending",
-  });
-
-  const { error: enqErr } = await supabase.rpc("enqueue_email", {
-    queue_name: "auth_emails",
-    payload: {
-      message_id: messageId,
-      to: email,
-      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-      sender_domain: SENDER_DOMAIN,
-      subject: "Activate your Roovr Buyer Pass",
-      html,
-      text,
-      purpose: "transactional",
-      label: "magiclink",
-      queued_at: new Date().toISOString(),
-      run_id: crypto.randomUUID(),
-    },
-  });
-
-  console.log("Email queued:", enqErr ? "no" : "yes");
-  if (enqErr) {
-    console.error("enqueue_email error:", enqErr.message);
-    await supabase.from("email_send_log").insert({
-      message_id: messageId,
-      template_name: "magiclink",
-      recipient_email: email,
-      status: "failed",
-      error_message: enqErr.message,
-    });
+  const resendApiKey = Deno.env.get("RESEND_API_KEY");
+  if (!resendApiKey) {
+    console.error("RESEND_API_KEY not configured");
+    return;
   }
+
+  const { html } = buildMagicLinkHtml(actionLink);
+
+  const resendResponse = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: FROM_ADDRESS,
+      to: email,
+      subject: "Activate your Buyer Pass",
+      html,
+    }),
+  });
+
+  if (!resendResponse.ok) {
+    const errText = await resendResponse.text();
+    console.error("Resend API error:", errText);
+    return;
+  }
+
+  console.log("Magic link email sent successfully via Resend to:", email);
 }
+
+// ── Legacy Lovable email-queue path (kept for restoration) ──────────────────
+// const messageId = crypto.randomUUID();
+// await supabase.from("email_send_log").insert({ message_id: messageId, template_name: "magiclink", recipient_email: email, status: "pending" });
+// await supabase.rpc("enqueue_email", { queue_name: "auth_emails", payload: {
+//   message_id: messageId, to: email, from: "roovr <noreply@roovr.co>",
+//   sender_domain: "notify.roovr.co", subject: "Activate your Roovr Buyer Pass",
+//   html, text, purpose: "transactional", label: "magiclink",
+//   queued_at: new Date().toISOString(), run_id: crypto.randomUUID(),
+// }});
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
