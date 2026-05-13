@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -510,6 +510,9 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
 
         {/* EPC */}
         <EpcSection analysis={a} />
+
+        {/* Price history (free + paid) */}
+        <PriceHistorySection analysis={a} />
 
         {/* Area context */}
         <AreaContextSection analysis={a} />
@@ -1086,7 +1089,7 @@ function ScoreInfoTooltip({ text }: { text: string }) {
     setOpen((o) => !o);
   };
 
-  const tooltipStyle: React.CSSProperties = {
+  const tooltipStyle: CSSProperties = {
     position: "absolute",
     zIndex: 50,
     maxWidth: 280,
@@ -1107,7 +1110,7 @@ function ScoreInfoTooltip({ text }: { text: string }) {
     ...(placement.align === "left" ? { left: 0 } : { right: 0 }),
   };
 
-  const arrowStyle: React.CSSProperties = {
+  const arrowStyle: CSSProperties = {
     position: "absolute",
     width: 0,
     height: 0,
@@ -1441,4 +1444,246 @@ function DownloadPdfButton() {
       {isMobile ? "Save as PDF" : "Download PDF"}
     </button>
   );
+}
+
+const PRICE_EVENT_COLORS: Record<"sold" | "listed" | "reduced" | "relisted", string> = {
+  sold: "#3B6D11",
+  listed: "#185FA5",
+  reduced: "#BA7517",
+  relisted: "#5F5E5A",
+};
+
+function shortMoney(n: number): string {
+  return new Intl.NumberFormat("en-GB", {
+    style: "currency",
+    currency: "GBP",
+    maximumFractionDigits: 0,
+  }).format(n);
+}
+
+function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
+  try {
+    const ph = analysis.priceHistory;
+    if (!ph) return null;
+
+    const cardStyle: CSSProperties = {
+      background: "#FFFDF9",
+      border: "0.5px solid rgba(26,17,8,0.12)",
+      borderRadius: 12,
+      padding: 20,
+    };
+
+    const headingNode = (
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        Price history
+      </h2>
+    );
+
+    const entries = ph.entries ?? [];
+    const currentPrice = analysis.property?.price ?? 0;
+
+    // Empty state — no historical data
+    if (entries.length === 0) {
+      return (
+        <section className="mt-10">
+          {headingNode}
+          <div className="mt-4" style={cardStyle}>
+            <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
+              No previous sale history found for this property.
+            </p>
+            <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
+              You can check historical sales at Land Registry
+              (gov.uk/search-property-information-land-registry) or Zoopla&apos;s sold prices tool.
+            </p>
+          </div>
+        </section>
+      );
+    }
+
+    // Build timeline points: historical entries + current asking
+    const timelinePoints: { label: string; date: string; price: number; color: string; isCurrent?: boolean }[] = entries.map((e) => ({
+      label: e.event,
+      date: e.date,
+      price: e.price,
+      color: PRICE_EVENT_COLORS[e.event] ?? "#5F5E5A",
+    }));
+    if (currentPrice > 0) {
+      timelinePoints.push({
+        label: "asking",
+        date: "Now",
+        price: currentPrice,
+        color: "#D85A30",
+        isCurrent: true,
+      });
+    }
+
+    const lastSold = [...entries].reverse().find((e) => e.event === "sold") ?? entries[0];
+    const totalAppreciation = ph.totalAppreciation;
+    const annualGrowth = ph.annualGrowthRate;
+    const priceChange =
+      ph.firstSalePrice != null && currentPrice > 0
+        ? currentPrice - ph.firstSalePrice
+        : null;
+    const priceChangePct = totalAppreciation;
+
+    const aggressiveGrowth = typeof annualGrowth === "number" && annualGrowth > 8;
+    const negativeAppreciation = typeof totalAppreciation === "number" && totalAppreciation < 0;
+    const sharpRise = typeof priceChangePct === "number" && priceChangePct > 20;
+
+    return (
+      <section className="mt-10">
+        {headingNode}
+        <div className="mt-4" style={cardStyle}>
+          {/* Timeline */}
+          <div className="relative" style={{ paddingTop: 8, paddingBottom: 4 }}>
+            <div
+              style={{
+                position: "absolute",
+                left: 12,
+                right: 12,
+                top: 22,
+                height: 2,
+                background: "rgba(26,17,8,0.12)",
+              }}
+              aria-hidden="true"
+            />
+            <div className="relative flex items-start justify-between gap-2">
+              {timelinePoints.map((p, i) => (
+                <div
+                  key={`${p.label}-${p.date}-${i}`}
+                  className="flex flex-col items-center"
+                  style={{ flex: 1, minWidth: 0 }}
+                >
+                  <div
+                    style={{
+                      width: 14,
+                      height: 14,
+                      borderRadius: "50%",
+                      background: p.color,
+                      border: "2px solid #FFFDF9",
+                      boxShadow: "0 0 0 1px rgba(26,17,8,0.15)",
+                      marginTop: 14,
+                    }}
+                    aria-hidden="true"
+                  />
+                  <div
+                    style={{
+                      fontSize: 10,
+                      color: "#888780",
+                      marginTop: 6,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.4,
+                      textAlign: "center",
+                    }}
+                  >
+                    {p.isCurrent ? "Asking" : p.label}
+                  </div>
+                  <div style={{ fontSize: 11, color: "#5F5E5A", textAlign: "center" }}>
+                    {p.date}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      fontWeight: 500,
+                      color: p.isCurrent ? "#D85A30" : "#1A1108",
+                      textAlign: "center",
+                    }}
+                  >
+                    {shortMoney(p.price)}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Metric tiles */}
+          <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div
+              style={{
+                background: "#F1EFE8",
+                borderRadius: 8,
+                padding: 14,
+              }}
+            >
+              <div style={{ fontSize: 11, color: "#888780", textTransform: "uppercase", letterSpacing: 0.4 }}>
+                Last {lastSold.event === "sold" ? "sold" : lastSold.event}
+              </div>
+              <div style={{ fontSize: 14, fontWeight: 500, color: "#1A1108", marginTop: 4 }}>
+                {lastSold.date} · {shortMoney(lastSold.price)}
+              </div>
+            </div>
+            <div
+              style={{
+                background: "#F1EFE8",
+                borderRadius: 8,
+                padding: 14,
+              }}
+            >
+              <div style={{ fontSize: 11, color: "#888780", textTransform: "uppercase", letterSpacing: 0.4 }}>
+                Price change
+              </div>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  marginTop: 4,
+                  color: negativeAppreciation
+                    ? "#B23B1F"
+                    : sharpRise
+                      ? "#B23B1F"
+                      : "#3B6D11",
+                }}
+              >
+                {priceChange != null && priceChangePct != null
+                  ? `${priceChange >= 0 ? "+" : "−"}${shortMoney(Math.abs(priceChange))} (${priceChangePct >= 0 ? "+" : ""}${priceChangePct.toFixed(1)}%)`
+                  : "—"}
+              </div>
+            </div>
+            <div
+              style={{
+                background: "#F1EFE8",
+                borderRadius: 8,
+                padding: 14,
+              }}
+            >
+              <div style={{ fontSize: 11, color: "#888780", textTransform: "uppercase", letterSpacing: 0.4 }}>
+                Annual growth
+              </div>
+              <div
+                style={{
+                  fontSize: 14,
+                  fontWeight: 500,
+                  marginTop: 4,
+                  color: aggressiveGrowth ? "#BA7517" : negativeAppreciation ? "#B23B1F" : "#1A1108",
+                }}
+              >
+                {typeof annualGrowth === "number" ? `${annualGrowth.toFixed(1)}% per year` : "—"}
+              </div>
+              <div style={{ fontSize: 10, color: "#888780", marginTop: 2 }}>
+                UK avg ~5%/yr
+              </div>
+            </div>
+          </div>
+
+          {/* Commentary */}
+          {ph.commentary && (
+            <p
+              style={{
+                fontSize: 13,
+                color: aggressiveGrowth ? "#BA7517" : "#5F5E5A",
+                lineHeight: 1.6,
+                marginTop: 14,
+              }}
+            >
+              {aggressiveGrowth ? "⚠ " : ""}
+              {ph.commentary}
+            </p>
+          )}
+        </div>
+      </section>
+    );
+  } catch (err) {
+    console.error("[PriceHistorySection] render failed:", err);
+    return null;
+  }
 }
