@@ -98,12 +98,6 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
     return { ok: true, found: true };
   });
 
-export const listSavedAnalyses = createServerFn({ method: "GET" })
-  .handler(async (): Promise<Array<{ id: string; listing_url: string | null; analysis_json: unknown; created_at: string }>> => {
-    // This uses admin client; we filter by the caller's email using the auth middleware variant.
-    // For simplicity, the dashboard fetches its own list using the browser client (RLS).
-    return [];
-  });
 
 export const saveAnalysisForUser = createServerFn({ method: "POST" })
   .inputValidator(
