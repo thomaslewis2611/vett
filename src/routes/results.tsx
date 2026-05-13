@@ -373,9 +373,8 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
     }
   }, [showChat, access.email, listingUrl, a, saveFn]);
 
-  return (
-    <div className="min-h-screen bg-background">
-      <SiteHeader />
+  const [sdMode, setSdMode] = useState<StampDutyMode>("main");
+  const stampDuty = calcStampDuty(a.property.price, sdMode);
 
       <main className="mx-auto max-w-5xl px-6 py-10">
         <Link
