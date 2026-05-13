@@ -13,7 +13,6 @@ const analysisSchema = z.object({
     baths: z.number().int(),
     type: z.string().describe("e.g. 'End of terrace house', 'Flat', 'Semi-detached'"),
     sqft: z.number().describe("Approx square feet, estimate from sqm if needed; 0 if unknown"),
-    image: z.string().nullable().describe("First listing image URL (must start with https://) if found, otherwise null"),
     listingUrl: z.string(),
   }),
   score: z.number().min(0).max(10).describe("Overall value score out of 10, one decimal place"),
@@ -85,7 +84,7 @@ You must:
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
-  "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "image": string | null, "listingUrl": string },
+  "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "listingUrl": string },
   "score": number (0-10, one decimal),
   "scoreLabel": string,
   "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
@@ -96,7 +95,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4)
 }
 
-If a field is unknown, use 0 for numbers, "Unknown" for strings (except property.image, which must be null when unknown — never the string "Unknown" or empty string), and never invent precise comparables you have no basis for (return empty array instead).`;
+If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for (return empty array instead).`;
 
 // SSRF protection: only allow Rightmove and Zoopla over HTTPS.
 const ALLOWED_HOSTS = new Set([
@@ -182,68 +181,7 @@ function htmlToCleanText(html: string): string {
   return decodeEntities(stripped).replace(/\s+/g, " ").trim();
 }
 
-const IMAGE_BLOCKLIST = ["logo", "icon", "placeholder", "avatar", "favicon"];
-const IMAGE_CDN_HOSTS = ["media.rightmove.co.uk", "lid.zoocdn.com"];
 
-function isValidPropertyImage(url: string | null | undefined): url is string {
-  if (!url) return false;
-  if (url === "Unknown" || url.trim() === "") return false;
-  if (!url.startsWith("https://")) return false;
-  const lower = url.toLowerCase();
-  if (IMAGE_BLOCKLIST.some((b) => lower.includes(b))) return false;
-  return true;
-}
-
-function extractPropertyImage(html: string): string | null {
-  // Collect all meta tags for debug visibility.
-  const metaTags = html.match(/<meta[^>]+>/gi) ?? [];
-  const metaSnippet = metaTags.join("\n").slice(0, 500);
-  console.log(`[analyseListing] meta tags (first 500 chars):\n${metaSnippet}`);
-
-  // 1. Try standard + non-standard og:image variants (property= and name=, with :url/:secure_url suffixes).
-  const ogNames = [
-    "og:image",
-    "og:image:url",
-    "og:image:secure_url",
-    "twitter:image",
-    "twitter:image:src",
-  ];
-  for (const name of ogNames) {
-    const metas = extractMetaContent(html, [name]);
-    for (const candidate of metas) {
-      const decoded = decodeEntities(candidate);
-      if (isValidPropertyImage(decoded)) return decoded;
-    }
-  }
-
-  // 2. Any <meta> whose content points at a known property image CDN, regardless of attribute name/order.
-  for (const tag of metaTags) {
-    const contentMatch = tag.match(/content=["']([^"']+)["']/i);
-    if (!contentMatch) continue;
-    const decoded = decodeEntities(contentMatch[1]);
-    if (
-      IMAGE_CDN_HOSTS.some((h) => decoded.includes(h)) &&
-      isValidPropertyImage(decoded)
-    ) {
-      return decoded;
-    }
-  }
-
-  // 3. First large CDN image in the page body.
-  const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
-  let m: RegExpExecArray | null;
-  while ((m = imgRegex.exec(html)) !== null) {
-    const src = decodeEntities(m[1]);
-    if (
-      src.startsWith("https://") &&
-      IMAGE_CDN_HOSTS.some((h) => src.includes(h)) &&
-      isValidPropertyImage(src)
-    ) {
-      return src;
-    }
-  }
-  return null;
-}
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 const SCRAPER_TIMEOUT_MS = 30_000;
@@ -266,8 +204,8 @@ async function basicFetchListingHtml(url: string): Promise<string> {
   }
 }
 
-function htmlToListingPayload(html: string): { text: string; image: string | null } {
-  if (!html) return { text: "", image: null };
+function htmlToListingText(html: string): string {
+  if (!html) return "";
   const lower = html.toLowerCase();
   const blocked =
     html.length < 500 ||
@@ -290,18 +228,12 @@ function htmlToListingPayload(html: string): { text: string; image: string | nul
     const combined = metas.map(decodeEntities).filter(Boolean).join("\n").trim();
     if (combined.length >= 100) {
       text = `[Limited content — extracted from page metadata only]\n\n${combined}`.slice(0, 25_000);
-    } else {
-      text = "";
     }
   }
-
-  const image = extractPropertyImage(html);
-  return { text, image };
+  return text;
 }
 
-async function fetchListingData(
-  url: string
-): Promise<{ text: string; image: string | null }> {
+async function fetchListingText(url: string): Promise<string> {
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
 
@@ -309,7 +241,7 @@ async function fetchListingData(
   try {
     const { data: cached } = await supabaseAdmin
       .from("listing_cache")
-      .select("text_content, image_url, fetched_at")
+      .select("text_content, fetched_at")
       .eq("url", url)
       .maybeSingle();
     if (
@@ -318,10 +250,7 @@ async function fetchListingData(
       Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
     ) {
       console.log(`[analyseListing] cache hit for ${url}`);
-      return {
-        text: cached.text_content,
-        image: cached.image_url ?? null,
-      };
+      return cached.text_content;
     }
   } catch (err) {
     console.error("[analyseListing] cache lookup failed:", err);
@@ -329,7 +258,7 @@ async function fetchListingData(
 
   // 2. ScraperAPI (with JS rendering, GB country)
   const scraperKey = process.env.SCRAPERAPI_KEY;
-  let payload: { text: string; image: string | null } = { text: "", image: null };
+  let text = "";
   let html = "";
   let timedOut = false;
 
@@ -360,7 +289,7 @@ async function fetchListingData(
         console.error(
           `[analyseListing] ScraperAPI timeout (${SCRAPER_TIMEOUT_MS}ms) for ${url}`
         );
-        return { text: "", image: null };
+        return "";
       }
       console.error(`[analyseListing] ScraperAPI error after ${elapsed}ms:`, err);
     } finally {
@@ -370,49 +299,23 @@ async function fetchListingData(
     console.warn("[analyseListing] SCRAPERAPI_KEY missing — falling back to basic fetch");
   }
 
-  if (html) payload = htmlToListingPayload(html);
+  if (html) text = htmlToListingText(html);
 
   // 3. Fallback to basic fetch if ScraperAPI failed or yielded nothing useful.
-  if (!payload.text) {
+  if (!text) {
     const fallbackHtml = await basicFetchListingHtml(url);
-    if (fallbackHtml) {
-      const fallback = htmlToListingPayload(fallbackHtml);
-      payload = {
-        text: fallback.text,
-        image: payload.image ?? fallback.image,
-      };
-    }
+    if (fallbackHtml) text = htmlToListingText(fallbackHtml);
   }
 
-  // 3b. If we still have no image, try a head-only basic fetch — Rightmove's
-  // og:image is often readable even when the body is JS-gated.
-  if (!payload.image) {
-    try {
-      const headHtml = await basicFetchListingHtml(url);
-      if (headHtml) {
-        const headOnly = headHtml.split(/<\/head>/i)[0] ?? headHtml;
-        const found = extractPropertyImage(headOnly);
-        if (found) {
-          console.log(`[analyseListing] recovered og:image via basic fetch for ${url}`);
-          payload = { ...payload, image: found };
-        } else {
-          console.log(`[analyseListing] basic-fetch og:image retry found nothing for ${url}`);
-        }
-      }
-    } catch (err) {
-      console.error("[analyseListing] basic-fetch image retry failed:", err);
-    }
-  }
-  // 4. Cache successful results (only when we got real text).
-  if (payload.text && payload.text.length >= 200) {
+  // 4. Cache successful results.
+  if (text && text.length >= 200) {
     try {
       await supabaseAdmin
         .from("listing_cache")
         .upsert(
           {
             url,
-            text_content: payload.text,
-            image_url: payload.image,
+            text_content: text,
             fetched_at: new Date().toISOString(),
           },
           { onConflict: "url" }
@@ -422,7 +325,7 @@ async function fetchListingData(
     }
   }
 
-  return payload;
+  return text;
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
@@ -533,11 +436,8 @@ export const analyseListing = createServerFn({ method: "POST" })
     }
 
     let listingContent = pastedText;
-    let scrapedImage: string | null = null;
     if (!listingContent && url) {
-      const fetched = await fetchListingData(url);
-      listingContent = fetched.text;
-      scrapedImage = fetched.image;
+      listingContent = await fetchListingText(url);
     }
     if (!listingContent || listingContent.length < 100) {
       throw new Error(
@@ -577,19 +477,11 @@ export const analyseListing = createServerFn({ method: "POST" })
       );
     }
 
-    // Prefer the scraped CDN image; fall back to whatever Claude pulled out of
-    // the description; otherwise null (UI shows a placeholder).
-    const claudeImage = isValidPropertyImage(output.property.image)
-      ? output.property.image
-      : null;
-    const finalImage = scrapedImage ?? claudeImage;
-
     const full: AnalysisResult = {
       ...output,
       property: {
         ...output.property,
         listingUrl: url || output.property.listingUrl || "",
-        image: finalImage,
       },
     } as AnalysisResult;
 

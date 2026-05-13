@@ -5,13 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import {
   AlertTriangle,
-  Bath,
-  Bed,
   Calendar,
   Lock,
-  MapPin,
   PoundSterling,
-  Ruler,
   Sparkles,
   Check,
   TrendingDown,
@@ -309,34 +305,37 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
           ← Analyse another property
         </Link>
 
-        {/* Property summary */}
-        <section className="mt-6 overflow-hidden rounded-3xl border border-border bg-card shadow-card">
-          <div className="grid md:grid-cols-[1.2fr_1fr]">
-            <PropertyImage src={a.property.image} alt={`${a.property.address} — property photo`} />
-            <div className="flex flex-col justify-between gap-6 p-6 sm:p-8">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                    <MapPin className="h-4 w-4" />
-                    {a.property.address}
-                  </div>
-                  <div className="mt-3 text-3xl font-semibold tracking-tight">
-                    {formatGBP(a.property.price)}
-                  </div>
-                  <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1"><Bed className="h-4 w-4" /> {a.property.beds} bed</span>
-                    <span className="flex items-center gap-1"><Bath className="h-4 w-4" /> {a.property.baths} bath</span>
-                    {a.property.sqft > 0 && (
-                      <span className="flex items-center gap-1"><Ruler className="h-4 w-4" /> {a.property.sqft} sq ft</span>
-                    )}
-                    <span>{a.property.type}</span>
-                  </div>
-                </div>
-                <ScoreBadge score={a.score} label={a.scoreLabel} />
+        {/* Property header */}
+        <section
+          className="mt-6 w-full rounded-3xl px-6 py-6 sm:px-8 sm:py-8"
+          style={{
+            background: "#FFFDF9",
+            borderBottom: "0.5px solid rgba(26,17,8,0.12)",
+          }}
+        >
+          <div className="flex items-start justify-between gap-6">
+            <div className="min-w-0 flex-1">
+              <h1
+                className="truncate"
+                style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", lineHeight: 1.3 }}
+              >
+                {a.property.address}
+              </h1>
+              <div
+                className="mt-2"
+                style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", lineHeight: 1.2 }}
+              >
+                {formatGBP(a.property.price)}
               </div>
-              <div className="text-sm text-muted-foreground sm:hidden">
-                <span className="font-medium text-foreground">{a.scoreLabel}</span>
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
+                <PropertyPill>{a.property.baths} bath{a.property.baths === 1 ? "" : "s"}</PropertyPill>
+                {a.property.sqft > 0 && <PropertyPill>{a.property.sqft.toLocaleString()} sq ft</PropertyPill>}
+                {a.property.type && <PropertyPill>{a.property.type}</PropertyPill>}
               </div>
+            </div>
+            <div className="shrink-0">
+              <ScoreBadge score={a.score} label={a.scoreLabel} />
             </div>
           </div>
         </section>
@@ -358,7 +357,7 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
             <MetricCard
               label="Council tax band"
               value={a.metrics.councilTaxBand}
-              icon={MapPin}
+              icon={PoundSterling}
             />
             <MetricCard
               label="Stamp duty est."
@@ -459,38 +458,14 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
   );
 }
 
-function PropertyImagePlaceholder() {
+function PropertyPill({ children }: { children: React.ReactNode }) {
   return (
-    <div
-      className="flex h-64 w-full flex-col items-center justify-center gap-3 md:h-full"
-      style={{ background: "#F1EFE8" }}
-      role="img"
-      aria-label="No property photo available"
+    <span
+      className="inline-flex items-center rounded-full px-3 py-1"
+      style={{ background: "#F1EFE8", color: "#5F5E5A", fontSize: 12, fontWeight: 500 }}
     >
-      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D85A30" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 12 12 3l9 9" />
-        <path d="M5 10v10h14V10" />
-        <path d="M10 20v-6h4v6" />
-      </svg>
-      <span style={{ fontSize: 12, color: "#888780" }}>No photo available</span>
-    </div>
-  );
-}
-
-function PropertyImage({ src, alt }: { src: string | null | undefined; alt: string }) {
-  const [failed, setFailed] = useState(false);
-  if (failed || !src || typeof src !== "string" || !src.startsWith("https://")) {
-    return <PropertyImagePlaceholder />;
-  }
-  const proxied = `/api/public/property-image?url=${encodeURIComponent(src)}`;
-  return (
-    <img
-      src={proxied}
-      alt={alt}
-      loading="lazy"
-      onError={() => setFailed(true)}
-      className="h-64 w-full object-cover md:h-full"
-    />
+      {children}
+    </span>
   );
 }
 
