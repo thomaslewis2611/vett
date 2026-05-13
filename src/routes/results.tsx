@@ -483,6 +483,7 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
                 )}
               </div>
             </div>
+          </div>
         </section>
 
 
