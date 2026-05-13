@@ -612,17 +612,25 @@ function CostBreakdown({ analysis }: { analysis: AnalysisResult }) {
 
 function Negotiation({ analysis }: { analysis: AnalysisResult }) {
   const n = analysis.negotiation;
+  const isAuction = !!n.isAuction;
+  const maxBid = n.maxBid && n.maxBid > 0 ? n.maxBid : n.recommendedOffer.high;
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-primary/20 bg-primary-soft p-5">
-        <div className="text-xs uppercase tracking-wider text-primary">Recommended offer</div>
+        <div className="text-xs uppercase tracking-wider text-primary">
+          {isAuction ? "Maximum bid strategy" : "Recommended offer"}
+        </div>
         <div className="mt-1 text-2xl font-semibold tracking-tight">
-          {formatGBP(n.recommendedOffer.low)} – {formatGBP(n.recommendedOffer.high)}
+          {isAuction
+            ? `Up to ${formatGBP(maxBid)}`
+            : `${formatGBP(n.recommendedOffer.low)} – ${formatGBP(n.recommendedOffer.high)}`}
         </div>
         <p className="mt-2 text-sm text-foreground/80">{n.rationale}</p>
       </div>
       <div>
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">Your leverage</div>
+        <div className="text-xs uppercase tracking-wider text-muted-foreground">
+          {isAuction ? "Bidding considerations" : "Your leverage"}
+        </div>
         <ul className="mt-2 space-y-2 text-sm">
           {n.leverage.map((l, i) => (
             <li key={i} className="flex items-start gap-2">
