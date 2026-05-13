@@ -139,7 +139,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function UserMenu({ email }: { email: string }) {
+function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
