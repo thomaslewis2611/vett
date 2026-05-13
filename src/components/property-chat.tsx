@@ -33,7 +33,13 @@ export function PropertyChat({ analysis }: { analysis: AnalysisResult }) {
     setInput("");
     setIsSending(true);
     try {
-      const { reply } = await chatFn({ data: { analysis, messages: next } });
+      const { data: sess } = await supabase.auth.getSession();
+      const sessionJwt = sess.session?.access_token ?? "";
+      if (!sessionJwt) {
+        setError("Please sign in to use chat.");
+        return;
+      }
+      const { reply } = await chatFn({ data: { analysis, messages: next, sessionJwt } });
       setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (err) {
       const msg = (err as Error)?.message || "Chat failed";
