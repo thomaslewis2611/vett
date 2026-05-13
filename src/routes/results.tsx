@@ -276,8 +276,21 @@ function LoadingState({ url }: { url?: string }) {
   );
 }
 
-function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
-  const [hasBuyerPass, setBuyerPass] = useBuyerPass();
+function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResult; listingUrl?: string; token?: string }) {
+  const access = useAccess(listingUrl, token);
+  const unlocked = access.level !== "none";
+  const showChat = access.level === "pass";
+
+  // Auto-save analysis for Buyer Pass users
+  const saveFn = useServerFn(saveAnalysisForUser);
+  const savedRef = useRef(false);
+  useEffect(() => {
+    if (showChat && access.email && !savedRef.current && listingUrl) {
+      savedRef.current = true;
+      saveFn({ data: { email: access.email, listingUrl, analysis: a } }).catch(() => { /* ignore */ });
+    }
+  }, [showChat, access.email, listingUrl, a, saveFn]);
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -376,9 +389,9 @@ function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
 
         {/* Paywall + locked / unlocked content */}
         <section className="mt-10">
-          {!hasBuyerPass && <PaywallGate onUnlockDemo={() => setBuyerPass(true)} />}
+          {!unlocked && <PaywallGate listingUrl={listingUrl} />}
 
-          {hasBuyerPass ? (
+          {unlocked ? (
             <div className="space-y-8">
               <UnlockedSection title="Full red flags list">
                 <div className="space-y-3">
@@ -404,7 +417,15 @@ function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
                 </ol>
               </UnlockedSection>
 
-              <PropertyChat analysis={a} />
+              {showChat && <PropertyChat analysis={a} />}
+
+              {access.level === "pass" && (
+                <div className="text-center">
+                  <Link to="/dashboard" style={{ fontSize: 13, color: "#D85A30" }}>
+                    Go to your dashboard →
+                  </Link>
+                </div>
+              )}
             </div>
           ) : (
             <div className="relative mt-10">
@@ -419,27 +440,11 @@ function ReportView({ analysis: a }: { analysis: AnalysisResult }) {
                     ))}
                   </div>
                 </LockedSection>
-
                 <LockedSection title="True cost breakdown">
                   <CostBreakdown analysis={a} />
                 </LockedSection>
-
                 <LockedSection title="Negotiation strategy">
                   <Negotiation analysis={a} />
-                </LockedSection>
-
-                <LockedSection title="8 questions to ask at the viewing">
-                  <ol className="list-decimal space-y-2 pl-5 text-sm">
-                    {a.viewingQuestions.map((q, i) => (
-                      <li key={i}>{q}</li>
-                    ))}
-                  </ol>
-                </LockedSection>
-
-                <LockedSection title="Ask the AI about this property">
-                  <div className="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
-                    Chat about the area, the price, the risks and how to negotiate.
-                  </div>
                 </LockedSection>
               </div>
             </div>
