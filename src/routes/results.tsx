@@ -1140,11 +1140,12 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
             </div>
           </div>
           <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
-            <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-              This property vs area
+            <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+              <span>Price per sq ft vs area avg</span>
+              <ScoreInfoTooltip text="Compares this property's price per sq ft against typical prices per sq ft for similar properties in the area. A negative % means better value per sq ft than average." />
             </div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: pctColor }}>
-              {pctText}
+            <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: ppsfColor }}>
+              {ppsfText}
             </div>
           </div>
         </div>
