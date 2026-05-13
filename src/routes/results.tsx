@@ -615,7 +615,199 @@ function Negotiation({ analysis }: { analysis: AnalysisResult }) {
   );
 }
 
-function PaywallGate({ onUnlockDemo }: { onUnlockDemo?: () => void }) {
+function PaywallGate({ listingUrl }: { listingUrl?: string }) {
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const restoreFn = useServerFn(sendBuyerPassMagicLink);
+  const [loadingTier, setLoadingTier] = useState<"single" | "pass" | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [showRestore, setShowRestore] = useState(false);
+  const [restoreEmail, setRestoreEmail] = useState("");
+  const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+
+  const handleBuy = async (tier: "single" | "pass") => {
+    setErr(null);
+    setLoadingTier(tier);
+    try {
+      const priceId = tier === "single" ? PRICE_SINGLE : PRICE_PASS;
+      const res = await checkoutFn({ data: { priceId, listingUrl: listingUrl ?? "", tier } });
+      window.location.href = res.url;
+    } catch (e) {
+      setErr((e as Error).message || "Couldn't start checkout. Try again.");
+      setLoadingTier(null);
+    }
+  };
+
+  const handleRestore = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setRestoreMsg(null);
+    try {
+      const r = await restoreFn({ data: { email: restoreEmail.trim() } });
+      if (r.found) setRestoreMsg("Magic link sent — check your inbox.");
+      else setRestoreMsg("No Buyer Pass found for that email. If you bought a Single Report, check your original results link.");
+    } catch {
+      setRestoreMsg("Couldn't send right now. Try again shortly.");
+    }
+  };
+
+  return (
+    <div className="p-6 sm:p-8" style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)" }}>
+      <div className="inline-flex items-center gap-2" style={{ background: "#FAECE7", color: "#993C1D", borderRadius: 100, padding: "4px 10px", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em" }}>
+        <Sparkles className="h-3 w-3" /> UNLOCK THE FULL REPORT
+      </div>
+      <h3 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        See every red flag, the true cost and how to negotiate
+      </h3>
+      <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>Pick the option that suits you.</p>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-2">
+        <PlanCard
+          title="Single report"
+          price="£4.99"
+          cadence="One-off payment"
+          cta="Get this report"
+          loading={loadingTier === "single"}
+          onClick={() => handleBuy("single")}
+          features={[
+            "Full analysis for this property",
+            "All red flags and costs",
+            "Viewing questions and negotiation strategy",
+          ]}
+          footnote="No AI chat, no saving."
+        />
+        <PlanCard
+          title="Buyer Pass"
+          price="£29.99"
+          cadence="One-off payment · your entire search"
+          cta="Get Buyer Pass"
+          highlight
+          loading={loadingTier === "pass"}
+          onClick={() => handleBuy("pass")}
+          subnote="Average buyer views 8 properties — works out at £3.75 each."
+          features={[
+            "Unlimited analyses",
+            "All red flags, costs and negotiation",
+            "AI chat on every property",
+            "Save and compare up to 50 properties",
+          ]}
+        />
+      </div>
+
+      {err && <p className="mt-4 text-sm" style={{ color: "#993C1D" }}>{err}</p>}
+
+      <div className="mt-6 text-center">
+        {!showRestore ? (
+          <button
+            type="button"
+            onClick={() => setShowRestore(true)}
+            className="text-xs underline-offset-4 hover:underline"
+            style={{ color: "#5F5E5A" }}
+          >
+            Already purchased? Restore your access →
+          </button>
+        ) : (
+          <form onSubmit={handleRestore} className="mx-auto mt-2 max-w-sm text-left">
+            <label className="block text-xs" style={{ color: "#5F5E5A" }}>Enter your email</label>
+            <div className="mt-2 flex gap-2">
+              <input
+                type="email"
+                required
+                value={restoreEmail}
+                onChange={(e) => setRestoreEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="flex-1 px-3 py-2 outline-none"
+                style={{ background: "#F1EFE8", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(26,17,8,0.12)" }}
+              />
+              <button
+                type="submit"
+                style={{ background: "#1A1108", color: "#FFFDF9", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "8px 18px" }}
+              >
+                Send access link
+              </button>
+            </div>
+            {restoreMsg && <p className="mt-2 text-xs" style={{ color: "#5F5E5A" }}>{restoreMsg}</p>}
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function PlanCard({
+  title,
+  price,
+  cadence,
+  features,
+  highlight,
+  cta,
+  footnote,
+  subnote,
+  onClick,
+  loading,
+}: {
+  title: string;
+  price: string;
+  cadence: string;
+  features: string[];
+  highlight?: boolean;
+  cta: string;
+  footnote?: string;
+  subnote?: string;
+  onClick?: () => void;
+  loading?: boolean;
+}) {
+  return (
+    <div
+      className="relative p-6"
+      style={{
+        background: "#FFFDF9",
+        borderRadius: 12,
+        border: highlight ? "2px solid #D85A30" : "0.5px solid rgba(26,17,8,0.12)",
+      }}
+    >
+      {highlight && (
+        <span
+          className="absolute -top-3 right-6 uppercase"
+          style={{ background: "#FAECE7", color: "#993C1D", fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", borderRadius: 100, padding: "4px 10px" }}
+        >
+          Most popular
+        </span>
+      )}
+      <h4 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>{title}</h4>
+      <div className="mt-3 flex items-baseline gap-1">
+        <span style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>{price}</span>
+      </div>
+      <p className="mt-1" style={{ fontSize: 12, color: "#888780" }}>{cadence}</p>
+      {subnote && <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A" }}>{subnote}</p>}
+      <ul className="mt-5 space-y-2.5">
+        {features.map((f) => (
+          <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
+            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#D85A30" }} />
+            {f}
+          </li>
+        ))}
+      </ul>
+      {footnote && <p className="mt-4" style={{ fontSize: 12, color: "#888780" }}>{footnote}</p>}
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={loading}
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+        style={{
+          background: highlight ? "#D85A30" : "#1A1108",
+          color: "#FFFDF9",
+          fontSize: 13,
+          fontWeight: 500,
+          borderRadius: 100,
+          padding: "12px 24px",
+        }}
+      >
+        {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+        {cta}
+      </button>
+    </div>
+  );
+}
+
   return (
     <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
