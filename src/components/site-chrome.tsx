@@ -44,7 +44,7 @@ export function SiteFooter() {
           >
             P
           </div>
-          <span>© {new Date().getFullYear()} Flagr. The red flags estate agents won't show you.</span>
+          <span>© 2025 Roovr</span>
         </div>
         <div className="flex gap-5">
           <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
