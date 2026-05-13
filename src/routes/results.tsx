@@ -184,7 +184,7 @@ function ResultsPage() {
     );
   }
 
-  return <ReportView analysis={query.data!} />;
+  return <ReportView analysis={query.data!} listingUrl={url} token={token} />;
 }
 
 function BlockedFallback({ url, message }: { url?: string; message: string }) {
