@@ -457,27 +457,15 @@ async function hasFullAccess(opts: {
   return false;
 }
 
-// Strip all premium content so it never leaves the server unless the user has paid.
+// Free tier: keep real costs and negotiation values so the UI can render them
+// behind a visual blur/lock overlay. Only strip the truly premium narrative
+// content (extra red flags, viewing questions, comparables) that has no
+// "shape" to obscure visually.
 function toPreview(a: AnalysisResult): AnalysisResult {
   return {
     ...a,
     redFlags: a.redFlags.slice(0, 2),
-    costs: {
-      purchasePrice: a.costs.purchasePrice,
-      stampDuty: 0,
-      legalFees: 0,
-      surveyFees: 0,
-      mortgageFees: 0,
-      totalUpfront: 0,
-      monthlyMortgage: 0,
-      mortgageAssumptions: "",
-    },
     viewingQuestions: [],
-    negotiation: {
-      recommendedOffer: { low: 0, high: 0 },
-      rationale: "",
-      leverage: [],
-    },
     comparables: [],
   };
 }
