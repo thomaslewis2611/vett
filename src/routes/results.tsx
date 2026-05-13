@@ -688,11 +688,22 @@ function UnlockedSection({ title, children }: { title: string; children: React.R
   );
 }
 
-function CostBreakdown({ analysis }: { analysis: AnalysisResult }) {
+function CostBreakdown({
+  analysis,
+  stampDuty,
+  stampDutyMode,
+}: {
+  analysis: AnalysisResult;
+  stampDuty?: number;
+  stampDutyMode?: StampDutyMode;
+}) {
   const c = analysis.costs;
+  const sd = typeof stampDuty === "number" ? stampDuty : c.stampDuty;
+  const totalUpfront = c.purchasePrice + sd + c.legalFees + c.surveyFees + c.mortgageFees;
+  const sdLabel = stampDutyMode ? `Stamp duty (${STAMP_DUTY_LABELS[stampDutyMode]})` : "Stamp duty";
   const rows = [
     ["Purchase price", c.purchasePrice],
-    ["Stamp duty", c.stampDuty],
+    [sdLabel, sd],
     ["Legal fees", c.legalFees],
     ["Survey", c.surveyFees],
     ["Mortgage arrangement", c.mortgageFees],
@@ -704,7 +715,7 @@ function CostBreakdown({ analysis }: { analysis: AnalysisResult }) {
           Total upfront
         </div>
         <div className="mt-1 text-3xl font-semibold tracking-tight">
-          {formatGBP(c.totalUpfront)}
+          {formatGBP(totalUpfront)}
         </div>
         <ul className="mt-4 divide-y divide-border text-sm">
           {rows.map(([label, val]) => (
