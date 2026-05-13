@@ -5,12 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
+  --radius-3xl: 12px;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -36,56 +36,92 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --font-display: "Geist", "Inter", system-ui, sans-serif;
-  --font-sans: "Geist", "Inter", system-ui, sans-serif;
-  --shadow-soft: 0 1px 2px oklch(0 0 0 / 0.04), 0 4px 16px oklch(0 0 0 / 0.04);
-  --shadow-card: 0 1px 3px oklch(0 0 0 / 0.05), 0 8px 24px -8px oklch(0 0 0 / 0.08);
-  --shadow-glow: 0 10px 40px -12px oklch(0.42 0.18 285 / 0.35);
-  --gradient-primary: linear-gradient(135deg, oklch(0.46 0.17 285), oklch(0.55 0.19 290));
-  --gradient-soft: linear-gradient(180deg, oklch(0.98 0.012 285), oklch(1 0 0));
+  --font-display: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --shadow-soft: none;
+  --shadow-card: none;
+  --shadow-glow: none;
+  --gradient-primary: #D85A30;
+  --gradient-soft: #FFFDF9;
 }
 
 :root {
   --radius: 0.75rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.18 0.02 280);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.02 280);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.02 280);
-  /* Deep purple #534AB7 */
-  --primary: oklch(0.46 0.17 285);
-  --primary-foreground: oklch(0.99 0 0);
-  --primary-soft: oklch(0.96 0.025 285);
-  --secondary: oklch(0.97 0.008 280);
-  --secondary-foreground: oklch(0.22 0.03 280);
-  --muted: oklch(0.97 0.008 280);
-  --muted-foreground: oklch(0.5 0.02 280);
-  --accent: oklch(0.96 0.025 285);
-  --accent-foreground: oklch(0.46 0.17 285);
-  --destructive: oklch(0.58 0.21 27);
-  --destructive-foreground: oklch(0.99 0 0);
-  --success: oklch(0.62 0.15 155);
-  --success-foreground: oklch(0.99 0 0);
-  --warning: oklch(0.75 0.16 70);
-  --warning-foreground: oklch(0.2 0.04 70);
-  --border: oklch(0.93 0.008 280);
-  --input: oklch(0.93 0.008 280);
-  --ring: oklch(0.46 0.17 285);
+
+  /* Surfaces */
+  --background: #FFFDF9;
+  --foreground: #1A1108;
+  --card: #F1EFE8;
+  --card-foreground: #1A1108;
+  --popover: #FFFDF9;
+  --popover-foreground: #1A1108;
+
+  /* Brand */
+  --primary: #D85A30;
+  --primary-foreground: #FFFDF9;
+  --primary-soft: #FAECE7;
+
+  --secondary: #F1EFE8;
+  --secondary-foreground: #1A1108;
+
+  --muted: #F1EFE8;
+  --muted-foreground: #888780;
+
+  --accent: #FAECE7;
+  --accent-foreground: #993C1D;
+
+  --destructive: #993C1D;
+  --destructive-foreground: #FFFDF9;
+  --success: #2F6F3F;
+  --success-foreground: #FFFDF9;
+  --warning: #B07306;
+  --warning-foreground: #1A1108;
+
+  --border: rgba(26, 17, 8, 0.12);
+  --input: rgba(26, 17, 8, 0.12);
+  --ring: #D85A30;
+
+  /* Custom dark surface for CTA strip / footer */
+  --surface-dark: #1A1108;
+  --surface-dark-foreground: #FFFDF9;
+
+  /* Flag tones */
+  --flag-red-bg: #FAECE7;
+  --flag-red-fg: #712B13;
+  --flag-amber-bg: #FAEEDA;
+  --flag-amber-fg: #633806;
+
+  /* Secondary text */
+  --text-secondary: #5F5E5A;
 }
 
 @layer base {
   * {
     border-color: var(--color-border);
   }
-  body {
+  html, body {
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.65;
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 {
-    font-family: var(--font-display);
-    letter-spacing: -0.02em;
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-sans);
+    color: var(--foreground);
+    font-weight: 500;
+    letter-spacing: -0.5px;
+    line-height: 1.15;
   }
+  h1 {
+    font-size: 44px;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    font-weight: 500;
+  }
+  h2 { font-size: 32px; letter-spacing: -1px; }
+  h3 { font-size: 22px; }
+  h4 { font-size: 18px; }
+  a { color: inherit; }
 }

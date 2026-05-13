@@ -104,49 +104,65 @@ function Plan({
 }) {
   return (
     <div
-      className={`relative rounded-2xl border p-6 ${
-        highlight
-          ? "border-primary bg-primary text-primary-foreground shadow-glow"
-          : "border-border bg-card shadow-soft"
-      }`}
+      className="relative p-8"
+      style={{
+        background: "#FFFDF9",
+        borderRadius: 12,
+        border: highlight ? "2px solid #D85A30" : "0.5px solid rgba(26,17,8,0.12)",
+      }}
     >
       {highlight && (
-        <span className="absolute -top-3 right-5 rounded-full bg-card px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-primary border border-primary/20 shadow-soft">
+        <span
+          className="absolute -top-3 right-6 uppercase"
+          style={{
+            background: "#FAECE7",
+            color: "#993C1D",
+            fontSize: 10,
+            fontWeight: 500,
+            letterSpacing: "0.08em",
+            borderRadius: 100,
+            padding: "4px 10px",
+          }}
+        >
           Most popular
         </span>
       )}
-      <h3 className="text-lg font-semibold">{title}</h3>
+      <h3 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>{title}</h3>
       <div className="mt-3 flex items-baseline gap-1">
-        <span className="text-4xl font-semibold tracking-tight">{price}</span>
-        <span className={`text-sm ${highlight ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-          {cadence}
+        <span style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>
+          {price}
         </span>
+        <span style={{ fontSize: 13, color: "#888780" }}>{cadence}</span>
       </div>
       {subnote && (
-        <p className={`mt-2 text-xs ${highlight ? "text-primary-foreground/85" : "text-muted-foreground"}`}>
+        <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A" }}>
           {subnote}
         </p>
       )}
-      <ul className="mt-5 space-y-2 text-sm">
+      <ul className="mt-5 space-y-2.5">
         {features.map((f) => (
-          <li key={f} className="flex items-start gap-2">
-            <Check
-              className={`mt-0.5 h-4 w-4 shrink-0 ${highlight ? "text-primary-foreground" : "text-primary"}`}
-            />
+          <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
+            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#D85A30" }} />
             {f}
           </li>
         ))}
       </ul>
       {footnote && (
-        <p className={`mt-4 text-xs ${highlight ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
+        <p className="mt-4" style={{ fontSize: 12, color: "#888780" }}>
           {footnote}
         </p>
       )}
       <Link
         to="/"
-        className={`mt-6 inline-flex w-full items-center justify-center rounded-xl px-4 py-3 text-sm font-medium transition-opacity hover:opacity-90 ${
-          highlight ? "bg-card text-primary" : "bg-primary text-primary-foreground"
-        }`}
+        className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
+        style={{
+          background: highlight ? "#D85A30" : "#1A1108",
+          color: "#FFFDF9",
+          fontSize: 13,
+          fontWeight: 500,
+          borderRadius: 100,
+          padding: "12px 24px",
+        }}
       >
         {cta}
       </Link>
