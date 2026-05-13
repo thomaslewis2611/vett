@@ -448,12 +448,41 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
             />
             <MetricCard
               label="Stamp duty est."
-              value={formatGBP(a.metrics.estimatedStampDuty)}
-              hint="Second home rate"
+              value={formatGBP(stampDuty)}
+              hint={STAMP_DUTY_LABELS[sdMode]}
               icon={TrendingDown}
             />
           </div>
+
+          <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Stamp duty rate">
+            {(["main", "additional", "ftb"] as StampDutyMode[]).map((m) => {
+              const active = sdMode === m;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setSdMode(m)}
+                  className={
+                    "rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors " +
+                    (active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent")
+                  }
+                >
+                  {STAMP_DUTY_LABELS[m]}
+                </button>
+              );
+            })}
+          </div>
+          {sdMode === "ftb" && a.property.price > 625000 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              First-time buyer relief doesn't apply above £625,000 — standard rates used.
+            </p>
+          )}
         </section>
+
 
         {/* EPC */}
         <EpcSection analysis={a} />
