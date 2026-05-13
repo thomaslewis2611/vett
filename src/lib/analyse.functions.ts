@@ -122,7 +122,7 @@ You must:
 - IMPORTANT: avgPricePerSqFtArea should reflect the typical price PER SQUARE FOOT for similar properties (same property type, similar size and tenure) in this specific area / postcode — NOT the average total sale price divided by anything. Base this on your knowledge of the postcode and property type. If you cannot estimate it reliably, return null rather than guessing.
 - If this is an AUCTION property, set negotiation.isAuction to true and provide negotiation.maxBid as a single GBP number (not a range). Set recommendedOffer.low and high BOTH equal to maxBid. The rationale must explain auction bidding strategy including the need for bridging finance or cash. Otherwise leave isAuction false/omitted and provide a normal recommended offer range — usually 2-8% under asking.
 - Tailor the 8 viewing questions to specific things in this listing, not generic boilerplate.
-- EPC: extract the EPC rating ONLY from the listing content (look for "EPC", "Energy Performance", "Energy rating", an A-G letter near "energy", or a 1-100 score). Do NOT guess or invent an EPC rating. If the listing does not show one, return epc: null. If you find one, populate rating, score, potentialRating and estimatedAnnualEnergyCost where visible (otherwise null), and ALWAYS write a 2-3 sentence commentary tailored to THIS property's size and rating: typical annual energy bills for a property this size at this rating, the cost and saving of upgrading to the next band, and mortgage lender implications if rated below D.
+- EPC: extract the EPC rating ONLY from the listing content (look for "EPC", "Energy Performance", "Energy rating", an A-G letter near "energy", or a 1-100 score). If the listing content begins with a line like "EXTRACTED FROM PAGE HTML — EPC rating: X", trust that value and use it as epc.rating. If the listing content contains council tax band information, look in the same section for an EPC rating — on Rightmove they appear together (common format: "Council Tax band X" alongside "EPC rating Y", often in an "Additional Property Information" bullet list). If you see a letter rating near energy, efficiency, or EPC, extract it as epc.rating. Do NOT guess or invent an EPC rating. If the listing genuinely does not show one, return epc: null. If you find one, populate rating, score, potentialRating and estimatedAnnualEnergyCost where visible (otherwise null), and ALWAYS write a 2-3 sentence commentary tailored to THIS property's size and rating: typical annual energy bills for a property this size at this rating, the cost and saving of upgrading to the next band, and mortgage lender implications if rated below D.
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
@@ -279,6 +279,37 @@ function htmlToListingText(html: string): string {
   return text;
 }
 
+function extractEpcAndCouncilTax(html: string): { epc: string | null; councilTax: string | null } {
+  if (!html) return { epc: null, councilTax: null };
+  let epc: string | null = null;
+  let councilTax: string | null = null;
+  const epcPatterns: RegExp[] = [
+    /EPC[\s_-]*rating[^A-Za-z0-9]{0,10}([A-G])\b/i,
+    /Energy[\s_-]*rating[^A-Za-z0-9]{0,10}([A-G])\b/i,
+    /Energy[\s_-]*Performance[^<>]{0,60}?\b([A-G])\b/i,
+    /"epcRating"\s*:\s*"([A-G])"/i,
+    /"energyRating"\s*:\s*"([A-G])"/i,
+    /"currentEnergyRating"\s*:\s*"?([A-G])"?/i,
+    /data-epc-rating\s*=\s*["']([A-G])["']/i,
+    /data-energy-rating\s*=\s*["']([A-G])["']/i,
+    /aria-label\s*=\s*["'][^"']*?(?:EPC|Energy)[^"']*?\b([A-G])\b[^"']*["']/i,
+  ];
+  for (const p of epcPatterns) {
+    const m = html.match(p);
+    if (m?.[1]) { epc = m[1].toUpperCase(); break; }
+  }
+  const ctPatterns: RegExp[] = [
+    /Council[\s_-]*Tax[\s_-]*band[^A-Za-z0-9]{0,10}([A-H])\b/i,
+    /Council[\s_-]*Tax[^<>]{0,60}?\bBand\s*([A-H])\b/i,
+    /"councilTaxBand"\s*:\s*"([A-H])"/i,
+  ];
+  for (const p of ctPatterns) {
+    const m = html.match(p);
+    if (m?.[1]) { councilTax = m[1].toUpperCase(); break; }
+  }
+  return { epc, councilTax };
+}
+
 function extractListedDate(html: string): { dateStr: string; daysOnMarket: number } | null {
   if (!html) return null;
   const patterns: RegExp[] = [
@@ -333,9 +364,23 @@ async function fetchListingText(url: string): Promise<string> {
   // 2. Basic fetch with browser-like headers
   const html = await basicFetchListingHtml(url);
   const listed = html ? extractListedDate(html) : null;
+  const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  if (text && listed) {
-    text = `LISTING DATE: ${listed.dateStr} — ${listed.daysOnMarket} days on market as of today\nDate listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)\n\n${text}`.slice(0, 25_700);
+  const notes: string[] = [];
+  if (listed) {
+    notes.push(`LISTING DATE: ${listed.dateStr} — ${listed.daysOnMarket} days on market as of today`);
+    notes.push(`Date listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)`);
+  }
+  if (epc) {
+    notes.push(`EXTRACTED FROM PAGE HTML — EPC rating: ${epc} (use this as epc.rating)`);
+  } else if (councilTax) {
+    notes.push(`NOTE: Council Tax Band ${councilTax} was found in the listing. EPC rating is often shown in the same section on Rightmove — check carefully and extract it if present.`);
+  }
+  if (councilTax) {
+    notes.push(`EXTRACTED FROM PAGE HTML — Council Tax Band: ${councilTax}`);
+  }
+  if (text && notes.length) {
+    text = `${notes.join("\n")}\n\n${text}`.slice(0, 25_700);
   }
 
   // 3. Cache successful results.
