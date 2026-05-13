@@ -679,6 +679,16 @@ async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | n
   console.log(`fetchFloodRisk returned overallRisk=${raw?.overallRisk ?? "null"}`);
   return raw;
 }
+
+type FetchedListing = {
+  text: string;
+  landRegistry: LandRegistryResult;
+  scotland: boolean;
+  postcode: string | null;
+  floodRisk: FloodRiskRaw | null;
+};
+
+async function fetchListingText(url: string): Promise<FetchedListing> {
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
 
@@ -704,7 +714,7 @@ async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | n
   }
 
   // We need either cached text or fresh HTML to extract postcode for the
-  // Land Registry call.
+  // Land Registry / flood-risk calls.
   let html = "";
   if (!cachedText) {
     html = await basicFetchListingHtml(url);
@@ -713,8 +723,7 @@ async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | n
   const { postcode, paon, saon, street } = extractAddressBits(sourceForExtraction);
   const scotland = isScottishPostcode(postcode);
 
-  // Scottish properties: Land Registry doesn't cover Scotland. Skip the lookup.
-  // Run Land Registry lookup in parallel with the rest of the work.
+  // Run external lookups in parallel with the rest of the work.
   const landRegistryPromise: Promise<LandRegistryResult> = (postcode && !scotland)
     ? fetchLandRegistryPriceHistory(postcode, paon, saon, street).catch((err) => {
         console.error("[landRegistry] lookup failed:", err);
@@ -722,15 +731,22 @@ async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | n
       })
     : Promise.resolve(null);
 
+  const floodRiskPromise: Promise<FloodRiskRaw | null> = postcode
+    ? fetchFloodRisk(postcode).catch((err) => {
+        console.error("[floodRisk] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
   if (cachedText) {
-    const landRegistry = await landRegistryPromise;
-    return { text: cachedText, landRegistry, scotland };
+    const [landRegistry, floodRisk] = await Promise.all([landRegistryPromise, floodRiskPromise]);
+    return { text: cachedText, landRegistry, scotland, postcode, floodRisk };
   }
 
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  const landRegistry = await landRegistryPromise;
+  const [landRegistry, floodRisk] = await Promise.all([landRegistryPromise, floodRiskPromise]);
 
   const notes: string[] = [];
   if (listed) {
@@ -752,6 +768,16 @@ async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | n
     );
     notes.push(`LAND REGISTRY PRICE HISTORY (official data):\n${lines.join("\n")}`);
   }
+  if (floodRisk && !floodRisk.scotland && !floodRisk.unavailable) {
+    const lines: string[] = [
+      `Rivers and sea: ${floodRisk.riversAndSea ?? "Unknown"}`,
+      `Surface water: ${floodRisk.surfaceWater ?? "Unknown"}`,
+      `Reservoir: ${floodRisk.reservoir == null ? "Unknown" : floodRisk.reservoir ? "Yes" : "No"}`,
+      `Groundwater: ${floodRisk.groundwater ?? "Unknown"}`,
+      `Overall (highest of rivers/surface/groundwater): ${floodRisk.overallRisk ?? "Unknown"}`,
+    ];
+    notes.push(`ENVIRONMENT AGENCY FLOOD RISK (official data — use these values verbatim in floodRisk and write a 2-3 sentence commentary; set autoRedFlag=true only if Rivers/Sea is High):\n${lines.join("\n")}`);
+  }
   if (text && notes.length) {
     text = `${notes.join("\n")}\n\n${text}`.slice(0, 25_700);
   }
@@ -770,7 +796,7 @@ async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | n
     }
   }
 
-  return { text, landRegistry, scotland };
+  return { text, landRegistry, scotland, postcode, floodRisk };
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
