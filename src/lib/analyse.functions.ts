@@ -157,11 +157,71 @@ function htmlToText(html: string): string {
     .trim();
 }
 
-async function fetchListingText(url: string): Promise<string> {
-  // SSRF guard — only allow Rightmove/Zoopla URLs through.
-  validateListingUrl(url);
+// Decode the most common HTML entities we encounter in listing text/meta.
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&pound;/g, "£")
+    .replace(/&#163;/g, "£")
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
+}
 
-  let html = "";
+function htmlToCleanText(html: string): string {
+  const stripped = html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<noscript[\s\S]*?<\/noscript>/gi, " ")
+    .replace(/<[^>]+>/g, " ");
+  return decodeEntities(stripped).replace(/\s+/g, " ").trim();
+}
+
+const IMAGE_BLOCKLIST = ["logo", "icon", "placeholder", "avatar", "favicon"];
+const IMAGE_CDN_HOSTS = ["media.rightmove.co.uk", "lid.zoocdn.com"];
+
+function isValidPropertyImage(url: string | null | undefined): url is string {
+  if (!url) return false;
+  if (!url.startsWith("https://")) return false;
+  const lower = url.toLowerCase();
+  if (IMAGE_BLOCKLIST.some((b) => lower.includes(b))) return false;
+  return true;
+}
+
+function extractPropertyImage(html: string): string | null {
+  // 1. og:image, 2. twitter:image
+  for (const name of ["og:image", "og:image:secure_url", "twitter:image"]) {
+    const metas = extractMetaContent(html, [name]);
+    for (const candidate of metas) {
+      const decoded = decodeEntities(candidate);
+      if (isValidPropertyImage(decoded)) return decoded;
+    }
+  }
+  // 3. First large CDN image in the page.
+  const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+  let m: RegExpExecArray | null;
+  while ((m = imgRegex.exec(html)) !== null) {
+    const src = decodeEntities(m[1]);
+    if (
+      src.startsWith("https://") &&
+      IMAGE_CDN_HOSTS.some((h) => src.includes(h)) &&
+      isValidPropertyImage(src)
+    ) {
+      return src;
+    }
+  }
+  return null;
+}
+
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const SCRAPER_TIMEOUT_MS = 30_000;
+
+async function basicFetchListingHtml(url: string): Promise<string> {
   try {
     const res = await fetch(url, {
       headers: {
@@ -172,23 +232,27 @@ async function fetchListingText(url: string): Promise<string> {
       },
       redirect: "follow",
     });
-    if (res.ok) html = await res.text();
+    if (!res.ok) return "";
+    return await res.text();
   } catch {
-    html = "";
+    return "";
   }
+}
 
+function htmlToListingPayload(html: string): { text: string; image: string | null } {
+  if (!html) return { text: "", image: null };
   const lower = html.toLowerCase();
   const blocked =
     html.length < 500 ||
     lower.includes("enable javascript") ||
     lower.includes("access denied");
 
+  let text = "";
   if (!blocked) {
-    const text = htmlToText(html);
-    if (text.length >= 200) return text.slice(0, 25000);
+    text = htmlToCleanText(html).slice(0, 25_000);
   }
-
-  if (html.length > 0) {
+  if (text.length < 200) {
+    // Fall back to head metadata when the body is unreadable.
     const metas = extractMetaContent(html, [
       "og:title",
       "og:description",
@@ -196,13 +260,123 @@ async function fetchListingText(url: string): Promise<string> {
       "twitter:description",
       "description",
     ]);
-    const combined = metas.filter(Boolean).join("\n").trim();
+    const combined = metas.map(decodeEntities).filter(Boolean).join("\n").trim();
     if (combined.length >= 100) {
-      return `[Limited content — extracted from page metadata only]\n\n${combined}`;
+      text = `[Limited content — extracted from page metadata only]\n\n${combined}`.slice(0, 25_000);
+    } else {
+      text = "";
     }
   }
 
-  return "";
+  const image = extractPropertyImage(html);
+  return { text, image };
+}
+
+async function fetchListingData(
+  url: string
+): Promise<{ text: string; image: string | null }> {
+  // SSRF guard — only allow Rightmove/Zoopla URLs through.
+  validateListingUrl(url);
+
+  // 1. Cache lookup (24h TTL)
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, image_url, fetched_at")
+      .eq("url", url)
+      .maybeSingle();
+    if (
+      cached &&
+      cached.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
+    ) {
+      console.log(`[analyseListing] cache hit for ${url}`);
+      return {
+        text: cached.text_content,
+        image: cached.image_url ?? null,
+      };
+    }
+  } catch (err) {
+    console.error("[analyseListing] cache lookup failed:", err);
+  }
+
+  // 2. ScraperAPI (with JS rendering, GB country)
+  const scraperKey = process.env.SCRAPERAPI_KEY;
+  let payload: { text: string; image: string | null } = { text: "", image: null };
+  let html = "";
+  let timedOut = false;
+
+  if (scraperKey) {
+    const scraperUrl = `http://api.scraperapi.com?api_key=${scraperKey}&url=${encodeURIComponent(
+      url
+    )}&render=true&country_code=gb`;
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, SCRAPER_TIMEOUT_MS);
+    const start = Date.now();
+    try {
+      const res = await fetch(scraperUrl, { signal: controller.signal });
+      const elapsed = Date.now() - start;
+      console.log(`[analyseListing] ScraperAPI ${res.status} in ${elapsed}ms for ${url}`);
+      if (res.ok) {
+        html = await res.text();
+      } else {
+        console.error(
+          `[analyseListing] ScraperAPI returned ${res.status} ${res.statusText} for ${url}`
+        );
+      }
+    } catch (err) {
+      const elapsed = Date.now() - start;
+      if (timedOut) {
+        console.error(
+          `[analyseListing] ScraperAPI timeout (${SCRAPER_TIMEOUT_MS}ms) for ${url}`
+        );
+        return { text: "", image: null };
+      }
+      console.error(`[analyseListing] ScraperAPI error after ${elapsed}ms:`, err);
+    } finally {
+      clearTimeout(timeout);
+    }
+  } else {
+    console.warn("[analyseListing] SCRAPERAPI_KEY missing — falling back to basic fetch");
+  }
+
+  if (html) payload = htmlToListingPayload(html);
+
+  // 3. Fallback to basic fetch if ScraperAPI failed or yielded nothing useful.
+  if (!payload.text) {
+    const fallbackHtml = await basicFetchListingHtml(url);
+    if (fallbackHtml) {
+      const fallback = htmlToListingPayload(fallbackHtml);
+      payload = {
+        text: fallback.text,
+        image: payload.image ?? fallback.image,
+      };
+    }
+  }
+
+  // 4. Cache successful results (only when we got real text).
+  if (payload.text && payload.text.length >= 200) {
+    try {
+      await supabaseAdmin
+        .from("listing_cache")
+        .upsert(
+          {
+            url,
+            text_content: payload.text,
+            image_url: payload.image,
+            fetched_at: new Date().toISOString(),
+          },
+          { onConflict: "url" }
+        );
+    } catch (err) {
+      console.error("[analyseListing] cache upsert failed:", err);
+    }
+  }
+
+  return payload;
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
