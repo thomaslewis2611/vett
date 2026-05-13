@@ -528,7 +528,7 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
               </UnlockedSection>
 
               <UnlockedSection title="True cost breakdown">
-                <CostBreakdown analysis={a} />
+                <CostBreakdown analysis={a} stampDuty={stampDuty} stampDutyMode={sdMode} />
               </UnlockedSection>
 
               <UnlockedSection title="Negotiation strategy">
