@@ -1478,11 +1478,12 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
       </h2>
     );
 
-    const entries = ph.entries ?? [];
+    const entries = ph?.entries ?? [];
     const currentPrice = analysis.property?.price ?? 0;
+    const isExactMatch = ph?.source === "land_registry" && ph?.nearbyMode !== true;
 
     // Scotland — Land Registry doesn't hold Scottish data
-    if (ph.scotland) {
+    if (ph?.scotland) {
       return (
         <section className="mt-10">
           {headingNode}
@@ -1507,18 +1508,28 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
       );
     }
 
-    // Empty state — no historical data
-    if (entries.length === 0) {
+    // Empty state — no exact-match historical data for this address
+    if (!ph || entries.length === 0 || !isExactMatch) {
       return (
         <section className="mt-10">
           {headingNode}
           <div className="mt-4" style={cardStyle}>
             <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
-              No previous sale history found for this property.
+              No sale history found
             </p>
             <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
-              You can check historical sales at Land Registry
-              (gov.uk/search-property-information-land-registry) or Zoopla&apos;s sold prices tool.
+              We couldn&apos;t find a previous sale record for this exact address.
+              You can search directly at HM Land Registry to check historical prices.
+            </p>
+            <p className="mt-3" style={{ fontSize: 12, lineHeight: 1.6 }}>
+              <a
+                href="https://www.gov.uk/search-property-information-land-registry"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#185FA5", textDecoration: "underline" }}
+              >
+                Search Land Registry →
+              </a>
             </p>
           </div>
         </section>
@@ -1559,14 +1570,6 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
       <section className="mt-10">
         {headingNode}
         <div className="mt-4" style={cardStyle}>
-          {ph.nearbyMode && (
-            <p
-              className="mb-3"
-              style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.5 }}
-            >
-              No exact match found — showing recent sales nearby on the same street.
-            </p>
-          )}
           {/* Timeline */}
           <div className="relative" style={{ paddingTop: 8, paddingBottom: 4 }}>
             <div
