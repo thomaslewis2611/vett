@@ -375,6 +375,7 @@ async function fetchListingText(url: string): Promise<string> {
     notes.push(`Date listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)`);
   }
   if (epc) {
+    notes.push(`EPC RATING EXTRACTED: ${epc}`);
     notes.push(`EXTRACTED FROM PAGE HTML — EPC rating: ${epc} (use this as epc.rating)`);
   } else if (councilTax) {
     notes.push(`NOTE: Council Tax Band ${councilTax} was found in the listing. EPC rating is often shown in the same section on Rightmove — check carefully and extract it if present.`);
