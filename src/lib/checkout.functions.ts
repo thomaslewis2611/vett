@@ -118,7 +118,7 @@ export const saveAnalysisForUser = createServerFn({ method: "POST" })
     await supabaseAdmin.from("saved_analyses").insert({
       user_email: data.email.toLowerCase(),
       listing_url: data.listingUrl ?? null,
-      analysis_json: data.analysis as object,
+      analysis_json: data.analysis as never,
     });
     return { ok: true };
   });
