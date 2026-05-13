@@ -808,67 +808,6 @@ function PlanCard({
   );
 }
 
-  return (
-    <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
-      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <div className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
-            <Sparkles className="h-3.5 w-3.5" /> Unlock the full report
-          </div>
-          <h3 className="mt-3 text-2xl font-semibold tracking-tight">
-            See every red flag, the true cost and how to negotiate
-          </h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Plus an AI chat that knows this exact property.
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
-        <PlanCard
-          title="Single report"
-          price="£4.99"
-          cadence="one-off"
-          cta="Unlock this report"
-          features={[
-            "Full analysis for this property",
-            "All red flags & true costs",
-            "Viewing questions & negotiation strategy",
-          ]}
-          footnote="No AI chat. No saving or comparing."
-        />
-        <PlanCard
-          title="Buyer Pass"
-          price="£29.99"
-          cadence="one-time"
-          cta="Get Buyer Pass"
-          highlight
-          subnote="Average buyer analyses 8 properties — works out at £3.75 each."
-          features={[
-            "Unlimited analyses for your entire property search",
-            "AI chat on every property",
-            "Save & compare up to 50 properties",
-            "All red flags, costs & negotiation strategy",
-          ]}
-          footnote="One-time payment for your entire property search — not a subscription."
-        />
-      </div>
-
-      {onUnlockDemo && (
-        <div className="mt-5 flex items-center justify-center">
-          <button
-            type="button"
-            onClick={onUnlockDemo}
-            className="text-xs text-muted-foreground underline-offset-4 hover:text-primary hover:underline"
-          >
-            Demo: unlock Buyer Pass without paying
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function PlanCard({
   title,
   price,
