@@ -1089,7 +1089,7 @@ function ScoreInfoTooltip({ text }: { text: string }) {
     setOpen((o) => !o);
   };
 
-  const tooltipStyle: React.CSSProperties = {
+  const tooltipStyle: CSSProperties = {
     position: "absolute",
     zIndex: 50,
     maxWidth: 280,
@@ -1110,7 +1110,7 @@ function ScoreInfoTooltip({ text }: { text: string }) {
     ...(placement.align === "left" ? { left: 0 } : { right: 0 }),
   };
 
-  const arrowStyle: React.CSSProperties = {
+  const arrowStyle: CSSProperties = {
     position: "absolute",
     width: 0,
     height: 0,
@@ -1466,7 +1466,7 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
     const ph = analysis.priceHistory;
     if (!ph) return null;
 
-    const cardStyle: React.CSSProperties = {
+    const cardStyle: CSSProperties = {
       background: "#FFFDF9",
       border: "0.5px solid rgba(26,17,8,0.12)",
       borderRadius: 12,
