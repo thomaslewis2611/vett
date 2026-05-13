@@ -13,7 +13,7 @@ const analysisSchema = z.object({
     baths: z.number().int(),
     type: z.string().describe("e.g. 'End of terrace house', 'Flat', 'Semi-detached'"),
     sqft: z.number().describe("Approx square feet, estimate from sqm if needed; 0 if unknown"),
-    image: z.string().describe("First listing image URL if found, empty string otherwise"),
+    image: z.string().nullable().describe("First listing image URL (must start with https://) if found, otherwise null"),
     listingUrl: z.string(),
   }),
   score: z.number().min(0).max(10).describe("Overall value score out of 10, one decimal place"),
