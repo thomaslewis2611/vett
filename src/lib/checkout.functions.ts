@@ -210,7 +210,7 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
       return { ok: true, found: false };
     }
 
-    const res = await sendMagicLinkViaQueue(email, redirectTo);
+    const res = await sendMagicLinkViaResend(email, redirectTo, "access");
     return { ok: res.ok, found: true };
   });
 
