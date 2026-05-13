@@ -11,7 +11,7 @@ export function SiteHeader() {
           >
             P
           </div>
-          <span className="text-lg font-semibold tracking-tight">Flagr</span>
+          <span className="text-lg font-semibold tracking-tight">Roovr</span>
         </Link>
         <nav className="flex items-center gap-1 text-sm">
           <Link
