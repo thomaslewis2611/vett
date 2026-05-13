@@ -3,6 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { Send, Sparkles, User } from "lucide-react";
 import { chatAboutProperty, type ChatMessage } from "@/lib/chat.functions";
 import type { AnalysisResult } from "@/lib/mock-analysis";
+import { supabase } from "@/integrations/supabase/client";
 
 const STARTERS = [
   "Is this a fair price for the area?",
