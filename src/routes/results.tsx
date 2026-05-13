@@ -1104,14 +1104,27 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
 function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
   const ac = analysis.areaContext;
   if (!ac) return null;
-  const pct = ac.priceVsAreaPercent;
-  const pctText =
-    typeof pct === "number" ? `${pct > 0 ? "+" : ""}${pct.toFixed(1)}%` : "—";
-  const pctColor =
-    typeof pct === "number" ? (pct <= 0 ? "#3B6D11" : "#A32D2D") : "#5F5E5A";
+  const propPpsf = analysis.metrics?.pricePerSqFt;
+  const areaPpsf = ac.avgPricePerSqFtArea;
+  const haveBoth =
+    typeof propPpsf === "number" && propPpsf > 0 &&
+    typeof areaPpsf === "number" && areaPpsf > 0;
+  const ppsfPct = haveBoth ? ((propPpsf - areaPpsf) / areaPpsf) * 100 : null;
+  const ppsfText =
+    ppsfPct === null
+      ? "Insufficient data"
+      : `${ppsfPct > 0 ? "+" : ""}${ppsfPct.toFixed(1)}%`;
+  const ppsfColor =
+    ppsfPct === null
+      ? "#5F5E5A"
+      : ppsfPct <= 0
+      ? "#3B6D11"
+      : ppsfPct > 10
+      ? "#A32D2D"
+      : "#A36A1F";
   const avgSqFt =
-    typeof ac.avgPricePerSqFtArea === "number" && ac.avgPricePerSqFtArea > 0
-      ? `£${Math.round(ac.avgPricePerSqFtArea)}`
+    typeof areaPpsf === "number" && areaPpsf > 0
+      ? `£${Math.round(areaPpsf)}`
       : "—";
   return (
     <section className="mt-10">
