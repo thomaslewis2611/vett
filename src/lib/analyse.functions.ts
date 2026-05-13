@@ -829,6 +829,25 @@ export const analyseListing = createServerFn({ method: "POST" })
       },
     } as AnalysisResult;
 
+    // Override priceHistory with authoritative Land Registry data when available.
+    if (landRegistry && landRegistry.entries.length) {
+      const existing = full.priceHistory ?? {
+        entries: null,
+        firstSalePrice: null,
+        firstSaleDate: null,
+        totalAppreciation: null,
+        annualGrowthRate: null,
+        yearsHeld: null,
+        commentary: "",
+      };
+      full.priceHistory = {
+        ...existing,
+        entries: landRegistry.entries,
+        source: "land_registry",
+        nearbyMode: landRegistry.nearbyMode,
+      };
+    }
+
     // Server-side gating — only return premium content if the caller has paid.
     const unlocked = await hasFullAccess({
       accessToken: data.accessToken ?? null,
