@@ -48,74 +48,108 @@ function Index() {
       <SiteHeader />
 
       {/* Hero */}
-      <section
-        className="border-b border-border"
-        style={{ background: "var(--gradient-soft)" }}
-      >
-        <div className="mx-auto max-w-4xl px-6 pt-20 pb-24 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-3 py-1 text-xs font-medium text-muted-foreground shadow-soft">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
+      <section style={{ background: "#FFFDF9", padding: "72px 32px 56px" }}>
+        <div className="mx-auto max-w-4xl text-center">
+          <span
+            className="inline-block"
+            style={{
+              background: "#FAECE7",
+              color: "#993C1D",
+              fontSize: 12,
+              fontWeight: 500,
+              borderRadius: 100,
+              padding: "5px 12px",
+            }}
+          >
             Powered by Claude AI
-          </div>
-          <h1 className="mt-6 text-balance text-5xl font-semibold tracking-tight sm:text-6xl">
+          </span>
+          <h1 className="mt-6 text-balance">
             The red flags{" "}
-            <span className="text-primary">estate agents won't show you</span>
+            <span style={{ color: "#D85A30" }}>estate agents won't show you</span>
           </h1>
-          <p className="mx-auto mt-6 max-w-2xl text-balance text-lg text-muted-foreground">
+          <p
+            className="mx-auto mt-6 max-w-2xl text-balance"
+            style={{ fontSize: 15, color: "#5F5E5A", lineHeight: 1.65 }}
+          >
             Every listing. Analysed. Instantly.
           </p>
 
           <form
             onSubmit={handleAnalyse}
-            className="mx-auto mt-10 flex max-w-2xl flex-col gap-3 rounded-2xl border border-border bg-card p-2 shadow-card sm:flex-row sm:items-center"
+            className="mx-auto mt-10 flex max-w-2xl items-center gap-2"
+            style={{
+              border: "1.5px solid #1A1108",
+              borderRadius: 100,
+              background: "#FFFDF9",
+              padding: 4,
+            }}
           >
-            <div className="flex flex-1 items-center gap-2 px-3">
-              <Link2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <div className="flex flex-1 items-center gap-2 px-4">
+              <Link2 className="h-4 w-4 shrink-0" style={{ color: "#888780" }} />
               <input
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://www.rightmove.co.uk/properties/..."
-                className="w-full bg-transparent py-3 text-base outline-none placeholder:text-muted-foreground"
+                className="w-full bg-transparent py-2.5 outline-none"
+                style={{ fontSize: 14, color: "#1A1108" }}
                 aria-label="Property listing URL"
               />
             </div>
             <button
               type="submit"
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              className="inline-flex items-center justify-center gap-2 transition-colors hover:bg-[#993C1D]"
+              style={{
+                background: "#D85A30",
+                color: "#FFFDF9",
+                fontSize: 13,
+                fontWeight: 500,
+                borderRadius: 100,
+                padding: "12px 24px",
+              }}
             >
-              Analyse this property
+              Analyse
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
 
           {showPaste ? (
-            <div className="mx-auto mt-3 max-w-2xl rounded-2xl border border-border bg-card p-3 shadow-soft">
+            <div
+              className="mx-auto mt-3 max-w-2xl"
+              style={{
+                border: "0.5px solid rgba(26,17,8,0.12)",
+                borderRadius: 12,
+                background: "#FFFDF9",
+                padding: 12,
+              }}
+            >
               <textarea
                 value={pasted}
                 onChange={(e) => setPasted(e.target.value)}
                 placeholder="Or paste the full listing text here…"
                 rows={5}
-                className="w-full resize-none rounded-lg bg-transparent p-2 text-sm outline-none placeholder:text-muted-foreground"
+                className="w-full resize-none bg-transparent p-2 outline-none"
+                style={{ fontSize: 14, color: "#1A1108" }}
               />
             </div>
           ) : (
             <button
               type="button"
               onClick={() => setShowPaste(true)}
-              className="mt-3 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              className="mt-3 transition-colors"
+              style={{ fontSize: 12, color: "#888780" }}
             >
               Or paste listing text instead
             </button>
           )}
 
-          <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
+          <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             {[
               "One-time payment, no subscription",
               "Works with Rightmove & Zoopla",
               "Reports from £4.99",
             ].map((t) => (
-              <li key={t} className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-primary" />
+              <li key={t} className="flex items-center gap-2" style={{ fontSize: 12, color: "#888780" }}>
+                <Check className="h-3.5 w-3.5" style={{ color: "#D85A30" }} />
                 {t}
               </li>
             ))}
@@ -123,60 +157,117 @@ function Index() {
         </div>
       </section>
 
-      {/* How it works */}
-      <section className="mx-auto max-w-6xl px-6 py-24">
-        <div className="text-center">
-          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">How it works</h2>
-          <p className="mt-3 text-muted-foreground">
-            Three steps from listing to negotiation strategy.
-          </p>
-        </div>
-        <div className="mt-14 grid gap-6 md:grid-cols-3">
+      {/* Stats strip */}
+      <section
+        style={{
+          background: "#FFFDF9",
+          borderTop: "0.5px solid rgba(26,17,8,0.12)",
+          borderBottom: "0.5px solid rgba(26,17,8,0.12)",
+        }}
+      >
+        <div className="mx-auto grid max-w-5xl grid-cols-1 sm:grid-cols-3">
           {[
-            {
-              icon: Link2,
-              step: "01",
-              title: "Paste the URL",
-              body: "Drop any Rightmove or Zoopla listing link, or paste the full text directly.",
-            },
-            {
-              icon: Sparkles,
-              step: "02",
-              title: "AI analyses the listing",
-              body: "Claude reads the description, photos and metrics, then cross-checks against local sales.",
-            },
-            {
-              icon: FileText,
-              step: "03",
-              title: "Get your report",
-              body: "Score, red flags, true cost, viewing questions and a recommended offer range.",
-            },
-          ].map((s) => (
+            { value: "30", unit: "s", label: "Average analysis time" },
+            { value: "100", unit: "+", label: "Data points checked" },
+            { value: "£4.99", unit: "", label: "From per report" },
+          ].map((s, i) => (
             <div
-              key={s.step}
-              className="rounded-2xl border border-border bg-card p-6 shadow-soft"
+              key={s.label}
+              className="px-8 py-10 text-center"
+              style={{
+                borderLeft: i === 0 ? "none" : "0.5px solid rgba(26,17,8,0.12)",
+              }}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-soft text-primary">
-                  <s.icon className="h-5 w-5" />
-                </div>
-                <span className="text-xs font-medium text-muted-foreground">{s.step}</span>
+              <div style={{ fontSize: 32, fontWeight: 500, color: "#1A1108", letterSpacing: "-1px" }}>
+                {s.value}
+                <span style={{ color: "#D85A30" }}>{s.unit}</span>
               </div>
-              <h3 className="mt-5 text-lg font-semibold">{s.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{s.body}</p>
+              <div className="mt-2" style={{ fontSize: 13, color: "#888780" }}>
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
+      </section>
 
-        <div className="mt-16 flex flex-col items-center gap-4 rounded-3xl border border-border p-10 text-center" style={{ background: "var(--gradient-soft)" }}>
-          <h3 className="text-2xl font-semibold tracking-tight">Try it on your next viewing</h3>
-          <p className="max-w-lg text-muted-foreground">
+      {/* Feature cards */}
+      <section className="mx-auto max-w-6xl px-8 py-20">
+        <div className="text-center">
+          <div
+            className="inline-block uppercase"
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: "0.08em",
+              color: "#888780",
+            }}
+          >
+            How it works
+          </div>
+          <h2 className="mt-3">Three steps to a better offer</h2>
+        </div>
+
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-4" style={{ gap: 2 }}>
+          {[
+            { icon: Link2, title: "Paste the URL", body: "Drop any Rightmove or Zoopla listing link, or paste the full text." },
+            { icon: Sparkles, title: "AI reads it all", body: "Claude analyses description, metrics and local comparables." },
+            { icon: FileText, title: "Get your report", body: "Score, red flags, true cost and viewing questions in seconds." },
+            { icon: Check, title: "Negotiate well", body: "A clear recommended offer range, backed by the listing data." },
+          ].map((s, i, arr) => (
+            <div
+              key={s.title}
+              style={{
+                background: "#F1EFE8",
+                padding: 24,
+                borderTopLeftRadius: i === 0 ? 12 : 0,
+                borderBottomLeftRadius: i === 0 ? 12 : 0,
+                borderTopRightRadius: i === arr.length - 1 ? 12 : 0,
+                borderBottomRightRadius: i === arr.length - 1 ? 12 : 0,
+              }}
+            >
+              <div
+                className="flex items-center justify-center"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 8,
+                  background: "#FFFDF9",
+                }}
+              >
+                <s.icon className="h-4 w-4" style={{ color: "#D85A30" }} />
+              </div>
+              <h3 className="mt-5" style={{ fontSize: 14, fontWeight: 500, color: "#1A1108" }}>
+                {s.title}
+              </h3>
+              <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
+                {s.body}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Bottom CTA strip */}
+      <section style={{ background: "#1A1108", padding: "48px 32px" }}>
+        <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
+          <h2 style={{ color: "#FFFDF9", fontSize: 32, fontWeight: 500, letterSpacing: "-1px" }}>
+            Try it on your <span style={{ color: "#D85A30" }}>next viewing</span>
+          </h2>
+          <p style={{ color: "#888780", fontSize: 15, maxWidth: 520 }}>
             First analysis is on us. See the full report before you spend a penny.
           </p>
           <Link
             to="/results"
             search={{ url: "https://www.rightmove.co.uk/properties/example" }}
-            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 transition-colors hover:bg-[#993C1D]"
+            style={{
+              background: "#D85A30",
+              color: "#FFFDF9",
+              fontSize: 13,
+              fontWeight: 500,
+              borderRadius: 100,
+              padding: "12px 24px",
+            }}
           >
             See a sample report
             <ArrowRight className="h-4 w-4" />
@@ -188,3 +279,4 @@ function Index() {
     </div>
   );
 }
+
