@@ -1464,7 +1464,6 @@ function shortMoney(n: number): string {
 function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
   try {
     const ph = analysis.priceHistory;
-    if (!ph) return null;
 
     const cardStyle: CSSProperties = {
       background: "#FFFDF9",

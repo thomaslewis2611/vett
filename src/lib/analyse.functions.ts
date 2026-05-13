@@ -498,32 +498,28 @@ async function fetchLandRegistryPriceHistory(
   const itemPaon = (it: PpiItem): string =>
     (it.propertyAddress?.paon ?? it.primaryAddressobject?.paon ?? "").toString().toUpperCase();
 
-  let entries: LandRegistryEntry[] = [];
-  let nearbyMode = false;
-
-  if (paon) {
-    const target = paon.toUpperCase();
-    const matched = items.filter((it) => itemPaon(it) === target);
-    entries = matched.map(toEntry).filter((x): x is LandRegistryEntry => x !== null);
+  // Exact-match only — if we don't know the property number, or none of the
+  // postcode results match it, return null. No nearby/street-level fallback.
+  if (!paon) {
+    console.log("fetchPriceHistory returned 0 results (no paon to match)");
+    return null;
   }
 
-  if (entries.length === 0 && items.length > 0) {
-    nearbyMode = true;
-    entries = items
-      .slice(0, 5)
-      .map(toEntry)
-      .filter((x): x is LandRegistryEntry => x !== null);
-  }
+  const target = paon.toUpperCase();
+  const matched = items.filter((it) => itemPaon(it) === target);
+  const entries: LandRegistryEntry[] = matched
+    .map(toEntry)
+    .filter((x): x is LandRegistryEntry => x !== null);
 
   // Sort oldest-first for the timeline UI
   entries.sort((a, b) => a.date.localeCompare(b.date));
 
   if (entries.length === 0) {
-    console.log("fetchPriceHistory returned 0 results");
+    console.log("fetchPriceHistory returned 0 results (no exact match)");
     return null;
   }
 
-  const result: LandRegistryResult = { entries, nearbyMode };
+  const result: LandRegistryResult = { entries, nearbyMode: false };
   try {
     await supabaseAdmin
       .from("listing_cache")
@@ -535,7 +531,7 @@ async function fetchLandRegistryPriceHistory(
     console.error("[landRegistry] cache upsert failed:", err);
   }
 
-  console.log(`fetchPriceHistory returned ${entries.length} results${nearbyMode ? " (nearby)" : ""}`);
+  console.log(`fetchPriceHistory returned ${entries.length} results`);
   return result;
 }
 
@@ -620,13 +616,10 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
     notes.push(`EXTRACTED FROM PAGE HTML — Council Tax Band: ${councilTax}`);
   }
   if (landRegistry && landRegistry.entries.length) {
-    const header = landRegistry.nearbyMode
-      ? "LAND REGISTRY PRICE HISTORY (official data — nearby sales on the same street, no exact match for this property):"
-      : "LAND REGISTRY PRICE HISTORY (official data):";
     const lines = landRegistry.entries.map(
       (p) => `Sold ${p.date}: £${p.price.toLocaleString("en-GB")}`,
     );
-    notes.push(`${header}\n${lines.join("\n")}`);
+    notes.push(`LAND REGISTRY PRICE HISTORY (official data):\n${lines.join("\n")}`);
   }
   if (text && notes.length) {
     text = `${notes.join("\n")}\n\n${text}`.slice(0, 25_700);
@@ -799,7 +792,9 @@ export const analyseListing = createServerFn({ method: "POST" })
       },
     } as AnalysisResult;
 
-    // Override priceHistory with authoritative Land Registry data when available.
+    // Override priceHistory with authoritative Land Registry data when an
+    // exact-match was found. Otherwise clear any AI-fabricated history so the
+    // UI shows the empty state.
     if (landRegistry && landRegistry.entries.length) {
       const existing = full.priceHistory ?? {
         entries: null,
@@ -814,8 +809,10 @@ export const analyseListing = createServerFn({ method: "POST" })
         ...existing,
         entries: landRegistry.entries,
         source: "land_registry",
-        nearbyMode: landRegistry.nearbyMode,
+        nearbyMode: false,
       };
+    } else if (!scotland) {
+      full.priceHistory = null;
     }
 
     // Scottish properties: Land Registry doesn't cover Scotland — surface a
