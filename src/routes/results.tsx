@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import {
   AlertTriangle,
@@ -21,34 +21,67 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
 import { analyseListing } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
+import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser } from "@/lib/checkout.functions";
+import { validateSingleReportToken, checkBuyerPassByEmail } from "@/lib/access.functions";
+import { supabase } from "@/integrations/supabase/client";
 
-const BUYER_PASS_KEY = "roovr_buyer_pass";
+const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
+const PRICE_PASS = "price_1TWXv1CfTT0mXB2clPmEQyob";
 
-function useBuyerPass(): [boolean, (v: boolean) => void] {
-  const [hasPass, setHasPass] = useState(false);
+type AccessLevel = "none" | "single" | "pass";
+
+function useAccess(listingUrl: string | undefined, token: string | undefined): { level: AccessLevel; email: string | null; loading: boolean } {
+  const [state, setState] = useState<{ level: AccessLevel; email: string | null; loading: boolean }>({
+    level: "none",
+    email: null,
+    loading: true,
+  });
+  const validateToken = useServerFn(validateSingleReportToken);
+  const checkPass = useServerFn(checkBuyerPassByEmail);
+
   useEffect(() => {
-    try {
-      setHasPass(localStorage.getItem(BUYER_PASS_KEY) === "true");
-    } catch {
-      // ignore
-    }
-  }, []);
-  const update = (v: boolean) => {
-    setHasPass(v);
-    try {
-      if (v) localStorage.setItem(BUYER_PASS_KEY, "true");
-      else localStorage.removeItem(BUYER_PASS_KEY);
-    } catch {
-      // ignore
-    }
-  };
-  return [hasPass, update];
+    let cancelled = false;
+    (async () => {
+      // 1. Buyer Pass (auth)
+      try {
+        const { data } = await supabase.auth.getUser();
+        const email = data.user?.email ?? null;
+        if (email) {
+          const r = await checkPass({ data: { email } });
+          if (cancelled) return;
+          if (r.hasPass) {
+            setState({ level: "pass", email, loading: false });
+            return;
+          }
+        }
+      } catch { /* ignore */ }
+
+      // 2. Single token
+      if (token) {
+        try {
+          const r = await validateToken({ data: { token, listingUrl: listingUrl ?? null } });
+          if (cancelled) return;
+          if (r.valid) {
+            setState({ level: "single", email: null, loading: false });
+            return;
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (!cancelled) setState({ level: "none", email: null, loading: false });
+    })();
+    return () => { cancelled = true; };
+  }, [listingUrl, token, validateToken, checkPass]);
+
+  return state;
 }
 
 const searchSchema = z.object({
   url: z.string().optional(),
   text: z.string().optional(),
+  token: z.string().optional(),
 });
+
 
 export const Route = createFileRoute("/results")({
   validateSearch: searchSchema,
