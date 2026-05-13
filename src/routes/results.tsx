@@ -446,41 +446,44 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
               value={a.metrics.councilTaxBand}
               icon={PoundSterling}
             />
-            <MetricCard
-              label="Stamp duty est."
-              value={formatGBP(stampDuty)}
-              hint={STAMP_DUTY_LABELS[sdMode]}
-              icon={TrendingDown}
-            />
+            <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase tracking-wider text-muted-foreground">Stamp duty est.</span>
+                <TrendingDown className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div className="mt-3 text-2xl font-semibold tracking-tight">{formatGBP(stampDuty)}</div>
+              <div className="mt-4 border-t border-border pt-3">
+                <div className="text-[11px]" style={{ color: "#888780" }}>I am buying as a:</div>
+                <div className="mt-2 flex flex-wrap gap-1.5" role="tablist" aria-label="Stamp duty rate">
+                  {(["main", "additional", "ftb"] as StampDutyMode[]).map((m) => {
+                    const active = sdMode === m;
+                    return (
+                      <button
+                        key={m}
+                        type="button"
+                        role="tab"
+                        aria-selected={active}
+                        onClick={() => setSdMode(m)}
+                        className="rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
+                        style={
+                          active
+                            ? { backgroundColor: "#D85A30", borderColor: "#D85A30", color: "#FFFFFF" }
+                            : { backgroundColor: "transparent", borderColor: "#D8D6CE", color: "#5F5E5A" }
+                        }
+                      >
+                        {STAMP_DUTY_LABELS[m]}
+                      </button>
+                    );
+                  })}
+                </div>
+                {sdMode === "ftb" && a.property.price > 625000 && (
+                  <p className="mt-2 text-[11px]" style={{ color: "#888780" }}>
+                    FTB relief doesn't apply above £625,000 — standard rates used.
+                  </p>
+                )}
+              </div>
+            </div>
           </div>
-
-          <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Stamp duty rate">
-            {(["main", "additional", "ftb"] as StampDutyMode[]).map((m) => {
-              const active = sdMode === m;
-              return (
-                <button
-                  key={m}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setSdMode(m)}
-                  className={
-                    "rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors " +
-                    (active
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent")
-                  }
-                >
-                  {STAMP_DUTY_LABELS[m]}
-                </button>
-              );
-            })}
-          </div>
-          {sdMode === "ftb" && a.property.price > 625000 && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              First-time buyer relief doesn't apply above £625,000 — standard rates used.
-            </p>
-          )}
         </section>
 
 
@@ -1320,20 +1323,30 @@ function EpcSection({ analysis }: { analysis: AnalysisResult }) {
                 {EPC_BANDS.map((b, i) => {
                   const active = b.letter === rating;
                   return (
-                    <div
-                      key={b.letter}
-                      className="flex items-center justify-between rounded-md px-3 py-1.5 text-sm font-semibold transition-all"
-                      style={{
-                        background: b.bg,
-                        color: b.fg,
-                        opacity: active ? 1 : 0.4,
-                        outline: active ? "2px solid #1A1108" : "none",
-                        outlineOffset: active ? 2 : 0,
-                        width: `${45 + (6 - i) * 7}%`,
-                        minWidth: 110,
-                      }}
-                    >
-                      <span>{b.letter}</span>
+                    <div key={b.letter} className="flex items-center gap-2">
+                      <div
+                        className="flex shrink-0 items-center justify-center text-base"
+                        style={{ width: 18, color: active ? "#1A1108" : "transparent" }}
+                        aria-hidden="true"
+                      >
+                        ▶
+                      </div>
+                      <div
+                        className="flex flex-1 items-center justify-between rounded-md px-3 py-2 text-sm font-semibold transition-all"
+                        style={{
+                          background: b.bg,
+                          color: b.fg,
+                          width: `${55 + (6 - i) * 6}%`,
+                          minWidth: 110,
+                          borderLeft: active ? "6px solid #1A1108" : "6px solid transparent",
+                          boxShadow: active ? "0 2px 8px rgba(26,17,8,0.25)" : "none",
+                          transform: active ? "scale(1.02)" : "none",
+                          transformOrigin: "left center",
+                        }}
+                      >
+                        <span>{b.letter}</span>
+                        {active && <span className="text-[10px] font-bold uppercase tracking-wider">This property</span>}
+                      </div>
                     </div>
                   );
                 })}
