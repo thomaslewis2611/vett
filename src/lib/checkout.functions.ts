@@ -1,95 +1,116 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import Stripe from "stripe";
-import * as React from "react";
-import { render } from "@react-email/components";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { MagicLinkEmail } from "@/lib/email-templates/magic-link";
 
 const SITE_URL = "https://roovr.co";
-const SITE_NAME = "roovr";
-const SENDER_DOMAIN = "notify.roovr.co";
-const FROM_DOMAIN = "roovr.co";
+const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
+
+function buildMagicLinkHtml(actionLink: string, opts: { heading: string; body: string; cta: string }): string {
+  return `<!doctype html><html><body style="margin:0;padding:32px 0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <div style="max-width:560px;margin:0 auto;padding:0 20px;">
+    <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#D85A30;letter-spacing:-0.01em;">● Roovr</div></div>
+    <div style="background:#FFFDF9;border:1px solid rgba(26,17,8,0.12);border-radius:12px;padding:32px;">
+      <h1 style="font-size:24px;font-weight:700;color:#1A1108;margin:0 0 12px;line-height:1.3;">${opts.heading}</h1>
+      <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">${opts.body}</p>
+      <a href="${actionLink}" style="background:#D85A30;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 22px;text-decoration:none;display:inline-block;">${opts.cta}</a>
+      <hr style="border:none;border-top:1px solid rgba(26,17,8,0.12);margin:28px 0 20px;" />
+      <p style="font-size:13px;color:#888780;line-height:1.5;margin:0 0 8px;">If the button does not work, copy and paste this link into your browser:</p>
+      <a href="${actionLink}" style="font-size:13px;color:#D85A30;word-break:break-all;">${actionLink}</a>
+      <p style="font-size:13px;color:#888780;line-height:1.5;margin:20px 0 0;">If you did not request this, you can safely ignore this email.</p>
+    </div>
+    <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.</p></div>
+  </div>
+</body></html>`;
+}
 
 /**
- * Ensure a Supabase auth user exists for the given email, generate a magic
- * link via the admin API, render the Roovr-branded magic-link email, and
- * enqueue it for delivery via the existing email queue.
+ * Generate a Supabase magic link and send it directly via Resend.
+ * Bypasses the Lovable email queue (kept commented below for restoration).
  */
-async function sendMagicLinkViaQueue(email: string, redirectTo: string): Promise<{ ok: boolean; error?: string }> {
+async function sendMagicLinkViaResend(
+  email: string,
+  redirectTo: string,
+  variant: "buyer-pass" | "access"
+): Promise<{ ok: boolean; error?: string }> {
   console.log("Magic link flow started for:", email);
 
-  // Step 1: ensure user exists (ignore "already registered")
-  const createRes = await supabaseAdmin.auth.admin.createUser({
-    email,
-    email_confirm: true,
-  });
+  const createRes = await supabaseAdmin.auth.admin.createUser({ email, email_confirm: true });
   if (createRes.error && !/already|registered|exists/i.test(createRes.error.message)) {
     console.error("createUser error:", createRes.error.message);
     return { ok: false, error: createRes.error.message };
   }
   console.log("User created/found:", createRes.data?.user?.id ?? "(existing)");
 
-  // Step 2: generate magic link
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: "magiclink",
     email,
     options: { redirectTo },
   });
   const actionLink = linkData?.properties?.action_link;
-  console.log("Magic link generated:", Boolean(actionLink) ? "yes" : "no");
+  console.log("Magic link generated:", actionLink ? "yes" : "no");
   if (linkError || !actionLink) {
     console.error("generateLink error:", linkError?.message);
     return { ok: false, error: linkError?.message ?? "no action_link" };
   }
 
-  // Step 3: render template + enqueue
-  const element = React.createElement(MagicLinkEmail, {
-    siteName: SITE_NAME,
-    confirmationUrl: actionLink,
-  });
-  const html = await render(element);
-  const text = await render(element, { plainText: true });
-  const messageId = crypto.randomUUID();
-
-  await supabaseAdmin.from("email_send_log").insert({
-    message_id: messageId,
-    template_name: "magiclink",
-    recipient_email: email,
-    status: "pending",
-  });
-
-  const { error: enqErr } = await supabaseAdmin.rpc("enqueue_email", {
-    queue_name: "auth_emails",
-    payload: {
-      message_id: messageId,
-      to: email,
-      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-      sender_domain: SENDER_DOMAIN,
-      subject: "Your Roovr access link",
-      html,
-      text,
-      purpose: "transactional",
-      label: "magiclink",
-      queued_at: new Date().toISOString(),
-      run_id: crypto.randomUUID(),
-    },
-  });
-
-  console.log("Email queued:", enqErr ? "no" : "yes");
-  if (enqErr) {
-    console.error("enqueue_email error:", enqErr.message);
-    await supabaseAdmin.from("email_send_log").insert({
-      message_id: messageId,
-      template_name: "magiclink",
-      recipient_email: email,
-      status: "failed",
-      error_message: enqErr.message,
-    });
-    return { ok: false, error: enqErr.message };
+  const resendApiKey = process.env.RESEND_API_KEY;
+  if (!resendApiKey) {
+    console.error("RESEND_API_KEY not configured");
+    return { ok: false, error: "RESEND_API_KEY missing" };
   }
+
+  const subject = variant === "buyer-pass" ? "Activate your Buyer Pass" : "Your Roovr access link";
+  const html = buildMagicLinkHtml(
+    actionLink,
+    variant === "buyer-pass"
+      ? {
+          heading: "Activate your Buyer Pass",
+          body: "Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses, flood risk data, AI chat, and more.",
+          cta: "Activate my Buyer Pass →",
+        }
+      : {
+          heading: "Your Roovr access link",
+          body: "Click the button below to access your Roovr report.",
+          cta: "Access my Roovr report →",
+        }
+  );
+
+  const resendResponse = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${resendApiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ from: FROM_ADDRESS, to: email, subject, html }),
+  });
+
+  if (!resendResponse.ok) {
+    const errText = await resendResponse.text();
+    console.error("Resend API error:", errText);
+    return { ok: false, error: errText };
+  }
+
+  console.log("Magic link email sent successfully via Resend to:", email);
   return { ok: true };
 }
+
+// ── Legacy Lovable email-queue path (kept for restoration) ──────────────────
+// import * as React from "react";
+// import { render } from "@react-email/components";
+// import { MagicLinkEmail } from "@/lib/email-templates/magic-link";
+// async function sendMagicLinkViaQueue(email: string, redirectTo: string) {
+//   // ...generate link as above, then:
+//   // const element = React.createElement(MagicLinkEmail, { siteName: "roovr", confirmationUrl: actionLink });
+//   // const html = await render(element);
+//   // const text = await render(element, { plainText: true });
+//   // await supabaseAdmin.rpc("enqueue_email", { queue_name: "auth_emails", payload: {
+//   //   message_id: crypto.randomUUID(), to: email, from: "roovr <noreply@roovr.co>",
+//   //   sender_domain: "notify.roovr.co", subject: "Your Roovr access link",
+//   //   html, text, purpose: "transactional", label: "magiclink",
+//   //   queued_at: new Date().toISOString(), run_id: crypto.randomUUID(),
+//   // }});
+// }
 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -189,7 +210,7 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
       return { ok: true, found: false };
     }
 
-    const res = await sendMagicLinkViaQueue(email, redirectTo);
+    const res = await sendMagicLinkViaResend(email, redirectTo, "access");
     return { ok: res.ok, found: true };
   });
 
