@@ -60,6 +60,7 @@ const analysisSchema = z.object({
     commentary: z.string().describe("2-3 sentences: vs UK ~5%/yr, aggressive pricing concerns, relist gaps, etc."),
     source: z.enum(["land_registry"]).nullable().optional(),
     nearbyMode: z.boolean().nullable().optional(),
+    scotland: z.boolean().nullable().optional(),
   }).nullable(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
