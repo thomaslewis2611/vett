@@ -46,6 +46,19 @@ const analysisSchema = z.object({
     estimatedAnnualEnergyCost: z.string().nullable().describe("e.g. '£1,800 per year', or null"),
     commentary: z.string().describe("2-3 sentences: what this rating means for THIS property — typical annual energy bills for this size+rating, cost+saving of upgrading one band, mortgage lender implications if below D"),
   }).nullable(),
+  priceHistory: z.object({
+    entries: z.array(z.object({
+      date: z.string(),
+      price: z.number(),
+      event: z.enum(["sold", "listed", "reduced", "relisted"]),
+    })).nullable(),
+    firstSalePrice: z.number().nullable(),
+    firstSaleDate: z.string().nullable(),
+    totalAppreciation: z.number().nullable().describe("% change from first sold price to current asking"),
+    annualGrowthRate: z.number().nullable().describe("% per year compounded from first sale to now"),
+    yearsHeld: z.number().nullable(),
+    commentary: z.string().describe("2-3 sentences: vs UK ~5%/yr, aggressive pricing concerns, relist gaps, etc."),
+  }).nullable(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
