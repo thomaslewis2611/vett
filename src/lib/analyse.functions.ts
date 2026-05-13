@@ -436,11 +436,8 @@ export const analyseListing = createServerFn({ method: "POST" })
     }
 
     let listingContent = pastedText;
-    let scrapedImage: string | null = null;
     if (!listingContent && url) {
-      const fetched = await fetchListingData(url);
-      listingContent = fetched.text;
-      scrapedImage = fetched.image;
+      listingContent = await fetchListingText(url);
     }
     if (!listingContent || listingContent.length < 100) {
       throw new Error(
@@ -480,19 +477,11 @@ export const analyseListing = createServerFn({ method: "POST" })
       );
     }
 
-    // Prefer the scraped CDN image; fall back to whatever Claude pulled out of
-    // the description; otherwise null (UI shows a placeholder).
-    const claudeImage = isValidPropertyImage(output.property.image)
-      ? output.property.image
-      : null;
-    const finalImage = scrapedImage ?? claudeImage;
-
     const full: AnalysisResult = {
       ...output,
       property: {
         ...output.property,
         listingUrl: url || output.property.listingUrl || "",
-        image: finalImage,
       },
     } as AnalysisResult;
 
