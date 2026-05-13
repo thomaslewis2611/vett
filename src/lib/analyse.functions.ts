@@ -187,6 +187,7 @@ const IMAGE_CDN_HOSTS = ["media.rightmove.co.uk", "lid.zoocdn.com"];
 
 function isValidPropertyImage(url: string | null | undefined): url is string {
   if (!url) return false;
+  if (url === "Unknown" || url.trim() === "") return false;
   if (!url.startsWith("https://")) return false;
   const lower = url.toLowerCase();
   if (IMAGE_BLOCKLIST.some((b) => lower.includes(b))) return false;
@@ -194,15 +195,41 @@ function isValidPropertyImage(url: string | null | undefined): url is string {
 }
 
 function extractPropertyImage(html: string): string | null {
-  // 1. og:image, 2. twitter:image
-  for (const name of ["og:image", "og:image:secure_url", "twitter:image"]) {
+  // Collect all meta tags for debug visibility.
+  const metaTags = html.match(/<meta[^>]+>/gi) ?? [];
+  const metaSnippet = metaTags.join("\n").slice(0, 500);
+  console.log(`[analyseListing] meta tags (first 500 chars):\n${metaSnippet}`);
+
+  // 1. Try standard + non-standard og:image variants (property= and name=, with :url/:secure_url suffixes).
+  const ogNames = [
+    "og:image",
+    "og:image:url",
+    "og:image:secure_url",
+    "twitter:image",
+    "twitter:image:src",
+  ];
+  for (const name of ogNames) {
     const metas = extractMetaContent(html, [name]);
     for (const candidate of metas) {
       const decoded = decodeEntities(candidate);
       if (isValidPropertyImage(decoded)) return decoded;
     }
   }
-  // 3. First large CDN image in the page.
+
+  // 2. Any <meta> whose content points at a known property image CDN, regardless of attribute name/order.
+  for (const tag of metaTags) {
+    const contentMatch = tag.match(/content=["']([^"']+)["']/i);
+    if (!contentMatch) continue;
+    const decoded = decodeEntities(contentMatch[1]);
+    if (
+      IMAGE_CDN_HOSTS.some((h) => decoded.includes(h)) &&
+      isValidPropertyImage(decoded)
+    ) {
+      return decoded;
+    }
+  }
+
+  // 3. First large CDN image in the page body.
   const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
   let m: RegExpExecArray | null;
   while ((m = imgRegex.exec(html)) !== null) {
@@ -357,6 +384,25 @@ async function fetchListingData(
     }
   }
 
+  // 3b. If we still have no image, try a head-only basic fetch — Rightmove's
+  // og:image is often readable even when the body is JS-gated.
+  if (!payload.image) {
+    try {
+      const headHtml = await basicFetchListingHtml(url);
+      if (headHtml) {
+        const headOnly = headHtml.split(/<\/head>/i)[0] ?? headHtml;
+        const found = extractPropertyImage(headOnly);
+        if (found) {
+          console.log(`[analyseListing] recovered og:image via basic fetch for ${url}`);
+          payload = { ...payload, image: found };
+        } else {
+          console.log(`[analyseListing] basic-fetch og:image retry found nothing for ${url}`);
+        }
+      }
+    } catch (err) {
+      console.error("[analyseListing] basic-fetch image retry failed:", err);
+    }
+  }
   // 4. Cache successful results (only when we got real text).
   if (payload.text && payload.text.length >= 200) {
     try {
