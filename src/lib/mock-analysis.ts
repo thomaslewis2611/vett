@@ -9,7 +9,6 @@ export type AnalysisResult = {
     baths: number;
     type: string;
     sqft: number;
-    image: string | null;
     listingUrl: string;
   };
   score: number;

@@ -14,7 +14,6 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PaymentSuccessRouteImport } from './routes/payment-success'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ApiPublicPropertyImageRouteImport } from './routes/api/public/property-image'
 
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
@@ -41,11 +40,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicPropertyImageRoute = ApiPublicPropertyImageRouteImport.update({
-  id: '/api/public/property-image',
-  path: '/api/public/property-image',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -53,7 +47,6 @@ export interface FileRoutesByFullPath {
   '/payment-success': typeof PaymentSuccessRoute
   '/pricing': typeof PricingRoute
   '/results': typeof ResultsRoute
-  '/api/public/property-image': typeof ApiPublicPropertyImageRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -61,7 +54,6 @@ export interface FileRoutesByTo {
   '/payment-success': typeof PaymentSuccessRoute
   '/pricing': typeof PricingRoute
   '/results': typeof ResultsRoute
-  '/api/public/property-image': typeof ApiPublicPropertyImageRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -70,25 +62,12 @@ export interface FileRoutesById {
   '/payment-success': typeof PaymentSuccessRoute
   '/pricing': typeof PricingRoute
   '/results': typeof ResultsRoute
-  '/api/public/property-image': typeof ApiPublicPropertyImageRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/dashboard'
-    | '/payment-success'
-    | '/pricing'
-    | '/results'
-    | '/api/public/property-image'
+  fullPaths: '/' | '/dashboard' | '/payment-success' | '/pricing' | '/results'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/dashboard'
-    | '/payment-success'
-    | '/pricing'
-    | '/results'
-    | '/api/public/property-image'
+  to: '/' | '/dashboard' | '/payment-success' | '/pricing' | '/results'
   id:
     | '__root__'
     | '/'
@@ -96,7 +75,6 @@ export interface FileRouteTypes {
     | '/payment-success'
     | '/pricing'
     | '/results'
-    | '/api/public/property-image'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -105,7 +83,6 @@ export interface RootRouteChildren {
   PaymentSuccessRoute: typeof PaymentSuccessRoute
   PricingRoute: typeof PricingRoute
   ResultsRoute: typeof ResultsRoute
-  ApiPublicPropertyImageRoute: typeof ApiPublicPropertyImageRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -145,13 +122,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/property-image': {
-      id: '/api/public/property-image'
-      path: '/api/public/property-image'
-      fullPath: '/api/public/property-image'
-      preLoaderRoute: typeof ApiPublicPropertyImageRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -161,8 +131,17 @@ const rootRouteChildren: RootRouteChildren = {
   PaymentSuccessRoute: PaymentSuccessRoute,
   PricingRoute: PricingRoute,
   ResultsRoute: ResultsRoute,
-  ApiPublicPropertyImageRoute: ApiPublicPropertyImageRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
