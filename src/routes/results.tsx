@@ -60,6 +60,45 @@ function writeCachedAnalysis(analysis: AnalysisResult, url?: string, text?: stri
   } catch { /* ignore quota */ }
 }
 
+type StampDutyMode = "main" | "additional" | "ftb";
+
+function calcStampDuty(price: number, mode: StampDutyMode): number {
+  if (!price || price <= 0) return 0;
+  // First-time buyer relief (England, only if price ≤ £625,000)
+  if (mode === "ftb" && price <= 625000) {
+    if (price <= 425000) return 0;
+    return Math.round((price - 425000) * 0.05);
+  }
+  // Standard residential bands (England)
+  const bands: { upTo: number; rate: number }[] = [
+    { upTo: 125000, rate: 0 },
+    { upTo: 250000, rate: 0.02 },
+    { upTo: 925000, rate: 0.05 },
+    { upTo: 1500000, rate: 0.10 },
+    { upTo: Infinity, rate: 0.12 },
+  ];
+  let duty = 0;
+  let prev = 0;
+  for (const b of bands) {
+    if (price > b.upTo) {
+      duty += (b.upTo - prev) * b.rate;
+      prev = b.upTo;
+    } else {
+      duty += (price - prev) * b.rate;
+      break;
+    }
+  }
+  // Additional property surcharge: +5% on full price (England, from Oct 2024)
+  if (mode === "additional") duty += price * 0.05;
+  return Math.round(duty);
+}
+
+const STAMP_DUTY_LABELS: Record<StampDutyMode, string> = {
+  main: "Main residence",
+  additional: "Additional property",
+  ftb: "First-time buyer",
+};
+
 type AccessLevel = "none" | "single" | "pass";
 
 function useAccess(listingUrl: string | undefined, token: string | undefined): { level: AccessLevel; email: string | null; loading: boolean } {
@@ -334,11 +373,15 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
     }
   }, [showChat, access.email, listingUrl, a, saveFn]);
 
+  const [sdMode, setSdMode] = useState<StampDutyMode>("main");
+  const stampDuty = calcStampDuty(a.property.price, sdMode);
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
       <main className="mx-auto max-w-5xl px-6 py-10">
+
         <Link
           to="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
@@ -405,12 +448,41 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
             />
             <MetricCard
               label="Stamp duty est."
-              value={formatGBP(a.metrics.estimatedStampDuty)}
-              hint="Second home rate"
+              value={formatGBP(stampDuty)}
+              hint={STAMP_DUTY_LABELS[sdMode]}
               icon={TrendingDown}
             />
           </div>
+
+          <div className="mt-4 flex flex-wrap gap-2" role="tablist" aria-label="Stamp duty rate">
+            {(["main", "additional", "ftb"] as StampDutyMode[]).map((m) => {
+              const active = sdMode === m;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setSdMode(m)}
+                  className={
+                    "rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors " +
+                    (active
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-accent")
+                  }
+                >
+                  {STAMP_DUTY_LABELS[m]}
+                </button>
+              );
+            })}
+          </div>
+          {sdMode === "ftb" && a.property.price > 625000 && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              First-time buyer relief doesn't apply above £625,000 — standard rates used.
+            </p>
+          )}
         </section>
+
 
         {/* EPC */}
         <EpcSection analysis={a} />
@@ -456,7 +528,7 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
               </UnlockedSection>
 
               <UnlockedSection title="True cost breakdown">
-                <CostBreakdown analysis={a} />
+                <CostBreakdown analysis={a} stampDuty={stampDuty} stampDutyMode={sdMode} />
               </UnlockedSection>
 
               <UnlockedSection title="Negotiation strategy">
@@ -616,11 +688,22 @@ function UnlockedSection({ title, children }: { title: string; children: React.R
   );
 }
 
-function CostBreakdown({ analysis }: { analysis: AnalysisResult }) {
+function CostBreakdown({
+  analysis,
+  stampDuty,
+  stampDutyMode,
+}: {
+  analysis: AnalysisResult;
+  stampDuty?: number;
+  stampDutyMode?: StampDutyMode;
+}) {
   const c = analysis.costs;
+  const sd = typeof stampDuty === "number" ? stampDuty : c.stampDuty;
+  const totalUpfront = c.purchasePrice + sd + c.legalFees + c.surveyFees + c.mortgageFees;
+  const sdLabel = stampDutyMode ? `Stamp duty (${STAMP_DUTY_LABELS[stampDutyMode]})` : "Stamp duty";
   const rows = [
     ["Purchase price", c.purchasePrice],
-    ["Stamp duty", c.stampDuty],
+    [sdLabel, sd],
     ["Legal fees", c.legalFees],
     ["Survey", c.surveyFees],
     ["Mortgage arrangement", c.mortgageFees],
@@ -632,7 +715,7 @@ function CostBreakdown({ analysis }: { analysis: AnalysisResult }) {
           Total upfront
         </div>
         <div className="mt-1 text-3xl font-semibold tracking-tight">
-          {formatGBP(c.totalUpfront)}
+          {formatGBP(totalUpfront)}
         </div>
         <ul className="mt-4 divide-y divide-border text-sm">
           {rows.map(([label, val]) => (
