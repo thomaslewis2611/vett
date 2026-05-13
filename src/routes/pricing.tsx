@@ -71,7 +71,7 @@ function PricingPage() {
 
         <div className="mt-16 text-center text-sm text-muted-foreground">
           Need it for your team or agency?{" "}
-          <a href="mailto:hello@flagr.app" className="text-primary hover:underline">
+          <a href="mailto:hello@roovr.co.uk" className="text-primary hover:underline">
             Get in touch
           </a>
           .
