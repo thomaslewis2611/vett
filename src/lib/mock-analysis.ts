@@ -77,11 +77,26 @@ export const mockAnalysis: AnalysisResult = {
   },
   score: 7.2,
   scoreLabel: "Solid buy with room to negotiate",
+  subScores: {
+    valueForMoney: 7,
+    locationQuality: 8,
+    listingTransparency: 6,
+    marketTiming: 5,
+    riskLevel: 6,
+    resalePotential: 8,
+  },
   metrics: {
     pricePerSqFt: 580,
     daysOnMarket: 47,
     councilTaxBand: "E",
     estimatedStampDuty: 21750,
+  },
+  areaContext: {
+    avgPricePerSqFtArea: 620,
+    avgSoldPriceArea: 705000,
+    priceVsAreaPercent: -3,
+    areaDescription: "SW18 is a well-connected south London postcode with strong transport links and good schools. Prices have softened slightly in the last 12 months.",
+    comparableNote: "This property is priced just below the local average but needs cosmetic work that comparable refurbished homes already have.",
   },
   redFlags: [
     {
