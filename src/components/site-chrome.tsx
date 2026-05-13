@@ -91,7 +91,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
               Buyer Pass Login
             </h2>
             <p className="mt-1" style={{ fontSize: 13, color: "#5F5E5A" }}>
-              Enter the email you used for Buyer Pass.
+              Enter the email you used at checkout (Buyer Pass or single report).
             </p>
           </div>
           <button onClick={onClose} aria-label="Close" style={{ color: "#888780" }}>
