@@ -1534,6 +1534,14 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
       <section className="mt-10">
         {headingNode}
         <div className="mt-4" style={cardStyle}>
+          {ph.nearbyMode && (
+            <p
+              className="mb-3"
+              style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.5 }}
+            >
+              No exact match found — showing recent sales nearby on the same street.
+            </p>
+          )}
           {/* Timeline */}
           <div className="relative" style={{ paddingTop: 8, paddingBottom: 4 }}>
             <div
@@ -1678,6 +1686,21 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
               {aggressiveGrowth ? "⚠ " : ""}
               {ph.commentary}
             </p>
+          )}
+
+          {ph.source === "land_registry" && (
+            <div
+              className="mt-4 flex items-center gap-1.5"
+              style={{ fontSize: 10, color: "#888780" }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 21h18" />
+                <path d="M5 21V8l7-4 7 4v13" />
+                <path d="M9 21v-6h6v6" />
+                <path d="M9 12h.01M12 12h.01M15 12h.01" />
+              </svg>
+              Source: HM Land Registry
+            </div>
           )}
         </div>
       </section>
