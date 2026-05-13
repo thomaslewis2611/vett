@@ -21,6 +21,14 @@ export type AnalysisResult = {
     riskLevel: number;
     resalePotential: number;
   };
+  scoreReasons?: {
+    valueForMoney?: string | null;
+    locationQuality?: string | null;
+    listingTransparency?: string | null;
+    marketTiming?: string | null;
+    riskLevel?: string | null;
+    resalePotential?: string | null;
+  };
   metrics: {
     pricePerSqFt: number;
     daysOnMarket: number;
