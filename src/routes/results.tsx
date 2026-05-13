@@ -13,6 +13,7 @@ import {
   Check,
   TrendingDown,
   Loader2,
+  Download,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
@@ -382,6 +383,7 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
 
       {access.level === "pass" && (
         <div
+          className="no-print"
           style={{
             background: "#FAECE7",
             borderBottom: "0.5px solid rgba(153,60,29,0.15)",
@@ -398,12 +400,15 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
 
       <main className="mx-auto max-w-5xl px-6 py-10">
 
-        <Link
-          to="/"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← Analyse another property
-        </Link>
+        <div className="flex items-center justify-between gap-4 no-print">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          >
+            ← Analyse another property
+          </Link>
+          <DownloadPdfButton />
+        </div>
 
         {/* Property header */}
         <section
@@ -1399,5 +1404,41 @@ function EpcSection({ analysis }: { analysis: AnalysisResult }) {
         )}
       </div>
     </section>
+  );
+}
+
+function DownloadPdfButton() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const onClick = () => {
+    if (typeof window !== "undefined") window.print();
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 transition-colors hover:bg-[#1A1108] hover:text-[#FFFDF9]"
+      style={{
+        border: "1.5px solid #1A1108",
+        background: "transparent",
+        color: "#1A1108",
+        borderRadius: 100,
+        fontSize: 13,
+        fontWeight: 500,
+        padding: "7px 14px",
+      }}
+    >
+      <Download className="h-3.5 w-3.5" />
+      {isMobile ? "Save as PDF" : "Download PDF"}
+    </button>
   );
 }

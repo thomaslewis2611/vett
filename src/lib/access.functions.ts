@@ -33,3 +33,23 @@ export const checkBuyerPassByEmail = createServerFn({ method: "POST" })
       .maybeSingle();
     return { hasPass: Boolean(row) };
   });
+
+export const getSingleReportByEmail = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ email: z.string().email().max(320) }))
+  .handler(
+    async ({
+      data,
+    }): Promise<{ token: string | null; listingUrl: string | null; expiresAt: string | null }> => {
+      const { data: row } = await supabaseAdmin
+        .from("single_report_tokens")
+        .select("token, listing_url, expires_at, created_at")
+        .ilike("user_email", data.email)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!row) return { token: null, listingUrl: null, expiresAt: null };
+      if (new Date(row.expires_at).getTime() < Date.now())
+        return { token: null, listingUrl: null, expiresAt: null };
+      return { token: row.token, listingUrl: row.listing_url, expiresAt: row.expires_at };
+    }
+  );

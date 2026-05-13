@@ -65,7 +65,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
       setMsg(
         r.found
           ? "Magic link sent — check your inbox (and spam folder)."
-          : "We couldn't find a Buyer Pass for that email. If you just paid, wait a moment and try again."
+          : "We couldn't find a purchase for that email. If you just paid, wait a moment and try again."
       );
     } catch {
       setMsg("Could not send right now. Try again shortly.");
@@ -91,7 +91,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
               Buyer Pass Login
             </h2>
             <p className="mt-1" style={{ fontSize: 13, color: "#5F5E5A" }}>
-              Enter the email you used for Buyer Pass.
+              Enter the email you used at checkout (Buyer Pass or single report).
             </p>
           </div>
           <button onClick={onClose} aria-label="Close" style={{ color: "#888780" }}>
@@ -139,7 +139,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-function UserMenu({ email }: { email: string }) {
+function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -210,12 +210,13 @@ function UserMenu({ email }: { email: string }) {
             </div>
           </div>
           <Link
-            to="/dashboard"
+            to={hasPass ? "/dashboard" : "/my-report"}
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-[#F1EFE8]"
             style={{ fontSize: 13, color: "#1A1108" }}
           >
-            <LayoutDashboard className="h-4 w-4" style={{ color: "#5F5E5A" }} /> My analyses
+            <LayoutDashboard className="h-4 w-4" style={{ color: "#5F5E5A" }} />{" "}
+            {hasPass ? "My analyses" : "My report"}
           </Link>
           <button
             type="button"
@@ -234,7 +235,7 @@ function UserMenu({ email }: { email: string }) {
 export function SiteHeader() {
   const { email, hasPass, ready } = useAuthUser();
   const [magicOpen, setMagicOpen] = useState(false);
-  const loggedIn = ready && email && hasPass;
+  const loggedIn = ready && Boolean(email);
 
   return (
     <header
@@ -265,7 +266,7 @@ export function SiteHeader() {
           {loggedIn ? (
             <>
               <Link
-                to="/dashboard"
+                to={hasPass ? "/dashboard" : "/my-report"}
                 className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
                 style={{
                   background: "#1A1108",
@@ -276,9 +277,9 @@ export function SiteHeader() {
                   padding: "10px 20px",
                 }}
               >
-                My analyses
+                {hasPass ? "My analyses" : "My report"}
               </Link>
-              <UserMenu email={email!} />
+              <UserMenu email={email!} hasPass={hasPass} />
             </>
           ) : (
             <>

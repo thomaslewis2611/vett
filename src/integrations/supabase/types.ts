@@ -94,6 +94,7 @@ export type Database = {
           listing_url: string | null
           stripe_session_id: string | null
           token: string
+          user_email: string | null
         }
         Insert: {
           created_at?: string
@@ -102,6 +103,7 @@ export type Database = {
           listing_url?: string | null
           stripe_session_id?: string | null
           token: string
+          user_email?: string | null
         }
         Update: {
           created_at?: string
@@ -110,6 +112,7 @@ export type Database = {
           listing_url?: string | null
           stripe_session_id?: string | null
           token?: string
+          user_email?: string | null
         }
         Relationships: []
       }

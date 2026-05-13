@@ -76,25 +76,39 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
   .inputValidator(z.object({ email: z.string().email().max(320) }))
   .handler(async ({ data }): Promise<{ ok: boolean; found: boolean }> => {
     const email = data.email.trim().toLowerCase();
-    const { data: row } = await supabaseAdmin
+    const { data: bp } = await supabaseAdmin
       .from("buyer_pass_users")
       .select("email")
       .ilike("email", email)
       .maybeSingle();
 
-    if (!row) return { ok: true, found: false };
+    let redirectTo = `${SITE_URL}/dashboard`;
+    let found = Boolean(bp);
+
+    if (!found) {
+      const { data: sr } = await supabaseAdmin
+        .from("single_report_tokens")
+        .select("token")
+        .ilike("user_email", email)
+        .limit(1)
+        .maybeSingle();
+      if (sr) {
+        found = true;
+        redirectTo = `${SITE_URL}/my-report`;
+      }
+    }
+
+    if (!found) return { ok: true, found: false };
 
     const { error } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email,
-      options: { redirectTo: `${SITE_URL}/dashboard` },
+      options: { redirectTo },
     });
     if (error) {
       console.error("magic link error", error.message);
       return { ok: false, found: true };
     }
-    // Note: generateLink with admin sends email via Supabase if email is enabled
-    // To force send, also call signInWithOtp via the regular client would require client-side; admin generateLink emits the link in Supabase auth emails.
     return { ok: true, found: true };
   });
 
