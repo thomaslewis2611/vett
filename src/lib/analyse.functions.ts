@@ -62,6 +62,17 @@ const analysisSchema = z.object({
     nearbyMode: z.boolean().nullable().optional(),
     scotland: z.boolean().nullable().optional(),
   }).nullable(),
+  floodRisk: z.object({
+    riversAndSea: z.string().nullable(),
+    surfaceWater: z.string().nullable(),
+    reservoir: z.boolean().nullable(),
+    groundwater: z.string().nullable(),
+    overallRisk: z.string().nullable(),
+    commentary: z.string(),
+    autoRedFlag: z.boolean(),
+    scotland: z.boolean().nullable().optional(),
+    unavailable: z.boolean().nullable().optional(),
+  }).nullable().optional(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
