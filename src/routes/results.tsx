@@ -514,6 +514,9 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
         {/* Price history (free + paid) */}
         <PriceHistorySection analysis={a} />
 
+        {/* Flood risk — Buyer Pass only (free/single see locked teaser) */}
+        <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
+
         {/* Area context */}
         <AreaContextSection analysis={a} />
 
@@ -1478,11 +1481,12 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
       </h2>
     );
 
-    const entries = ph.entries ?? [];
+    const entries = ph?.entries ?? [];
     const currentPrice = analysis.property?.price ?? 0;
+    const isExactMatch = ph?.source === "land_registry" && ph?.nearbyMode !== true;
 
     // Scotland — Land Registry doesn't hold Scottish data
-    if (ph.scotland) {
+    if (ph?.scotland) {
       return (
         <section className="mt-10">
           {headingNode}
@@ -1507,18 +1511,28 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
       );
     }
 
-    // Empty state — no historical data
-    if (entries.length === 0) {
+    // Empty state — no exact-match historical data for this address
+    if (!ph || entries.length === 0 || !isExactMatch) {
       return (
         <section className="mt-10">
           {headingNode}
           <div className="mt-4" style={cardStyle}>
             <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
-              No previous sale history found for this property.
+              No sale history found
             </p>
             <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
-              You can check historical sales at Land Registry
-              (gov.uk/search-property-information-land-registry) or Zoopla&apos;s sold prices tool.
+              We couldn&apos;t find a previous sale record for this exact address.
+              You can search directly at HM Land Registry to check historical prices.
+            </p>
+            <p className="mt-3" style={{ fontSize: 12, lineHeight: 1.6 }}>
+              <a
+                href="https://www.gov.uk/search-property-information-land-registry"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#185FA5", textDecoration: "underline" }}
+              >
+                Search Land Registry →
+              </a>
             </p>
           </div>
         </section>
@@ -1559,14 +1573,6 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
       <section className="mt-10">
         {headingNode}
         <div className="mt-4" style={cardStyle}>
-          {ph.nearbyMode && (
-            <p
-              className="mb-3"
-              style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.5 }}
-            >
-              No exact match found — showing recent sales nearby on the same street.
-            </p>
-          )}
           {/* Timeline */}
           <div className="relative" style={{ paddingTop: 8, paddingBottom: 4 }}>
             <div
@@ -1732,6 +1738,191 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
     );
   } catch (err) {
     console.error("[PriceHistorySection] render failed:", err);
+    return null;
+  }
+}
+
+function FloodRiskSection({ analysis, isBuyerPass }: { analysis: AnalysisResult; isBuyerPass: boolean }) {
+  try {
+    const fr = analysis.floodRisk;
+
+    const cardStyle: CSSProperties = {
+      background: "#FFFDF9",
+      border: "0.5px solid rgba(26,17,8,0.12)",
+      borderRadius: 12,
+      padding: 20,
+    };
+
+    const headingNode = (
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        Flood risk
+      </h2>
+    );
+
+    // Locked teaser for free / single-report users
+    if (!isBuyerPass) {
+      return (
+        <section className="mt-10">
+          {headingNode}
+          <div className="mt-4 relative overflow-hidden" style={cardStyle}>
+            <div style={{ filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}>
+              <div className="flex items-center justify-between">
+                <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
+                  Flood risk assessment
+                </p>
+                <span style={{ background: "#FAECE7", color: "#A32D2D", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 500 }}>
+                  Medium
+                </span>
+              </div>
+              <div className="mt-3 space-y-2">
+                <div style={{ fontSize: 13, color: "#5F5E5A" }}>Rivers and sea: Low</div>
+                <div style={{ fontSize: 13, color: "#5F5E5A" }}>Surface water: Medium</div>
+                <div style={{ fontSize: 13, color: "#5F5E5A" }}>Reservoir: No</div>
+                <div style={{ fontSize: 13, color: "#5F5E5A" }}>Groundwater: Low</div>
+              </div>
+              <p style={{ fontSize: 13, color: "#5F5E5A", marginTop: 12 }}>
+                Insurance and mortgage commentary based on Environment Agency data.
+              </p>
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+              <div className="flex items-center gap-2" style={{ color: "#1A1108", fontWeight: 600, fontSize: 14 }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                </svg>
+                Flood risk assessment
+              </div>
+              <p className="mt-1" style={{ fontSize: 12, color: "#5F5E5A" }}>
+                Unlock with Buyer Pass to see flood zone, insurance implications and mortgage risks
+              </p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    // Scotland
+    if (fr?.scotland) {
+      return (
+        <section className="mt-10">
+          {headingNode}
+          <div className="mt-4" style={cardStyle}>
+            <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
+              This property is in Scotland.
+            </p>
+            <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
+              Check flood risk at{" "}
+              <a href="https://www.sepa.org.uk/environment/water/flooding/flood-risk" target="_blank" rel="noopener noreferrer" style={{ color: "#185FA5", textDecoration: "underline" }}>
+                sepa.org.uk/environment/water/flooding/flood-risk
+              </a>
+            </p>
+          </div>
+        </section>
+      );
+    }
+
+    // API failure / unavailable
+    if (!fr || fr.unavailable) {
+      return (
+        <section className="mt-10">
+          {headingNode}
+          <div className="mt-4" style={cardStyle}>
+            <p style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
+              Flood risk data temporarily unavailable. Check directly at{" "}
+              <a href="https://check-long-term-flood-risk.service.gov.uk" target="_blank" rel="noopener noreferrer" style={{ color: "#185FA5", textDecoration: "underline" }}>
+                check-long-term-flood-risk.service.gov.uk
+              </a>
+            </p>
+          </div>
+        </section>
+      );
+    }
+
+    const badgeStyle = (level: string | null): CSSProperties => {
+      const v = (level ?? "").toLowerCase();
+      if (v === "high") return { background: "#FAECE7", color: "#A32D2D" };
+      if (v === "medium") return { background: "#FAEEDA", color: "#633806" };
+      if (v === "low") return { background: "#EAF3DE", color: "#27500A" };
+      if (v === "very low") return { background: "#EAF3DE", color: "#27500A" };
+      return { background: "#F1EFE8", color: "#5F5E5A" };
+    };
+
+    const Pill = ({ value }: { value: string | null }) => (
+      <span
+        style={{
+          ...badgeStyle(value),
+          borderRadius: 999,
+          padding: "3px 10px",
+          fontSize: 12,
+          fontWeight: 500,
+          display: "inline-block",
+        }}
+      >
+        {value ?? "Unknown"}
+      </span>
+    );
+
+    const isHigh = (fr.overallRisk ?? "").toLowerCase() === "high";
+
+    return (
+      <section className="mt-10">
+        {headingNode}
+        <div className="mt-4" style={cardStyle}>
+          <div className="flex items-center justify-between gap-3">
+            <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
+              Overall flood risk
+            </p>
+            <span
+              style={{
+                ...badgeStyle(fr.overallRisk),
+                borderRadius: 999,
+                padding: "4px 12px",
+                fontSize: 12,
+                fontWeight: 600,
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              {isHigh && (
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              )}
+              {fr.overallRisk ?? "Unknown"}
+            </span>
+          </div>
+
+          <div className="mt-4 space-y-2">
+            {[
+              { label: "Rivers and sea", value: fr.riversAndSea },
+              { label: "Surface water", value: fr.surfaceWater },
+              { label: "Reservoir", value: fr.reservoir == null ? null : fr.reservoir ? "Yes" : "No" },
+              { label: "Groundwater", value: fr.groundwater },
+            ].map((row) => (
+              <div key={row.label} className="flex items-center justify-between">
+                <span style={{ fontSize: 13, color: "#5F5E5A" }}>{row.label}</span>
+                <Pill value={row.value} />
+              </div>
+            ))}
+          </div>
+
+          {fr.commentary && (
+            <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6, marginTop: 14 }}>
+              {fr.commentary}
+            </p>
+          )}
+
+          <div style={{ fontSize: 10, color: "#888780", marginTop: 12 }}>
+            Source: Environment Agency
+          </div>
+        </div>
+      </section>
+    );
+  } catch (err) {
+    console.error("[FloodRiskSection] render failed:", err);
     return null;
   }
 }

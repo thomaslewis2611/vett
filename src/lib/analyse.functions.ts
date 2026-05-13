@@ -62,6 +62,17 @@ const analysisSchema = z.object({
     nearbyMode: z.boolean().nullable().optional(),
     scotland: z.boolean().nullable().optional(),
   }).nullable(),
+  floodRisk: z.object({
+    riversAndSea: z.string().nullable(),
+    surfaceWater: z.string().nullable(),
+    reservoir: z.boolean().nullable(),
+    groundwater: z.string().nullable(),
+    overallRisk: z.string().nullable(),
+    commentary: z.string(),
+    autoRedFlag: z.boolean(),
+    scotland: z.boolean().nullable().optional(),
+    unavailable: z.boolean().nullable().optional(),
+  }).nullable().optional(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
@@ -140,6 +151,7 @@ You must:
 - Tailor the 8 viewing questions to specific things in this listing, not generic boilerplate.
 - EPC: Look for the pattern "EPC RATING EXTRACTED: [letter]" at the top of the listing content — this is the confirmed EPC rating, always use it as epc.rating. Also look for variations like "EPC rating D", "EPC Rating: D", or "* EPC rating D" in the description text. If the listing content begins with a line like "EXTRACTED FROM PAGE HTML — EPC rating: X", trust that value. If the listing content contains council tax band information, look in the same section for an EPC rating — on Rightmove they appear together (common format: "Council Tax band X" alongside "EPC rating Y", often in an "Additional Property Information" bullet list). Do NOT guess or invent an EPC rating. If the listing genuinely does not show one, return epc: null. If you find one, populate rating, score, potentialRating and estimatedAnnualEnergyCost where visible (otherwise null), and ALWAYS write a 2-3 sentence commentary tailored to THIS property's size and rating: typical annual energy bills for a property this size at this rating, the cost and saving of upgrading to the next band, and mortgage lender implications if rated below D.
 - PRICE HISTORY: If "PRICE HISTORY DATA:" is provided at the top of the listing content, use it to populate the priceHistory field. Each line lists "[event] [date]: £[price]". Set entries (sorted oldest-first), firstSalePrice / firstSaleDate from the earliest sold (or earliest listed if no sold) entry, yearsHeld = years between firstSaleDate and today, totalAppreciation = ((currentAskingPrice - firstSalePrice) / firstSalePrice * 100) rounded to 1 decimal, annualGrowthRate = (((currentAskingPrice / firstSalePrice) ^ (1 / yearsHeld)) - 1) * 100 rounded to 1 decimal. Write a 2-3 sentence commentary comparing growth to the UK average (~5%/yr), flagging aggressive pricing if annualGrowthRate exceeds 8%/yr, flagging negative appreciation if price has fallen, and flagging if there is a gap of more than 6 months between listing/relisting events. If no PRICE HISTORY DATA is provided, set priceHistory to null. NEVER fabricate historical prices.
+- FLOOD RISK: If "ENVIRONMENT AGENCY FLOOD RISK" data is provided in the listing content, populate floodRisk with EXACTLY those values for riversAndSea, surfaceWater, reservoir, groundwater and overallRisk. Set autoRedFlag=true ONLY if Rivers/Sea risk is "High". Write a 2-3 sentence commentary explaining the practical implications: buildings insurance cost, mortgage lender concerns, what the buyer should do. For High risk specifically mention that some insurers refuse cover or charge 3-5x standard premiums and that some mortgage lenders require flood resilience measures as a condition of lending. If no flood data is provided, set floodRisk to null.
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
@@ -152,6 +164,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
   "epc": { "rating": string|null, "score": number|null, "potentialRating": string|null, "estimatedAnnualEnergyCost": string|null, "commentary": string } | null,
   "priceHistory": { "entries": [{ "date": string, "price": number, "event": "sold"|"listed"|"reduced"|"relisted" }]|null, "firstSalePrice": number|null, "firstSaleDate": string|null, "totalAppreciation": number|null, "annualGrowthRate": number|null, "yearsHeld": number|null, "commentary": string } | null,
+  "floodRisk": { "riversAndSea": "Very Low"|"Low"|"Medium"|"High"|null, "surfaceWater": "Very Low"|"Low"|"Medium"|"High"|null, "reservoir": boolean|null, "groundwater": "Very Low"|"Low"|"Medium"|"High"|null, "overallRisk": "Very Low"|"Low"|"Medium"|"High"|null, "commentary": string, "autoRedFlag": boolean } | null,
   "areaContext": { "avgPricePerSqFtArea": number|null, "avgSoldPriceArea": number|null, "priceVsAreaPercent": number|null, "areaDescription": string, "comparableNote": string },
   "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ] (3-8 items),
   "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
@@ -547,7 +560,137 @@ function isScottishPostcode(postcode: string | null): boolean {
   return SCOTTISH_POSTCODE_PREFIXES.includes(area);
 }
 
-async function fetchListingText(url: string): Promise<{ text: string; landRegistry: LandRegistryResult; scotland: boolean }> {
+// ---------------- Flood Risk (Environment Agency) ----------------
+type FloodRiskRaw = {
+  riversAndSea: string | null;
+  surfaceWater: string | null;
+  reservoir: boolean | null;
+  groundwater: string | null;
+  overallRisk: string | null;
+  scotland?: boolean;
+  unavailable?: boolean;
+};
+
+const FLOOD_RISK_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+const RISK_LEVELS = ["very low", "low", "medium", "high"] as const;
+function normaliseRisk(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const s = v.trim().toLowerCase().replace(/\s+/g, " ");
+  if (RISK_LEVELS.includes(s as (typeof RISK_LEVELS)[number])) {
+    return s.replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  return null;
+}
+
+function highestRisk(values: (string | null)[]): string | null {
+  let best = -1;
+  for (const v of values) {
+    if (!v) continue;
+    const idx = RISK_LEVELS.indexOf(v.toLowerCase() as (typeof RISK_LEVELS)[number]);
+    if (idx > best) best = idx;
+  }
+  if (best < 0) return null;
+  const v = RISK_LEVELS[best];
+  return v.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | null> {
+  if (!postcode) return null;
+  console.log(`fetchFloodRisk called with postcode: ${postcode}`);
+
+  if (isScottishPostcode(postcode)) {
+    console.log("fetchFloodRisk: Scottish postcode, skipping EA API");
+    return {
+      riversAndSea: null,
+      surfaceWater: null,
+      reservoir: null,
+      groundwater: null,
+      overallRisk: null,
+      scotland: true,
+    };
+  }
+
+  const cacheKey = `floodrisk:${postcode}`;
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, fetched_at")
+      .eq("url", cacheKey)
+      .maybeSingle();
+    if (
+      cached?.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < FLOOD_RISK_TTL_MS
+    ) {
+      try {
+        const parsed = JSON.parse(cached.text_content) as FloodRiskRaw;
+        console.log(`fetchFloodRisk returned cached for ${postcode}`);
+        return parsed;
+      } catch { /* ignore */ }
+    }
+  } catch (err) {
+    console.error("[floodRisk] cache lookup failed:", err);
+  }
+
+  const pcParam = encodeURIComponent(postcode.replace(/\s+/g, ""));
+  const url = `https://check-long-term-flood-risk.service.gov.uk/api/flood-risk-by-postcode/${pcParam}`;
+
+  let raw: FloodRiskRaw | null = null;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10_000);
+    const res = await fetch(url, {
+      headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) {
+      console.error(`[floodRisk] HTTP ${res.status} for ${url}`);
+      return { riversAndSea: null, surfaceWater: null, reservoir: null, groundwater: null, overallRisk: null, unavailable: true };
+    }
+    const json = (await res.json()) as Record<string, unknown>;
+    const rivers = normaliseRisk(json.floodRiskFromRivers ?? json.riversAndSea ?? json.rivers);
+    const surface = normaliseRisk(json.floodRiskFromSurface ?? json.surfaceWater ?? json.surface);
+    const ground = normaliseRisk(json.floodRiskFromGroundwater ?? json.groundwater);
+    const reservoirRaw = json.floodRiskFromReservoir ?? json.reservoir;
+    const reservoir = typeof reservoirRaw === "boolean" ? reservoirRaw : null;
+    const overall = highestRisk([rivers, surface, ground]);
+    raw = {
+      riversAndSea: rivers,
+      surfaceWater: surface,
+      reservoir,
+      groundwater: ground,
+      overallRisk: overall,
+    };
+  } catch (err) {
+    console.error("[floodRisk] fetch failed:", err);
+    return { riversAndSea: null, surfaceWater: null, reservoir: null, groundwater: null, overallRisk: null, unavailable: true };
+  }
+
+  try {
+    await supabaseAdmin
+      .from("listing_cache")
+      .upsert(
+        { url: cacheKey, text_content: JSON.stringify(raw), fetched_at: new Date().toISOString() },
+        { onConflict: "url" },
+      );
+  } catch (err) {
+    console.error("[floodRisk] cache upsert failed:", err);
+  }
+
+  console.log(`fetchFloodRisk returned overallRisk=${raw?.overallRisk ?? "null"}`);
+  return raw;
+}
+
+type FetchedListing = {
+  text: string;
+  landRegistry: LandRegistryResult;
+  scotland: boolean;
+  postcode: string | null;
+  floodRisk: FloodRiskRaw | null;
+};
+
+async function fetchListingText(url: string): Promise<FetchedListing> {
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
 
@@ -573,7 +716,7 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
   }
 
   // We need either cached text or fresh HTML to extract postcode for the
-  // Land Registry call.
+  // Land Registry / flood-risk calls.
   let html = "";
   if (!cachedText) {
     html = await basicFetchListingHtml(url);
@@ -582,8 +725,7 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
   const { postcode, paon, saon, street } = extractAddressBits(sourceForExtraction);
   const scotland = isScottishPostcode(postcode);
 
-  // Scottish properties: Land Registry doesn't cover Scotland. Skip the lookup.
-  // Run Land Registry lookup in parallel with the rest of the work.
+  // Run external lookups in parallel with the rest of the work.
   const landRegistryPromise: Promise<LandRegistryResult> = (postcode && !scotland)
     ? fetchLandRegistryPriceHistory(postcode, paon, saon, street).catch((err) => {
         console.error("[landRegistry] lookup failed:", err);
@@ -591,15 +733,22 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
       })
     : Promise.resolve(null);
 
+  const floodRiskPromise: Promise<FloodRiskRaw | null> = postcode
+    ? fetchFloodRisk(postcode).catch((err) => {
+        console.error("[floodRisk] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
   if (cachedText) {
-    const landRegistry = await landRegistryPromise;
-    return { text: cachedText, landRegistry, scotland };
+    const [landRegistry, floodRisk] = await Promise.all([landRegistryPromise, floodRiskPromise]);
+    return { text: cachedText, landRegistry, scotland, postcode, floodRisk };
   }
 
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  const landRegistry = await landRegistryPromise;
+  const [landRegistry, floodRisk] = await Promise.all([landRegistryPromise, floodRiskPromise]);
 
   const notes: string[] = [];
   if (listed) {
@@ -621,6 +770,16 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
     );
     notes.push(`LAND REGISTRY PRICE HISTORY (official data):\n${lines.join("\n")}`);
   }
+  if (floodRisk && !floodRisk.scotland && !floodRisk.unavailable) {
+    const lines: string[] = [
+      `Rivers and sea: ${floodRisk.riversAndSea ?? "Unknown"}`,
+      `Surface water: ${floodRisk.surfaceWater ?? "Unknown"}`,
+      `Reservoir: ${floodRisk.reservoir == null ? "Unknown" : floodRisk.reservoir ? "Yes" : "No"}`,
+      `Groundwater: ${floodRisk.groundwater ?? "Unknown"}`,
+      `Overall (highest of rivers/surface/groundwater): ${floodRisk.overallRisk ?? "Unknown"}`,
+    ];
+    notes.push(`ENVIRONMENT AGENCY FLOOD RISK (official data — use these values verbatim in floodRisk and write a 2-3 sentence commentary; set autoRedFlag=true only if Rivers/Sea is High):\n${lines.join("\n")}`);
+  }
   if (text && notes.length) {
     text = `${notes.join("\n")}\n\n${text}`.slice(0, 25_700);
   }
@@ -639,7 +798,7 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
     }
   }
 
-  return { text, landRegistry, scotland };
+  return { text, landRegistry, scotland, postcode, floodRisk };
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
@@ -740,11 +899,13 @@ export const analyseListing = createServerFn({ method: "POST" })
     let listingContent = pastedText;
     let landRegistry: LandRegistryResult = null;
     let scotland = false;
+    let floodRiskRaw: FloodRiskRaw | null = null;
     if (!listingContent && url) {
       const fetched = await fetchListingText(url);
       listingContent = fetched.text;
       landRegistry = fetched.landRegistry;
       scotland = fetched.scotland;
+      floodRiskRaw = fetched.floodRisk;
     }
     if (!listingContent || listingContent.length < 100) {
       throw new Error(
@@ -828,6 +989,64 @@ export const analyseListing = createServerFn({ method: "POST" })
         commentary: "",
         scotland: true,
       };
+    }
+
+    // Flood risk — override authoritative fields with EA data, write/append
+    // an auto red flag for High rivers/sea risk so it surfaces even on the
+    // free preview.
+    if (floodRiskRaw) {
+      if (floodRiskRaw.scotland) {
+        full.floodRisk = {
+          riversAndSea: null,
+          surfaceWater: null,
+          reservoir: null,
+          groundwater: null,
+          overallRisk: null,
+          commentary: "",
+          autoRedFlag: false,
+          scotland: true,
+        };
+      } else if (floodRiskRaw.unavailable) {
+        full.floodRisk = {
+          riversAndSea: null,
+          surfaceWater: null,
+          reservoir: null,
+          groundwater: null,
+          overallRisk: null,
+          commentary: "",
+          autoRedFlag: false,
+          unavailable: true,
+        };
+      } else {
+        const aiFlood = full.floodRisk;
+        const overall = floodRiskRaw.overallRisk;
+        const isHighRivers = (floodRiskRaw.riversAndSea ?? "").toLowerCase() === "high";
+        full.floodRisk = {
+          riversAndSea: floodRiskRaw.riversAndSea,
+          surfaceWater: floodRiskRaw.surfaceWater,
+          reservoir: floodRiskRaw.reservoir,
+          groundwater: floodRiskRaw.groundwater,
+          overallRisk: overall,
+          commentary: aiFlood?.commentary ?? "",
+          autoRedFlag: isHighRivers,
+        };
+        if (isHighRivers) {
+          const title = "High flood risk — insurance and mortgage implications";
+          if (!full.redFlags.some((f) => f.title === title)) {
+            full.redFlags = [
+              {
+                severity: "high",
+                title,
+                detail:
+                  "This property is in a High flood risk zone according to the Environment Agency. Buildings insurance may be significantly more expensive, refused, or subject to exclusions. Some mortgage lenders require flood resilience measures as a condition of lending. Check the Flood Re scheme eligibility and get a specialist flood insurance quote before proceeding.",
+              },
+              ...full.redFlags,
+            ];
+          }
+        }
+      }
+    } else {
+      full.floodRisk = null;
     }
 
     // Server-side gating — only return premium content if the caller has paid.

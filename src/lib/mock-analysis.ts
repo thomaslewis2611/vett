@@ -60,6 +60,17 @@ export type AnalysisResult = {
     nearbyMode?: boolean | null;
     scotland?: boolean | null;
   } | null;
+  floodRisk?: {
+    riversAndSea: string | null;
+    surfaceWater: string | null;
+    reservoir: boolean | null;
+    groundwater: string | null;
+    overallRisk: string | null;
+    commentary: string;
+    autoRedFlag: boolean;
+    scotland?: boolean | null;
+    unavailable?: boolean | null;
+  } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
     avgSoldPriceArea: number | null;
