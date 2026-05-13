@@ -21,6 +21,14 @@ export type AnalysisResult = {
     riskLevel: number;
     resalePotential: number;
   };
+  scoreReasons?: {
+    valueForMoney?: string | null;
+    locationQuality?: string | null;
+    listingTransparency?: string | null;
+    marketTiming?: string | null;
+    riskLevel?: string | null;
+    resalePotential?: string | null;
+  };
   metrics: {
     pricePerSqFt: number;
     daysOnMarket: number;
@@ -84,6 +92,14 @@ export const mockAnalysis: AnalysisResult = {
     marketTiming: 5,
     riskLevel: 6,
     resalePotential: 8,
+  },
+  scoreReasons: {
+    valueForMoney: "At £685,000 (£580/sq ft) the home undercuts the SW18 average of ~£620/sq ft, but it needs cosmetic work that comparable refurbished homes don't. Net-net it's fairly priced rather than a bargain.",
+    locationQuality: "SW18 sits between Earlsfield and Wandsworth Common with frequent trains to Waterloo in under 20 minutes and well-rated state primaries. Green space and high-street amenities are within easy walking distance.",
+    listingTransparency: "The agent mentions tenure and council tax band but glosses over the dated kitchen and bathrooms, and there's no EPC figure quoted. The phrase 'scope to modernise' is doing a lot of work.",
+    marketTiming: "The listing has been live for 47 days with no price reduction yet, suggesting the asking price is testing the top of the market. Comparable end-of-terraces in SW18 are turning over inside 30 days.",
+    riskLevel: "Single-storey rear extension flagged 'recently completed' but no building-regs sign-off is referenced, and the description hints at original sash windows in poor condition. Both could mean significant post-purchase spend.",
+    resalePotential: "End-of-terrace freehold houses in SW18 with three beds remain the area's most liquid stock, and family demand has been resilient. Resale outlook is strong assuming basic modernisation is completed.",
   },
   metrics: {
     pricePerSqFt: 580,

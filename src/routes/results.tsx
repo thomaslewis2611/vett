@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
   AlertTriangle,
   Calendar,
+  Info,
   Lock,
   PoundSterling,
   Sparkles,
@@ -888,13 +889,39 @@ function PlanCard({
   );
 }
 
-const SUB_SCORE_LABELS: { key: keyof AnalysisResult["subScores"]; label: string }[] = [
-  { key: "valueForMoney", label: "Value for money" },
-  { key: "locationQuality", label: "Location quality" },
-  { key: "listingTransparency", label: "Listing transparency" },
-  { key: "marketTiming", label: "Market timing" },
-  { key: "riskLevel", label: "Risk level" },
-  { key: "resalePotential", label: "Resale potential" },
+type SubScoreKey = keyof AnalysisResult["subScores"];
+
+const SUB_SCORE_LABELS: { key: SubScoreKey; label: string; fallback: string }[] = [
+  {
+    key: "valueForMoney",
+    label: "Value for money",
+    fallback: "How the asking price compares to the local area average and to the property's size in sq ft.",
+  },
+  {
+    key: "locationQuality",
+    label: "Location quality",
+    fallback: "Transport links, schools, amenities and overall postcode desirability.",
+  },
+  {
+    key: "listingTransparency",
+    label: "Listing transparency",
+    fallback: "How honest, complete and detailed the agent's listing description is.",
+  },
+  {
+    key: "marketTiming",
+    label: "Market timing",
+    fallback: "Days on market, price reductions and demand signals for this property.",
+  },
+  {
+    key: "riskLevel",
+    label: "Risk level",
+    fallback: "Higher score means lower risk — covers structural, legal and tenure red flags.",
+  },
+  {
+    key: "resalePotential",
+    label: "Resale potential",
+    fallback: "Property type, tenure, size and the area's longer-term resale outlook.",
+  },
 ];
 
 function scoreColor(s: number): string {
@@ -903,8 +930,126 @@ function scoreColor(s: number): string {
   return "#A32D2D";
 }
 
+function ScoreInfoTooltip({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<{ side: "top" | "bottom"; align: "left" | "right" }>({
+    side: "top",
+    align: "left",
+  });
+  const wrapperRef = useRef<HTMLSpanElement | null>(null);
+
+  const computePlacement = () => {
+    if (typeof window === "undefined" || !wrapperRef.current) return;
+    const rect = wrapperRef.current.getBoundingClientRect();
+    const isMobile = window.innerWidth < 768;
+    const align: "left" | "right" =
+      window.innerWidth - rect.left < 160 ? "right" : "left";
+    setPlacement({ side: isMobile ? "bottom" : "top", align });
+  };
+
+  // Close on outside tap (mobile)
+  useEffect(() => {
+    if (!open) return;
+    const onDocPointer = (e: PointerEvent) => {
+      if (!wrapperRef.current) return;
+      if (!wrapperRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onDocPointer);
+    return () => document.removeEventListener("pointerdown", onDocPointer);
+  }, [open]);
+
+  const onEnter = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches) {
+      computePlacement();
+      setOpen(true);
+    }
+  };
+  const onLeave = () => {
+    if (typeof window !== "undefined" && window.matchMedia("(hover: hover)").matches) {
+      setOpen(false);
+    }
+  };
+  const onClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    if (!open) computePlacement();
+    setOpen((o) => !o);
+  };
+
+  const tooltipStyle: React.CSSProperties = {
+    position: "absolute",
+    zIndex: 50,
+    maxWidth: 280,
+    width: "max-content",
+    background: "#1A1108",
+    color: "#FFFDF9",
+    fontSize: 12,
+    lineHeight: 1.6,
+    borderRadius: 8,
+    padding: "10px 14px",
+    boxShadow: "0 8px 24px rgba(26,17,8,0.18)",
+    pointerEvents: "none",
+    opacity: open ? 1 : 0,
+    transition: "opacity 150ms ease",
+    ...(placement.side === "top"
+      ? { bottom: "calc(100% + 8px)" }
+      : { top: "calc(100% + 8px)" }),
+    ...(placement.align === "left" ? { left: 0 } : { right: 0 }),
+  };
+
+  const arrowStyle: React.CSSProperties = {
+    position: "absolute",
+    width: 0,
+    height: 0,
+    borderLeft: "5px solid transparent",
+    borderRight: "5px solid transparent",
+    ...(placement.side === "top"
+      ? { bottom: -5, borderTop: "5px solid #1A1108" }
+      : { top: -5, borderBottom: "5px solid #1A1108" }),
+    ...(placement.align === "left" ? { left: 8 } : { right: 8 }),
+  };
+
+  return (
+    <span
+      ref={wrapperRef}
+      className="relative inline-flex"
+      onMouseEnter={onEnter}
+      onMouseLeave={onLeave}
+    >
+      <button
+        type="button"
+        onClick={onClick}
+        aria-label="More info"
+        aria-expanded={open}
+        className="inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40"
+        style={{ color: "#888780", lineHeight: 0 }}
+      >
+        <Info size={14} aria-hidden="true" />
+      </button>
+      <span role="tooltip" aria-hidden={!open} style={tooltipStyle}>
+        {text}
+        <span style={arrowStyle} aria-hidden="true" />
+      </span>
+    </span>
+  );
+}
+
 function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
   const sub = analysis.subScores;
+  const reasons = analysis.scoreReasons ?? {};
+  const [showHint, setShowHint] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (window.innerWidth >= 768) return;
+    try {
+      if (!sessionStorage.getItem("roovr:scoreTooltipHintSeen")) {
+        setShowHint(true);
+        sessionStorage.setItem("roovr:scoreTooltipHintSeen", "1");
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   if (!sub) return null;
   return (
     <section className="mt-6">
@@ -916,13 +1061,19 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
           Score breakdown
         </h3>
         <div className="space-y-3">
-          {SUB_SCORE_LABELS.map(({ key, label }) => {
+          {SUB_SCORE_LABELS.map(({ key, label, fallback }) => {
             const v = Number(sub[key] ?? 0);
             const pct = Math.max(0, Math.min(100, (v / 10) * 100));
             const color = scoreColor(v);
+            const reason = reasons[key];
+            const tooltipText =
+              reason && reason.trim().length > 0 ? reason : fallback;
             return (
               <div key={key} className="grid grid-cols-[140px_1fr_36px] items-center gap-4">
-                <span style={{ fontSize: 13, color: "#5F5E5A" }}>{label}</span>
+                <span className="inline-flex items-center gap-1.5" style={{ fontSize: 13, color: "#5F5E5A" }}>
+                  {label}
+                  <ScoreInfoTooltip text={tooltipText} />
+                </span>
                 <div
                   className="relative w-full overflow-hidden rounded-full"
                   style={{ height: 6, background: "#F1EFE8" }}
@@ -939,10 +1090,16 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
             );
           })}
         </div>
+        {showHint && (
+          <p className="mt-4 text-center md:hidden" style={{ fontSize: 12, color: "#888780" }}>
+            Tap ⓘ for details
+          </p>
+        )}
       </div>
     </section>
   );
 }
+
 
 function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
   const ac = analysis.areaContext;
