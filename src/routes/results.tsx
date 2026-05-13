@@ -312,11 +312,16 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
         {/* Property summary */}
         <section className="mt-6 overflow-hidden rounded-3xl border border-border bg-card shadow-card">
           <div className="grid md:grid-cols-[1.2fr_1fr]">
-            <img
-              src={a.property.image}
-              alt={a.property.address}
-              className="h-64 w-full object-cover md:h-full"
-            />
+            {a.property.image ? (
+              <img
+                src={a.property.image}
+                alt={`${a.property.address} — property photo`}
+                loading="lazy"
+                className="h-64 w-full object-cover md:h-full"
+              />
+            ) : (
+              <PropertyImagePlaceholder />
+            )}
             <div className="flex flex-col justify-between gap-6 p-6 sm:p-8">
               <div className="flex items-start justify-between gap-4">
                 <div>
@@ -459,6 +464,24 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
       </main>
 
       <SiteFooter />
+    </div>
+  );
+}
+
+function PropertyImagePlaceholder() {
+  return (
+    <div
+      className="flex h-64 w-full flex-col items-center justify-center gap-3 md:h-full"
+      style={{ background: "#F1EFE8" }}
+      role="img"
+      aria-label="No property photo available"
+    >
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D85A30" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 12 12 3l9 9" />
+        <path d="M5 10v10h14V10" />
+        <path d="M10 20v-6h4v6" />
+      </svg>
+      <span style={{ fontSize: 12, color: "#888780" }}>No photo available</span>
     </div>
   );
 }
