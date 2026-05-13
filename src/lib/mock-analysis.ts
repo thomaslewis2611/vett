@@ -42,6 +42,21 @@ export type AnalysisResult = {
     estimatedAnnualEnergyCost: string | null;
     commentary: string | null;
   } | null;
+  priceHistory?: {
+    entries:
+      | {
+          date: string;
+          price: number;
+          event: "sold" | "listed" | "reduced" | "relisted";
+        }[]
+      | null;
+    firstSalePrice: number | null;
+    firstSaleDate: string | null;
+    totalAppreciation: number | null;
+    annualGrowthRate: number | null;
+    yearsHeld: number | null;
+    commentary: string;
+  } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
     avgSoldPriceArea: number | null;
