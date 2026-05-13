@@ -376,7 +376,12 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
   const [sdMode, setSdMode] = useState<StampDutyMode>("main");
   const stampDuty = calcStampDuty(a.property.price, sdMode);
 
+  return (
+    <div className="min-h-screen bg-background">
+      <SiteHeader />
+
       <main className="mx-auto max-w-5xl px-6 py-10">
+
         <Link
           to="/"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
