@@ -56,8 +56,6 @@ export const mockAnalysis: AnalysisResult = {
     baths: 2,
     type: "End of terrace house",
     sqft: 1180,
-    image:
-      "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&q=80",
     listingUrl: "https://www.rightmove.co.uk/properties/example",
   },
   score: 7.2,
