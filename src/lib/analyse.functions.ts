@@ -315,7 +315,7 @@ async function fetchListingText(url: string): Promise<string> {
   const listed = html ? extractListedDate(html) : null;
   let text = html ? htmlToListingText(html) : "";
   if (text && listed) {
-    text = `Date listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)\n\n${text}`.slice(0, 25_500);
+    text = `LISTING DATE: ${listed.dateStr} — ${listed.daysOnMarket} days on market as of today\nDate listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)\n\n${text}`.slice(0, 25_700);
   }
 
   // 3. Cache successful results.
