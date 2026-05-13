@@ -380,6 +380,22 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
     <div className="min-h-screen bg-background">
       <SiteHeader />
 
+      {access.level === "pass" && (
+        <div
+          style={{
+            background: "#FAECE7",
+            borderBottom: "0.5px solid rgba(153,60,29,0.15)",
+          }}
+        >
+          <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-2" style={{ fontSize: 12, color: "#993C1D" }}>
+            <span>Buyer Pass active</span>
+            <Link to="/dashboard" style={{ color: "#993C1D", fontWeight: 500 }} className="hover:underline">
+              View all your analyses →
+            </Link>
+          </div>
+        </div>
+      )}
+
       <main className="mx-auto max-w-5xl px-6 py-10">
 
         <Link
