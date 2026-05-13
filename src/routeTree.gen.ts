@@ -15,6 +15,7 @@ import { Route as PaymentSuccessRouteImport } from './routes/payment-success'
 import { Route as MyReportRouteImport } from './routes/my-report'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
@@ -46,6 +47,12 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -54,6 +61,7 @@ export interface FileRoutesByFullPath {
   '/payment-success': typeof PaymentSuccessRoute
   '/pricing': typeof PricingRoute
   '/results': typeof ResultsRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -62,6 +70,7 @@ export interface FileRoutesByTo {
   '/payment-success': typeof PaymentSuccessRoute
   '/pricing': typeof PricingRoute
   '/results': typeof ResultsRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -71,6 +80,7 @@ export interface FileRoutesById {
   '/payment-success': typeof PaymentSuccessRoute
   '/pricing': typeof PricingRoute
   '/results': typeof ResultsRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +91,7 @@ export interface FileRouteTypes {
     | '/payment-success'
     | '/pricing'
     | '/results'
+    | '/lovable/email/queue/process'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +100,7 @@ export interface FileRouteTypes {
     | '/payment-success'
     | '/pricing'
     | '/results'
+    | '/lovable/email/queue/process'
   id:
     | '__root__'
     | '/'
@@ -97,6 +109,7 @@ export interface FileRouteTypes {
     | '/payment-success'
     | '/pricing'
     | '/results'
+    | '/lovable/email/queue/process'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +119,7 @@ export interface RootRouteChildren {
   PaymentSuccessRoute: typeof PaymentSuccessRoute
   PricingRoute: typeof PricingRoute
   ResultsRoute: typeof ResultsRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -152,6 +166,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -162,6 +183,7 @@ const rootRouteChildren: RootRouteChildren = {
   PaymentSuccessRoute: PaymentSuccessRoute,
   PricingRoute: PricingRoute,
   ResultsRoute: ResultsRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
