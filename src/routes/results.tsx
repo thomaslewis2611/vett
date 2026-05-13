@@ -24,6 +24,41 @@ import { supabase } from "@/integrations/supabase/client";
 const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
 const PRICE_PASS = "price_1TWXv1CfTT0mXB2clPmEQyob";
 
+const ANALYSIS_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+const ANALYSIS_CACHE_PREFIX = "roovr:analysis:";
+
+function analysisCacheKey(url?: string, text?: string, token?: string) {
+  return `${ANALYSIS_CACHE_PREFIX}${url ?? ""}|${text ?? ""}|${token ?? ""}`;
+}
+
+function readCachedAnalysis(url?: string, text?: string, token?: string): AnalysisResult | undefined {
+  if (typeof window === "undefined") return undefined;
+  if (!url && !text) return undefined;
+  try {
+    const raw = sessionStorage.getItem(analysisCacheKey(url, text, token));
+    if (!raw) return undefined;
+    const parsed = JSON.parse(raw) as { savedAt: number; analysis: AnalysisResult };
+    if (!parsed?.savedAt || Date.now() - parsed.savedAt > ANALYSIS_CACHE_TTL_MS) {
+      sessionStorage.removeItem(analysisCacheKey(url, text, token));
+      return undefined;
+    }
+    return parsed.analysis;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeCachedAnalysis(analysis: AnalysisResult, url?: string, text?: string, token?: string) {
+  if (typeof window === "undefined") return;
+  if (!url && !text) return;
+  try {
+    sessionStorage.setItem(
+      analysisCacheKey(url, text, token),
+      JSON.stringify({ savedAt: Date.now(), analysis })
+    );
+  } catch { /* ignore quota */ }
+}
+
 type AccessLevel = "none" | "single" | "pass";
 
 function useAccess(listingUrl: string | undefined, token: string | undefined): { level: AccessLevel; email: string | null; loading: boolean } {
