@@ -317,7 +317,7 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer style={{ background: "#1A1108", marginTop: 96 }}>
+    <footer style={{ background: "#1A1108", marginTop: "auto" }}>
       <div className="mx-auto flex max-w-6xl flex-col gap-4 px-8 py-10 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-2">
           <span
@@ -326,7 +326,7 @@ export function SiteFooter() {
             style={{ width: 8, height: 8, borderRadius: 9999, background: "#D85A30" }}
           />
           <span style={{ fontSize: 18, fontWeight: 500, color: "#FFFDF9" }}>Roovr</span>
-          <span style={{ fontSize: 13, color: "#888780", marginLeft: 12 }}>© 2025 Roovr</span>
+          <span style={{ fontSize: 13, color: "#888780", marginLeft: 12 }}>© 2026 Roovr</span>
         </div>
         <div className="flex gap-6" style={{ fontSize: 13, color: "#888780" }}>
           <Link to="/pricing" className="hover:text-[#FFFDF9] transition-colors">Pricing</Link>
