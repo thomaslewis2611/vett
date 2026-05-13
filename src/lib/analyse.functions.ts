@@ -356,6 +356,119 @@ function extractListedDate(html: string): { dateStr: string; daysOnMarket: numbe
   return null;
 }
 
+function extractPriceHistory(html: string): Array<{ date: string; price: number; event: "sold" | "listed" | "reduced" | "relisted" }> | null {
+  if (!html) return null;
+  try {
+    const text = htmlToCleanText(html);
+    type Evt = { date: string; price: number; event: "sold" | "listed" | "reduced" | "relisted"; sortKey: number };
+    const events: Evt[] = [];
+    const seen = new Set<string>();
+    const monthMap: Record<string, number> = {
+      jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2, apr: 3, april: 3,
+      may: 4, jun: 5, june: 5, jul: 6, july: 6, aug: 7, august: 7,
+      sep: 8, sept: 8, september: 8, oct: 9, october: 9, nov: 10, november: 10, dec: 11, december: 11,
+    };
+    const monthShort = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const thisYear = new Date().getUTCFullYear();
+
+    function add(eventRaw: string, dateLabel: string, year: number, month: number, price: number) {
+      if (!Number.isFinite(price) || price < 10000 || price > 100_000_000) return;
+      if (year < 1990 || year > thisYear + 1) return;
+      let event: Evt["event"] = "listed";
+      const e = eventRaw.toLowerCase();
+      if (e.includes("sold") || e.includes("sale agreed")) event = "sold";
+      else if (e.includes("relist")) event = "relisted";
+      else if (e.includes("reduc")) event = "reduced";
+      else if (e.includes("list")) event = "listed";
+      const key = `${event}|${year}-${month}|${price}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      events.push({ event, date: dateLabel, price, sortKey: year * 12 + month });
+    }
+
+    const monthRe = "(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)";
+    const yearRe = "(\\d{4})";
+    const priceRe = "£\\s*([\\d,]+)";
+    const eventRe = "(sold|listed|reduced|relisted|sale agreed|first listed|price reduced)";
+
+    // Pattern 1: event ... month year ... £price
+    const re1 = new RegExp(`${eventRe}[^£\\n]{0,80}?${monthRe}\\s+${yearRe}[^£\\n]{0,40}?${priceRe}`, "gi");
+    let m: RegExpExecArray | null;
+    while ((m = re1.exec(text)) !== null) {
+      const monthName = m[2];
+      const year = parseInt(m[3], 10);
+      const month = monthMap[monthName.toLowerCase()] ?? 0;
+      const price = parseInt(m[4].replace(/,/g, ""), 10);
+      add(m[1], `${monthName.charAt(0).toUpperCase() + monthName.slice(1).toLowerCase()} ${year}`, year, month, price);
+    }
+
+    // Pattern 2: £price ... month year ... event (reverse order)
+    const re2 = new RegExp(`${priceRe}[^\\n]{0,80}?${monthRe}\\s+${yearRe}[^\\n]{0,40}?${eventRe}`, "gi");
+    while ((m = re2.exec(text)) !== null) {
+      const price = parseInt(m[1].replace(/,/g, ""), 10);
+      const monthName = m[2];
+      const year = parseInt(m[3], 10);
+      const month = monthMap[monthName.toLowerCase()] ?? 0;
+      add(m[4], `${monthName.charAt(0).toUpperCase() + monthName.slice(1).toLowerCase()} ${year}`, year, month, price);
+    }
+
+    // Pattern 3: DD/MM/YYYY: £price (Zoopla-style)
+    const re3 = /(\d{1,2})\/(\d{1,2})\/(\d{4})\s*[:\-–—]?\s*£\s*([\d,]+)/g;
+    while ((m = re3.exec(text)) !== null) {
+      const month = parseInt(m[2], 10) - 1;
+      const year = parseInt(m[3], 10);
+      const price = parseInt(m[4].replace(/,/g, ""), 10);
+      const start = Math.max(0, m.index - 80);
+      const ctx = text.slice(start, m.index + m[0].length + 80).toLowerCase();
+      let evt = "listed";
+      if (ctx.includes("sold") || ctx.includes("sale agreed")) evt = "sold";
+      else if (ctx.includes("relist")) evt = "relisted";
+      else if (ctx.includes("reduc")) evt = "reduced";
+      else if (!ctx.includes("list") && !ctx.includes("price hist") && !ctx.includes("history")) continue;
+      const monthName = monthShort[month] ?? "";
+      add(evt, `${monthName} ${year}`, year, month, price);
+    }
+
+    // JSON-LD scan for embedded sale events
+    const ldBlocks = html.match(/<script[^>]+application\/ld\+json[^>]*>[\s\S]*?<\/script>/gi) || [];
+    for (const block of ldBlocks) {
+      const inner = block.replace(/<script[^>]*>/i, "").replace(/<\/script>/i, "");
+      try {
+        const json = JSON.parse(inner);
+        const stack: unknown[] = Array.isArray(json) ? [...json] : [json];
+        while (stack.length) {
+          const node = stack.pop();
+          if (!node || typeof node !== "object") continue;
+          const obj = node as Record<string, unknown>;
+          const priceVal = typeof obj.price === "number" ? obj.price :
+            (typeof obj.soldPrice === "number" ? obj.soldPrice : null);
+          const dateVal = (obj.date ?? obj.dateSold ?? obj.soldDate ?? obj.datePosted) as string | undefined;
+          if (priceVal && dateVal) {
+            const dt = new Date(dateVal);
+            if (!isNaN(dt.getTime())) {
+              const y = dt.getUTCFullYear();
+              const mo = dt.getUTCMonth();
+              add(typeof obj.event === "string" ? obj.event : "sold", `${monthShort[mo]} ${y}`, y, mo, priceVal);
+            }
+          }
+          for (const v of Object.values(obj)) {
+            if (v && typeof v === "object") stack.push(v);
+          }
+        }
+      } catch {
+        /* ignore malformed JSON-LD */
+      }
+    }
+
+    if (!events.length) return null;
+    events.sort((a, b) => a.sortKey - b.sortKey);
+    return events.map(({ event, date, price }) => ({ event, date, price }));
+  } catch (err) {
+    console.error("[analyseListing] price history extraction failed:", err);
+    return null;
+  }
+}
+
 async function fetchListingText(url: string): Promise<string> {
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
@@ -383,6 +496,7 @@ async function fetchListingText(url: string): Promise<string> {
   const html = await basicFetchListingHtml(url);
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
+  const priceHistory = html ? extractPriceHistory(html) : null;
   let text = html ? htmlToListingText(html) : "";
   const notes: string[] = [];
   if (listed) {
@@ -397,6 +511,10 @@ async function fetchListingText(url: string): Promise<string> {
   }
   if (councilTax) {
     notes.push(`EXTRACTED FROM PAGE HTML — Council Tax Band: ${councilTax}`);
+  }
+  if (priceHistory && priceHistory.length) {
+    const lines = priceHistory.map((p) => `${p.event} ${p.date}: £${p.price.toLocaleString("en-GB")}`);
+    notes.push(`PRICE HISTORY DATA:\n${lines.join("\n")}`);
   }
   if (text && notes.length) {
     text = `${notes.join("\n")}\n\n${text}`.slice(0, 25_700);
