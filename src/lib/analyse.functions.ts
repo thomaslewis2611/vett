@@ -195,15 +195,41 @@ function isValidPropertyImage(url: string | null | undefined): url is string {
 }
 
 function extractPropertyImage(html: string): string | null {
-  // 1. og:image, 2. twitter:image
-  for (const name of ["og:image", "og:image:secure_url", "twitter:image"]) {
+  // Collect all meta tags for debug visibility.
+  const metaTags = html.match(/<meta[^>]+>/gi) ?? [];
+  const metaSnippet = metaTags.join("\n").slice(0, 500);
+  console.log(`[analyseListing] meta tags (first 500 chars):\n${metaSnippet}`);
+
+  // 1. Try standard + non-standard og:image variants (property= and name=, with :url/:secure_url suffixes).
+  const ogNames = [
+    "og:image",
+    "og:image:url",
+    "og:image:secure_url",
+    "twitter:image",
+    "twitter:image:src",
+  ];
+  for (const name of ogNames) {
     const metas = extractMetaContent(html, [name]);
     for (const candidate of metas) {
       const decoded = decodeEntities(candidate);
       if (isValidPropertyImage(decoded)) return decoded;
     }
   }
-  // 3. First large CDN image in the page.
+
+  // 2. Any <meta> whose content points at a known property image CDN, regardless of attribute name/order.
+  for (const tag of metaTags) {
+    const contentMatch = tag.match(/content=["']([^"']+)["']/i);
+    if (!contentMatch) continue;
+    const decoded = decodeEntities(contentMatch[1]);
+    if (
+      IMAGE_CDN_HOSTS.some((h) => decoded.includes(h)) &&
+      isValidPropertyImage(decoded)
+    ) {
+      return decoded;
+    }
+  }
+
+  // 3. First large CDN image in the page body.
   const imgRegex = /<img[^>]+src=["']([^"']+)["']/gi;
   let m: RegExpExecArray | null;
   while ((m = imgRegex.exec(html)) !== null) {
