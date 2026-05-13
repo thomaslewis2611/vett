@@ -792,7 +792,9 @@ export const analyseListing = createServerFn({ method: "POST" })
       },
     } as AnalysisResult;
 
-    // Override priceHistory with authoritative Land Registry data when available.
+    // Override priceHistory with authoritative Land Registry data when an
+    // exact-match was found. Otherwise clear any AI-fabricated history so the
+    // UI shows the empty state.
     if (landRegistry && landRegistry.entries.length) {
       const existing = full.priceHistory ?? {
         entries: null,
@@ -807,8 +809,10 @@ export const analyseListing = createServerFn({ method: "POST" })
         ...existing,
         entries: landRegistry.entries,
         source: "land_registry",
-        nearbyMode: landRegistry.nearbyMode,
+        nearbyMode: false,
       };
+    } else if (!scotland) {
+      full.priceHistory = null;
     }
 
     // Scottish properties: Land Registry doesn't cover Scotland — surface a
