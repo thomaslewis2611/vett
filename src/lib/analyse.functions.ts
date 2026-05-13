@@ -586,7 +586,19 @@ LIMIT 5`;
   return result;
 }
 
-async function fetchListingText(url: string): Promise<{ text: string; landRegistry: LandRegistryResult }> {
+const SCOTTISH_POSTCODE_PREFIXES = [
+  "EH","G","KA","KY","DD","AB","IV","PH","FK","ML","PA","KW","HS","ZE","TD","DG",
+];
+
+function isScottishPostcode(postcode: string | null): boolean {
+  if (!postcode) return false;
+  const pc = postcode.toUpperCase().replace(/\s+/g, "");
+  // Match leading alpha area code (1-2 letters before first digit).
+  const area = pc.match(/^[A-Z]+/)?.[0] ?? "";
+  return SCOTTISH_POSTCODE_PREFIXES.includes(area);
+}
+
+async function fetchListingText(url: string): Promise<{ text: string; landRegistry: LandRegistryResult; scotland: boolean }> {
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
 
@@ -619,9 +631,11 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
   }
   const sourceForExtraction = cachedText ?? (html ? htmlToCleanText(html) : "");
   const { postcode, paon, saon, street } = extractAddressBits(sourceForExtraction);
+  const scotland = isScottishPostcode(postcode);
 
+  // Scottish properties: Land Registry doesn't cover Scotland. Skip the lookup.
   // Run Land Registry lookup in parallel with the rest of the work.
-  const landRegistryPromise: Promise<LandRegistryResult> = postcode
+  const landRegistryPromise: Promise<LandRegistryResult> = (postcode && !scotland)
     ? fetchLandRegistryPriceHistory(postcode, paon, saon, street).catch((err) => {
         console.error("[landRegistry] lookup failed:", err);
         return null;
@@ -630,7 +644,7 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
 
   if (cachedText) {
     const landRegistry = await landRegistryPromise;
-    return { text: cachedText, landRegistry };
+    return { text: cachedText, landRegistry, scotland };
   }
 
   const listed = html ? extractListedDate(html) : null;
