@@ -184,7 +184,6 @@ function htmlToCleanText(html: string): string {
 
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const SCRAPER_TIMEOUT_MS = 30_000;
 
 async function basicFetchListingHtml(url: string): Promise<string> {
   try {
@@ -256,58 +255,11 @@ async function fetchListingText(url: string): Promise<string> {
     console.error("[analyseListing] cache lookup failed:", err);
   }
 
-  // 2. ScraperAPI (with JS rendering, GB country)
-  const scraperKey = process.env.SCRAPERAPI_KEY;
-  let text = "";
-  let html = "";
-  let timedOut = false;
+  // 2. Basic fetch with browser-like headers
+  const html = await basicFetchListingHtml(url);
+  const text = html ? htmlToListingText(html) : "";
 
-  if (scraperKey) {
-    const scraperUrl = `http://api.scraperapi.com?api_key=${scraperKey}&url=${encodeURIComponent(
-      url
-    )}&render=true&country_code=gb`;
-    const controller = new AbortController();
-    const timeout = setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, SCRAPER_TIMEOUT_MS);
-    const start = Date.now();
-    try {
-      const res = await fetch(scraperUrl, { signal: controller.signal });
-      const elapsed = Date.now() - start;
-      console.log(`[analyseListing] ScraperAPI ${res.status} in ${elapsed}ms for ${url}`);
-      if (res.ok) {
-        html = await res.text();
-      } else {
-        console.error(
-          `[analyseListing] ScraperAPI returned ${res.status} ${res.statusText} for ${url}`
-        );
-      }
-    } catch (err) {
-      const elapsed = Date.now() - start;
-      if (timedOut) {
-        console.error(
-          `[analyseListing] ScraperAPI timeout (${SCRAPER_TIMEOUT_MS}ms) for ${url} — falling back to basic fetch`
-        );
-      } else {
-        console.error(`[analyseListing] ScraperAPI error after ${elapsed}ms:`, err);
-      }
-    } finally {
-      clearTimeout(timeout);
-    }
-  } else {
-    console.warn("[analyseListing] SCRAPERAPI_KEY missing — falling back to basic fetch");
-  }
-
-  if (html) text = htmlToListingText(html);
-
-  // 3. Fallback to basic fetch if ScraperAPI failed or yielded nothing useful.
-  if (!text) {
-    const fallbackHtml = await basicFetchListingHtml(url);
-    if (fallbackHtml) text = htmlToListingText(fallbackHtml);
-  }
-
-  // 4. Cache successful results.
+  // 3. Cache successful results.
   if (text && text.length >= 200) {
     try {
       await supabaseAdmin
