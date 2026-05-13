@@ -17,11 +17,26 @@ const analysisSchema = z.object({
   }),
   score: z.number().min(0).max(10).describe("Overall value score out of 10, one decimal place"),
   scoreLabel: z.string().describe("Short verdict, max 8 words"),
+  subScores: z.object({
+    valueForMoney: z.number().min(0).max(10),
+    locationQuality: z.number().min(0).max(10),
+    listingTransparency: z.number().min(0).max(10),
+    marketTiming: z.number().min(0).max(10),
+    riskLevel: z.number().min(0).max(10).describe("Higher = LOWER risk (10 = very safe, 0 = very risky)"),
+    resalePotential: z.number().min(0).max(10),
+  }),
   metrics: z.object({
     pricePerSqFt: z.number().describe("Price per sq ft in GBP, 0 if unknown"),
     daysOnMarket: z.number().describe("Days listed, estimate from 'added/reduced' date if visible, 0 if unknown"),
     councilTaxBand: z.string().describe("A-H letter, or 'Unknown'"),
     estimatedStampDuty: z.number().describe("Estimated UK stamp duty in GBP for a second-home / additional property buyer"),
+  }),
+  areaContext: z.object({
+    avgPricePerSqFtArea: z.number().nullable(),
+    avgSoldPriceArea: z.number().nullable(),
+    priceVsAreaPercent: z.number().nullable().describe("Positive = above area avg, negative = below"),
+    areaDescription: z.string().describe("2 sentences on the area: desirability, trends, transport"),
+    comparableNote: z.string().describe("1 sentence on how this property compares to typical area listings"),
   }),
   redFlags: z
     .array(
@@ -48,11 +63,13 @@ const analysisSchema = z.object({
     .length(8)
     .describe("Exactly 8 specific questions tailored to this listing"),
   negotiation: z.object({
+    isAuction: z.boolean().optional().describe("True if this is an auction property"),
+    maxBid: z.number().optional().describe("Single max bid figure for auction properties"),
     recommendedOffer: z.object({
       low: z.number(),
       high: z.number(),
     }),
-    rationale: z.string().describe("2-3 sentence justification"),
+    rationale: z.string().describe("2-3 sentence justification (or auction bidding strategy if isAuction)"),
     leverage: z.array(z.string()).min(3).max(6).describe("Concrete negotiating points"),
   }),
   comparables: z
@@ -76,10 +93,17 @@ You must:
 - Read the listing carefully (description, photos captions, key features, agent copy).
 - Translate UK estate agent euphemisms into honest red flags ("scope to modernise" = dated; "deceptively spacious" = small; "convenient for transport" = noisy; "no chain" can be good or distressed; etc.).
 - Estimate UK stamp duty using current rates for the buyer profile (assume an additional / second property buyer for a conservative figure unless stated otherwise).
-- For daysOnMarket: if the listing content begins with or contains a line like "Date listed: DD/MM/YYYY (X days on market)", use that X value directly. Do NOT infer or guess otherwise — return 0 if no such line is present.
+- For daysOnMarket: if the listing content begins with or contains a line like "LISTING DATE: DD/MM/YYYY — X days on market" (or "Date listed: ..."), use that X value directly. Otherwise look for any date references in the listing text and infer days on market if possible. Return 0 only if there is genuinely no signal.
 - Estimate monthly mortgage on 15% deposit, 25-year term at 4.8% fixed.
-- Give a value score out of 10 reflecting price vs local market, condition, lease, location risks, and negotiation room.
-- Suggest a recommended offer range that is realistic for the UK market — usually 2-8% under asking depending on days-on-market and red flags.
+- Give an overall value score AND 6 sub-scores (each out of 10, one decimal):
+  - valueForMoney — price vs area comparables and sq ft
+  - locationQuality — transport, schools, amenities, postcode desirability
+  - listingTransparency — how honest and complete is the listing description
+  - marketTiming — days on market, price reductions, demand signals
+  - riskLevel — HIGHER number = LOWER risk (10 = very safe; 0 = many legal/structural/tenure red flags)
+  - resalePotential — property type, tenure, size, area trajectory
+- Provide an areaContext object with your best estimates for the local area: avgPricePerSqFtArea, avgSoldPriceArea, priceVsAreaPercent (positive = above avg), a 2-sentence areaDescription and 1-sentence comparableNote. Use null for any number you genuinely cannot estimate.
+- If this is an AUCTION property, set negotiation.isAuction to true and provide negotiation.maxBid as a single GBP number (not a range). Set recommendedOffer.low and high BOTH equal to maxBid. The rationale must explain auction bidding strategy including the need for bridging finance or cash. Otherwise leave isAuction false/omitted and provide a normal recommended offer range — usually 2-8% under asking.
 - Tailor the 8 viewing questions to specific things in this listing, not generic boilerplate.
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
 
@@ -88,11 +112,13 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "listingUrl": string },
   "score": number (0-10, one decimal),
   "scoreLabel": string,
+  "subScores": { "valueForMoney": number, "locationQuality": number, "listingTransparency": number, "marketTiming": number, "riskLevel": number, "resalePotential": number },
   "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
+  "areaContext": { "avgPricePerSqFtArea": number|null, "avgSoldPriceArea": number|null, "priceVsAreaPercent": number|null, "areaDescription": string, "comparableNote": string },
   "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ] (3-8 items),
   "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
   "viewingQuestions": string[] (exactly 8),
-  "negotiation": { "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] (3-6) },
+  "negotiation": { "isAuction": boolean (optional), "maxBid": number (optional, auction only), "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] (3-6) },
   "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4)
 }
 
@@ -235,12 +261,14 @@ function htmlToListingText(html: string): string {
 
 function extractListedDate(html: string): { dateStr: string; daysOnMarket: number } | null {
   if (!html) return null;
-  const patterns = [
-    /Added on (\d{2}\/\d{2}\/\d{4})/i,
-    /Listed on (\d{2}\/\d{2}\/\d{4})/i,
-    /First listed (\d{2}\/\d{2}\/\d{4})/i,
-    /Added on (\d{2}\/\d{2}\/\d{4})/i,
-    /Reduced on (\d{2}\/\d{2}\/\d{4})/i,
+  const patterns: RegExp[] = [
+    /Added on (\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /Listed on (\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /First listed[: ]+(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /available from[: ]+(\d{1,2}\/\d{1,2}\/\d{4})/i,
+    /Reduced on (\d{1,2}\/\d{1,2}\/\d{4})/i,
+    // Fallback: any date within ~40 chars of "added" or "listed"
+    /(?:added|listed)[^<>]{0,40}?(\d{1,2}\/\d{1,2}\/\d{4})/i,
   ];
   for (const p of patterns) {
     const m = html.match(p);
@@ -287,7 +315,7 @@ async function fetchListingText(url: string): Promise<string> {
   const listed = html ? extractListedDate(html) : null;
   let text = html ? htmlToListingText(html) : "";
   if (text && listed) {
-    text = `Date listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)\n\n${text}`.slice(0, 25_500);
+    text = `LISTING DATE: ${listed.dateStr} — ${listed.daysOnMarket} days on market as of today\nDate listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)\n\n${text}`.slice(0, 25_700);
   }
 
   // 3. Cache successful results.
