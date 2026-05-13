@@ -1,6 +1,8 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { createServerFn } from "@tanstack/react-start";
+import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import type { AnalysisResult } from "./mock-analysis";
 
 const analysisSchema = z.object({
@@ -67,6 +69,8 @@ const analysisSchema = z.object({
     .describe("Plausible comparable sales nearby; empty array if you cannot reasonably estimate"),
 });
 
+export { analysisSchema };
+
 const SYSTEM_PROMPT = `You are Roovr, an expert UK property buyer's analyst whose job is to surface the red flags estate agents won't show buyers. You analyse Rightmove and Zoopla listings for serious UK home buyers.
 
 You must:
@@ -94,10 +98,37 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
 
 If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for (return empty array instead).`;
 
+// SSRF protection: only allow Rightmove and Zoopla over HTTPS.
+const ALLOWED_HOSTS = new Set([
+  "www.rightmove.co.uk",
+  "rightmove.co.uk",
+  "m.rightmove.co.uk",
+  "www.zoopla.co.uk",
+  "zoopla.co.uk",
+  "m.zoopla.co.uk",
+]);
+
+function validateListingUrl(rawUrl: string): URL {
+  let parsed: URL;
+  try {
+    parsed = new URL(rawUrl);
+  } catch {
+    throw new Error("INVALID_URL: Please provide a valid Rightmove or Zoopla URL.");
+  }
+  if (parsed.protocol !== "https:") {
+    throw new Error("INVALID_URL: Only https Rightmove or Zoopla URLs are supported.");
+  }
+  if (!ALLOWED_HOSTS.has(parsed.hostname.toLowerCase())) {
+    throw new Error(
+      "INVALID_URL: We only support Rightmove and Zoopla listing URLs."
+    );
+  }
+  return parsed;
+}
+
 function extractMetaContent(html: string, names: string[]): string[] {
   const out: string[] = [];
   for (const name of names) {
-    // Match <meta property="og:title" content="..."> or name="..." in either attr order.
     const patterns = [
       new RegExp(`<meta[^>]+(?:property|name)=["']${name}["'][^>]*content=["']([^"']+)["']`, "i"),
       new RegExp(`<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["']${name}["']`, "i"),
@@ -127,6 +158,9 @@ function htmlToText(html: string): string {
 }
 
 async function fetchListingText(url: string): Promise<string> {
+  // SSRF guard — only allow Rightmove/Zoopla URLs through.
+  validateListingUrl(url);
+
   let html = "";
   try {
     const res = await fetch(url, {
@@ -136,6 +170,7 @@ async function fetchListingText(url: string): Promise<string> {
         Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         "Accept-Language": "en-GB,en;q=0.9",
       },
+      redirect: "follow",
     });
     if (res.ok) html = await res.text();
   } catch {
@@ -153,9 +188,6 @@ async function fetchListingText(url: string): Promise<string> {
     if (text.length >= 200) return text.slice(0, 25000);
   }
 
-  // Fallback: try to read structured metadata from the head — Rightmove/Zoopla
-  // commonly expose address, price and beds in og: / twitter: tags even when
-  // the body is blocked.
   if (html.length > 0) {
     const metas = extractMetaContent(html, [
       "og:title",
@@ -173,35 +205,126 @@ async function fetchListingText(url: string): Promise<string> {
   return "";
 }
 
+// ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
+async function hasFullAccess(opts: {
+  accessToken?: string | null;
+  sessionJwt?: string | null;
+  listingUrl?: string | null;
+}): Promise<boolean> {
+  // 1. Single report token
+  if (opts.accessToken) {
+    try {
+      const { data } = await supabaseAdmin
+        .from("single_report_tokens")
+        .select("listing_url, expires_at")
+        .eq("token", opts.accessToken)
+        .maybeSingle();
+      if (data && new Date(data.expires_at).getTime() > Date.now()) {
+        // If the token was issued for a specific listing, only honour that listing.
+        if (!data.listing_url || !opts.listingUrl || data.listing_url === opts.listingUrl) {
+          return true;
+        }
+      }
+    } catch {
+      /* fall through to JWT check */
+    }
+  }
+
+  // 2. Buyer Pass via authenticated session
+  if (opts.sessionJwt) {
+    const SUPABASE_URL = process.env.SUPABASE_URL;
+    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+    if (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) {
+      try {
+        const c = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+          auth: { persistSession: false, autoRefreshToken: false },
+        });
+        const { data } = await c.auth.getUser(opts.sessionJwt);
+        const email = data.user?.email;
+        if (email) {
+          const { data: row } = await supabaseAdmin
+            .from("buyer_pass_users")
+            .select("email")
+            .ilike("email", email)
+            .maybeSingle();
+          if (row) return true;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+
+  return false;
+}
+
+// Strip all premium content so it never leaves the server unless the user has paid.
+function toPreview(a: AnalysisResult): AnalysisResult {
+  return {
+    ...a,
+    redFlags: a.redFlags.slice(0, 2),
+    costs: {
+      purchasePrice: a.costs.purchasePrice,
+      stampDuty: 0,
+      legalFees: 0,
+      surveyFees: 0,
+      mortgageFees: 0,
+      totalUpfront: 0,
+      monthlyMortgage: 0,
+      mortgageAssumptions: "",
+    },
+    viewingQuestions: [],
+    negotiation: {
+      recommendedOffer: { low: 0, high: 0 },
+      rationale: "",
+      leverage: [],
+    },
+    comparables: [],
+  };
+}
+
 export const analyseListing = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
-      url: z.string().optional(),
-      text: z.string().optional(),
+      url: z.string().max(2000).optional(),
+      text: z.string().max(50000).optional(),
+      accessToken: z.string().max(200).optional().nullable(),
+      sessionJwt: z.string().max(4000).optional().nullable(),
     })
   )
   .handler(async ({ data }): Promise<AnalysisResult> => {
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
+    if (!apiKey) {
+      console.error("[analyseListing] Missing ANTHROPIC_API_KEY");
+      throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
+    }
 
     const url = data.url?.trim() ?? "";
     const pastedText = data.text?.trim() ?? "";
     if (!url && !pastedText) throw new Error("Provide a listing URL or pasted text");
+
+    // Validate URL upfront so we never make an unrelated outbound request.
+    if (url) {
+      try {
+        validateListingUrl(url);
+      } catch (e) {
+        throw e instanceof Error ? e : new Error("INVALID_URL: Unsupported URL.");
+      }
+    }
 
     let listingContent = pastedText;
     if (!listingContent && url) {
       listingContent = await fetchListingText(url);
     }
     if (!listingContent || listingContent.length < 100) {
-      // Signal to the UI that we need pasted text — handled inline on the results page.
       throw new Error(
         "FETCH_BLOCKED: We couldn't automatically read this listing. You can paste the listing description below to get your full analysis."
       );
     }
 
+    let output: z.infer<typeof analysisSchema>;
     try {
       const client = new Anthropic({ apiKey });
-
       const message = await client.messages.create({
         model: "claude-sonnet-4-5",
         max_tokens: 2000,
@@ -216,38 +339,38 @@ export const analyseListing = createServerFn({ method: "POST" })
 
       const responseText =
         message.content[0].type === "text" ? message.content[0].text : "";
-
-      // Defensive: strip any accidental code fences before parsing.
       const cleaned = responseText
         .trim()
         .replace(/^```(?:json)?\s*/i, "")
         .replace(/\s*```$/i, "");
 
       const parsed = JSON.parse(cleaned);
-      const output = analysisSchema.parse(parsed);
-
-      return {
-        ...output,
-        property: {
-          ...output.property,
-          listingUrl: url || output.property.listingUrl || "",
-          image:
-            output.property.image ||
-            "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&q=80",
-        },
-      } as AnalysisResult;
+      output = analysisSchema.parse(parsed);
     } catch (err: unknown) {
-      const e = err as { status?: number; statusCode?: number; message?: string };
-      const status = e?.status ?? e?.statusCode;
-      if (status === 429) {
-        throw new Error("RATE_LIMIT: Claude is busy right now. Please try again in a moment.");
-      }
-      if (status === 401 || status === 403) {
-        throw new Error("AUTH: Invalid ANTHROPIC_API_KEY.");
-      }
-      if (status === 402) {
-        throw new Error("CREDITS: Anthropic account is out of credits.");
-      }
-      throw new Error(e?.message || "Analysis failed");
+      // Log details server-side; never leak provider/internal error info to the browser.
+      console.error("[analyseListing] Anthropic/parse error:", err);
+      throw new Error(
+        "Sorry, the analysis service is temporarily unavailable. Please try again shortly."
+      );
     }
+
+    const full: AnalysisResult = {
+      ...output,
+      property: {
+        ...output.property,
+        listingUrl: url || output.property.listingUrl || "",
+        image:
+          output.property.image ||
+          "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=1200&q=80",
+      },
+    } as AnalysisResult;
+
+    // Server-side gating — only return premium content if the caller has paid.
+    const unlocked = await hasFullAccess({
+      accessToken: data.accessToken ?? null,
+      sessionJwt: data.sessionJwt ?? null,
+      listingUrl: url || null,
+    });
+
+    return unlocked ? full : toPreview(full);
   });
