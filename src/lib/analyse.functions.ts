@@ -279,6 +279,37 @@ function htmlToListingText(html: string): string {
   return text;
 }
 
+function extractEpcAndCouncilTax(html: string): { epc: string | null; councilTax: string | null } {
+  if (!html) return { epc: null, councilTax: null };
+  let epc: string | null = null;
+  let councilTax: string | null = null;
+  const epcPatterns: RegExp[] = [
+    /EPC[\s_-]*rating[^A-Za-z0-9]{0,10}([A-G])\b/i,
+    /Energy[\s_-]*rating[^A-Za-z0-9]{0,10}([A-G])\b/i,
+    /Energy[\s_-]*Performance[^<>]{0,60}?\b([A-G])\b/i,
+    /"epcRating"\s*:\s*"([A-G])"/i,
+    /"energyRating"\s*:\s*"([A-G])"/i,
+    /"currentEnergyRating"\s*:\s*"?([A-G])"?/i,
+    /data-epc-rating\s*=\s*["']([A-G])["']/i,
+    /data-energy-rating\s*=\s*["']([A-G])["']/i,
+    /aria-label\s*=\s*["'][^"']*?(?:EPC|Energy)[^"']*?\b([A-G])\b[^"']*["']/i,
+  ];
+  for (const p of epcPatterns) {
+    const m = html.match(p);
+    if (m?.[1]) { epc = m[1].toUpperCase(); break; }
+  }
+  const ctPatterns: RegExp[] = [
+    /Council[\s_-]*Tax[\s_-]*band[^A-Za-z0-9]{0,10}([A-H])\b/i,
+    /Council[\s_-]*Tax[^<>]{0,60}?\bBand\s*([A-H])\b/i,
+    /"councilTaxBand"\s*:\s*"([A-H])"/i,
+  ];
+  for (const p of ctPatterns) {
+    const m = html.match(p);
+    if (m?.[1]) { councilTax = m[1].toUpperCase(); break; }
+  }
+  return { epc, councilTax };
+}
+
 function extractListedDate(html: string): { dateStr: string; daysOnMarket: number } | null {
   if (!html) return null;
   const patterns: RegExp[] = [
