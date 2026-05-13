@@ -340,6 +340,9 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
           </div>
         </section>
 
+        {/* Score breakdown */}
+        <SubScoreBreakdown analysis={a} />
+
         {/* Metrics */}
         <section className="mt-8">
           <h2 className="text-xl font-semibold tracking-tight">Key metrics</h2>
