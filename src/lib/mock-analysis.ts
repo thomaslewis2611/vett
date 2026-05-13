@@ -35,6 +35,13 @@ export type AnalysisResult = {
     councilTaxBand: string;
     estimatedStampDuty: number;
   };
+  epc?: {
+    rating: string | null;
+    score: number | null;
+    potentialRating: string | null;
+    estimatedAnnualEnergyCost: string | null;
+    commentary: string | null;
+  } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
     avgSoldPriceArea: number | null;
