@@ -291,37 +291,21 @@ export function SiteHeader() {
               >
                 Buyer Login
               </Link>
-              {/* Mobile: compact Login + Try free side by side */}
-              <div className="flex items-center gap-2 sm:hidden">
-                <Link
-                  to="/buyer-login"
-                  className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
-                  style={{
-                    background: "transparent",
-                    color: "#1A1108",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    borderRadius: 100,
-                    padding: "6px 12px",
-                    border: "0.5px solid rgba(26,17,8,0.24)",
-                  }}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/"
-                  className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
-                  style={{
-                    background: "#D85A30",
-                    color: "#FFFDF9",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    borderRadius: 100,
-                    padding: "6px 12px",
-                  }}
-                >
-                  Try free
-                </Link>
+              {/* Mobile: filled dark Login pill */}
+              <Link
+                to="/buyer-login"
+                className="inline-flex sm:hidden items-center justify-center transition-opacity hover:opacity-90"
+                style={{
+                  background: "#1A1108",
+                  color: "#FFFDF9",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  borderRadius: 100,
+                  padding: "6px 12px",
+                }}
+              >
+                Login
+              </Link>
               </div>
               {/* Desktop: Try free pill */}
               <Link
