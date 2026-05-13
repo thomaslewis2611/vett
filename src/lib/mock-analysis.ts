@@ -51,6 +51,8 @@ export type AnalysisResult = {
   };
   viewingQuestions: string[];
   negotiation: {
+    isAuction?: boolean;
+    maxBid?: number;
     recommendedOffer: { low: number; high: number };
     rationale: string;
     leverage: string[];
