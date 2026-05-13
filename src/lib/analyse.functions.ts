@@ -558,7 +558,127 @@ function isScottishPostcode(postcode: string | null): boolean {
   return SCOTTISH_POSTCODE_PREFIXES.includes(area);
 }
 
-async function fetchListingText(url: string): Promise<{ text: string; landRegistry: LandRegistryResult; scotland: boolean }> {
+// ---------------- Flood Risk (Environment Agency) ----------------
+type FloodRiskRaw = {
+  riversAndSea: string | null;
+  surfaceWater: string | null;
+  reservoir: boolean | null;
+  groundwater: string | null;
+  overallRisk: string | null;
+  scotland?: boolean;
+  unavailable?: boolean;
+};
+
+const FLOOD_RISK_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+const RISK_LEVELS = ["very low", "low", "medium", "high"] as const;
+function normaliseRisk(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const s = v.trim().toLowerCase().replace(/\s+/g, " ");
+  if (RISK_LEVELS.includes(s as (typeof RISK_LEVELS)[number])) {
+    return s.replace(/\b\w/g, (c) => c.toUpperCase());
+  }
+  return null;
+}
+
+function highestRisk(values: (string | null)[]): string | null {
+  let best = -1;
+  for (const v of values) {
+    if (!v) continue;
+    const idx = RISK_LEVELS.indexOf(v.toLowerCase() as (typeof RISK_LEVELS)[number]);
+    if (idx > best) best = idx;
+  }
+  if (best < 0) return null;
+  const v = RISK_LEVELS[best];
+  return v.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | null> {
+  if (!postcode) return null;
+  console.log(`fetchFloodRisk called with postcode: ${postcode}`);
+
+  if (isScottishPostcode(postcode)) {
+    console.log("fetchFloodRisk: Scottish postcode, skipping EA API");
+    return {
+      riversAndSea: null,
+      surfaceWater: null,
+      reservoir: null,
+      groundwater: null,
+      overallRisk: null,
+      scotland: true,
+    };
+  }
+
+  const cacheKey = `floodrisk:${postcode}`;
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, fetched_at")
+      .eq("url", cacheKey)
+      .maybeSingle();
+    if (
+      cached?.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < FLOOD_RISK_TTL_MS
+    ) {
+      try {
+        const parsed = JSON.parse(cached.text_content) as FloodRiskRaw;
+        console.log(`fetchFloodRisk returned cached for ${postcode}`);
+        return parsed;
+      } catch { /* ignore */ }
+    }
+  } catch (err) {
+    console.error("[floodRisk] cache lookup failed:", err);
+  }
+
+  const pcParam = encodeURIComponent(postcode.replace(/\s+/g, ""));
+  const url = `https://check-long-term-flood-risk.service.gov.uk/api/flood-risk-by-postcode/${pcParam}`;
+
+  let raw: FloodRiskRaw | null = null;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10_000);
+    const res = await fetch(url, {
+      headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) {
+      console.error(`[floodRisk] HTTP ${res.status} for ${url}`);
+      return { riversAndSea: null, surfaceWater: null, reservoir: null, groundwater: null, overallRisk: null, unavailable: true };
+    }
+    const json = (await res.json()) as Record<string, unknown>;
+    const rivers = normaliseRisk(json.floodRiskFromRivers ?? json.riversAndSea ?? json.rivers);
+    const surface = normaliseRisk(json.floodRiskFromSurface ?? json.surfaceWater ?? json.surface);
+    const ground = normaliseRisk(json.floodRiskFromGroundwater ?? json.groundwater);
+    const reservoirRaw = json.floodRiskFromReservoir ?? json.reservoir;
+    const reservoir = typeof reservoirRaw === "boolean" ? reservoirRaw : null;
+    const overall = highestRisk([rivers, surface, ground]);
+    raw = {
+      riversAndSea: rivers,
+      surfaceWater: surface,
+      reservoir,
+      groundwater: ground,
+      overallRisk: overall,
+    };
+  } catch (err) {
+    console.error("[floodRisk] fetch failed:", err);
+    return { riversAndSea: null, surfaceWater: null, reservoir: null, groundwater: null, overallRisk: null, unavailable: true };
+  }
+
+  try {
+    await supabaseAdmin
+      .from("listing_cache")
+      .upsert(
+        { url: cacheKey, text_content: JSON.stringify(raw), fetched_at: new Date().toISOString() },
+        { onConflict: "url" },
+      );
+  } catch (err) {
+    console.error("[floodRisk] cache upsert failed:", err);
+  }
+
+  console.log(`fetchFloodRisk returned overallRisk=${raw?.overallRisk ?? "null"}`);
+  return raw;
+}
   // SSRF guard — only allow Rightmove/Zoopla URLs through.
   validateListingUrl(url);
 
