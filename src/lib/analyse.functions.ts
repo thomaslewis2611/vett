@@ -865,6 +865,21 @@ export const analyseListing = createServerFn({ method: "POST" })
       };
     }
 
+    // Scottish properties: Land Registry doesn't cover Scotland — surface a
+    // dedicated message and clear any AI-fabricated history.
+    if (scotland) {
+      full.priceHistory = {
+        entries: null,
+        firstSalePrice: null,
+        firstSaleDate: null,
+        totalAppreciation: null,
+        annualGrowthRate: null,
+        yearsHeld: null,
+        commentary: "",
+        scotland: true,
+      };
+    }
+
     // Server-side gating — only return premium content if the caller has paid.
     const unlocked = await hasFullAccess({
       accessToken: data.accessToken ?? null,
