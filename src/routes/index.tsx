@@ -61,7 +61,7 @@ function Index() {
               padding: "5px 12px",
             }}
           >
-            Powered by Claude AI
+            AI-powered property analysis
           </span>
           <h1 className="mt-6 text-balance">
             The red flags{" "}
