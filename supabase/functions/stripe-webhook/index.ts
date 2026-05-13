@@ -171,14 +171,11 @@ Deno.serve(async (req) => {
       );
       if (error) throw error;
 
-      // Send magic link via Supabase Auth
-      const { error: linkErr } = await supabase.auth.admin.generateLink({
-        type: "magiclink",
-        email: customerEmail.toLowerCase(),
-        options: { redirectTo: `${SITE_URL}/dashboard` },
-      });
-      if (linkErr) {
-        console.error("magic link error:", linkErr.message);
+      // Send magic link via the email queue
+      try {
+        await sendBuyerPassMagicLinkEdge(customerEmail.toLowerCase(), `${SITE_URL}/dashboard`);
+      } catch (e) {
+        console.error("buyer pass magic link error:", (e as Error).message);
       }
 
       return new Response(JSON.stringify({ ok: true }), {
