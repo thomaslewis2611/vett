@@ -306,22 +306,6 @@ export function SiteHeader() {
               >
                 Login
               </Link>
-              </div>
-              {/* Desktop: Try free pill */}
-              <Link
-                to="/"
-                className="hidden sm:inline-flex items-center justify-center transition-opacity hover:opacity-90"
-                style={{
-                  background: "#1A1108",
-                  color: "#FFFDF9",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  borderRadius: 100,
-                  padding: "10px 20px",
-                }}
-              >
-                Try free
-              </Link>
             </>
           )}
         </nav>
