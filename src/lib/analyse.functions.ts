@@ -364,9 +364,23 @@ async function fetchListingText(url: string): Promise<string> {
   // 2. Basic fetch with browser-like headers
   const html = await basicFetchListingHtml(url);
   const listed = html ? extractListedDate(html) : null;
+  const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  if (text && listed) {
-    text = `LISTING DATE: ${listed.dateStr} — ${listed.daysOnMarket} days on market as of today\nDate listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)\n\n${text}`.slice(0, 25_700);
+  const notes: string[] = [];
+  if (listed) {
+    notes.push(`LISTING DATE: ${listed.dateStr} — ${listed.daysOnMarket} days on market as of today`);
+    notes.push(`Date listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)`);
+  }
+  if (epc) {
+    notes.push(`EXTRACTED FROM PAGE HTML — EPC rating: ${epc} (use this as epc.rating)`);
+  } else if (councilTax) {
+    notes.push(`NOTE: Council Tax Band ${councilTax} was found in the listing. EPC rating is often shown in the same section on Rightmove — check carefully and extract it if present.`);
+  }
+  if (councilTax) {
+    notes.push(`EXTRACTED FROM PAGE HTML — Council Tax Band: ${councilTax}`);
+  }
+  if (text && notes.length) {
+    text = `${notes.join("\n")}\n\n${text}`.slice(0, 25_700);
   }
 
   // 3. Cache successful results.
