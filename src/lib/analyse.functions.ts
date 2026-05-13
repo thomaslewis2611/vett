@@ -96,7 +96,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4)
 }
 
-If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for (return empty array instead).`;
+If a field is unknown, use 0 for numbers, "Unknown" for strings (except property.image, which must be null when unknown — never the string "Unknown" or empty string), and never invent precise comparables you have no basis for (return empty array instead).`;
 
 // SSRF protection: only allow Rightmove and Zoopla over HTTPS.
 const ALLOWED_HOSTS = new Set([
