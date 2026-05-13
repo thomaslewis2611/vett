@@ -50,8 +50,20 @@ Deno.serve(async (req) => {
         token,
         listing_url: listingUrl,
         stripe_session_id: session.id,
+        user_email: customerEmail ? customerEmail.toLowerCase() : null,
       });
       if (error) throw error;
+
+      // Send a magic link so the customer can log in and revisit the report
+      if (customerEmail) {
+        const { error: linkErr } = await supabase.auth.admin.generateLink({
+          type: "magiclink",
+          email: customerEmail.toLowerCase(),
+          options: { redirectTo: `${SITE_URL}/my-report` },
+        });
+        if (linkErr) console.error("single magic link error:", linkErr.message);
+      }
+
       return new Response(JSON.stringify({ ok: true, token }), {
         headers: { "Content-Type": "application/json" },
       });
