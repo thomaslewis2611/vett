@@ -616,13 +616,10 @@ async function fetchListingText(url: string): Promise<{ text: string; landRegist
     notes.push(`EXTRACTED FROM PAGE HTML — Council Tax Band: ${councilTax}`);
   }
   if (landRegistry && landRegistry.entries.length) {
-    const header = landRegistry.nearbyMode
-      ? "LAND REGISTRY PRICE HISTORY (official data — nearby sales on the same street, no exact match for this property):"
-      : "LAND REGISTRY PRICE HISTORY (official data):";
     const lines = landRegistry.entries.map(
       (p) => `Sold ${p.date}: £${p.price.toLocaleString("en-GB")}`,
     );
-    notes.push(`${header}\n${lines.join("\n")}`);
+    notes.push(`LAND REGISTRY PRICE HISTORY (official data):\n${lines.join("\n")}`);
   }
   if (text && notes.length) {
     text = `${notes.join("\n")}\n\n${text}`.slice(0, 25_700);
