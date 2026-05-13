@@ -5,13 +5,9 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import {
   AlertTriangle,
-  Bath,
-  Bed,
   Calendar,
   Lock,
-  MapPin,
   PoundSterling,
-  Ruler,
   Sparkles,
   Check,
   TrendingDown,
