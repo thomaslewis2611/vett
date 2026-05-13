@@ -989,6 +989,64 @@ export const analyseListing = createServerFn({ method: "POST" })
       };
     }
 
+    // Flood risk — override authoritative fields with EA data, write/append
+    // an auto red flag for High rivers/sea risk so it surfaces even on the
+    // free preview.
+    if (floodRiskRaw) {
+      if (floodRiskRaw.scotland) {
+        full.floodRisk = {
+          riversAndSea: null,
+          surfaceWater: null,
+          reservoir: null,
+          groundwater: null,
+          overallRisk: null,
+          commentary: "",
+          autoRedFlag: false,
+          scotland: true,
+        };
+      } else if (floodRiskRaw.unavailable) {
+        full.floodRisk = {
+          riversAndSea: null,
+          surfaceWater: null,
+          reservoir: null,
+          groundwater: null,
+          overallRisk: null,
+          commentary: "",
+          autoRedFlag: false,
+          unavailable: true,
+        };
+      } else {
+        const aiFlood = full.floodRisk;
+        const overall = floodRiskRaw.overallRisk;
+        const isHighRivers = (floodRiskRaw.riversAndSea ?? "").toLowerCase() === "high";
+        full.floodRisk = {
+          riversAndSea: floodRiskRaw.riversAndSea,
+          surfaceWater: floodRiskRaw.surfaceWater,
+          reservoir: floodRiskRaw.reservoir,
+          groundwater: floodRiskRaw.groundwater,
+          overallRisk: overall,
+          commentary: aiFlood?.commentary ?? "",
+          autoRedFlag: isHighRivers,
+        };
+        if (isHighRivers) {
+          const title = "High flood risk — insurance and mortgage implications";
+          if (!full.redFlags.some((f) => f.title === title)) {
+            full.redFlags = [
+              {
+                severity: "high",
+                title,
+                detail:
+                  "This property is in a High flood risk zone according to the Environment Agency. Buildings insurance may be significantly more expensive, refused, or subject to exclusions. Some mortgage lenders require flood resilience measures as a condition of lending. Check the Flood Re scheme eligibility and get a specialist flood insurance quote before proceeding.",
+              },
+              ...full.redFlags,
+            ];
+          }
+        }
+      }
+    } else {
+      full.floodRisk = null;
+    }
+
     // Server-side gating — only return premium content if the caller has paid.
     const unlocked = await hasFullAccess({
       accessToken: data.accessToken ?? null,
