@@ -1,9 +1,94 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import Stripe from "stripe";
+import * as React from "react";
+import { render } from "@react-email/components";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { MagicLinkEmail } from "@/lib/email-templates/magic-link";
 
 const SITE_URL = "https://roovr.co";
+const SITE_NAME = "roovr";
+const SENDER_DOMAIN = "notify.roovr.co";
+const FROM_DOMAIN = "roovr.co";
+
+/**
+ * Ensure a Supabase auth user exists for the given email, generate a magic
+ * link via the admin API, render the Roovr-branded magic-link email, and
+ * enqueue it for delivery via the existing email queue.
+ */
+async function sendMagicLinkViaQueue(email: string, redirectTo: string): Promise<{ ok: boolean; error?: string }> {
+  console.log("Magic link flow started for:", email);
+
+  // Step 1: ensure user exists (ignore "already registered")
+  const createRes = await supabaseAdmin.auth.admin.createUser({
+    email,
+    email_confirm: true,
+  });
+  if (createRes.error && !/already|registered|exists/i.test(createRes.error.message)) {
+    console.error("createUser error:", createRes.error.message);
+    return { ok: false, error: createRes.error.message };
+  }
+  console.log("User created/found:", createRes.data?.user?.id ?? "(existing)");
+
+  // Step 2: generate magic link
+  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    type: "magiclink",
+    email,
+    options: { redirectTo },
+  });
+  const actionLink = linkData?.properties?.action_link;
+  console.log("Magic link generated:", Boolean(actionLink) ? "yes" : "no");
+  if (linkError || !actionLink) {
+    console.error("generateLink error:", linkError?.message);
+    return { ok: false, error: linkError?.message ?? "no action_link" };
+  }
+
+  // Step 3: render template + enqueue
+  const element = React.createElement(MagicLinkEmail, {
+    siteName: SITE_NAME,
+    confirmationUrl: actionLink,
+  });
+  const html = await render(element);
+  const text = await render(element, { plainText: true });
+  const messageId = crypto.randomUUID();
+
+  await supabaseAdmin.from("email_send_log").insert({
+    message_id: messageId,
+    template_name: "magiclink",
+    recipient_email: email,
+    status: "pending",
+  });
+
+  const { error: enqErr } = await supabaseAdmin.rpc("enqueue_email", {
+    queue_name: "auth_emails",
+    payload: {
+      message_id: messageId,
+      to: email,
+      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+      sender_domain: SENDER_DOMAIN,
+      subject: "Your Roovr access link",
+      html,
+      text,
+      purpose: "transactional",
+      label: "magiclink",
+      queued_at: new Date().toISOString(),
+    },
+  });
+
+  console.log("Email queued:", enqErr ? "no" : "yes");
+  if (enqErr) {
+    console.error("enqueue_email error:", enqErr.message);
+    await supabaseAdmin.from("email_send_log").insert({
+      message_id: messageId,
+      template_name: "magiclink",
+      recipient_email: email,
+      status: "failed",
+      error_message: enqErr.message,
+    });
+    return { ok: false, error: enqErr.message };
+  }
+  return { ok: true };
+}
 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY;
@@ -98,18 +183,13 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
       }
     }
 
-    if (!found) return { ok: true, found: false };
-
-    const { error } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
-      email,
-      options: { redirectTo },
-    });
-    if (error) {
-      console.error("magic link error", error.message);
-      return { ok: false, found: true };
+    if (!found) {
+      console.log("Magic link: no account found for", email);
+      return { ok: true, found: false };
     }
-    return { ok: true, found: true };
+
+    const res = await sendMagicLinkViaQueue(email, redirectTo);
+    return { ok: res.ok, found: true };
   });
 
 

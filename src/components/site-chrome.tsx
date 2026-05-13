@@ -283,14 +283,14 @@ export function SiteHeader() {
             </>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => setMagicOpen(true)}
+              <Link
+                to="/buyer-login"
                 className="hidden sm:inline transition-colors hover:text-foreground"
                 style={{ fontSize: 13, color: "#888780" }}
+                activeProps={{ style: { fontSize: 13, color: "#1A1108" } }}
               >
                 Buyer Login
-              </button>
+              </Link>
               <Link
                 to="/"
                 className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
