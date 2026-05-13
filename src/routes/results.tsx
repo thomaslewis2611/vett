@@ -836,3 +836,145 @@ function PlanCard({
     </div>
   );
 }
+
+const SUB_SCORE_LABELS: { key: keyof AnalysisResult["subScores"]; label: string }[] = [
+  { key: "valueForMoney", label: "Value for money" },
+  { key: "locationQuality", label: "Location quality" },
+  { key: "listingTransparency", label: "Listing transparency" },
+  { key: "marketTiming", label: "Market timing" },
+  { key: "riskLevel", label: "Risk level" },
+  { key: "resalePotential", label: "Resale potential" },
+];
+
+function scoreColor(s: number): string {
+  if (s > 7) return "#3B6D11";
+  if (s >= 5) return "#BA7517";
+  return "#A32D2D";
+}
+
+function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
+  const sub = analysis.subScores;
+  if (!sub) return null;
+  return (
+    <section className="mt-6">
+      <div
+        className="rounded-2xl p-6 sm:p-7"
+        style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)" }}
+      >
+        <h3 className="mb-4 text-sm font-medium uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+          Score breakdown
+        </h3>
+        <div className="space-y-3">
+          {SUB_SCORE_LABELS.map(({ key, label }) => {
+            const v = Number(sub[key] ?? 0);
+            const pct = Math.max(0, Math.min(100, (v / 10) * 100));
+            const color = scoreColor(v);
+            return (
+              <div key={key} className="grid grid-cols-[140px_1fr_36px] items-center gap-4">
+                <span style={{ fontSize: 13, color: "#5F5E5A" }}>{label}</span>
+                <div
+                  className="relative w-full overflow-hidden rounded-full"
+                  style={{ height: 6, background: "#F1EFE8" }}
+                >
+                  <div
+                    className="absolute inset-y-0 left-0 rounded-full"
+                    style={{ width: `${pct}%`, background: color }}
+                  />
+                </div>
+                <span className="text-right" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>
+                  {v.toFixed(1)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
+  const ac = analysis.areaContext;
+  if (!ac) return null;
+  const pct = ac.priceVsAreaPercent;
+  const pctText =
+    typeof pct === "number" ? `${pct > 0 ? "+" : ""}${pct.toFixed(1)}%` : "—";
+  const pctColor =
+    typeof pct === "number" ? (pct <= 0 ? "#3B6D11" : "#A32D2D") : "#5F5E5A";
+  const avgSqFt =
+    typeof ac.avgPricePerSqFtArea === "number" && ac.avgPricePerSqFtArea > 0
+      ? `£${Math.round(ac.avgPricePerSqFtArea)}`
+      : "—";
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight">Area context</h2>
+      <div className="mt-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
+            <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+              Area avg price / sq ft
+            </div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+              {avgSqFt}
+            </div>
+          </div>
+          <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
+            <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+              This property vs area
+            </div>
+            <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: pctColor }}>
+              {pctText}
+            </div>
+          </div>
+        </div>
+        {ac.areaDescription && (
+          <p className="mt-4 text-sm" style={{ color: "#1A1108" }}>{ac.areaDescription}</p>
+        )}
+        {ac.comparableNote && (
+          <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>{ac.comparableNote}</p>
+        )}
+        <p className="mt-4 text-xs" style={{ color: "#888780" }}>
+          Area estimates based on listing data and Claude's training knowledge — not live Land Registry data.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function isAuctionAnalysis(a: AnalysisResult): boolean {
+  if (a.negotiation?.isAuction) return true;
+  const hay = [
+    ...(a.redFlags ?? []).map((f) => `${f.title} ${f.detail}`),
+    a.negotiation?.rationale ?? "",
+    a.scoreLabel ?? "",
+    a.property?.type ?? "",
+  ]
+    .join(" ")
+    .toLowerCase();
+  return /\bauction\b/.test(hay);
+}
+
+function AuctionWarning({ analysis }: { analysis: AnalysisResult }) {
+  if (!isAuctionAnalysis(analysis)) return null;
+  return (
+    <section className="mt-10">
+      <div
+        className="flex items-start gap-4 p-5 sm:p-6"
+        style={{ background: "#FAEEDA", color: "#633806", borderRadius: 12 }}
+      >
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#D85A30" }} />
+        <div>
+          <h3 style={{ fontSize: 16, fontWeight: 600, color: "#633806" }}>
+            Auction property — standard mortgages rarely apply
+          </h3>
+          <p className="mt-2 text-sm" style={{ color: "#633806" }}>
+            Most lenders cannot process a mortgage within the 28–56 day auction completion window.
+            Buyers typically need bridging finance (expensive, 1–2% per month) or cash. Some
+            specialist lenders offer auction finance products but these carry higher rates. Factor
+            this into your total cost calculation before bidding.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
