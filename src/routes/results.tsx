@@ -479,7 +479,9 @@ function PropertyImagePlaceholder() {
 
 function PropertyImage({ src, alt }: { src: string | null | undefined; alt: string }) {
   const [failed, setFailed] = useState(false);
-  if (!src || failed || src === "Unknown" || src.trim() === "") return <PropertyImagePlaceholder />;
+  if (failed || !src || typeof src !== "string" || !src.startsWith("https://")) {
+    return <PropertyImagePlaceholder />;
+  }
   const proxied = `/api/public/property-image?url=${encodeURIComponent(src)}`;
   return (
     <img

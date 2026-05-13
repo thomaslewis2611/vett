@@ -13,7 +13,7 @@ const analysisSchema = z.object({
     baths: z.number().int(),
     type: z.string().describe("e.g. 'End of terrace house', 'Flat', 'Semi-detached'"),
     sqft: z.number().describe("Approx square feet, estimate from sqm if needed; 0 if unknown"),
-    image: z.string().describe("First listing image URL if found, empty string otherwise"),
+    image: z.string().nullable().describe("First listing image URL (must start with https://) if found, otherwise null"),
     listingUrl: z.string(),
   }),
   score: z.number().min(0).max(10).describe("Overall value score out of 10, one decimal place"),
@@ -85,7 +85,7 @@ You must:
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
-  "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "image": string, "listingUrl": string },
+  "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "image": string | null, "listingUrl": string },
   "score": number (0-10, one decimal),
   "scoreLabel": string,
   "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
@@ -96,7 +96,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4)
 }
 
-If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for (return empty array instead).`;
+If a field is unknown, use 0 for numbers, "Unknown" for strings (except property.image, which must be null when unknown — never the string "Unknown" or empty string), and never invent precise comparables you have no basis for (return empty array instead).`;
 
 // SSRF protection: only allow Rightmove and Zoopla over HTTPS.
 const ALLOWED_HOSTS = new Set([
