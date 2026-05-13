@@ -25,6 +25,14 @@ const analysisSchema = z.object({
     riskLevel: z.number().min(0).max(10).describe("Higher = LOWER risk (10 = very safe, 0 = very risky)"),
     resalePotential: z.number().min(0).max(10),
   }),
+  scoreReasons: z.object({
+    valueForMoney: z.string().describe("2-3 sentences citing actual price, sq ft, area comparables"),
+    locationQuality: z.string().describe("2-3 sentences naming the actual area, transport, amenities"),
+    listingTransparency: z.string().describe("2-3 sentences on what this agent disclosed or hid"),
+    marketTiming: z.string().describe("2-3 sentences on days on market, price history, demand for THIS property"),
+    riskLevel: z.string().describe("2-3 sentences summarising the biggest specific risks in this listing"),
+    resalePotential: z.string().describe("2-3 sentences on this property type, tenure and area's resale outlook"),
+  }),
   metrics: z.object({
     pricePerSqFt: z.number().describe("Price per sq ft in GBP, 0 if unknown"),
     daysOnMarket: z.number().describe("Days listed, estimate from 'added/reduced' date if visible, 0 if unknown"),
