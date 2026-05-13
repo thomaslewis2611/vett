@@ -72,6 +72,7 @@ async function sendMagicLinkViaQueue(email: string, redirectTo: string): Promise
       purpose: "transactional",
       label: "magiclink",
       queued_at: new Date().toISOString(),
+      run_id: crypto.randomUUID(),
     },
   });
 

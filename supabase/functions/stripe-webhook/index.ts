@@ -86,6 +86,7 @@ async function sendBuyerPassMagicLinkEdge(email: string, redirectTo: string): Pr
       purpose: "transactional",
       label: "magiclink",
       queued_at: new Date().toISOString(),
+      run_id: crypto.randomUUID(),
     },
   });
 
