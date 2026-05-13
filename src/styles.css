@@ -106,6 +106,22 @@
     font-size: 15px;
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+    max-width: 100%;
+  }
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  body > * {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 100vh;
+  }
+  body > * > footer {
+    margin-top: auto;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-sans);
