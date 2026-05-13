@@ -287,11 +287,11 @@ async function fetchListingText(url: string): Promise<string> {
       const elapsed = Date.now() - start;
       if (timedOut) {
         console.error(
-          `[analyseListing] ScraperAPI timeout (${SCRAPER_TIMEOUT_MS}ms) for ${url}`
+          `[analyseListing] ScraperAPI timeout (${SCRAPER_TIMEOUT_MS}ms) for ${url} — falling back to basic fetch`
         );
-        return "";
+      } else {
+        console.error(`[analyseListing] ScraperAPI error after ${elapsed}ms:`, err);
       }
-      console.error(`[analyseListing] ScraperAPI error after ${elapsed}ms:`, err);
     } finally {
       clearTimeout(timeout);
     }
