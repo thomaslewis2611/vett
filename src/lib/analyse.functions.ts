@@ -85,7 +85,7 @@ You must:
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
-  "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "image": string, "listingUrl": string },
+  "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "image": string | null, "listingUrl": string },
   "score": number (0-10, one decimal),
   "scoreLabel": string,
   "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
