@@ -204,8 +204,8 @@ async function basicFetchListingHtml(url: string): Promise<string> {
   }
 }
 
-function htmlToListingPayload(html: string): { text: string; image: string | null } {
-  if (!html) return { text: "", image: null };
+function htmlToListingText(html: string): string {
+  if (!html) return "";
   const lower = html.toLowerCase();
   const blocked =
     html.length < 500 ||
@@ -228,13 +228,9 @@ function htmlToListingPayload(html: string): { text: string; image: string | nul
     const combined = metas.map(decodeEntities).filter(Boolean).join("\n").trim();
     if (combined.length >= 100) {
       text = `[Limited content — extracted from page metadata only]\n\n${combined}`.slice(0, 25_000);
-    } else {
-      text = "";
     }
   }
-
-  const image = extractPropertyImage(html);
-  return { text, image };
+  return text;
 }
 
 async function fetchListingData(
