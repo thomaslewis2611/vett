@@ -1687,6 +1687,21 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
               {ph.commentary}
             </p>
           )}
+
+          {ph.source === "land_registry" && (
+            <div
+              className="mt-4 flex items-center gap-1.5"
+              style={{ fontSize: 10, color: "#888780" }}
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M3 21h18" />
+                <path d="M5 21V8l7-4 7 4v13" />
+                <path d="M9 21v-6h6v6" />
+                <path d="M9 12h.01M12 12h.01M15 12h.01" />
+              </svg>
+              Source: HM Land Registry
+            </div>
+          )}
         </div>
       </section>
     );
