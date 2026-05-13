@@ -477,6 +477,21 @@ function PropertyImagePlaceholder() {
   );
 }
 
+function PropertyImage({ src, alt }: { src: string | null | undefined; alt: string }) {
+  const [failed, setFailed] = useState(false);
+  if (!src || failed) return <PropertyImagePlaceholder />;
+  const proxied = `/api/public/property-image?url=${encodeURIComponent(src)}`;
+  return (
+    <img
+      src={proxied}
+      alt={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-64 w-full object-cover md:h-full"
+    />
+  );
+}
+
 function ScoreBadge({ score, label }: { score: number; label: string }) {
   const pct = (score / 10) * 100;
   const ring = `conic-gradient(var(--primary) ${pct}%, var(--primary-soft) ${pct}%)`;
