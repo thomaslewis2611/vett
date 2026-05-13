@@ -1405,3 +1405,39 @@ function EpcSection({ analysis }: { analysis: AnalysisResult }) {
     </section>
   );
 }
+
+function DownloadPdfButton() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const onClick = () => {
+    if (typeof window !== "undefined") window.print();
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="inline-flex items-center gap-1.5 transition-colors hover:bg-[#1A1108] hover:text-[#FFFDF9]"
+      style={{
+        border: "1.5px solid #1A1108",
+        background: "transparent",
+        color: "#1A1108",
+        borderRadius: 100,
+        fontSize: 13,
+        fontWeight: 500,
+        padding: "7px 14px",
+      }}
+    >
+      <Download className="h-3.5 w-3.5" />
+      {isMobile ? "Save as PDF" : "Download PDF"}
+    </button>
+  );
+}
