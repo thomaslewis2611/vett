@@ -514,9 +514,6 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
         {/* Price history (free + paid) */}
         <PriceHistorySection analysis={a} />
 
-        {/* Flood risk — Buyer Pass only (free/single see locked teaser) */}
-        <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
-
         {/* Area context */}
         <AreaContextSection analysis={a} />
 
