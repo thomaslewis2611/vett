@@ -1384,7 +1384,10 @@ async function processAnalysisJob(
   url: string,
   pastedText: string,
 ): Promise<void> {
+  console.log(`[processAnalysisJob] started for jobId: ${jobId}`);
+  let step = "init";
   try {
+    step = "read-api-key";
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
@@ -1393,12 +1396,15 @@ async function processAnalysisJob(
     if (url && !pastedText) {
       const cached = recentAnalyses.get(url);
       if (cached && Date.now() - cached.at < ANALYSIS_DEDUPE_TTL_MS) {
+        console.log(`[processAnalysisJob] using cached analysis for ${url}`);
         full = cached.full;
       } else {
         const existing = inflightAnalyses.get(url);
         if (existing) {
+          console.log(`[processAnalysisJob] joining in-flight analysis for ${url}`);
           full = await existing;
         } else {
+          step = "run-analysis";
           const promise = runAnalysis(url, pastedText, apiKey)
             .then((result) => {
               recentAnalyses.set(url, { at: Date.now(), full: result });
@@ -1412,10 +1418,13 @@ async function processAnalysisJob(
         }
       }
     } else {
+      step = "run-analysis";
       full = await runAnalysis(url, pastedText, apiKey);
     }
 
-    await supabaseAdmin
+    step = "update-job-row";
+    console.log(`[processAnalysisJob] Analysis complete, updating job row ${jobId}...`);
+    const { error: updateError } = await supabaseAdmin
       .from("analysis_jobs")
       .update({
         status: "complete",
@@ -1423,20 +1432,24 @@ async function processAnalysisJob(
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
+    if (updateError) {
+      throw new Error(`DB update failed: ${updateError.message}`);
+    }
+    console.log(`[processAnalysisJob] job ${jobId} marked complete`);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analysis failed";
-    console.error("[processAnalysisJob] failed", { jobId, error: message });
+    console.error(`[processAnalysisJob] Error at ${step} for jobId ${jobId}: ${message}`, err);
     try {
       await supabaseAdmin
         .from("analysis_jobs")
         .update({
           status: "error",
-          error: message,
+          error: `[${step}] ${message}`,
           updated_at: new Date().toISOString(),
         })
         .eq("id", jobId);
     } catch (updateErr) {
-      console.error("[processAnalysisJob] failed to record error", updateErr);
+      console.error(`[processAnalysisJob] failed to record error for jobId ${jobId}`, updateErr);
     }
   }
 }
