@@ -551,7 +551,7 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
           </Link>
           <EmailReportButton
             analysis={a}
-            isPaid={access.level === "pass" || access.level === "single"}
+            tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
             userEmail={access.email}
           />
         </div>
@@ -1882,11 +1882,11 @@ function EpcSection({ analysis }: { analysis: AnalysisResult }) {
 
 function EmailReportButton({
   analysis,
-  isPaid,
+  tier,
   userEmail,
 }: {
   analysis: AnalysisResult;
-  isPaid: boolean;
+  tier: "free" | "single" | "pass";
   userEmail: string | null;
 }) {
   const sendFn = useServerFn(sendReportEmail);
@@ -1901,7 +1901,7 @@ function EmailReportButton({
     setErrorMsg(null);
     try {
       const resultsUrl = typeof window !== "undefined" ? window.location.href : "";
-      const r = await sendFn({ data: { email: to, analysis, resultsUrl, isPaid } });
+      const r = await sendFn({ data: { email: to, analysis, resultsUrl, tier } });
       if (r.ok) {
         setSentTo(to);
         setStatus("sent");

@@ -38,7 +38,7 @@ const analysisSchema = z.object({
     pricePerSqFt: z.number().describe("Price per sq ft in GBP, 0 if unknown"),
     daysOnMarket: z.number().describe("Days listed, estimate from 'added/reduced' date if visible, 0 if unknown"),
     councilTaxBand: z.string().describe("A-H letter, or 'Unknown'"),
-    estimatedStampDuty: z.number().describe("Estimated UK stamp duty in GBP for a second-home / additional property buyer"),
+    estimatedStampDuty: z.number().describe("Estimated UK stamp duty (SDLT) in GBP for a main residence buyer (England/NI standard rates, not the additional / second-home rate)"),
   }),
   epc: z.object({
     rating: z.string().nullable().describe("EPC band letter A-G, or null if not in listing"),
@@ -169,7 +169,7 @@ const SYSTEM_PROMPT = `You are Roovr, an expert UK property buyer's analyst whos
 You must:
 - Read the listing carefully (description, photos captions, key features, agent copy).
 - Translate UK estate agent euphemisms into honest red flags ("scope to modernise" = dated; "deceptively spacious" = small; "convenient for transport" = noisy; "no chain" can be good or distressed; etc.).
-- Estimate UK stamp duty using current rates for the buyer profile (assume an additional / second property buyer for a conservative figure unless stated otherwise).
+- Estimate UK stamp duty (SDLT) using the current MAIN RESIDENCE rates for England/Northern Ireland (do NOT apply the additional / second-home surcharge unless the listing explicitly says it's being bought as a second home or buy-to-let).
 - For daysOnMarket: if the listing content begins with or contains a line like "LISTING DATE: DD/MM/YYYY — X days on market" (or "Date listed: ..."), use that X value directly. Otherwise look for any date references in the listing text and infer days on market if possible. Return 0 only if there is genuinely no signal.
 - Estimate monthly mortgage on 15% deposit, 25-year term at 4.8% fixed.
 - Give an overall value score AND 6 sub-scores (each out of 10, one decimal):
