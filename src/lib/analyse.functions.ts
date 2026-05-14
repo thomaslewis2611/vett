@@ -1419,7 +1419,7 @@ async function processAnalysisJob(
       .from("analysis_jobs")
       .update({
         status: "complete",
-        result_json: full as unknown as Record<string, unknown>,
+        result_json: JSON.parse(JSON.stringify(full)),
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
