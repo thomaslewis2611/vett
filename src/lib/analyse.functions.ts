@@ -1815,6 +1815,7 @@ async function runAnalysis(
   let nearbySchoolsRaw: NearbySchoolsRaw | null = null;
   let crimeRaw: CrimeRaw | null = null;
   let broadbandRaw: BroadbandRaw | null = null;
+  let transportRaw: TransportRaw | null = null;
   if (!listingContent && url) {
     console.log(`[runAnalysis] Fetching listing content for ${url}...`);
     const fetched = await fetchListingText(url);
@@ -1825,6 +1826,7 @@ async function runAnalysis(
     nearbySchoolsRaw = fetched.nearbySchools;
     crimeRaw = fetched.crime;
     broadbandRaw = fetched.broadband;
+    transportRaw = fetched.transport;
     console.log(`[runAnalysis] Listing content fetched, length: ${listingContent?.length ?? 0}`);
   }
   if (!listingContent || listingContent.length < 100) {
