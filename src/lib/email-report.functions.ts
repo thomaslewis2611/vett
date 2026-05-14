@@ -376,7 +376,13 @@ function buildReportHtml(opts: {
         <tr><td ${rowStyle}>Price per sq ft</td><td ${valStyle}>${gbp(pricePerSqFt)}</td></tr>
         <tr><td ${rowStyle}>Days on market</td><td ${valStyle}>${num(daysOnMarket)}</td></tr>
         <tr><td ${rowStyle}>Council tax band</td><td ${valStyle}>${txt(a.metrics?.councilTaxBand)}</td></tr>
-        <tr><td ${rowStyle}>Estimated stamp duty (main residence)</td><td ${valStyle}>${gbp(sdlt)}</td></tr>
+      </table>
+
+      <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Stamp duty</h2>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr><td ${rowStyle}>First-time buyer</td><td ${valStyle}>${gbp(sdltFtb)}</td></tr>
+        <tr><td ${rowStyle}>Main residence</td><td ${valStyle}>${gbp(sdlt)}</td></tr>
+        <tr><td ${rowStyle}>Additional property</td><td ${valStyle}>${gbp(sdltAdditional)}</td></tr>
       </table>
 
       ${ac ? `
