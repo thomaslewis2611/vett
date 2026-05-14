@@ -1728,7 +1728,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
       try {
         await supabaseAdmin
           .from("saved_analyses")
-          .update({ analysis_json: merged as unknown as Record<string, unknown> })
+          .update({ analysis_json: merged as any })
           .eq("id", row.id as string);
       } catch (err) {
         console.error("[fetchBuyerPassExtras] update failed:", err);
