@@ -37,8 +37,8 @@ export const SignupEmail = ({
           <Heading style={h1}>Activate your Buyer Pass</Heading>
           <Text style={text}>
             Thanks for purchasing a Roovr Buyer Pass. Click below to activate
-            your account and get unlimited property analyses, flood risk data,
-            AI chat, and more.
+            your account and get unlimited property analyses for 90 days,
+            including flood risk data, AI chat, and more.
           </Text>
           <Button style={button} href={confirmationUrl}>
             Activate my Buyer Pass →
