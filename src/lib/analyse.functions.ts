@@ -782,8 +782,11 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     ) {
       try {
         const parsed = JSON.parse(cached.text_content) as NearbySchoolsRaw;
-        console.log(`fetchNearbySchools returned cached for ${postcode} (${parsed.schools?.length ?? 0})`);
-        return parsed;
+        // Ignore stale empty/unavailable cached entries so we re-try new endpoint.
+        if ((parsed.schools?.length ?? 0) > 0) {
+          console.log(`fetchNearbySchools returned cached for ${postcode} (${parsed.schools.length})`);
+          return parsed;
+        }
       } catch { /* ignore */ }
     }
   } catch (err) {
@@ -796,65 +799,92 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     ? `${pcCompact.slice(0, -3)} ${pcCompact.slice(-3)}`
     : pcCompact;
   const pcParam = encodeURIComponent(pcFormatted);
-  // 8 km ≈ 5 miles search radius
-  const url = `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${pcParam}&radius=8&fields=school_name,ofsted_rating,school_type,distance`;
 
-  let raw: NearbySchoolsRaw;
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 10_000);
-    const res = await fetch(url, {
-      headers: {
-        "Accept": "application/json",
-        "User-Agent": "Roovr/1.0 (property analysis tool; hello@roovr.co)",
-        "Referer": "https://roovr.co",
-      },
-      signal: ctrl.signal,
-    });
-    clearTimeout(t);
-    if (!res.ok) {
-      console.error(`[nearbySchools] HTTP ${res.status} for ${url}`);
-      return { schools: [], unavailable: true };
+  const headers = {
+    "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0 (compatible; Roovr/1.0; +https://roovr.co)",
+    "Referer": "https://roovr.co",
+  };
+
+  // Try multiple endpoints in order. 8 km ≈ 5 miles.
+  const endpoints = [
+    `https://api.get-information-schools.service.gov.uk/api/schools/search?location=${pcParam}&radiusInMiles=5`,
+    `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${pcParam}&radius=8&fields=school_name,ofsted_rating,school_type,distance`,
+  ];
+
+  let raw: NearbySchoolsRaw | null = null;
+  for (const url of endpoints) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 10_000);
+      const res = await fetch(url, { headers, signal: ctrl.signal });
+      clearTimeout(t);
+      const bodyText = await res.text();
+      console.log(`[nearbySchools] ${url} → HTTP ${res.status}, body[0..400]: ${bodyText.slice(0, 400)}`);
+      if (!res.ok) continue;
+      let json: unknown;
+      try { json = JSON.parse(bodyText); } catch {
+        console.error(`[nearbySchools] non-JSON body from ${url}`);
+        continue;
+      }
+      const list: any[] = Array.isArray(json)
+        ? (json as any[])
+        : Array.isArray((json as any)?.results)
+          ? (json as any).results
+          : Array.isArray((json as any)?.data)
+            ? (json as any).data
+            : Array.isArray((json as any)?.schools)
+              ? (json as any).schools
+              : Array.isArray((json as any)?.establishments)
+                ? (json as any).establishments
+                : [];
+      if (list.length === 0) {
+        console.warn(`[nearbySchools] empty list from ${url}`);
+        continue;
+      }
+
+      const schools: SchoolEntry[] = list
+        .map((s) => {
+          const name: string =
+            s.school_name ?? s.name ?? s.schoolName ?? s.establishmentName ?? "";
+          const ofstedRaw =
+            s.ofsted_rating ?? s.ofstedRating ?? s.ofsted ?? s.ofstedRatingName;
+          const ofstedRating =
+            typeof ofstedRaw === "number"
+              ? ofstedRaw
+              : typeof ofstedRaw === "string" && /^\d$/.test(ofstedRaw)
+                ? Number(ofstedRaw)
+                : null;
+          const schoolType: string | null =
+            s.school_type ?? s.schoolType ?? s.type ?? s.phaseOfEducation ?? null;
+          const milesRaw = s.distanceInMiles ?? s.distance_miles ?? s.distanceMiles;
+          let distanceMiles: number;
+          if (milesRaw != null && Number.isFinite(Number(milesRaw))) {
+            distanceMiles = Number(milesRaw);
+          } else {
+            const distRaw = s.distance ?? s.distance_km ?? s.distanceKm;
+            const distKm = typeof distRaw === "number" ? distRaw : Number(distRaw);
+            distanceMiles = Number.isFinite(distKm) ? distKm * 0.621371 : NaN;
+          }
+          return {
+            name,
+            ofstedRating,
+            schoolType,
+            phase: classifyPhase(schoolType),
+            distanceMiles,
+          };
+        })
+        .filter((s) => s.name && Number.isFinite(s.distanceMiles))
+        .sort((a, b) => a.distanceMiles - b.distanceMiles);
+
+      raw = { schools };
+      break;
+    } catch (err) {
+      console.error(`[nearbySchools] fetch failed for ${url}:`, err);
     }
-    const json = (await res.json()) as unknown;
-    const list: any[] = Array.isArray(json)
-      ? (json as any[])
-      : Array.isArray((json as any)?.results)
-        ? (json as any).results
-        : Array.isArray((json as any)?.data)
-          ? (json as any).data
-          : [];
+  }
 
-    const schools: SchoolEntry[] = list
-      .map((s) => {
-        const name: string =
-          s.school_name ?? s.name ?? s.schoolName ?? s.establishmentName ?? "";
-        const ofstedRaw = s.ofsted_rating ?? s.ofstedRating ?? s.ofsted;
-        const ofstedRating =
-          typeof ofstedRaw === "number"
-            ? ofstedRaw
-            : typeof ofstedRaw === "string" && /^\d$/.test(ofstedRaw)
-              ? Number(ofstedRaw)
-              : null;
-        const schoolType: string | null =
-          s.school_type ?? s.schoolType ?? s.type ?? null;
-        const distRaw = s.distance ?? s.distance_km ?? s.distanceKm;
-        const distKm = typeof distRaw === "number" ? distRaw : Number(distRaw);
-        const distanceMiles = Number.isFinite(distKm) ? distKm * 0.621371 : NaN;
-        return {
-          name,
-          ofstedRating,
-          schoolType,
-          phase: classifyPhase(schoolType),
-          distanceMiles,
-        };
-      })
-      .filter((s) => s.name && Number.isFinite(s.distanceMiles))
-      .sort((a, b) => a.distanceMiles - b.distanceMiles);
-
-    raw = { schools };
-  } catch (err) {
-    console.error("[nearbySchools] fetch failed:", err);
+  if (!raw) {
     return { schools: [], unavailable: true };
   }
 
