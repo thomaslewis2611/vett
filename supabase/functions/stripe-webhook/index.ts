@@ -161,12 +161,18 @@ Deno.serve(async (req) => {
         console.error("No customer email on Buyer Pass session", session.id);
         return new Response("No email", { status: 400 });
       }
-      // upsert in case of duplicate webhook deliveries
+      // upsert in case of duplicate webhook deliveries.
+      // 90-day Buyer Pass: extend expires_at from now() each time the user pays
+      // (covers both new purchases and renewals).
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
       const { error } = await supabase.from("buyer_pass_users").upsert(
         {
           email: customerEmail.toLowerCase(),
           stripe_session_id: session.id,
           stripe_customer_id: customerId,
+          activated_at: now.toISOString(),
+          expires_at: expiresAt,
         },
         { onConflict: "email" }
       );
