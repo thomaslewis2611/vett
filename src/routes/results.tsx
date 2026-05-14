@@ -249,9 +249,11 @@ function ResultsPage() {
   const POLL_INTERVAL_MS = 2000;
   const POLL_TIMEOUT_MS = 90_000;
 
-  const query = useQuery({
+  type QueryResult = { analysis: AnalysisResult; savedOwnerEmail?: string | null; savedListingUrl?: string | null };
+
+  const query = useQuery<QueryResult>({
     queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
-    queryFn: async (): Promise<AnalysisResult> => {
+    queryFn: async (): Promise<QueryResult> => {
       if (saved_id) {
         // Wait for auth session to hydrate so the bearer token is attached.
         const { data: sess } = await supabase.auth.getSession();
@@ -275,7 +277,11 @@ function ResultsPage() {
           });
           throw new Error("SAVED_NOT_FOUND");
         }
-        return r.analysis;
+        return {
+          analysis: r.analysis,
+          savedOwnerEmail: (r as { userEmail?: string | null }).userEmail ?? null,
+          savedListingUrl: r.listingUrl ?? null,
+        };
       }
 
       // Async job pipeline: start a job, then poll until it completes.
@@ -294,7 +300,7 @@ function ResultsPage() {
         const status = await getJobFn({ data: { jobId, sessionJwt } });
         if (status.status === "complete" && status.analysis) {
           writeCachedAnalysis(status.analysis, url, text, token);
-          return status.analysis;
+          return { analysis: status.analysis };
         }
         if (status.status === "error") {
           throw new Error(status.error || "Analysis failed");
@@ -308,7 +314,7 @@ function ResultsPage() {
     retry: false,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
-    initialData: cached,
+    initialData: cached ? { analysis: cached } : undefined,
   });
 
   if (!hasInput) {
