@@ -13,6 +13,9 @@ import {
   Check,
   TrendingDown,
   Loader2,
+  Wifi,
+  Signal,
+  X,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { DisclaimerBar } from "@/components/disclaimer-bar";
