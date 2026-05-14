@@ -2930,7 +2930,9 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
           </div>
         )}
         <p className="mt-4" style={{ fontSize: 10, color: "#888780" }}>
-          Source: DfE / Ofsted — schools within 5 miles
+          {ns?.aiSourced
+            ? "School information based on AI knowledge — verify at get-information-schools.service.gov.uk"
+            : "Source: DfE / Ofsted — schools within 5 miles"}
         </p>
       </div>
     </section>
