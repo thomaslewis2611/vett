@@ -49,6 +49,7 @@ function PricingPage() {
               "True cost breakdown (stamp duty, legal fees, mortgage estimate)",
               "Viewing questions to ask the agent",
               "Negotiation strategy and recommended offer range",
+              "Access anywhere — report saved to your account",
             ]}
             upsell={{ text: "Upgrade to Buyer Pass for AI chat, flood risk and nearby schools →", targetId: "buyer-pass-card" }}
           />
