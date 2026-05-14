@@ -1521,7 +1521,7 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
     }
   }
 
-  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime };
+  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband };
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
