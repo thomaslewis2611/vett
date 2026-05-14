@@ -898,7 +898,12 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
           </div>
         </section>
 
-        {/* Paywall (free users only) — sits between Red flags and the paid sections */}
+        {/* Viewing checklist — all users (first 2 free, rest blurred for free) */}
+        <SafeSection name="viewingChecklist">
+          <ViewingChecklistSection analysis={a} unlocked={unlocked} />
+        </SafeSection>
+
+        {/* Paywall (free users only) — sits between preview sections and the paid sections */}
         {!unlocked && (
           <section className="mt-10">
             <LockedFeaturesGrid />
@@ -929,11 +934,6 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
             </UnlockedSection>
           </section>
         )}
-
-        {/* Viewing checklist — all users (first 2 free, rest blurred for free) */}
-        <SafeSection name="viewingChecklist">
-          <ViewingChecklistSection analysis={a} unlocked={unlocked} />
-        </SafeSection>
 
         {/* Renovation cost estimator — paid only */}
         {unlocked && (
