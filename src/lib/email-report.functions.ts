@@ -137,7 +137,10 @@ function buildReportHtml(opts: {
   const flood = a.floodRisk;
   const schools = a.nearbySchools;
 
-  const sdlt = pickStampDuty(a);
+  const price = Number(a.property?.price ?? 0);
+  const sdlt = calcMainResidenceSDLT(price);
+  const sdltFtb = calcFirstTimeBuyerSDLT(price);
+  const sdltAdditional = calcAdditionalPropertySDLT(price);
   const pricePerSqFt = pickPricePerSqFt(a);
   const daysOnMarket = pickDaysOnMarket(a);
 
