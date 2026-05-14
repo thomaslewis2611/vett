@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      analysis_jobs: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          error: string | null
+          id: string
+          pasted_text: string | null
+          result_json: Json | null
+          session_jwt: string | null
+          status: string
+          updated_at: string
+          url: string
+          user_email: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          pasted_text?: string | null
+          result_json?: Json | null
+          session_jwt?: string | null
+          status?: string
+          updated_at?: string
+          url: string
+          user_email?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          pasted_text?: string | null
+          result_json?: Json | null
+          session_jwt?: string | null
+          status?: string
+          updated_at?: string
+          url?: string
+          user_email?: string | null
+        }
+        Relationships: []
+      }
       buyer_pass_users: {
         Row: {
           activated_at: string
