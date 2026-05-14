@@ -1547,6 +1547,7 @@ type FetchedListing = {
   nearbySchools: NearbySchoolsRaw | null;
   crime: CrimeRaw | null;
   broadband: BroadbandRaw | null;
+  transport: TransportRaw | null;
 };
 
 async function fetchListingText(url: string): Promise<FetchedListing> {
@@ -1615,26 +1616,35 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
       })
     : Promise.resolve(null);
 
+  const transportPromise: Promise<TransportRaw | null> = postcode
+    ? fetchTransport(postcode, sourceForExtraction.slice(0, 400), null, process.env.ANTHROPIC_API_KEY).catch((err) => {
+        console.error("[transport] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
   if (cachedText) {
-    const [landRegistry, floodRisk, nearbySchools, crime, broadband] = await Promise.all([
+    const [landRegistry, floodRisk, nearbySchools, crime, broadband, transport] = await Promise.all([
       landRegistryPromise,
       floodRiskPromise,
       nearbySchoolsPromise,
       crimePromise,
       broadbandPromise,
+      transportPromise,
     ]);
-    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband };
+    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband, transport };
   }
 
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  const [landRegistry, floodRisk, nearbySchools, crime, broadband] = await Promise.all([
+  const [landRegistry, floodRisk, nearbySchools, crime, broadband, transport] = await Promise.all([
     landRegistryPromise,
     floodRiskPromise,
     nearbySchoolsPromise,
     crimePromise,
     broadbandPromise,
+    transportPromise,
   ]);
 
   const notes: string[] = [];
@@ -1680,7 +1690,7 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
     }
   }
 
-  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband };
+  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband, transport };
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
