@@ -116,13 +116,19 @@ export function PropertyChat({ analysis }: { analysis: AnalysisResult }) {
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                     m.role === "assistant"
                       ? "bg-muted text-foreground"
-                      : "bg-primary text-primary-foreground"
+                      : "bg-primary text-primary-foreground whitespace-pre-wrap"
                   }`}
                 >
-                  {m.content}
+                  {m.role === "assistant" ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+                      {m.content}
+                    </ReactMarkdown>
+                  ) : (
+                    m.content
+                  )}
                 </div>
               </li>
             ))}
