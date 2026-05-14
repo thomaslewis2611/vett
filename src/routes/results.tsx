@@ -969,8 +969,10 @@ function CostBreakdown({
 }
 
 function MortgageCalculator({ purchasePrice }: { purchasePrice: number }) {
+  const DEFAULT_RATE = 4.8;
   const [term, setTerm] = useState(30);
-  const [rate, setRate] = useState(4.8);
+  const [rate, setRate] = useState(DEFAULT_RATE);
+  const [rateInput, setRateInput] = useState(String(DEFAULT_RATE));
   const depositPct = 0.15;
   const loan = purchasePrice * (1 - depositPct);
   const monthly = (() => {
