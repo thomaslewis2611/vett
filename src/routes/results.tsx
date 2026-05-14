@@ -1079,9 +1079,10 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
             "Viewing questions to ask the agent",
             "Negotiation strategy and recommended offer range",
           ]}
-          footnote="No AI chat, no saving."
+          upsell={{ text: "Upgrade to Buyer Pass for AI chat, flood risk and nearby schools →", targetId: "buyer-pass-card" }}
         />
         <PlanCard
+          id="buyer-pass-card"
           title="Buyer Pass"
           price="£24.99"
           cadence="90-day pass · one-off payment"
