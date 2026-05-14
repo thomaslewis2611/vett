@@ -50,9 +50,10 @@ function PricingPage() {
               "Viewing questions to ask the agent",
               "Negotiation strategy and recommended offer range",
             ]}
-            footnote="No AI chat, no schools, no flood risk."
+            upsell={{ text: "Upgrade to Buyer Pass for AI chat, flood risk and nearby schools →", targetId: "buyer-pass-card" }}
           />
           <Plan
+            id="buyer-pass-card"
             title="Buyer Pass"
             price="£24.99"
             cadence="90-day pass · one-off payment"
@@ -87,6 +88,7 @@ function PricingPage() {
 }
 
 function Plan({
+  id,
   title,
   price,
   cadence,
@@ -97,7 +99,9 @@ function Plan({
   footnote,
   subnote,
   plusIntro,
+  upsell,
 }: {
+  id?: string;
   title: string;
   price: string;
   cadence: string;
@@ -108,9 +112,11 @@ function Plan({
   footnote?: string;
   subnote?: string;
   plusIntro?: string;
+  upsell?: { text: string; targetId: string };
 }) {
   return (
     <div
+      id={id}
       className="relative p-8"
       style={{
         background: "#FFFDF9",
@@ -164,6 +170,19 @@ function Plan({
           </li>
         ))}
       </ul>
+      {upsell && (
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof document === "undefined") return;
+            document.getElementById(upsell.targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+          className="mt-4 text-left hover:underline"
+          style={{ fontSize: 13, fontWeight: 500, color: "#D85A30" }}
+        >
+          {upsell.text}
+        </button>
+      )}
       {footnote && (
         <p className="mt-4" style={{ fontSize: 12, color: "#888780" }}>
           {footnote}

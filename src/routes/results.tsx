@@ -1079,9 +1079,10 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
             "Viewing questions to ask the agent",
             "Negotiation strategy and recommended offer range",
           ]}
-          footnote="No AI chat, no saving."
+          upsell={{ text: "Upgrade to Buyer Pass for AI chat, flood risk and nearby schools →", targetId: "buyer-pass-card" }}
         />
         <PlanCard
+          id="buyer-pass-card"
           title="Buyer Pass"
           price="£24.99"
           cadence="90-day pass · one-off payment"
@@ -1143,6 +1144,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
 }
 
 function PlanCard({
+  id,
   title,
   price,
   cadence,
@@ -1152,9 +1154,11 @@ function PlanCard({
   footnote,
   subnote,
   plusIntro,
+  upsell,
   onClick,
   loading,
 }: {
+  id?: string;
   title: string;
   price: string;
   cadence: string;
@@ -1164,11 +1168,13 @@ function PlanCard({
   footnote?: string;
   subnote?: string;
   plusIntro?: string;
+  upsell?: { text: string; targetId: string };
   onClick?: () => void;
   loading?: boolean;
 }) {
   return (
     <div
+      id={id}
       className="relative p-6"
       style={{
         background: "#FFFDF9",
@@ -1203,6 +1209,19 @@ function PlanCard({
           </li>
         ))}
       </ul>
+      {upsell && (
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof document === "undefined") return;
+            document.getElementById(upsell.targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+          className="mt-4 text-left hover:underline"
+          style={{ fontSize: 12, fontWeight: 500, color: "#D85A30" }}
+        >
+          {upsell.text}
+        </button>
+      )}
       {footnote && <p className="mt-4" style={{ fontSize: 12, color: "#888780" }}>{footnote}</p>}
       <button
         type="button"
