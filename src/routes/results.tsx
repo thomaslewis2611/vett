@@ -2960,7 +2960,7 @@ function FloodRiskSection({
 
     const badgeStyle = (level: string | null): CSSProperties => {
       const v = (level ?? "").toLowerCase();
-      if (v === "high") return { background: "#FAECE7", color: "#A32D2D" };
+      if (v === "high" || v === "very high") return { background: "#FAECE7", color: "#A32D2D" };
       if (v === "medium") return { background: "#FAEEDA", color: "#633806" };
       if (v === "low") return { background: "#EAF3DE", color: "#27500A" };
       if (v === "very low") return { background: "#EAF3DE", color: "#27500A" };
@@ -2982,7 +2982,102 @@ function FloodRiskSection({
       </span>
     );
 
-    const isHigh = (fr.overallRisk ?? "").toLowerCase() === "high";
+    // Manual zone assessment view (user entered a flood zone)
+    if (fr && fr.manualZone) {
+      const zoneLabel = `Zone ${fr.manualZone}`;
+      const isHighZone = fr.manualZone === "3a" || fr.manualZone === "3b";
+      return (
+        <section className="mt-10">
+          {headingNode}
+          <div className="mt-4" style={cardStyle}>
+            <div className="flex items-center justify-between gap-3">
+              <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
+                Flood {zoneLabel}{" "}
+                <span style={{ fontSize: 12, color: "#888780", fontWeight: 400 }}>
+                  · manually entered
+                </span>
+              </p>
+              <span
+                style={{
+                  ...badgeStyle(fr.riskLevel ?? fr.overallRisk ?? null),
+                  borderRadius: 999,
+                  padding: "4px 12px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                {isHighZone && (
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                )}
+                {fr.riskLevel ?? fr.overallRisk ?? "Unknown"}
+              </span>
+            </div>
+
+            <div className="mt-4 space-y-3">
+              {fr.insuranceImplications && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: "#888780", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Buildings insurance
+                  </div>
+                  <p className="mt-1" style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.6 }}>
+                    {fr.insuranceImplications}
+                  </p>
+                </div>
+              )}
+              {fr.mortgageImplications && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: "#888780", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Mortgage availability
+                  </div>
+                  <p className="mt-1" style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.6 }}>
+                    {fr.mortgageImplications}
+                  </p>
+                </div>
+              )}
+              {fr.resaleImpact && (
+                <div>
+                  <div style={{ fontSize: 11, fontWeight: 500, color: "#888780", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                    Resale impact
+                  </div>
+                  <p className="mt-1" style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.6 }}>
+                    {fr.resaleImpact}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {fr.commentary && (
+              <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6, marginTop: 14 }}>
+                {fr.commentary}
+              </p>
+            )}
+
+            <div className="mt-4 flex items-center justify-between">
+              <div style={{ fontSize: 10, color: "#888780" }}>
+                Source: Manual flood zone entry · AI assessment
+              </div>
+              <button
+                type="button"
+                onClick={() => onFloodRiskUpdate?.({ ...fr, manualZone: null })}
+                className="hover:underline"
+                style={{ fontSize: 12, color: "#D85A30", fontWeight: 500 }}
+              >
+                Edit flood zone →
+              </button>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    const isHigh = (fr?.overallRisk ?? "").toLowerCase() === "high";
 
     return (
       <section className="mt-10">
@@ -2994,7 +3089,7 @@ function FloodRiskSection({
             </p>
             <span
               style={{
-                ...badgeStyle(fr.overallRisk),
+                ...badgeStyle(fr?.overallRisk ?? null),
                 borderRadius: 999,
                 padding: "4px 12px",
                 fontSize: 12,
@@ -3011,16 +3106,16 @@ function FloodRiskSection({
                   <line x1="12" y1="17" x2="12.01" y2="17" />
                 </svg>
               )}
-              {fr.overallRisk ?? "Unknown"}
+              {fr?.overallRisk ?? "Unknown"}
             </span>
           </div>
 
           <div className="mt-4 space-y-2">
             {[
-              { label: "Rivers and sea", value: fr.riversAndSea },
-              { label: "Surface water", value: fr.surfaceWater },
-              { label: "Reservoir", value: fr.reservoir == null ? null : fr.reservoir ? "Yes" : "No" },
-              { label: "Groundwater", value: fr.groundwater },
+              { label: "Rivers and sea", value: fr?.riversAndSea ?? null },
+              { label: "Surface water", value: fr?.surfaceWater ?? null },
+              { label: "Reservoir", value: fr?.reservoir == null ? null : fr.reservoir ? "Yes" : "No" },
+              { label: "Groundwater", value: fr?.groundwater ?? null },
             ].map((row) => (
               <div key={row.label} className="flex items-center justify-between">
                 <span style={{ fontSize: 13, color: "#5F5E5A" }}>{row.label}</span>
@@ -3029,7 +3124,7 @@ function FloodRiskSection({
             ))}
           </div>
 
-          {fr.commentary && (
+          {fr?.commentary && (
             <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6, marginTop: 14 }}>
               {fr.commentary}
             </p>
@@ -3045,6 +3140,147 @@ function FloodRiskSection({
     console.error("[FloodRiskSection] render failed:", err);
     return null;
   }
+}
+
+const FLOOD_ZONES: { id: "1" | "2" | "3a" | "3b"; label: string; desc: string }[] = [
+  { id: "1", label: "Zone 1", desc: "Low probability (less than 0.1% annual chance)" },
+  { id: "2", label: "Zone 2", desc: "Medium probability (0.1% to 1% annual chance)" },
+  { id: "3a", label: "Zone 3a", desc: "High probability (greater than 1% annual chance)" },
+  { id: "3b", label: "Zone 3b", desc: "The Functional Floodplain (regularly floods)" },
+];
+
+function FloodRiskNoDataCard({
+  analysis,
+  listingUrl,
+  userEmail,
+  onFloodRiskUpdate,
+}: {
+  analysis: AnalysisResult;
+  listingUrl?: string;
+  userEmail?: string | null;
+  onFloodRiskUpdate?: (fr: NonNullable<AnalysisResult["floodRisk"]>) => void;
+}) {
+  const analyseFn = useServerFn(analyseFloodZone);
+  const [pick, setPick] = useState<"1" | "2" | "3a" | "3b" | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleAnalyse = async () => {
+    if (!pick) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const r = await analyseFn({
+        data: {
+          floodZone: pick,
+          propertyType: analysis.property?.type ?? null,
+          address: analysis.property?.address ?? null,
+          price: analysis.property?.price ?? null,
+          email: userEmail ?? null,
+          listingUrl: listingUrl ?? null,
+        },
+      });
+      onFloodRiskUpdate?.(r.floodRisk);
+    } catch (err) {
+      console.error("[FloodRiskNoDataCard] analyse failed:", err);
+      setError("Could not assess that flood zone. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div>
+      <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 600 }}>
+        No flood risk data found
+      </p>
+      <p className="mt-2" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+        This property's postcode doesn't appear in the Environment Agency's flood risk database.
+        This is common for properties outside mapped flood zones, but it doesn't guarantee no risk
+        exists.
+      </p>
+      <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+        We recommend checking directly at{" "}
+        <a
+          href="https://check-long-term-flood-risk.service.gov.uk"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: "#185FA5", textDecoration: "underline" }}
+        >
+          check-long-term-flood-risk.service.gov.uk
+        </a>{" "}
+        using the property postcode.
+      </p>
+      <p className="mt-4" style={{ fontSize: 13, color: "#1A1108", fontWeight: 500 }}>
+        Know the flood zone? Enter it below for a full assessment.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2">
+        {FLOOD_ZONES.map((z) => {
+          const selected = pick === z.id;
+          return (
+            <button
+              key={z.id}
+              type="button"
+              onClick={() => setPick(z.id)}
+              disabled={submitting}
+              aria-pressed={selected}
+              className="inline-flex items-center justify-center rounded-full transition-all"
+              style={{
+                background: selected ? "#D85A30" : "transparent",
+                color: selected ? "#FFFFFF" : "#5F5E5A",
+                border: selected ? "1px solid #D85A30" : "1px solid #5F5E5A",
+                padding: "8px 16px",
+                fontSize: 13,
+                fontWeight: 500,
+              }}
+            >
+              {z.label}
+            </button>
+          );
+        })}
+      </div>
+      <ul className="mt-3 space-y-1.5">
+        {FLOOD_ZONES.map((z) => (
+          <li key={z.id} style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.5 }}>
+            <span style={{ fontWeight: 500, color: "#1A1108" }}>{z.label}:</span> {z.desc}
+          </li>
+        ))}
+      </ul>
+      <div className="mt-4">
+        <button
+          type="button"
+          onClick={handleAnalyse}
+          disabled={!pick || submitting}
+          className="inline-flex items-center justify-center rounded-full transition-opacity hover:opacity-90 disabled:opacity-50"
+          style={{
+            background: "#D85A30",
+            color: "#FFFDF9",
+            fontSize: 13,
+            fontWeight: 500,
+            padding: "10px 20px",
+          }}
+        >
+          {submitting ? (
+            <>
+              <span
+                aria-hidden
+                className="mr-2 inline-block h-3 w-3 animate-spin rounded-full"
+                style={{ border: "2px solid #FFFDF9", borderTopColor: "transparent" }}
+              />
+              Assessing flood risk…
+            </>
+          ) : (
+            "Assess flood risk →"
+          )}
+        </button>
+      </div>
+      {error && (
+        <p className="mt-3" style={{ fontSize: 13, color: "#D43A2F" }}>
+          {error}
+        </p>
+      )}
+    </div>
+  );
 }
 
 /* ============================================================
