@@ -76,9 +76,9 @@ function Index() {
           >
             AI-powered property analysis
           </span>
-          <h1 className="mt-6 text-balance">
-            The red flags{" "}
-            <span style={{ color: "#D85A30" }}>estate agents won't show you</span>
+          <h1 className="mt-6 text-balance" suppressHydrationWarning>
+            {headline.main}{" "}
+            <span style={{ color: "#D85A30" }}>{headline.highlight}</span>
           </h1>
           <p
             className="mx-auto mt-6 max-w-2xl text-balance"
