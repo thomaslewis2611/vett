@@ -23,6 +23,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as ApiPublicCronCheckExpiryRemindersRouteImport } from './routes/api/public/cron/check-expiry-reminders'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -95,6 +96,12 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
   path: '/lovable/email/auth/preview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicCronCheckExpiryRemindersRoute =
+  ApiPublicCronCheckExpiryRemindersRouteImport.update({
+    id: '/api/public/cron/check-expiry-reminders',
+    path: '/api/public/cron/check-expiry-reminders',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -108,6 +115,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/results': typeof ResultsRoute
   '/terms': typeof TermsRoute
+  '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -124,6 +132,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/results': typeof ResultsRoute
   '/terms': typeof TermsRoute
+  '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -141,6 +150,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/results': typeof ResultsRoute
   '/terms': typeof TermsRoute
+  '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
@@ -159,6 +169,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/results'
     | '/terms'
+    | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/results'
     | '/terms'
+    | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -191,6 +203,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/results'
     | '/terms'
+    | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
     | '/lovable/email/queue/process'
@@ -208,6 +221,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   ResultsRoute: typeof ResultsRoute
   TermsRoute: typeof TermsRoute
+  ApiPublicCronCheckExpiryRemindersRoute: typeof ApiPublicCronCheckExpiryRemindersRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
@@ -313,6 +327,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/cron/check-expiry-reminders': {
+      id: '/api/public/cron/check-expiry-reminders'
+      path: '/api/public/cron/check-expiry-reminders'
+      fullPath: '/api/public/cron/check-expiry-reminders'
+      preLoaderRoute: typeof ApiPublicCronCheckExpiryRemindersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -328,6 +349,8 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   ResultsRoute: ResultsRoute,
   TermsRoute: TermsRoute,
+  ApiPublicCronCheckExpiryRemindersRoute:
+    ApiPublicCronCheckExpiryRemindersRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
   LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,

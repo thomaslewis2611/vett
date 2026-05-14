@@ -63,6 +63,7 @@ export type Database = {
           email: string
           expires_at: string | null
           id: string
+          renewal_reminder_sent: boolean
           stripe_customer_id: string | null
           stripe_session_id: string | null
         }
@@ -72,6 +73,7 @@ export type Database = {
           email: string
           expires_at?: string | null
           id?: string
+          renewal_reminder_sent?: boolean
           stripe_customer_id?: string | null
           stripe_session_id?: string | null
         }
@@ -81,6 +83,7 @@ export type Database = {
           email?: string
           expires_at?: string | null
           id?: string
+          renewal_reminder_sent?: boolean
           stripe_customer_id?: string | null
           stripe_session_id?: string | null
         }
