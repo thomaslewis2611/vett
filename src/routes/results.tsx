@@ -327,11 +327,14 @@ function ResultsPage() {
     const rawMsg = (query.error as Error)?.message || "Something went wrong while analysing this listing.";
     const isBlocked = rawMsg.startsWith("FETCH_BLOCKED");
     const isSavedMissing = rawMsg === "SAVED_NOT_FOUND" || Boolean(saved_id);
+    const isTimeout = rawMsg === "ANALYSIS_TIMEOUT";
     const friendlyMsg = isBlocked
       ? "We couldn't automatically read this listing. You can paste the listing description below to get your full analysis."
-      : isSavedMissing
-        ? "We couldn't load this report. Try opening it from your dashboard."
-        : rawMsg;
+      : isTimeout
+        ? "This is taking longer than usual. Try again or try a different listing."
+        : isSavedMissing
+          ? "We couldn't load this report. Try opening it from your dashboard."
+          : rawMsg;
 
     return (
       <div className="min-h-screen bg-background">
