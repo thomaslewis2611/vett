@@ -657,6 +657,14 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
             </div>
           )}
         </section>
+
+        {/* Free tier: viewing checklist (all tiers) + renovation teaser */}
+        {!unlocked && (
+          <>
+            <ViewingChecklistSection analysis={a} />
+            <RenovationCostsSection analysis={a} unlocked={false} />
+          </>
+        )}
       </main>
 
       <DisclaimerBar />
