@@ -1062,6 +1062,178 @@ function toPreview(a: AnalysisResult): AnalysisResult {
   };
 }
 
+// In-memory dedupe for concurrent analyses of the same URL.
+// - inflight: pending promise for an in-progress analysis (same isolate)
+// - recent: completed result kept for 60s so a second tab opening the same
+//   URL returns immediately instead of re-running Claude.
+type FullAnalysis = AnalysisResult;
+const inflightAnalyses = new Map<string, Promise<FullAnalysis>>();
+const recentAnalyses = new Map<string, { at: number; full: FullAnalysis }>();
+const ANALYSIS_DEDUPE_TTL_MS = 60_000;
+
+async function runAnalysis(
+  url: string,
+  pastedText: string,
+  apiKey: string,
+): Promise<FullAnalysis> {
+  let listingContent = pastedText;
+  let landRegistry: LandRegistryResult = null;
+  let scotland = false;
+  let floodRiskRaw: FloodRiskRaw | null = null;
+  let nearbySchoolsRaw: NearbySchoolsRaw | null = null;
+  if (!listingContent && url) {
+    const fetched = await fetchListingText(url);
+    listingContent = fetched.text;
+    landRegistry = fetched.landRegistry;
+    scotland = fetched.scotland;
+    floodRiskRaw = fetched.floodRisk;
+    nearbySchoolsRaw = fetched.nearbySchools;
+  }
+  if (!listingContent || listingContent.length < 100) {
+    throw new Error(
+      "FETCH_BLOCKED: We couldn't automatically read this listing. You can paste the listing description below to get your full analysis."
+    );
+  }
+
+  let output: z.infer<typeof analysisSchema>;
+  try {
+    const client = new Anthropic({ apiKey, timeout: 120_000, maxRetries: 1 });
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 3500,
+      system: SYSTEM_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`,
+        },
+      ],
+    });
+
+    const responseText =
+      message.content[0].type === "text" ? message.content[0].text : "";
+    const cleaned = responseText
+      .trim()
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/\s*```$/i, "");
+
+    const parsed = JSON.parse(cleaned);
+    output = analysisSchema.parse(parsed);
+  } catch (err: unknown) {
+    console.error("[analyseListing] Anthropic/parse error:", err);
+    throw new Error(
+      "Sorry, the analysis service is temporarily unavailable. Please try again shortly."
+    );
+  }
+
+  const full: AnalysisResult = {
+    ...output,
+    property: {
+      ...output.property,
+      listingUrl: url || output.property.listingUrl || "",
+    },
+  } as AnalysisResult;
+
+  if (landRegistry && landRegistry.entries.length) {
+    const existing = full.priceHistory ?? {
+      entries: null,
+      firstSalePrice: null,
+      firstSaleDate: null,
+      totalAppreciation: null,
+      annualGrowthRate: null,
+      yearsHeld: null,
+      commentary: "",
+    };
+    full.priceHistory = {
+      ...existing,
+      entries: landRegistry.entries,
+      source: "land_registry",
+      nearbyMode: false,
+    };
+  } else if (!scotland) {
+    full.priceHistory = null;
+  }
+
+  if (scotland) {
+    full.priceHistory = {
+      entries: null,
+      firstSalePrice: null,
+      firstSaleDate: null,
+      totalAppreciation: null,
+      annualGrowthRate: null,
+      yearsHeld: null,
+      commentary: "",
+      scotland: true,
+    };
+  }
+
+  if (floodRiskRaw) {
+    if (floodRiskRaw.scotland) {
+      full.floodRisk = {
+        riversAndSea: null,
+        surfaceWater: null,
+        reservoir: null,
+        groundwater: null,
+        overallRisk: null,
+        commentary: "",
+        autoRedFlag: false,
+        scotland: true,
+      };
+    } else if (floodRiskRaw.unavailable) {
+      full.floodRisk = {
+        riversAndSea: null,
+        surfaceWater: null,
+        reservoir: null,
+        groundwater: null,
+        overallRisk: null,
+        commentary: "",
+        autoRedFlag: false,
+        unavailable: true,
+      };
+    } else {
+      const aiFlood = full.floodRisk;
+      const overall = floodRiskRaw.overallRisk;
+      const isHighRivers = (floodRiskRaw.riversAndSea ?? "").toLowerCase() === "high";
+      full.floodRisk = {
+        riversAndSea: floodRiskRaw.riversAndSea,
+        surfaceWater: floodRiskRaw.surfaceWater,
+        reservoir: floodRiskRaw.reservoir,
+        groundwater: floodRiskRaw.groundwater,
+        overallRisk: overall,
+        commentary: aiFlood?.commentary ?? "",
+        autoRedFlag: isHighRivers,
+      };
+      if (isHighRivers) {
+        const title = "High flood risk — insurance and mortgage implications";
+        if (!full.redFlags.some((f) => f.title === title)) {
+          full.redFlags = [
+            {
+              severity: "high",
+              title,
+              detail:
+                "This property is in a High flood risk zone according to the Environment Agency. Buildings insurance may be significantly more expensive, refused, or subject to exclusions. Some mortgage lenders require flood resilience measures as a condition of lending. Check the Flood Re scheme eligibility and get a specialist flood insurance quote before proceeding.",
+            },
+            ...full.redFlags,
+          ];
+        }
+      }
+    }
+  } else {
+    full.floodRisk = null;
+  }
+
+  if (nearbySchoolsRaw) {
+    full.nearbySchools = {
+      schools: nearbySchoolsRaw.schools,
+      unavailable: nearbySchoolsRaw.unavailable ?? false,
+    };
+  } else {
+    full.nearbySchools = null;
+  }
+
+  return full;
+}
+
 export const analyseListing = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
@@ -1082,7 +1254,6 @@ export const analyseListing = createServerFn({ method: "POST" })
     const pastedText = data.text?.trim() ?? "";
     if (!url && !pastedText) throw new Error("Provide a listing URL or pasted text");
 
-    // Validate URL upfront so we never make an unrelated outbound request.
     if (url) {
       try {
         validateListingUrl(url);
@@ -1091,172 +1262,36 @@ export const analyseListing = createServerFn({ method: "POST" })
       }
     }
 
-    let listingContent = pastedText;
-    let landRegistry: LandRegistryResult = null;
-    let scotland = false;
-    let floodRiskRaw: FloodRiskRaw | null = null;
-    let nearbySchoolsRaw: NearbySchoolsRaw | null = null;
-    if (!listingContent && url) {
-      const fetched = await fetchListingText(url);
-      listingContent = fetched.text;
-      landRegistry = fetched.landRegistry;
-      scotland = fetched.scotland;
-      floodRiskRaw = fetched.floodRisk;
-      nearbySchoolsRaw = fetched.nearbySchools;
-    }
-    if (!listingContent || listingContent.length < 100) {
-      throw new Error(
-        "FETCH_BLOCKED: We couldn't automatically read this listing. You can paste the listing description below to get your full analysis."
-      );
-    }
-
-    let output: z.infer<typeof analysisSchema>;
-    try {
-      const client = new Anthropic({ apiKey, timeout: 120_000, maxRetries: 1 });
-      const message = await client.messages.create({
-        model: "claude-sonnet-4-5",
-        max_tokens: 3500,
-        system: SYSTEM_PROMPT,
-        messages: [
-          {
-            role: "user",
-            content: `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`,
-          },
-        ],
-      });
-
-      const responseText =
-        message.content[0].type === "text" ? message.content[0].text : "";
-      const cleaned = responseText
-        .trim()
-        .replace(/^```(?:json)?\s*/i, "")
-        .replace(/\s*```$/i, "");
-
-      const parsed = JSON.parse(cleaned);
-      output = analysisSchema.parse(parsed);
-    } catch (err: unknown) {
-      // Log details server-side; never leak provider/internal error info to the browser.
-      console.error("[analyseListing] Anthropic/parse error:", err);
-      throw new Error(
-        "Sorry, the analysis service is temporarily unavailable. Please try again shortly."
-      );
-    }
-
-    const full: AnalysisResult = {
-      ...output,
-      property: {
-        ...output.property,
-        listingUrl: url || output.property.listingUrl || "",
-      },
-    } as AnalysisResult;
-
-    // Override priceHistory with authoritative Land Registry data when an
-    // exact-match was found. Otherwise clear any AI-fabricated history so the
-    // UI shows the empty state.
-    if (landRegistry && landRegistry.entries.length) {
-      const existing = full.priceHistory ?? {
-        entries: null,
-        firstSalePrice: null,
-        firstSaleDate: null,
-        totalAppreciation: null,
-        annualGrowthRate: null,
-        yearsHeld: null,
-        commentary: "",
-      };
-      full.priceHistory = {
-        ...existing,
-        entries: landRegistry.entries,
-        source: "land_registry",
-        nearbyMode: false,
-      };
-    } else if (!scotland) {
-      full.priceHistory = null;
-    }
-
-    // Scottish properties: Land Registry doesn't cover Scotland — surface a
-    // dedicated message and clear any AI-fabricated history.
-    if (scotland) {
-      full.priceHistory = {
-        entries: null,
-        firstSalePrice: null,
-        firstSaleDate: null,
-        totalAppreciation: null,
-        annualGrowthRate: null,
-        yearsHeld: null,
-        commentary: "",
-        scotland: true,
-      };
-    }
-
-    // Flood risk — override authoritative fields with EA data, write/append
-    // an auto red flag for High rivers/sea risk so it surfaces even on the
-    // free preview.
-    if (floodRiskRaw) {
-      if (floodRiskRaw.scotland) {
-        full.floodRisk = {
-          riversAndSea: null,
-          surfaceWater: null,
-          reservoir: null,
-          groundwater: null,
-          overallRisk: null,
-          commentary: "",
-          autoRedFlag: false,
-          scotland: true,
-        };
-      } else if (floodRiskRaw.unavailable) {
-        full.floodRisk = {
-          riversAndSea: null,
-          surfaceWater: null,
-          reservoir: null,
-          groundwater: null,
-          overallRisk: null,
-          commentary: "",
-          autoRedFlag: false,
-          unavailable: true,
-        };
+    // Dedupe concurrent / rapid-repeat analyses for the same URL.
+    // Pasted-text submissions skip the cache (content varies per call).
+    let full: FullAnalysis;
+    if (url && !pastedText) {
+      const cached = recentAnalyses.get(url);
+      if (cached && Date.now() - cached.at < ANALYSIS_DEDUPE_TTL_MS) {
+        console.log("[analyseListing] returning cached result", { url, ageMs: Date.now() - cached.at });
+        full = cached.full;
       } else {
-        const aiFlood = full.floodRisk;
-        const overall = floodRiskRaw.overallRisk;
-        const isHighRivers = (floodRiskRaw.riversAndSea ?? "").toLowerCase() === "high";
-        full.floodRisk = {
-          riversAndSea: floodRiskRaw.riversAndSea,
-          surfaceWater: floodRiskRaw.surfaceWater,
-          reservoir: floodRiskRaw.reservoir,
-          groundwater: floodRiskRaw.groundwater,
-          overallRisk: overall,
-          commentary: aiFlood?.commentary ?? "",
-          autoRedFlag: isHighRivers,
-        };
-        if (isHighRivers) {
-          const title = "High flood risk — insurance and mortgage implications";
-          if (!full.redFlags.some((f) => f.title === title)) {
-            full.redFlags = [
-              {
-                severity: "high",
-                title,
-                detail:
-                  "This property is in a High flood risk zone according to the Environment Agency. Buildings insurance may be significantly more expensive, refused, or subject to exclusions. Some mortgage lenders require flood resilience measures as a condition of lending. Check the Flood Re scheme eligibility and get a specialist flood insurance quote before proceeding.",
-              },
-              ...full.redFlags,
-            ];
-          }
+        const existing = inflightAnalyses.get(url);
+        if (existing) {
+          console.log("[analyseListing] joining in-flight analysis", { url });
+          full = await existing;
+        } else {
+          const promise = runAnalysis(url, pastedText, apiKey)
+            .then((result) => {
+              recentAnalyses.set(url, { at: Date.now(), full: result });
+              return result;
+            })
+            .finally(() => {
+              inflightAnalyses.delete(url);
+            });
+          inflightAnalyses.set(url, promise);
+          full = await promise;
         }
       }
     } else {
-      full.floodRisk = null;
+      full = await runAnalysis(url, pastedText, apiKey);
     }
 
-    // Nearby schools — attach raw DfE data (split by phase happens in UI).
-    if (nearbySchoolsRaw) {
-      full.nearbySchools = {
-        schools: nearbySchoolsRaw.schools,
-        unavailable: nearbySchoolsRaw.unavailable ?? false,
-      };
-    } else {
-      full.nearbySchools = null;
-    }
-
-    // Server-side gating — only return premium content if the caller has paid.
     const unlocked = await hasFullAccess({
       accessToken: data.accessToken ?? null,
       sessionJwt: data.sessionJwt ?? null,
