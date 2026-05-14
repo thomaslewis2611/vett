@@ -1535,7 +1535,7 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     if (invokeFailed) {
       console.warn(`[startAnalysisJob] Falling back to in-process analysis for ${jobId}`);
       try {
-        await processAnalysisJob(jobId, url, pastedText, data.accessToken ?? null, data.sessionJwt ?? null);
+        await processAnalysisJob(jobId, url, pastedText);
       } catch (fallbackErr) {
         const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
         console.error(`[startAnalysisJob] fallback analysis failed for ${jobId}:`, msg);
