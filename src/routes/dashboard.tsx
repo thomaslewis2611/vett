@@ -309,15 +309,13 @@ function DashboardPage() {
                           {score.toFixed(1)} / 10
                         </span>
                       )}
-                      {r.listing_url && (
-                        <Link
-                          to="/results"
-                          search={{ url: r.listing_url }}
-                          style={{ fontSize: 13, color: "#D85A30" }}
-                        >
-                          View →
-                        </Link>
-                      )}
+                      <Link
+                        to="/results"
+                        search={{ saved_id: r.id }}
+                        style={{ fontSize: 13, color: "#D85A30" }}
+                      >
+                        View →
+                      </Link>
                     </div>
                   </li>
                 );
