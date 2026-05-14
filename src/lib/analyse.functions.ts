@@ -1789,6 +1789,7 @@ function toPreview(a: AnalysisResult): AnalysisResult {
     nearbySchools: null,
     crime: null,
     broadband: null,
+    transport: null,
     renovationCosts: null,
   };
 }
