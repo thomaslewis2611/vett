@@ -1026,11 +1026,27 @@ function MortgageCalculator({ purchasePrice }: { purchasePrice: number }) {
           <span className="text-xs text-muted-foreground">Interest rate %</span>
           <input
             type="number"
-            min={1}
-            max={15}
+            inputMode="decimal"
+            min={0.1}
+            max={20}
             step={0.1}
-            value={rate}
-            onChange={(e) => setRate(Math.min(15, Math.max(1, Number(e.target.value) || 0)))}
+            value={rateInput}
+            onChange={(e) => {
+              const v = e.target.value;
+              setRateInput(v);
+              if (v === "") return;
+              const n = Number(v);
+              if (Number.isFinite(n) && n > 0 && n < 20) setRate(n);
+            }}
+            onBlur={() => {
+              const n = Number(rateInput);
+              if (rateInput === "" || !Number.isFinite(n) || n <= 0 || n >= 20) {
+                setRate(DEFAULT_RATE);
+                setRateInput(String(DEFAULT_RATE));
+              } else {
+                setRateInput(String(n));
+              }
+            }}
             className="mt-1 w-full px-3 py-1.5 text-sm outline-none"
             style={inputBg}
           />
