@@ -1374,6 +1374,7 @@ function toPreview(a: AnalysisResult): AnalysisResult {
     viewingQuestions: [],
     comparables: [],
     nearbySchools: null,
+    crime: null,
     renovationCosts: null,
   };
 }
