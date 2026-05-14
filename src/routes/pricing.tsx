@@ -96,6 +96,7 @@ function Plan({
   features,
   cta,
   highlight,
+  headline,
   footnote,
   subnote,
 }: {
@@ -105,6 +106,7 @@ function Plan({
   features: string[];
   cta: string;
   highlight?: boolean;
+  headline?: string;
   footnote?: string;
   subnote?: string;
 }) {
@@ -140,6 +142,11 @@ function Plan({
         </span>
         <span style={{ fontSize: 13, color: "#888780" }}>{cadence}</span>
       </div>
+      {headline && (
+        <p className="mt-3" style={{ fontSize: 14, fontWeight: 500, color: "#1A1108" }}>
+          {headline}
+        </p>
+      )}
       {subnote && (
         <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A" }}>
           {subnote}
