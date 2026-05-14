@@ -1020,6 +1020,14 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           onUpgrade={() => upgradeToPass(listingUrl)}
         />
 
+        {/* Broadband & connectivity — Buyer Pass only; locked teaser otherwise */}
+        <BroadbandSection
+          analysis={a}
+          isBuyerPass={access.level === "pass"}
+          fetching={access.level === "pass" && fetchingExtras && a.broadband == null}
+          onUpgrade={() => upgradeToPass(listingUrl)}
+        />
+
         {/* AI chat — Buyer Pass renders chat; Single Report sees locked teaser */}
         {unlocked && showChat && (
           <section className="mt-10">
