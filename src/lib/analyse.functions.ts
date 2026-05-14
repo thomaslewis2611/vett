@@ -2229,6 +2229,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
     floodRisk: AnalysisResult["floodRisk"] | null;
     nearbySchools: AnalysisResult["nearbySchools"] | null;
     crime: AnalysisResult["crime"] | null;
+    broadband: AnalysisResult["broadband"] | null;
     error?: string;
   }> => {
     try {
@@ -2241,7 +2242,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
       const valid =
         pass && pass.expires_at && new Date(pass.expires_at as string).getTime() > Date.now();
       if (!valid) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, error: "Buyer Pass required" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "Buyer Pass required" };
       }
 
       // 2. Load existing saved analysis row (most recent for this user+listing).
@@ -2254,11 +2255,11 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         .limit(1);
       const row = rows?.[0];
       if (!row) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, error: "No saved analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "No saved analysis" };
       }
       const analysis = (row.analysis_json as AnalysisResult) ?? null;
       if (!analysis) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, error: "Empty analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "Empty analysis" };
       }
 
       // 3. Extract postcode from saved address.
@@ -2266,8 +2267,8 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         extractPostcode(analysis.property?.address ?? "") ??
         extractPostcode((analysis as any)?.property?.listingUrl ?? "");
 
-      // 4. Fetch flood + schools + crime in parallel (cached; cheap on repeat).
-      const [floodRaw, schoolsRaw, crimeRawResult] = await Promise.all([
+      // 4. Fetch flood + schools + crime + broadband in parallel (cached).
+      const [floodRaw, schoolsRaw, crimeRawResult, broadbandRawResult] = await Promise.all([
         fetchFloodRisk(postcode).catch((err) => {
           console.error("[fetchBuyerPassExtras] flood failed:", err);
           return null;
@@ -2278,6 +2279,10 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         }),
         fetchCrimeStats(postcode, analysis.property?.address ?? "", process.env.ANTHROPIC_API_KEY).catch((err) => {
           console.error("[fetchBuyerPassExtras] crime failed:", err);
+          return null;
+        }),
+        fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY).catch((err) => {
+          console.error("[fetchBuyerPassExtras] broadband failed:", err);
           return null;
         }),
       ]);
@@ -2326,8 +2331,23 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
           }
         : null;
 
+      const broadband: AnalysisResult["broadband"] = broadbandRawResult
+        ? {
+            downloadSpeed: broadbandRawResult.downloadSpeed,
+            uploadSpeed: broadbandRawResult.uploadSpeed,
+            connectionType: broadbandRawResult.connectionType,
+            suitableForRemoteWork: broadbandRawResult.suitableForRemoteWork,
+            mobileSignal: broadbandRawResult.mobileSignal,
+            commentary: broadbandRawResult.commentary,
+            speedRating: broadbandRawResult.speedRating,
+            source: broadbandRawResult.source,
+            unavailable: broadbandRawResult.unavailable ?? null,
+            autoRedFlag: broadbandRawResult.autoRedFlag ?? null,
+          }
+        : null;
+
       // 6. Patch the saved analysis row (admin client bypasses RLS).
-      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime };
+      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime, broadband };
       try {
         await supabaseAdmin
           .from("saved_analyses")
@@ -2337,7 +2357,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         console.error("[fetchBuyerPassExtras] update failed:", err);
       }
 
-      return { ok: true, floodRisk, nearbySchools, crime };
+      return { ok: true, floodRisk, nearbySchools, crime, broadband };
     } catch (err) {
       console.error("[fetchBuyerPassExtras] failed:", err);
       return {
@@ -2345,6 +2365,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         floodRisk: null,
         nearbySchools: null,
         crime: null,
+        broadband: null,
         error: (err as Error).message ?? "Unknown error",
       };
     }
