@@ -1619,6 +1619,7 @@ function toPreview(a: AnalysisResult): AnalysisResult {
     comparables: [],
     nearbySchools: null,
     crime: null,
+    broadband: null,
     renovationCosts: null,
   };
 }
