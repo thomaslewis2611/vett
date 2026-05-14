@@ -576,7 +576,11 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
             <>
               <LockedFeaturesGrid />
               <div className="mt-8">
-                <PaywallGate listingUrl={listingUrl} />
+                {access.level === "expired" ? (
+                  <ExpiredPassGate expiresAt={access.expiresAt} listingUrl={listingUrl} />
+                ) : (
+                  <PaywallGate listingUrl={listingUrl} />
+                )}
               </div>
             </>
           )}
