@@ -688,7 +688,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
       <SiteHeader />
 
       {access.level === "pass" && (
