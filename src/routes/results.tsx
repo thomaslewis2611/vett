@@ -24,7 +24,7 @@ import { validateSingleReportToken, checkBuyerPassByEmail } from "@/lib/access.f
 import { supabase } from "@/integrations/supabase/client";
 
 const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
-const PRICE_PASS = "price_1TWXv1CfTT0mXB2clPmEQyob";
+const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
 const ANALYSIS_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 const ANALYSIS_CACHE_PREFIX = "roovr:analysis:";
