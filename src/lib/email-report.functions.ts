@@ -199,7 +199,7 @@ function buildReportHtml(opts: {
       <tr><td ${rowStyle}>Mortgage arrangement</td><td ${valStyle}>${gbp(costs.mortgageFees)}</td></tr>
       <tr>
         <td style="padding:10px 0;border-top:2px solid rgba(26,17,8,0.18);font-size:13px;font-weight:600;color:#1A1108;">Total upfront</td>
-        <td style="padding:10px 0;border-top:2px solid rgba(26,17,8,0.18);font-size:13px;font-weight:700;color:#1A1108;text-align:right;">${gbp((Number(costs.purchasePrice ?? 0) - Number(costs.purchasePrice ?? 0)) + Number(costs.totalUpfront ?? 0))}</td>
+        <td style="padding:10px 0;border-top:2px solid rgba(26,17,8,0.18);font-size:13px;font-weight:700;color:#1A1108;text-align:right;">${gbp(costs.totalUpfront)}</td>
       </tr>
       <tr><td ${rowStyle}>Est. monthly mortgage</td><td ${valStyle}>${gbp(costs.monthlyMortgage)}</td></tr>
     </table>
