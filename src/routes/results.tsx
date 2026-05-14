@@ -28,6 +28,26 @@ const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
 const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
 const ANALYSIS_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+// Persist the current analysis_jobs id per listing URL so that when an
+// unauthenticated user clicks "Get Buyer Pass" / "Get this report" we can
+// pass it through Stripe metadata. The webhook then copies the analysis
+// into saved_analyses for the new user's email.
+function jobIdKey(url?: string | null) {
+  return url ? `roovrJobId:${url}` : null;
+}
+function rememberJobId(url: string | undefined | null, jobId: string) {
+  if (typeof window === "undefined") return;
+  const key = jobIdKey(url);
+  if (!key) return;
+  try { sessionStorage.setItem(key, jobId); } catch { /* ignore */ }
+}
+function recallJobId(url: string | undefined | null): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const key = jobIdKey(url);
+  if (!key) return undefined;
+  try { return sessionStorage.getItem(key) ?? undefined; } catch { return undefined; }
+}
 const ANALYSIS_CACHE_PREFIX = "roovr:analysis:";
 
 function analysisCacheKey(url?: string, text?: string, token?: string) {
