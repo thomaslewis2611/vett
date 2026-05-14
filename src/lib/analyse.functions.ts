@@ -840,36 +840,48 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
         continue;
       }
 
-    const schools: SchoolEntry[] = list
-      .map((s) => {
-        const name: string =
-          s.school_name ?? s.name ?? s.schoolName ?? s.establishmentName ?? "";
-        const ofstedRaw = s.ofsted_rating ?? s.ofstedRating ?? s.ofsted;
-        const ofstedRating =
-          typeof ofstedRaw === "number"
-            ? ofstedRaw
-            : typeof ofstedRaw === "string" && /^\d$/.test(ofstedRaw)
-              ? Number(ofstedRaw)
-              : null;
-        const schoolType: string | null =
-          s.school_type ?? s.schoolType ?? s.type ?? null;
-        const distRaw = s.distance ?? s.distance_km ?? s.distanceKm;
-        const distKm = typeof distRaw === "number" ? distRaw : Number(distRaw);
-        const distanceMiles = Number.isFinite(distKm) ? distKm * 0.621371 : NaN;
-        return {
-          name,
-          ofstedRating,
-          schoolType,
-          phase: classifyPhase(schoolType),
-          distanceMiles,
-        };
-      })
-      .filter((s) => s.name && Number.isFinite(s.distanceMiles))
-      .sort((a, b) => a.distanceMiles - b.distanceMiles);
+      const schools: SchoolEntry[] = list
+        .map((s) => {
+          const name: string =
+            s.school_name ?? s.name ?? s.schoolName ?? s.establishmentName ?? "";
+          const ofstedRaw =
+            s.ofsted_rating ?? s.ofstedRating ?? s.ofsted ?? s.ofstedRatingName;
+          const ofstedRating =
+            typeof ofstedRaw === "number"
+              ? ofstedRaw
+              : typeof ofstedRaw === "string" && /^\d$/.test(ofstedRaw)
+                ? Number(ofstedRaw)
+                : null;
+          const schoolType: string | null =
+            s.school_type ?? s.schoolType ?? s.type ?? s.phaseOfEducation ?? null;
+          const milesRaw = s.distanceInMiles ?? s.distance_miles ?? s.distanceMiles;
+          let distanceMiles: number;
+          if (milesRaw != null && Number.isFinite(Number(milesRaw))) {
+            distanceMiles = Number(milesRaw);
+          } else {
+            const distRaw = s.distance ?? s.distance_km ?? s.distanceKm;
+            const distKm = typeof distRaw === "number" ? distRaw : Number(distRaw);
+            distanceMiles = Number.isFinite(distKm) ? distKm * 0.621371 : NaN;
+          }
+          return {
+            name,
+            ofstedRating,
+            schoolType,
+            phase: classifyPhase(schoolType),
+            distanceMiles,
+          };
+        })
+        .filter((s) => s.name && Number.isFinite(s.distanceMiles))
+        .sort((a, b) => a.distanceMiles - b.distanceMiles);
 
-    raw = { schools };
-  } catch (err) {
-    console.error("[nearbySchools] fetch failed:", err);
+      raw = { schools };
+      break;
+    } catch (err) {
+      console.error(`[nearbySchools] fetch failed for ${url}:`, err);
+    }
+  }
+
+  if (!raw) {
     return { schools: [], unavailable: true };
   }
 
