@@ -17,7 +17,7 @@ import {
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { DisclaimerBar } from "@/components/disclaimer-bar";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
-import { startAnalysisJob, getAnalysisJob, fetchBuyerPassExtras, analyseEpcRating } from "@/lib/analyse.functions";
+import { startAnalysisJob, getAnalysisJob, fetchBuyerPassExtras, analyseEpcRating, analyseFloodZone } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
 import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser, getSavedAnalysis } from "@/lib/checkout.functions";
 import { sendReportEmail } from "@/lib/email-report.functions";
