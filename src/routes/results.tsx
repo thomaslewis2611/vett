@@ -123,7 +123,7 @@ const STAMP_DUTY_LABELS: Record<StampDutyMode, string> = {
 
 type AccessLevel = "none" | "single" | "pass" | "expired";
 
-function useAccess(listingUrl: string | undefined, token: string | undefined): {
+function useAccess(listingUrl: string | undefined, token: string | undefined, savedId?: string, savedOwnerEmail?: string | null): {
   level: AccessLevel;
   email: string | null;
   expiresAt: string | null;
@@ -158,6 +158,7 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
           const r = await checkPass({ data: { email } });
           if (cancelled) return;
           if (r.hasPass) {
+            console.log("Access check — saved_id:", savedId ?? null, "user email:", email, "saved_analyses owner:", savedOwnerEmail ?? null, "access granted: pass");
             setState({ level: "pass", email, expiresAt: r.expiresAt, loading: false });
             return;
           }
@@ -167,12 +168,25 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
         }
       } catch { /* ignore */ }
 
-      // 2. Signed-in user with a Single Report for THIS specific listing URL
+      // 2a. Saved report ownership: if the signed-in user owns this
+      // saved_analyses row, they purchased a Single Report (or were granted
+      // one) — always grant at least Single access regardless of subscription.
+      if (savedId && signedInEmail && savedOwnerEmail &&
+          signedInEmail.toLowerCase() === savedOwnerEmail.toLowerCase()) {
+        if (!cancelled) {
+          console.log("Access check — saved_id:", savedId, "user email:", signedInEmail, "saved_analyses owner:", savedOwnerEmail, "access granted: single");
+          setState({ level: "single", email: signedInEmail, expiresAt: null, loading: false });
+        }
+        return;
+      }
+
+      // 2b. Signed-in user with a Single Report for THIS specific listing URL
       if (signedInEmail && listingUrl) {
         try {
           const r = await checkSingleByEmail({ data: { email: signedInEmail, listingUrl } });
           if (cancelled) return;
           if (r.token) {
+            console.log("Access check — saved_id:", savedId ?? null, "user email:", signedInEmail, "saved_analyses owner:", savedOwnerEmail ?? null, "access granted: single");
             setState({ level: "single", email: signedInEmail, expiresAt: r.expiresAt, loading: false });
             return;
           }
@@ -204,10 +218,13 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
         return;
       }
 
-      if (!cancelled) setState({ level: "none", email: null, expiresAt: null, loading: false });
+      if (!cancelled) {
+        console.log("Access check — saved_id:", savedId ?? null, "user email:", signedInEmail, "saved_analyses owner:", savedOwnerEmail ?? null, "access granted: none");
+        setState({ level: "none", email: signedInEmail, expiresAt: null, loading: false });
+      }
     })();
     return () => { cancelled = true; };
-  }, [listingUrl, token, validateToken, checkPass, checkSingleByEmail]);
+  }, [listingUrl, token, savedId, savedOwnerEmail, validateToken, checkPass, checkSingleByEmail]);
 
   return state;
 }
