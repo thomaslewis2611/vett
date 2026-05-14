@@ -2495,7 +2495,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
   );
 }
 
-function FloodRiskSection({ analysis, isBuyerPass }: { analysis: AnalysisResult; isBuyerPass: boolean }) {
+function FloodRiskSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
   try {
     const fr = analysis.floodRisk;
 
