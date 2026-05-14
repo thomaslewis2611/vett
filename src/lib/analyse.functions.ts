@@ -1213,6 +1213,16 @@ export const analyseListing = createServerFn({ method: "POST" })
       full.floodRisk = null;
     }
 
+    // Nearby schools — attach raw DfE data (split by phase happens in UI).
+    if (nearbySchoolsRaw) {
+      full.nearbySchools = {
+        schools: nearbySchoolsRaw.schools,
+        unavailable: nearbySchoolsRaw.unavailable ?? false,
+      };
+    } else {
+      full.nearbySchools = null;
+    }
+
     // Server-side gating — only return premium content if the caller has paid.
     const unlocked = await hasFullAccess({
       accessToken: data.accessToken ?? null,
