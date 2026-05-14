@@ -2403,7 +2403,7 @@ function SchoolRow({ s }: { s: NonNullable<AnalysisResult["nearbySchools"]>["sch
   );
 }
 
-function NearbySchoolsSection({ analysis, isBuyerPass }: { analysis: AnalysisResult; isBuyerPass: boolean }) {
+function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
