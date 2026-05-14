@@ -19,7 +19,7 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
 import { analyseListing } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
-import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser } from "@/lib/checkout.functions";
+import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser, getSavedAnalysis } from "@/lib/checkout.functions";
 import { validateSingleReportToken, checkBuyerPassByEmail } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
 
