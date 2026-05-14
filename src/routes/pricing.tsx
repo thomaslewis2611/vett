@@ -170,6 +170,19 @@ function Plan({
           </li>
         ))}
       </ul>
+      {upsell && (
+        <button
+          type="button"
+          onClick={() => {
+            if (typeof document === "undefined") return;
+            document.getElementById(upsell.targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
+          }}
+          className="mt-4 text-left hover:underline"
+          style={{ fontSize: 13, fontWeight: 500, color: "#D85A30" }}
+        >
+          {upsell.text}
+        </button>
+      )}
       {footnote && (
         <p className="mt-4" style={{ fontSize: 12, color: "#888780" }}>
           {footnote}
