@@ -2790,7 +2790,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
       <div className="mt-4" style={cardStyle}>
         {ns?.unavailable || empty ? (
           <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            No schools found within 1 mile. Search schools at{" "}
+            No schools found within 5 miles. Search schools at{" "}
             <a
               href="https://get-information-schools.service.gov.uk"
               target="_blank"
