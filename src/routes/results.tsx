@@ -806,6 +806,17 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
               value={a.metrics.pricePerSqFt > 0 ? `£${a.metrics.pricePerSqFt}` : "—"}
               icon={PoundSterling}
             />
+            <PricePerSqftCard
+              analysis={a}
+              listingUrl={listingUrl}
+              userEmail={access.email}
+              onUpdate={(patch) => setA((prev) => ({
+                ...prev,
+                manualSqftAnalysis: patch,
+                property: { ...prev.property, sqft: patch.sqft },
+                metrics: { ...prev.metrics, pricePerSqFt: patch.pricePerSqFt },
+              }))}
+            />
             <MetricCard
               label="Days on market"
               value={a.metrics.daysOnMarket > 0 ? `${a.metrics.daysOnMarket}` : "—"}
