@@ -124,6 +124,30 @@ const analysisSchema = z.object({
     rationale: z.string().describe("2-3 sentence justification (or auction bidding strategy if isAuction)"),
     leverage: z.array(z.string()).min(3).max(6).describe("Concrete negotiating points"),
   }),
+  sellerMotivation: z.object({
+    score: z.number().min(1).max(10),
+    label: z.enum(["Low", "Moderate", "High", "Very High"]),
+    signals: z.array(z.string()),
+    commentary: z.string(),
+  }).nullable().optional(),
+  viewingChecklist: z.object({
+    items: z.array(z.object({
+      category: z.enum(["Structure", "Legal", "Running costs", "Negotiation", "Practical"]),
+      item: z.string(),
+      why: z.string(),
+    })).min(8).max(15),
+  }).nullable().optional(),
+  renovationCosts: z.object({
+    items: z.array(z.object({
+      issue: z.string(),
+      estimatedCost: z.string(),
+      priority: z.enum(["Essential", "Recommended", "Optional"]),
+      notes: z.string(),
+    })),
+    totalEstimatedMin: z.number(),
+    totalEstimatedMax: z.number(),
+    commentary: z.string(),
+  }).nullable().optional(),
   comparables: z
     .array(
       z.object({
