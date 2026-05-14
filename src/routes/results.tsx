@@ -1764,39 +1764,129 @@ function EpcSection({ analysis }: { analysis: AnalysisResult }) {
   );
 }
 
-function DownloadPdfButton() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(max-width: 640px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
+function EmailReportButton({
+  analysis,
+  isPaid,
+  userEmail,
+}: {
+  analysis: AnalysisResult;
+  isPaid: boolean;
+  userEmail: string | null;
+}) {
+  const sendFn = useServerFn(sendReportEmail);
+  const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [showInput, setShowInput] = useState(false);
+  const [emailInput, setEmailInput] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  const onClick = () => {
-    if (typeof window !== "undefined") window.print();
+  const send = async (to: string) => {
+    setStatus("sending");
+    setErrorMsg(null);
+    try {
+      const resultsUrl = typeof window !== "undefined" ? window.location.href : "";
+      const r = await sendFn({ data: { email: to, analysis, resultsUrl, isPaid } });
+      if (r.ok) {
+        setSentTo(to);
+        setStatus("sent");
+        setShowInput(false);
+      } else {
+        setStatus("error");
+        setErrorMsg("Couldn't send the report — try again or contact hello@roovr.co");
+      }
+    } catch {
+      setStatus("error");
+      setErrorMsg("Couldn't send the report — try again or contact hello@roovr.co");
+    }
   };
 
+  const onClick = () => {
+    if (status === "sending") return;
+    if (userEmail) {
+      void send(userEmail);
+    } else {
+      setShowInput((s) => !s);
+    }
+  };
+
+  const buttonStyle: CSSProperties = {
+    border: "1.5px solid #1A1108",
+    background: "transparent",
+    color: "#1A1108",
+    borderRadius: 100,
+    fontSize: 13,
+    fontWeight: 500,
+    padding: "7px 14px",
+  };
+
+  if (status === "sent" && sentTo) {
+    return (
+      <div style={{ fontSize: 13, color: "#1A1108", display: "inline-flex", alignItems: "center", gap: 6 }}>
+        <Check className="h-3.5 w-3.5" style={{ color: "#3B6D11" }} />
+        Report sent to {sentTo}
+      </div>
+    );
+  }
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 transition-colors hover:bg-[#1A1108] hover:text-[#FFFDF9]"
-      style={{
-        border: "1.5px solid #1A1108",
-        background: "transparent",
-        color: "#1A1108",
-        borderRadius: 100,
-        fontSize: 13,
-        fontWeight: 500,
-        padding: "7px 14px",
-      }}
-    >
-      <Download className="h-3.5 w-3.5" />
-      {isMobile ? "Save as PDF" : "Download PDF"}
-    </button>
+    <div className="flex flex-col items-end gap-2">
+      {showInput && !userEmail ? (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            const v = emailInput.trim();
+            if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) void send(v);
+          }}
+          className="flex items-center gap-2"
+        >
+          <input
+            type="email"
+            required
+            value={emailInput}
+            onChange={(e) => setEmailInput(e.target.value)}
+            placeholder="your@email.com"
+            disabled={status === "sending"}
+            style={{
+              border: "1px solid rgba(26,17,8,0.2)",
+              background: "#FFFDF9",
+              borderRadius: 100,
+              fontSize: 13,
+              padding: "7px 12px",
+              color: "#1A1108",
+              minWidth: 200,
+            }}
+          />
+          <button
+            type="submit"
+            disabled={status === "sending"}
+            className="inline-flex items-center gap-1.5"
+            style={{ ...buttonStyle, background: "#1A1108", color: "#FFFDF9", borderColor: "#1A1108" }}
+          >
+            {status === "sending" ? "Sending..." : "Send →"}
+          </button>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={onClick}
+          disabled={status === "sending"}
+          className="inline-flex items-center gap-1.5 transition-colors hover:bg-[#1A1108] hover:text-[#FFFDF9]"
+          style={buttonStyle}
+        >
+          {status === "sending" ? (
+            <>
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Sending...
+            </>
+          ) : (
+            <>Email me my report →</>
+          )}
+        </button>
+      )}
+      {status === "error" && errorMsg && (
+        <div style={{ fontSize: 12, color: "#B53A1A" }}>{errorMsg}</div>
+      )}
+    </div>
   );
 }
 
