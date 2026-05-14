@@ -302,7 +302,7 @@ export const getSavedAnalysis = createServerFn({ method: "POST" })
     console.log("[getSavedAnalysis] querying saved_analyses", { id: data.id, userId });
     const { data: row, error } = await supabase
       .from("saved_analyses")
-      .select("id, listing_url, analysis_json, created_at")
+      .select("id, listing_url, analysis_json, created_at, user_email")
       .eq("id", data.id)
       .maybeSingle();
     if (error) {
@@ -317,5 +317,6 @@ export const getSavedAnalysis = createServerFn({ method: "POST" })
       found: true as const,
       listingUrl: (row as { listing_url: string | null }).listing_url,
       analysis: (row as unknown as { analysis_json: AnalysisResult }).analysis_json,
+      userEmail: (row as { user_email: string | null }).user_email,
     };
   });

@@ -123,7 +123,7 @@ const STAMP_DUTY_LABELS: Record<StampDutyMode, string> = {
 
 type AccessLevel = "none" | "single" | "pass" | "expired";
 
-function useAccess(listingUrl: string | undefined, token: string | undefined): {
+function useAccess(listingUrl: string | undefined, token: string | undefined, savedId?: string, savedOwnerEmail?: string | null): {
   level: AccessLevel;
   email: string | null;
   expiresAt: string | null;
@@ -158,6 +158,7 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
           const r = await checkPass({ data: { email } });
           if (cancelled) return;
           if (r.hasPass) {
+            console.log("Access check — saved_id:", savedId ?? null, "user email:", email, "saved_analyses owner:", savedOwnerEmail ?? null, "access granted: pass");
             setState({ level: "pass", email, expiresAt: r.expiresAt, loading: false });
             return;
           }
@@ -167,12 +168,25 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
         }
       } catch { /* ignore */ }
 
-      // 2. Signed-in user with a Single Report for THIS specific listing URL
+      // 2a. Saved report ownership: if the signed-in user owns this
+      // saved_analyses row, they purchased a Single Report (or were granted
+      // one) — always grant at least Single access regardless of subscription.
+      if (savedId && signedInEmail && savedOwnerEmail &&
+          signedInEmail.toLowerCase() === savedOwnerEmail.toLowerCase()) {
+        if (!cancelled) {
+          console.log("Access check — saved_id:", savedId, "user email:", signedInEmail, "saved_analyses owner:", savedOwnerEmail, "access granted: single");
+          setState({ level: "single", email: signedInEmail, expiresAt: null, loading: false });
+        }
+        return;
+      }
+
+      // 2b. Signed-in user with a Single Report for THIS specific listing URL
       if (signedInEmail && listingUrl) {
         try {
           const r = await checkSingleByEmail({ data: { email: signedInEmail, listingUrl } });
           if (cancelled) return;
           if (r.token) {
+            console.log("Access check — saved_id:", savedId ?? null, "user email:", signedInEmail, "saved_analyses owner:", savedOwnerEmail ?? null, "access granted: single");
             setState({ level: "single", email: signedInEmail, expiresAt: r.expiresAt, loading: false });
             return;
           }
@@ -204,10 +218,13 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
         return;
       }
 
-      if (!cancelled) setState({ level: "none", email: null, expiresAt: null, loading: false });
+      if (!cancelled) {
+        console.log("Access check — saved_id:", savedId ?? null, "user email:", signedInEmail, "saved_analyses owner:", savedOwnerEmail ?? null, "access granted: none");
+        setState({ level: "none", email: signedInEmail, expiresAt: null, loading: false });
+      }
     })();
     return () => { cancelled = true; };
-  }, [listingUrl, token, validateToken, checkPass, checkSingleByEmail]);
+  }, [listingUrl, token, savedId, savedOwnerEmail, validateToken, checkPass, checkSingleByEmail]);
 
   return state;
 }
@@ -249,9 +266,11 @@ function ResultsPage() {
   const POLL_INTERVAL_MS = 2000;
   const POLL_TIMEOUT_MS = 90_000;
 
-  const query = useQuery({
+  type QueryResult = { analysis: AnalysisResult; savedOwnerEmail?: string | null; savedListingUrl?: string | null };
+
+  const query = useQuery<QueryResult>({
     queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
-    queryFn: async (): Promise<AnalysisResult> => {
+    queryFn: async (): Promise<QueryResult> => {
       if (saved_id) {
         // Wait for auth session to hydrate so the bearer token is attached.
         const { data: sess } = await supabase.auth.getSession();
@@ -275,7 +294,11 @@ function ResultsPage() {
           });
           throw new Error("SAVED_NOT_FOUND");
         }
-        return r.analysis;
+        return {
+          analysis: r.analysis,
+          savedOwnerEmail: (r as { userEmail?: string | null }).userEmail ?? null,
+          savedListingUrl: r.listingUrl ?? null,
+        };
       }
 
       // Async job pipeline: start a job, then poll until it completes.
@@ -294,7 +317,7 @@ function ResultsPage() {
         const status = await getJobFn({ data: { jobId, sessionJwt } });
         if (status.status === "complete" && status.analysis) {
           writeCachedAnalysis(status.analysis, url, text, token);
-          return status.analysis;
+          return { analysis: status.analysis };
         }
         if (status.status === "error") {
           throw new Error(status.error || "Analysis failed");
@@ -308,7 +331,7 @@ function ResultsPage() {
     retry: false,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
-    initialData: cached,
+    initialData: cached ? { analysis: cached } : undefined,
   });
 
   if (!hasInput) {
@@ -409,7 +432,16 @@ function ResultsPage() {
     );
   }
 
-  return <ReportView analysis={query.data!} listingUrl={url} token={token} fromSaved={Boolean(saved_id)} />;
+  return (
+    <ReportView
+      analysis={query.data!.analysis}
+      listingUrl={url ?? query.data!.savedListingUrl ?? undefined}
+      token={token}
+      fromSaved={Boolean(saved_id)}
+      savedId={saved_id}
+      savedOwnerEmail={query.data!.savedOwnerEmail ?? null}
+    />
+  );
 }
 
 function BlockedFallback({ url, message }: { url?: string; message: string }) {
@@ -641,8 +673,8 @@ function LoadingState({ url }: { url?: string }) {
   );
 }
 
-function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean }) {
-  const access = useAccess(listingUrl, token);
+function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId, savedOwnerEmail }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean; savedId?: string; savedOwnerEmail?: string | null }) {
+  const access = useAccess(listingUrl, token, savedId, savedOwnerEmail);
   const unlocked = access.level !== "none";
   const showChat = access.level === "pass";
 
