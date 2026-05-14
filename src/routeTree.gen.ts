@@ -16,6 +16,7 @@ import { Route as MyReportsRouteImport } from './routes/my-reports'
 import { Route as MyReportRouteImport } from './routes/my-report'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BuyerLoginRouteImport } from './routes/buyer-login'
+import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
@@ -56,6 +57,11 @@ const BuyerLoginRoute = BuyerLoginRouteImport.update({
   path: '/buyer-login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -80,6 +86,7 @@ const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/buyer-login': typeof BuyerLoginRoute
   '/dashboard': typeof DashboardRoute
   '/my-report': typeof MyReportRoute
@@ -93,6 +100,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/buyer-login': typeof BuyerLoginRoute
   '/dashboard': typeof DashboardRoute
   '/my-report': typeof MyReportRoute
@@ -107,6 +115,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
   '/buyer-login': typeof BuyerLoginRoute
   '/dashboard': typeof DashboardRoute
   '/my-report': typeof MyReportRoute
@@ -122,6 +131,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/about'
     | '/buyer-login'
     | '/dashboard'
     | '/my-report'
@@ -135,6 +145,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/about'
     | '/buyer-login'
     | '/dashboard'
     | '/my-report'
@@ -148,6 +159,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/about'
     | '/buyer-login'
     | '/dashboard'
     | '/my-report'
@@ -162,6 +174,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AboutRoute: typeof AboutRoute
   BuyerLoginRoute: typeof BuyerLoginRoute
   DashboardRoute: typeof DashboardRoute
   MyReportRoute: typeof MyReportRoute
@@ -225,6 +238,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BuyerLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -258,6 +278,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AboutRoute: AboutRoute,
   BuyerLoginRoute: BuyerLoginRoute,
   DashboardRoute: DashboardRoute,
   MyReportRoute: MyReportRoute,

@@ -51,9 +51,10 @@ function Index() {
   };
 
   const scrollToTop = () => {
-    if (typeof window !== "undefined") {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    if (typeof window === "undefined") return;
+    const el = document.getElementById("url-input");
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+    else window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   return (
@@ -100,6 +101,7 @@ function Index() {
             <div className="flex flex-1 items-center gap-2 px-4">
               <Link2 className="h-4 w-4 shrink-0" style={{ color: "#888780" }} />
               <input
+                id="url-input"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://www.rightmove.co.uk/properties/..."
