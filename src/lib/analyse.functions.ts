@@ -902,6 +902,249 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
   return raw;
 }
 
+// ---------------- Crime statistics (data.police.uk) ----------------
+type CrimeRaw = {
+  totalCrimes: number;
+  month: string;
+  topCategories: { category: string; count: number; label: string }[];
+  riskLevel: "Low" | "Moderate" | "High" | "Very High";
+  commentary: string;
+  autoRedFlag: boolean;
+  coordinates: { lat: number; lng: number } | null;
+  unavailable?: boolean;
+};
+
+const CRIME_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+const CRIME_CATEGORY_LABELS: Record<string, string> = {
+  "burglary": "Burglary",
+  "vehicle-crime": "Vehicle crime",
+  "violent-crime": "Violence and sexual offences",
+  "anti-social-behaviour": "Anti-social behaviour",
+  "robbery": "Robbery",
+  "criminal-damage-arson": "Criminal damage and arson",
+  "drugs": "Drugs",
+  "shoplifting": "Shoplifting",
+  "theft-from-the-person": "Theft from the person",
+  "bicycle-theft": "Bicycle theft",
+  "other-theft": "Other theft",
+  "public-order": "Public order",
+  "possession-of-weapons": "Possession of weapons",
+  "other-crime": "Other crime",
+};
+
+function recentCrimeMonth(): string {
+  // Police data lags ~2 months. Use current - 2.
+  const d = new Date();
+  d.setUTCMonth(d.getUTCMonth() - 2);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function formatCrimeMonthLabel(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  if (!y || !m) return ym;
+  const d = new Date(Date.UTC(y, m - 1, 1));
+  return d.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+async function postcodeToLatLng(postcode: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const pc = encodeURIComponent(postcode.trim());
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8_000);
+    const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    const j = (await res.json()) as { result?: { latitude?: number; longitude?: number } };
+    const lat = j.result?.latitude;
+    const lng = j.result?.longitude;
+    if (typeof lat === "number" && typeof lng === "number") return { lat, lng };
+    return null;
+  } catch (err) {
+    console.error("[crime] postcodes.io failed:", err);
+    return null;
+  }
+}
+
+async function generateCrimeCommentary(
+  apiKey: string | undefined,
+  payload: {
+    crimeData: { category: string; count: number; label: string }[];
+    totalCrimes: number;
+    coordinates: { lat: number; lng: number };
+    address: string;
+    month: string;
+  },
+): Promise<{ riskLevel: CrimeRaw["riskLevel"]; commentary: string; autoRedFlag: boolean }> {
+  // Heuristic fallback risk (also used if Claude fails).
+  const t = payload.totalCrimes;
+  const fallbackRisk: CrimeRaw["riskLevel"] =
+    t < 50 ? "Low" : t < 150 ? "Moderate" : t < 300 ? "High" : "Very High";
+  const fallbackCommentary = `Police recorded ${t} crimes within a 1-mile radius of this property in ${formatCrimeMonthLabel(payload.month)}. Compare with your local knowledge and consider security and insurance implications.`;
+  const fallback = {
+    riskLevel: fallbackRisk,
+    commentary: fallbackCommentary,
+    autoRedFlag: fallbackRisk === "High" || fallbackRisk === "Very High",
+  };
+  if (!apiKey) return fallback;
+
+  try {
+    const client = new Anthropic({ apiKey, timeout: 25_000, maxRetries: 0 });
+    const prompt = `You are a UK property risk analyst. Given the following police-recorded crime data for the area around ${payload.address || "this property"} in ${formatCrimeMonthLabel(payload.month)}:
+
+Total crimes within ~1 mile: ${payload.totalCrimes}
+Top categories:
+${payload.crimeData.slice(0, 8).map((c) => `- ${c.label}: ${c.count}`).join("\n")}
+
+Return ONLY a single valid JSON object (no markdown, no code fences) of this exact shape:
+{
+  "riskLevel": "Low" | "Moderate" | "High" | "Very High",
+  "commentary": string (2-3 sentences: how this compares to a typical UK residential area, any particular crime types worth flagging, practical implications for buildings/contents insurance or security measures),
+  "autoRedFlag": boolean (true ONLY if riskLevel is High or Very High)
+}
+
+UK reference points: a quiet residential area typically sees 30-80 recorded crimes per month within 1 mile; 80-200 is moderate / urban-typical; 200-400 is high; 400+ is very high (often town/city centres). Adjust for likely category mix (e.g. mostly anti-social-behaviour in a town centre is less alarming than burglary or violent-crime dominating a residential street).`;
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 600,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as {
+      riskLevel?: string;
+      commentary?: string;
+      autoRedFlag?: boolean;
+    };
+    const riskLevel = (["Low", "Moderate", "High", "Very High"].includes(parsed.riskLevel ?? "")
+      ? parsed.riskLevel
+      : fallbackRisk) as CrimeRaw["riskLevel"];
+    return {
+      riskLevel,
+      commentary: typeof parsed.commentary === "string" && parsed.commentary.length > 10
+        ? parsed.commentary
+        : fallbackCommentary,
+      autoRedFlag: typeof parsed.autoRedFlag === "boolean"
+        ? parsed.autoRedFlag
+        : (riskLevel === "High" || riskLevel === "Very High"),
+    };
+  } catch (err) {
+    console.error("[crime] Claude commentary failed:", err);
+    return fallback;
+  }
+}
+
+async function fetchCrimeStats(
+  postcode: string | null,
+  address: string,
+  apiKey: string | undefined,
+): Promise<CrimeRaw | null> {
+  if (!postcode) return null;
+  const month = recentCrimeMonth();
+  const cacheKey = `crime:${postcode.toUpperCase().replace(/\s+/g, "")}:${month}`;
+
+  // Cache lookup
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, fetched_at")
+      .eq("url", cacheKey)
+      .maybeSingle();
+    if (
+      cached?.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < CRIME_TTL_MS
+    ) {
+      try {
+        const parsed = JSON.parse(cached.text_content) as CrimeRaw;
+        console.log(`[crime] cache hit for ${cacheKey}`);
+        return parsed;
+      } catch { /* ignore */ }
+    }
+  } catch (err) {
+    console.error("[crime] cache lookup failed:", err);
+  }
+
+  const coords = await postcodeToLatLng(postcode);
+  if (!coords) {
+    return {
+      totalCrimes: 0, month, topCategories: [], riskLevel: "Low",
+      commentary: "", autoRedFlag: false, coordinates: null, unavailable: true,
+    };
+  }
+
+  let crimes: { category: string }[] = [];
+  try {
+    const url = `https://data.police.uk/api/crimes-street/all-crime?lat=${coords.lat}&lng=${coords.lng}&date=${month}`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15_000);
+    const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" }, signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) {
+      console.error(`[crime] police.uk HTTP ${res.status}`);
+      return {
+        totalCrimes: 0, month, topCategories: [], riskLevel: "Low",
+        commentary: "", autoRedFlag: false, coordinates: coords, unavailable: true,
+      };
+    }
+    const json = (await res.json()) as { category?: string }[];
+    crimes = Array.isArray(json) ? json.map((c) => ({ category: String(c.category ?? "other-crime") })) : [];
+  } catch (err) {
+    console.error("[crime] police.uk fetch failed:", err);
+    return {
+      totalCrimes: 0, month, topCategories: [], riskLevel: "Low",
+      commentary: "", autoRedFlag: false, coordinates: coords, unavailable: true,
+    };
+  }
+
+  // Aggregate by category
+  const counts = new Map<string, number>();
+  for (const c of crimes) counts.set(c.category, (counts.get(c.category) ?? 0) + 1);
+  const topCategories = [...counts.entries()]
+    .map(([category, count]) => ({
+      category,
+      count,
+      label: CRIME_CATEGORY_LABELS[category] ?? category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const totalCrimes = crimes.length;
+
+  const { riskLevel, commentary, autoRedFlag } = await generateCrimeCommentary(apiKey, {
+    crimeData: topCategories,
+    totalCrimes,
+    coordinates: coords,
+    address,
+    month,
+  });
+
+  const raw: CrimeRaw = {
+    totalCrimes,
+    month,
+    topCategories,
+    riskLevel,
+    commentary,
+    autoRedFlag,
+    coordinates: coords,
+  };
+
+  try {
+    await supabaseAdmin
+      .from("listing_cache")
+      .upsert(
+        { url: cacheKey, text_content: JSON.stringify(raw), fetched_at: new Date().toISOString() },
+        { onConflict: "url" },
+      );
+  } catch (err) {
+    console.error("[crime] cache upsert failed:", err);
+  }
+
+  console.log(`[crime] ${cacheKey} → total=${totalCrimes} risk=${riskLevel}`);
+  return raw;
+}
+
 type FetchedListing = {
   text: string;
   landRegistry: LandRegistryResult;
@@ -909,6 +1152,7 @@ type FetchedListing = {
   postcode: string | null;
   floodRisk: FloodRiskRaw | null;
   nearbySchools: NearbySchoolsRaw | null;
+  crime: CrimeRaw | null;
 };
 
 async function fetchListingText(url: string): Promise<FetchedListing> {
