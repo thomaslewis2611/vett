@@ -641,6 +641,9 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
               {/* Flood risk — full for Buyer Pass, locked teaser for Single Report */}
               <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
 
+              {/* Nearby schools — full for Buyer Pass, locked teaser for Single Report */}
+              <NearbySchoolsSection analysis={a} isBuyerPass={access.level === "pass"} />
+
               {showChat && <PropertyChat analysis={a} />}
 
               {access.level === "pass" && (
