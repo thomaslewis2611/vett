@@ -2534,7 +2534,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
           console.error("[fetchBuyerPassExtras] flood failed:", err);
           return null;
         }),
-        fetchNearbySchools(postcode).catch((err) => {
+        fetchNearbySchools(postcode, analysis.property?.address ?? "", process.env.ANTHROPIC_API_KEY).catch((err) => {
           console.error("[fetchBuyerPassExtras] schools failed:", err);
           return null;
         }),
