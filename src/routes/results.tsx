@@ -654,9 +654,9 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
         </section>
 
 
-        {/* Seller motivation — all tiers */}
+        {/* Seller motivation — all tiers (signals/commentary locked for free) */}
         <SafeSection name="sellerMotivation">
-          <SellerMotivationSection analysis={a} />
+          <SellerMotivationSection analysis={a} unlocked={unlocked} />
         </SafeSection>
 
         {/* EPC */}
@@ -728,7 +728,7 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
 
               {/* Viewing checklist — replaces previous viewing questions list */}
               <SafeSection name="viewingChecklist">
-                <ViewingChecklistSection analysis={a} />
+                <ViewingChecklistSection analysis={a} unlocked />
               </SafeSection>
 
               {/* Flood risk — full for Buyer Pass, locked teaser for Single Report */}
@@ -754,7 +754,7 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
         {!unlocked && (
           <>
             <SafeSection name="viewingChecklist">
-              <ViewingChecklistSection analysis={a} />
+              <ViewingChecklistSection analysis={a} unlocked={false} />
             </SafeSection>
             <SafeSection name="renovationCosts">
               <RenovationCostsSection analysis={a} unlocked={false} />
@@ -2681,7 +2681,7 @@ const CARD_STYLE: CSSProperties = {
   padding: 20,
 };
 
-function SellerMotivationSection({ analysis }: { analysis: AnalysisResult }) {
+function SellerMotivationSection({ analysis, unlocked }: { analysis: AnalysisResult; unlocked: boolean }) {
   const sm = analysis.sellerMotivation;
   if (!sm) return null;
 
@@ -2691,34 +2691,46 @@ function SellerMotivationSection({ analysis }: { analysis: AnalysisResult }) {
   else if (sm.score >= 7) { bg = "#FAECE7"; fg = "#993C1D"; }
   else if (sm.score >= 5) { bg = "#FAEEDA"; fg = "#7A5A0A"; }
 
+  const hasDetails = sm.signals.length > 0 || !!sm.commentary;
+
   return (
     <section className="mt-10">
       <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
         Seller motivation
       </h2>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between" style={CARD_STYLE}>
-        <div className="min-w-0 flex-1">
-          {sm.signals.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {sm.signals.map((s, i) => (
-                <span
-                  key={i}
-                  style={{
-                    background: "#F1EFE8",
-                    color: "#5F5E5A",
-                    fontSize: 11,
-                    borderRadius: 100,
-                    padding: "3px 9px",
-                  }}
-                >
-                  {s}
-                </span>
-              ))}
+        <div className="min-w-0 flex-1 relative">
+          <div style={!unlocked && hasDetails ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none" } : undefined}>
+            {sm.signals.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {sm.signals.map((s, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: "#F1EFE8",
+                      color: "#5F5E5A",
+                      fontSize: 11,
+                      borderRadius: 100,
+                      padding: "3px 9px",
+                    }}
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+              {sm.commentary}
+            </p>
+          </div>
+          {!unlocked && hasDetails && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+              <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+              <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+                Unlock seller motivation details with Single Report or Buyer Pass
+              </p>
             </div>
           )}
-          <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            {sm.commentary}
-          </p>
         </div>
         <div className="flex flex-row items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
           <div
@@ -2744,9 +2756,62 @@ function SellerMotivationSection({ analysis }: { analysis: AnalysisResult }) {
 
 const CHECKLIST_CATEGORIES = ["Structure", "Legal", "Running costs", "Negotiation", "Practical"] as const;
 
-function ViewingChecklistSection({ analysis }: { analysis: AnalysisResult }) {
+function ChecklistItem({ item, why }: { item: string; why: string }) {
+  return (
+    <li className="flex gap-2.5">
+      <span
+        aria-hidden
+        className="mt-0.5 shrink-0"
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: 3,
+          border: "1px solid rgba(26,17,8,0.25)",
+          background: "#FFFDF9",
+        }}
+      />
+      <div className="min-w-0">
+        <div style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.5 }}>{item}</div>
+        <div className="mt-0.5" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
+          {why}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisResult; unlocked: boolean }) {
   const vc = analysis.viewingChecklist;
   if (!vc || vc.items.length === 0) return null;
+
+  const renderCategoryGroups = (items: typeof vc.items) => (
+    <div className="flex flex-col gap-5">
+      {CHECKLIST_CATEGORIES.map((cat) => {
+        const catItems = items.filter((it) => it.category === cat);
+        if (catItems.length === 0) return null;
+        return (
+          <div key={cat}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: "#888780",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              {cat}
+            </div>
+            <ul className="mt-2 space-y-3">
+              {catItems.map((it, i) => (
+                <ChecklistItem key={i} item={it.item} why={it.why} />
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <section className="mt-10">
@@ -2756,49 +2821,31 @@ function ViewingChecklistSection({ analysis }: { analysis: AnalysisResult }) {
       <p className="mt-1 text-sm" style={{ color: "#5F5E5A" }}>
         Specific to this property — take this to your viewing
       </p>
-      <div className="mt-4 flex flex-col gap-5" style={CARD_STYLE}>
-        {CHECKLIST_CATEGORIES.map((cat) => {
-          const items = vc.items.filter((it) => it.category === cat);
-          if (items.length === 0) return null;
-          return (
-            <div key={cat}>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: "#888780",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                {cat}
+      <div className="mt-4" style={CARD_STYLE}>
+        {unlocked ? (
+          renderCategoryGroups(vc.items)
+        ) : (
+          <>
+            <ul className="space-y-3">
+              {vc.items.slice(0, 2).map((it, i) => (
+                <ChecklistItem key={i} item={it.item} why={it.why} />
+              ))}
+            </ul>
+            {vc.items.length > 2 && (
+              <div className="relative mt-5 overflow-hidden">
+                <div style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none" }}>
+                  {renderCategoryGroups(vc.items.slice(2))}
+                </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+                  <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+                  <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+                    Unlock full viewing checklist with Single Report or Buyer Pass
+                  </p>
+                </div>
               </div>
-              <ul className="mt-2 space-y-3">
-                {items.map((it, i) => (
-                  <li key={i} className="flex gap-2.5">
-                    <span
-                      aria-hidden
-                      className="mt-0.5 shrink-0"
-                      style={{
-                        width: 14,
-                        height: 14,
-                        borderRadius: 3,
-                        border: "1px solid rgba(26,17,8,0.25)",
-                        background: "#FFFDF9",
-                      }}
-                    />
-                    <div className="min-w-0">
-                      <div style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.5 }}>{it.item}</div>
-                      <div className="mt-0.5" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
-                        {it.why}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
+            )}
+          </>
+        )}
       </div>
     </section>
   );
