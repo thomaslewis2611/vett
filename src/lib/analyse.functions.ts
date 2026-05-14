@@ -1166,17 +1166,23 @@ async function runAnalysis(
   try {
     let parsed: unknown;
     try {
+      console.log("[runAnalysis] Calling Claude API...");
       const responseText = await callClaude(SYSTEM_PROMPT, 6000);
+      console.log(`[runAnalysis] Claude response received, length: ${responseText.length}`);
+      console.log("[runAnalysis] Parsing JSON response...");
       parsed = parseWithRepair(responseText);
     } catch (primaryErr) {
       console.error(
-        "[analyseListing] Primary analysis parse failed, retrying with simplified schema (no renovationCosts).",
+        "[runAnalysis] Primary analysis parse failed, retrying with simplified schema (no renovationCosts).",
         primaryErr
       );
       const simplifiedPrompt =
         SYSTEM_PROMPT +
         "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response to keep it compact. Set it to null.";
+      console.log("[runAnalysis] Calling Claude API (fallback)...");
       const fallbackText = await callClaude(simplifiedPrompt, 6000);
+      console.log(`[runAnalysis] Claude fallback response received, length: ${fallbackText.length}`);
+      console.log("[runAnalysis] Parsing fallback JSON response...");
       const fallbackParsed = parseWithRepair(fallbackText) as Record<string, unknown>;
       fallbackParsed.renovationCosts = null;
       parsed = fallbackParsed;
