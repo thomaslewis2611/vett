@@ -58,21 +58,15 @@ function PricingPage() {
             highlight
             headline="Your entire property search, covered"
             features={[
-              "Unlimited analyses for 90 days",
+              "Unlimited analyses",
               "All red flags, costs and negotiation",
               "AI chat on every property",
               "Flood risk and nearby schools",
               "Save and compare reports",
               "Report emailed to you",
             ]}
-            subnote="Average search takes 8–12 weeks — 90 days covers it comfortably."
             footnote="One-off payment. Access ends 90 days after purchase."
           />
-        </div>
-
-        <div className="mt-10 text-center text-sm" style={{ color: "#5F5E5A" }}>
-          Buyer Pass access expires 90 days after purchase. Renew at any time
-          for £24.99.
         </div>
 
         <div className="mt-12 text-center text-sm text-muted-foreground">
