@@ -147,11 +147,18 @@ const analysisSchema = z.object({
     items: z.array(z.object({
       issue: z.string(),
       estimatedCost: z.string(),
-      priority: z.enum(["Essential", "Recommended", "Optional"]),
+      priority: z.enum(["High priority", "Medium priority", "Low priority"]),
       notes: z.string(),
     })),
     totalEstimatedMin: z.number(),
     totalEstimatedMax: z.number(),
+    commentary: z.string(),
+  }).nullable().optional(),
+  manualSqftAnalysis: z.object({
+    sqft: z.number(),
+    pricePerSqFt: z.number(),
+    vsAreaAvg: z.string(),
+    vsAreaAvgLabel: z.enum(["above", "below"]),
     commentary: z.string(),
   }).nullable().optional(),
   comparables: z
@@ -197,7 +204,7 @@ You must:
 
 - Populate sellerMotivation based on: days on market, number of price reductions, chain status, reason for sale if mentioned, listing language urgency, and time of year. Score 1-3 = low motivation (recently listed, no reductions, strong market), 4-6 = moderate, 7-8 = high (30+ days, reduced, or chain free with emphasis), 9-10 = very high (multiple reductions, long time on market, vacant, urgent language). Signals must be short concrete strings drawn from the listing (e.g. "35 days on market", "Price reduced twice", "No onward chain", "Vacant possession"). Commentary is 2-3 sentences explaining what the motivation level means for the buyer's negotiating position.
 - Populate viewingChecklist with 8-15 specific actionable items derived from the red flags and property characteristics identified. Every item must be specific to THIS property — not generic advice. Reference specific details from the listing. Each item belongs to one of: "Structure", "Legal", "Running costs", "Negotiation", "Practical". The "why" is one sentence explaining why this matters for THIS specific property.
-- Populate renovationCosts only for issues identified in the red flags or listing. Do not invent issues not mentioned. Use realistic UK contractor pricing for 2026. estimatedCost should be a string range like "£15,000 – £25,000". priority is one of "Essential", "Recommended", "Optional". Set totalEstimatedMin and totalEstimatedMax as the sum of min/max integers across items. Commentary is 2-3 sentences on overall renovation picture and whether costs are factored into asking price. If no renovation is needed, return { items: [], totalEstimatedMin: 0, totalEstimatedMax: 0, commentary: "..." }.
+- Populate renovationCosts only for issues identified in the red flags or listing. Do not invent issues not mentioned. Use realistic UK contractor pricing for 2026. estimatedCost should be a string range like "£15,000 – £25,000". priority is one of "High priority", "Medium priority", "Low priority". For renovation priority: use "High priority" for items that affect safety, mortgageability, or immediate habitability; "Medium priority" for items that affect comfort, energy efficiency, or resale value within 5 years; "Low priority" for cosmetic or lifestyle improvements the buyer may choose to defer or skip entirely. Never use "Essential" as this implies no choice — buyers may choose to accept any condition. Set totalEstimatedMin and totalEstimatedMax as the sum of min/max integers across items. Commentary is 2-3 sentences on overall renovation picture and whether costs are factored into asking price. If no renovation is needed, return { items: [], totalEstimatedMin: 0, totalEstimatedMax: 0, commentary: "..." }.
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
@@ -217,7 +224,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "negotiation": { "isAuction": boolean (optional), "maxBid": number (optional, auction only), "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] (3-6) },
   "sellerMotivation": { "score": number (1-10), "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
   "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] (8-15) },
-  "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "Essential"|"Recommended"|"Optional", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
+  "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "High priority"|"Medium priority"|"Low priority", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
   "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4)
 }
 
@@ -1999,4 +2006,121 @@ Return ONLY valid JSON (no prose, no markdown fences) matching exactly this shap
     }
 
     return { ok: true as const, floodRisk: floodOut };
+  });
+
+// ---------------- Manual sq ft analysis ----------------
+// Computes price per sq ft and area comparison when the listing didn't
+// include square footage. Optionally patches the saved_analyses row so the
+// value persists.
+const manualSqftSchema = z.object({
+  pricePerSqFt: z.number(),
+  vsAreaAvg: z.string(),
+  vsAreaAvgLabel: z.enum(["above", "below"]),
+  commentary: z.string(),
+});
+
+export const analyseManualSqft = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      sqft: z.number().min(50).max(50000),
+      price: z.number().min(1),
+      propertyType: z.string().max(120).nullable().optional(),
+      address: z.string().max(500).nullable().optional(),
+      areaAvgPricePerSqFt: z.number().nullable().optional(),
+      email: z.string().email().max(320).nullable().optional(),
+      listingUrl: z.string().max(2000).nullable().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
+
+    const ppsf = Math.round(data.price / data.sqft);
+    const propertyType = data.propertyType ?? "property";
+    const address = data.address ?? "this address";
+    const areaAvg =
+      typeof data.areaAvgPricePerSqFt === "number" && data.areaAvgPricePerSqFt > 0
+        ? data.areaAvgPricePerSqFt
+        : null;
+
+    const prompt = `The user has provided the square footage as ${data.sqft} sq ft for this ${propertyType} at ${address} priced at £${data.price.toLocaleString("en-GB")}. Calculate price per sq ft as £${ppsf}. The area average is ${areaAvg ? `£${areaAvg}/sqft` : "unknown"}. Return ONLY valid JSON (no prose, no markdown fences) matching: { "pricePerSqFt": number, "vsAreaAvg": string (e.g. "+8.2%" or "-4.1%", or "n/a" if area avg unknown), "vsAreaAvgLabel": "above" | "below", "commentary": string (2 sentences: is this good or bad value per sq ft for this area and property type, and what does it mean for the buyer) }`;
+
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 400,
+      system:
+        "You are a UK property valuation specialist. Return ONLY a single valid JSON object.",
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw =
+      message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+
+    let parsed: z.infer<typeof manualSqftSchema>;
+    try {
+      parsed = manualSqftSchema.parse(JSON.parse(cleaned));
+    } catch (err) {
+      console.error("[analyseManualSqft] parse failed:", err, raw);
+      // Fallback to local computation if Claude misbehaves.
+      const pct =
+        areaAvg != null
+          ? ((ppsf - areaAvg) / areaAvg) * 100
+          : null;
+      parsed = {
+        pricePerSqFt: ppsf,
+        vsAreaAvg:
+          pct == null ? "n/a" : `${pct > 0 ? "+" : ""}${pct.toFixed(1)}%`,
+        vsAreaAvgLabel: pct != null && pct < 0 ? "below" : "above",
+        commentary:
+          "Price per sq ft computed from your entered size. Compare against similar nearby listings before drawing conclusions.",
+      };
+    }
+
+    const out = {
+      sqft: data.sqft,
+      pricePerSqFt: parsed.pricePerSqFt || ppsf,
+      vsAreaAvg: parsed.vsAreaAvg,
+      vsAreaAvgLabel: parsed.vsAreaAvgLabel,
+      commentary: parsed.commentary,
+    };
+
+    // Best-effort patch into saved_analyses for paying users.
+    if (data.email && data.listingUrl) {
+      try {
+        const { data: rows } = await supabaseAdmin
+          .from("saved_analyses")
+          .select("id, analysis_json, created_at")
+          .ilike("user_email", data.email)
+          .eq("listing_url", data.listingUrl)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const row = rows?.[0];
+        if (row) {
+          const existing = (row.analysis_json as any) ?? {};
+          const property = { ...(existing.property ?? {}), sqft: data.sqft };
+          const metrics = {
+            ...(existing.metrics ?? {}),
+            pricePerSqFt: out.pricePerSqFt,
+          };
+          const merged = {
+            ...existing,
+            property,
+            metrics,
+            manualSqftAnalysis: out,
+          };
+          await supabaseAdmin
+            .from("saved_analyses")
+            .update({ analysis_json: merged })
+            .eq("id", row.id as string);
+        }
+      } catch (err) {
+        console.error("[analyseManualSqft] save failed:", err);
+      }
+    }
+
+    return { ok: true as const, manualSqftAnalysis: out };
   });

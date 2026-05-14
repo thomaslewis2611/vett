@@ -41,9 +41,18 @@ function severityColor(s: "high" | "medium" | "low"): string {
 }
 
 function priorityColor(p: string): string {
-  if (p === "Essential") return "#B53A1A";
-  if (p === "Recommended") return "#BA7517";
+  const n = (p || "").toLowerCase();
+  if (n === "high priority" || n === "essential" || n === "high") return "#B53A1A";
+  if (n === "medium priority" || n === "recommended" || n === "medium") return "#BA7517";
   return "#5F5E5A";
+}
+
+function displayPriority(p: string): string {
+  const n = (p || "").toLowerCase();
+  if (n === "essential") return "High priority";
+  if (n === "recommended") return "Medium priority";
+  if (n === "optional") return "Low priority";
+  return p;
 }
 
 // UK Stamp Duty — Main residence rates (England/NI, 2026)
@@ -282,7 +291,7 @@ function buildReportHtml(opts: {
             <div style="font-weight:600;">${escapeHtml(it.issue)}</div>
             ${it.notes ? `<div style="font-size:12px;color:#5F5E5A;margin-top:3px;">${escapeHtml(it.notes)}</div>` : ""}
           </td>
-          <td ${cell}><span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${priorityColor(it.priority)};">${escapeHtml(it.priority)}</span></td>
+          <td ${cell}><span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${priorityColor(it.priority)};">${escapeHtml(displayPriority(it.priority))}</span></td>
           <td ${cell} align="right" style="padding:10px 8px;font-size:13px;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);vertical-align:top;text-align:right;font-weight:600;white-space:nowrap;">${escapeHtml(it.estimatedCost)}</td>
         </tr>`,
       )
