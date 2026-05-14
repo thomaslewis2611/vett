@@ -919,6 +919,13 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           onEpcUpdate={(epc) => setA((prev) => ({ ...prev, epc }))}
         />
 
+        {/* Transport links — Buyer Pass only; locked teaser otherwise */}
+        <TransportSection
+          analysis={a}
+          isBuyerPass={access.level === "pass"}
+          fetching={access.level === "pass" && fetchingExtras && a.transport == null}
+          onUpgrade={() => upgradeToPass(listingUrl)}
+        />
 
         {/* Area context */}
         <AreaContextSection analysis={a} />
