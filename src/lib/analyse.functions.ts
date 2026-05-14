@@ -73,6 +73,16 @@ const analysisSchema = z.object({
     scotland: z.boolean().nullable().optional(),
     unavailable: z.boolean().nullable().optional(),
   }).nullable().optional(),
+  nearbySchools: z.object({
+    schools: z.array(z.object({
+      name: z.string(),
+      ofstedRating: z.number().nullable(),
+      schoolType: z.string().nullable(),
+      phase: z.enum(["primary", "secondary", "other"]),
+      distanceMiles: z.number(),
+    })),
+    unavailable: z.boolean().nullable().optional(),
+  }).nullable().optional(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
