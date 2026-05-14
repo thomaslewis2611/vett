@@ -706,7 +706,8 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
     const needsFlood = a.floodRisk == null;
     const needsSchools = a.nearbySchools == null;
     const needsCrime = a.crime == null;
-    if (!needsFlood && !needsSchools && !needsCrime) return;
+    const needsBroadband = a.broadband == null;
+    if (!needsFlood && !needsSchools && !needsCrime && !needsBroadband) return;
     extrasRef.current = true;
     setFetchingExtras(true);
     extrasFn({ data: { email: access.email, listingUrl } })
@@ -717,12 +718,13 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
             floodRisk: r.floodRisk ?? prev.floodRisk,
             nearbySchools: r.nearbySchools ?? prev.nearbySchools,
             crime: r.crime ?? prev.crime,
+            broadband: r.broadband ?? prev.broadband,
           }));
         }
       })
       .catch(() => { /* ignore */ })
       .finally(() => setFetchingExtras(false));
-  }, [access.level, access.email, listingUrl, a.floodRisk, a.nearbySchools, a.crime, extrasFn]);
+  }, [access.level, access.email, listingUrl, a.floodRisk, a.nearbySchools, a.crime, a.broadband, extrasFn]);
 
   const [sdMode, setSdMode] = useState<StampDutyMode>("main");
   const stampDuty = calcStampDuty(a.property.price, sdMode);
