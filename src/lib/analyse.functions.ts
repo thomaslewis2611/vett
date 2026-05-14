@@ -2065,6 +2065,38 @@ async function runAnalysis(
     full.broadband = null;
   }
 
+  if (transportRaw) {
+    full.transport = {
+      nearestStation: transportRaw.nearestStation,
+      distanceToStation: transportRaw.distanceToStation,
+      journeyToNearestCity: transportRaw.journeyToNearestCity,
+      nearestCity: transportRaw.nearestCity,
+      busLinks: transportRaw.busLinks,
+      motorwayAccess: transportRaw.motorwayAccess,
+      airportAccess: transportRaw.airportAccess,
+      transportRating: transportRaw.transportRating,
+      commentary: transportRaw.commentary,
+      parkingNotes: transportRaw.parkingNotes ?? null,
+      unavailable: transportRaw.unavailable ?? false,
+      autoRedFlag: transportRaw.autoRedFlag ?? false,
+    };
+    if (transportRaw.autoRedFlag && !transportRaw.unavailable) {
+      const title = "Limited transport links";
+      if (!full.redFlags.some((f) => f.title === title)) {
+        full.redFlags = [
+          ...full.redFlags,
+          {
+            severity: "low",
+            title,
+            detail: "This property has limited public transport connections. Factor in car dependency costs and check local bus/train services before committing.",
+          },
+        ];
+      }
+    }
+  } else {
+    full.transport = null;
+  }
+
   return full;
 }
 
