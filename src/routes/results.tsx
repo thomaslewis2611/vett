@@ -3639,7 +3639,7 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
         Unlock the full picture
       </h3>
       <p style={{ fontSize: 14, color: "#5F5E5A", margin: 0, lineHeight: 1.5 }}>
-        Get flood risk, nearby schools with Ofsted ratings, AI chat on this property, and unlimited analyses for 90 days.
+        Get AI chat, seller motivation score, renovation cost estimator, property comparison and unlimited analyses for 90 days.
       </p>
       <ul style={{ listStyle: "none", padding: 0, margin: "16px 0 0" }}>
         {features.map((f) => (
