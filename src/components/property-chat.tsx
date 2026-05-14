@@ -1,9 +1,35 @@
 import { useEffect, useRef, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { Send, Sparkles, User } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { chatAboutProperty, type ChatMessage } from "@/lib/chat.functions";
 import type { AnalysisResult } from "@/lib/mock-analysis";
 import { supabase } from "@/integrations/supabase/client";
+
+const mdComponents = {
+  h2: ({ children }: any) => (
+    <h2 style={{ fontSize: 14, fontWeight: 500, color: "#1A1108", marginBottom: 6 }}>{children}</h2>
+  ),
+  h3: ({ children }: any) => (
+    <h3 style={{ fontSize: 14, fontWeight: 500, color: "#1A1108", marginBottom: 6 }}>{children}</h3>
+  ),
+  strong: ({ children }: any) => (
+    <strong style={{ fontWeight: 500, color: "#1A1108" }}>{children}</strong>
+  ),
+  p: ({ children }: any) => (
+    <p style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.6, marginBottom: 8 }}>{children}</p>
+  ),
+  ul: ({ children }: any) => (
+    <ul style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.6, paddingLeft: 16, marginBottom: 8, listStyle: "disc" }}>{children}</ul>
+  ),
+  ol: ({ children }: any) => (
+    <ol style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.6, paddingLeft: 16, marginBottom: 8, listStyle: "decimal" }}>{children}</ol>
+  ),
+  li: ({ children }: any) => (
+    <li style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.6 }}>{children}</li>
+  ),
+};
 
 const STARTERS = [
   "Is this a fair price for the area?",
@@ -90,13 +116,19 @@ export function PropertyChat({ analysis }: { analysis: AnalysisResult }) {
                   </div>
                 )}
                 <div
-                  className={`max-w-[85%] whitespace-pre-wrap rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
+                  className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${
                     m.role === "assistant"
                       ? "bg-muted text-foreground"
-                      : "bg-primary text-primary-foreground"
+                      : "bg-primary text-primary-foreground whitespace-pre-wrap"
                   }`}
                 >
-                  {m.content}
+                  {m.role === "assistant" ? (
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={mdComponents}>
+                      {m.content}
+                    </ReactMarkdown>
+                  ) : (
+                    m.content
+                  )}
                 </div>
               </li>
             ))}
