@@ -1863,6 +1863,36 @@ async function runAnalysis(
     full.crime = null;
   }
 
+  if (broadbandRaw) {
+    full.broadband = {
+      downloadSpeed: broadbandRaw.downloadSpeed,
+      uploadSpeed: broadbandRaw.uploadSpeed,
+      connectionType: broadbandRaw.connectionType,
+      suitableForRemoteWork: broadbandRaw.suitableForRemoteWork,
+      mobileSignal: broadbandRaw.mobileSignal,
+      commentary: broadbandRaw.commentary,
+      speedRating: broadbandRaw.speedRating,
+      source: broadbandRaw.source,
+      unavailable: broadbandRaw.unavailable ?? false,
+      autoRedFlag: broadbandRaw.autoRedFlag ?? false,
+    };
+    if (broadbandRaw.autoRedFlag && !broadbandRaw.unavailable) {
+      const title = "Poor broadband connectivity";
+      if (!full.redFlags.some((f) => f.title === title)) {
+        full.redFlags = [
+          ...full.redFlags,
+          {
+            severity: "medium",
+            title,
+            detail: "This postcode has limited broadband speeds which may affect remote working, streaming, and smart home devices. Check with providers before committing.",
+          },
+        ];
+      }
+    }
+  } else {
+    full.broadband = null;
+  }
+
   return full;
 }
 
