@@ -127,9 +127,75 @@ Deno.serve(async (req) => {
   const session = event.data.object as Stripe.Checkout.Session;
   const tier = (session.metadata?.tier ?? "") as string;
   const listingUrl = session.metadata?.listing_url ?? null;
+  const analysisJobId = session.metadata?.analysis_job_id ?? null;
   const customerEmail = session.customer_details?.email ?? session.customer_email ?? null;
   const customerId =
     typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
+
+  // If the buyer came from a results-page upgrade, copy the analysis from
+  // analysis_jobs into saved_analyses for their email so the magic link can
+  // land them straight on the unlocked report.
+  async function captureAnalysisForEmail(email: string): Promise<string | null> {
+    if (!analysisJobId) return null;
+    try {
+      const { data: job, error: jobErr } = await supabase
+        .from("analysis_jobs")
+        .select("result_json, url")
+        .eq("id", analysisJobId)
+        .maybeSingle();
+      if (jobErr || !job?.result_json) {
+        console.error("captureAnalysisForEmail: job not found", { analysisJobId, jobErr });
+        return null;
+      }
+      const lurl = listingUrl ?? job.url ?? null;
+      // Reuse an existing saved_analyses row for the same (email, listing_url).
+      let savedId: string | null = null;
+      if (lurl) {
+        const { data: existing } = await supabase
+          .from("saved_analyses")
+          .select("id")
+          .ilike("user_email", email)
+          .eq("listing_url", lurl)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (existing?.id) {
+          await supabase
+            .from("saved_analyses")
+            .update({ analysis_json: job.result_json })
+            .eq("id", existing.id);
+          savedId = existing.id;
+        }
+      }
+      if (!savedId) {
+        const { data: inserted, error: insErr } = await supabase
+          .from("saved_analyses")
+          .insert({
+            user_email: email,
+            listing_url: lurl,
+            analysis_json: job.result_json,
+          })
+          .select("id")
+          .single();
+        if (insErr) {
+          console.error("captureAnalysisForEmail insert error:", insErr.message);
+          return null;
+        }
+        savedId = inserted.id;
+      }
+      return savedId;
+    } catch (e) {
+      console.error("captureAnalysisForEmail error:", (e as Error).message);
+      return null;
+    }
+  }
+
+  function buildRedirect(savedId: string | null, fallback: string): string {
+    if (!savedId) return fallback;
+    const params = new URLSearchParams({ saved_id: savedId });
+    if (listingUrl) params.set("url", listingUrl);
+    return `${SITE_URL}/results?${params.toString()}`;
+  }
 
   try {
     if (tier === "single") {
@@ -145,7 +211,10 @@ Deno.serve(async (req) => {
       // Send a magic link so the customer can log in and revisit the report
       if (customerEmail) {
         try {
-          await sendBuyerPassMagicLinkEdge(customerEmail.toLowerCase(), `${SITE_URL}/my-reports`);
+          const email = customerEmail.toLowerCase();
+          const savedId = await captureAnalysisForEmail(email);
+          const redirectTo = buildRedirect(savedId, `${SITE_URL}/my-reports`);
+          await sendBuyerPassMagicLinkEdge(email, redirectTo);
         } catch (e) {
           console.error("single magic link error:", (e as Error).message);
         }
@@ -166,9 +235,10 @@ Deno.serve(async (req) => {
       // (covers both new purchases and renewals).
       const now = new Date();
       const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
+      const email = customerEmail.toLowerCase();
       const { error } = await supabase.from("buyer_pass_users").upsert(
         {
-          email: customerEmail.toLowerCase(),
+          email,
           stripe_session_id: session.id,
           stripe_customer_id: customerId,
           activated_at: now.toISOString(),
@@ -180,7 +250,9 @@ Deno.serve(async (req) => {
 
       // Send magic link via the email queue
       try {
-        await sendBuyerPassMagicLinkEdge(customerEmail.toLowerCase(), `${SITE_URL}/dashboard`);
+        const savedId = await captureAnalysisForEmail(email);
+        const redirectTo = buildRedirect(savedId, `${SITE_URL}/dashboard`);
+        await sendBuyerPassMagicLinkEdge(email, redirectTo);
       } catch (e) {
         console.error("buyer pass magic link error:", (e as Error).message);
       }
