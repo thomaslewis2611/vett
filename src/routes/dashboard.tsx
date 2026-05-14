@@ -1,9 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowRight, LogOut } from "lucide-react";
+import { useServerFn } from "@tanstack/react-start";
+import { ArrowRight, LogOut, AlertTriangle } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGBP } from "@/lib/mock-analysis";
+import { createCheckoutSession } from "@/lib/checkout.functions";
+
+const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
 export const Route = createFileRoute("/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — Roovr" }] }),
@@ -17,12 +21,26 @@ type SavedRow = {
   created_at: string;
 };
 
+type PassStatus = "active" | "expiring" | "expired";
+
+function formatDate(d: Date): string {
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+}
+
+function formatDateShort(d: Date): string {
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 function DashboardPage() {
   const navigate = useNavigate();
+  const checkoutFn = useServerFn(createCheckoutSession);
   const [email, setEmail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [rows, setRows] = useState<SavedRow[]>([]);
   const [url, setUrl] = useState("");
+  const [expiresAt, setExpiresAt] = useState<Date | null>(null);
+  const [passStatus, setPassStatus] = useState<PassStatus>("active");
+  const [renewing, setRenewing] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,15 +52,26 @@ function DashboardPage() {
         navigate({ to: "/" });
         return;
       }
-      // Confirm Buyer Pass
+      // Confirm Buyer Pass row exists (active OR expired)
       const { data: bp } = await supabase
         .from("buyer_pass_users")
-        .select("email")
+        .select("email, expires_at, activated_at")
         .ilike("email", userEmail)
         .maybeSingle();
       if (!bp) {
         navigate({ to: "/" });
         return;
+      }
+      const expiresRaw =
+        (bp as { expires_at: string | null }).expires_at ??
+        (bp as { activated_at: string }).activated_at;
+      const exp = expiresRaw ? new Date(expiresRaw) : null;
+      setExpiresAt(exp);
+      if (exp) {
+        const msLeft = exp.getTime() - Date.now();
+        if (msLeft <= 0) setPassStatus("expired");
+        else if (msLeft <= 14 * 24 * 60 * 60 * 1000) setPassStatus("expiring");
+        else setPassStatus("active");
       }
       setEmail(userEmail);
       const { data: saved } = await supabase
@@ -60,6 +89,7 @@ function DashboardPage() {
 
   const onAnalyse = (e: React.FormEvent) => {
     e.preventDefault();
+    if (passStatus === "expired") return;
     const trimmed = url.trim();
     if (!trimmed) return;
     navigate({ to: "/results", search: { url: trimmed } });
@@ -68,6 +98,18 @@ function DashboardPage() {
   const onSignOut = async () => {
     await supabase.auth.signOut();
     navigate({ to: "/" });
+  };
+
+  const onRenew = async () => {
+    setRenewing(true);
+    try {
+      const res = await checkoutFn({
+        data: { priceId: PRICE_PASS, listingUrl: "", tier: "pass" },
+      });
+      window.location.href = res.url;
+    } catch {
+      setRenewing(false);
+    }
   };
 
   if (loading) {
@@ -82,6 +124,11 @@ function DashboardPage() {
     );
   }
 
+  const expired = passStatus === "expired";
+  const expiringSoon = passStatus === "expiring";
+  const expiryDateLong = expiresAt ? formatDate(expiresAt) : "";
+  const expiryDateShort = expiresAt ? formatDateShort(expiresAt) : "";
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
@@ -90,6 +137,11 @@ function DashboardPage() {
           <div className="min-w-0">
             <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
             <p className="mt-1 truncate text-sm" style={{ color: "#5F5E5A" }}>{email}</p>
+            {passStatus === "active" && expiresAt && (
+              <p className="mt-1" style={{ fontSize: 11, color: "#888780" }}>
+                Buyer Pass active · Expires {expiryDateShort}
+              </p>
+            )}
           </div>
           <button
             type="button"
@@ -101,6 +153,75 @@ function DashboardPage() {
           </button>
         </div>
 
+        {expiringSoon && expiresAt && (
+          <div
+            className="mt-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+            style={{
+              background: "#FEF3C7",
+              border: "1px solid #F59E0B",
+              borderRadius: 12,
+              boxSizing: "border-box",
+            }}
+          >
+            <div className="flex items-start gap-2" style={{ color: "#92400E", fontSize: 14 }}>
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>
+                Your Buyer Pass expires on {expiryDateLong} — renew now to keep
+                access.
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={onRenew}
+              disabled={renewing}
+              className="inline-flex w-full items-center justify-center sm:w-auto"
+              style={{
+                background: "#D85A30",
+                color: "#FFFDF9",
+                fontSize: 13,
+                fontWeight: 500,
+                borderRadius: 100,
+                padding: "10px 18px",
+              }}
+            >
+              {renewing ? "Starting checkout…" : "Renew for £24.99 →"}
+            </button>
+          </div>
+        )}
+
+        {expired && expiresAt && (
+          <div
+            className="mt-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
+            style={{
+              background: "#FEE2E2",
+              border: "1px solid #DC2626",
+              borderRadius: 12,
+              boxSizing: "border-box",
+            }}
+          >
+            <div className="flex items-start gap-2" style={{ color: "#991B1B", fontSize: 14 }}>
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>Your Buyer Pass expired on {expiryDateLong}.</span>
+            </div>
+            <button
+              type="button"
+              onClick={onRenew}
+              disabled={renewing}
+              className="inline-flex w-full items-center justify-center sm:w-auto"
+              style={{
+                background: "#D85A30",
+                color: "#FFFDF9",
+                fontSize: 13,
+                fontWeight: 500,
+                borderRadius: 100,
+                padding: "10px 18px",
+              }}
+            >
+              {renewing ? "Starting checkout…" : "Renew your Buyer Pass — £24.99 for 90 days →"}
+            </button>
+          </div>
+        )}
+
         <form
           onSubmit={onAnalyse}
           className="mt-8 flex w-full flex-col gap-2 sm:flex-row sm:items-center"
@@ -110,7 +231,12 @@ function DashboardPage() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             type="url"
-            placeholder="Paste a Rightmove or Zoopla listing URL"
+            disabled={expired}
+            placeholder={
+              expired
+                ? "Renew your Buyer Pass to analyse new properties"
+                : "Paste a Rightmove or Zoopla listing URL"
+            }
             className="w-full bg-transparent px-4 py-3 outline-none sm:flex-1"
             style={{
               fontSize: 14,
@@ -119,11 +245,13 @@ function DashboardPage() {
               borderRadius: 100,
               border: "0.5px solid rgba(26,17,8,0.12)",
               boxSizing: "border-box",
+              opacity: expired ? 0.6 : 1,
             }}
           />
           <button
             type="submit"
-            className="inline-flex w-full items-center justify-center gap-1 sm:w-auto"
+            disabled={expired}
+            className="inline-flex w-full items-center justify-center gap-1 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             style={{
               background: "#D85A30",
               color: "#FFFDF9",
