@@ -25,14 +25,23 @@ export const validateSingleReportToken = createServerFn({ method: "POST" })
 
 export const checkBuyerPassByEmail = createServerFn({ method: "POST" })
   .inputValidator(z.object({ email: z.string().email().max(320) }))
-  .handler(async ({ data }): Promise<{ hasPass: boolean }> => {
-    const { data: row } = await supabaseAdmin
-      .from("buyer_pass_users")
-      .select("email")
-      .ilike("email", data.email)
-      .maybeSingle();
-    return { hasPass: Boolean(row) };
-  });
+  .handler(
+    async ({
+      data,
+    }): Promise<{ hasPass: boolean; expired: boolean; expiresAt: string | null }> => {
+      const { data: row } = await supabaseAdmin
+        .from("buyer_pass_users")
+        .select("email, expires_at, activated_at")
+        .ilike("email", data.email)
+        .maybeSingle();
+      if (!row) return { hasPass: false, expired: false, expiresAt: null };
+      const expiresAt =
+        (row as { expires_at: string | null }).expires_at ??
+        (row as { activated_at: string }).activated_at;
+      const expired = expiresAt ? new Date(expiresAt).getTime() <= Date.now() : false;
+      return { hasPass: !expired, expired, expiresAt };
+    }
+  );
 
 export const getSingleReportByEmail = createServerFn({ method: "POST" })
   .inputValidator(z.object({ email: z.string().email().max(320) }))
