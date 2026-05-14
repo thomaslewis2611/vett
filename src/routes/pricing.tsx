@@ -9,13 +9,13 @@ export const Route = createFileRoute("/pricing")({
       {
         name: "description",
         content:
-          "One-time payment, no subscription. £4.99 for a single report or £29.99 for a Buyer Pass with unlimited analyses.",
+          "One-off payments. £4.99 for a single report or £24.99 for a 90-day Buyer Pass with unlimited analyses, AI chat and saved reports.",
       },
       { property: "og:title", content: "Roovr pricing" },
       {
         property: "og:description",
         content:
-          "£4.99 single report or £29.99 Buyer Pass — unlimited analyses, AI chat, save & compare. One-time payments.",
+          "£4.99 single report or £24.99 Buyer Pass — unlimited analyses for 90 days, AI chat, save & compare. One-off payments.",
       },
     ],
   }),
