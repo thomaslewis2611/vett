@@ -872,15 +872,30 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
       })
     : Promise.resolve(null);
 
+  const nearbySchoolsPromise: Promise<NearbySchoolsRaw | null> = postcode
+    ? fetchNearbySchools(postcode).catch((err) => {
+        console.error("[nearbySchools] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
   if (cachedText) {
-    const [landRegistry, floodRisk] = await Promise.all([landRegistryPromise, floodRiskPromise]);
-    return { text: cachedText, landRegistry, scotland, postcode, floodRisk };
+    const [landRegistry, floodRisk, nearbySchools] = await Promise.all([
+      landRegistryPromise,
+      floodRiskPromise,
+      nearbySchoolsPromise,
+    ]);
+    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools };
   }
 
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  const [landRegistry, floodRisk] = await Promise.all([landRegistryPromise, floodRiskPromise]);
+  const [landRegistry, floodRisk, nearbySchools] = await Promise.all([
+    landRegistryPromise,
+    floodRiskPromise,
+    nearbySchoolsPromise,
+  ]);
 
   const notes: string[] = [];
   if (listed) {
