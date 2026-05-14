@@ -147,11 +147,18 @@ const analysisSchema = z.object({
     items: z.array(z.object({
       issue: z.string(),
       estimatedCost: z.string(),
-      priority: z.enum(["Essential", "Recommended", "Optional"]),
+      priority: z.enum(["High priority", "Medium priority", "Low priority"]),
       notes: z.string(),
     })),
     totalEstimatedMin: z.number(),
     totalEstimatedMax: z.number(),
+    commentary: z.string(),
+  }).nullable().optional(),
+  manualSqftAnalysis: z.object({
+    sqft: z.number(),
+    pricePerSqFt: z.number(),
+    vsAreaAvg: z.string(),
+    vsAreaAvgLabel: z.enum(["above", "below"]),
     commentary: z.string(),
   }).nullable().optional(),
   comparables: z
