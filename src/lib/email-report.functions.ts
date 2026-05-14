@@ -291,7 +291,7 @@ function buildReportHtml(opts: {
             <div style="font-weight:600;">${escapeHtml(it.issue)}</div>
             ${it.notes ? `<div style="font-size:12px;color:#5F5E5A;margin-top:3px;">${escapeHtml(it.notes)}</div>` : ""}
           </td>
-          <td ${cell}><span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${priorityColor(it.priority)};">${escapeHtml(it.priority)}</span></td>
+          <td ${cell}><span style="display:inline-block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:${priorityColor(it.priority)};">${escapeHtml(displayPriority(it.priority))}</span></td>
           <td ${cell} align="right" style="padding:10px 8px;font-size:13px;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);vertical-align:top;text-align:right;font-weight:600;white-space:nowrap;">${escapeHtml(it.estimatedCost)}</td>
         </tr>`,
       )
