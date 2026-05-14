@@ -208,6 +208,9 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
   "viewingQuestions": string[] (exactly 8),
   "negotiation": { "isAuction": boolean (optional), "maxBid": number (optional, auction only), "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] (3-6) },
+  "sellerMotivation": { "score": number (1-10), "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
+  "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] (8-15) },
+  "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "Essential"|"Recommended"|"Optional", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
   "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4)
 }
 
