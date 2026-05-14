@@ -777,7 +777,14 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
                 <PropertyPill>{a.property.baths} bath{a.property.baths === 1 ? "" : "s"}</PropertyPill>
-                {a.property.sqft > 0 && <PropertyPill>{a.property.sqft.toLocaleString()} sq ft</PropertyPill>}
+                {(a.property.sqft > 0 || a.manualSqftAnalysis?.sqft) && (
+                  <PropertyPill>
+                    {(a.manualSqftAnalysis?.sqft ?? a.property.sqft).toLocaleString()} sq ft
+                    {a.manualSqftAnalysis?.sqft && !a.property.sqft && (
+                      <span style={{ marginLeft: 4, opacity: 0.7 }}>(estimated)</span>
+                    )}
+                  </PropertyPill>
+                )}
                 {a.property.type && <PropertyPill>{a.property.type}</PropertyPill>}
               </div>
             </div>
