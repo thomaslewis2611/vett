@@ -205,7 +205,7 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
         .maybeSingle();
       if (sr) {
         found = true;
-        redirectTo = `${SITE_URL}/my-report`;
+        redirectTo = `${SITE_URL}/my-reports`;
       }
     }
 
