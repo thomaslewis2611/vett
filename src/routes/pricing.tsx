@@ -50,9 +50,10 @@ function PricingPage() {
               "Viewing questions to ask the agent",
               "Negotiation strategy and recommended offer range",
             ]}
-            footnote="No AI chat, no schools, no flood risk."
+            upsell={{ text: "Upgrade to Buyer Pass for AI chat, flood risk and nearby schools →", targetId: "buyer-pass-card" }}
           />
           <Plan
+            id="buyer-pass-card"
             title="Buyer Pass"
             price="£24.99"
             cadence="90-day pass · one-off payment"
