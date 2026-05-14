@@ -1502,25 +1502,53 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     }
 
     const jobId = row.id as string;
-    console.log(`[startAnalysisJob] invoking analyse-listing edge function for ${jobId}`);
+    console.log(`[startAnalysisJob] Invoking analyse-listing Edge Function for jobId:`, jobId);
+    console.log(`[startAnalysisJob] env present:`, {
+      hasSupabaseUrl: !!process.env.SUPABASE_URL,
+      hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    });
 
-    // Fire-and-forget: the Supabase Edge Function runs independently with its
-    // own ~150s execution budget, so it survives the Cloudflare Worker
-    // shutting down once we return the jobId. The frontend polls
-    // getAnalysisJob until status === 'complete' | 'error'.
-    void supabaseAdmin.functions
-      .invoke("analyse-listing", {
+    // Try invoking the Edge Function. We await the result so we actually
+    // observe network/auth failures synchronously (a true fire-and-forget
+    // promise can be cancelled when the Worker shuts down). The Edge Function
+    // itself updates the analysis_jobs row when it finishes.
+    let invokeFailed = false;
+    let invokeErrorMessage = "";
+    try {
+      const result = await supabaseAdmin.functions.invoke("analyse-listing", {
         body: { jobId, url, pastedText },
-      })
-      .then((res) => {
-        if (res.error) {
-          console.error(`[startAnalysisJob] edge fn returned error for ${jobId}:`, res.error);
-        }
-      })
-      .catch((err) => {
-        console.error(`[startAnalysisJob] edge fn invoke failed for ${jobId}:`, err);
       });
+      console.log(`[startAnalysisJob] Edge Function invoke result:`, JSON.stringify({
+        hasData: !!result.data,
+        error: result.error ? String(result.error?.message ?? result.error) : null,
+      }));
+      if (result.error) {
+        invokeFailed = true;
+        invokeErrorMessage = String(result.error?.message ?? result.error);
+      }
+    } catch (err) {
+      invokeFailed = true;
+      invokeErrorMessage = err instanceof Error ? err.message : String(err);
+      console.error(`[startAnalysisJob] Edge Function invoke failed:`, invokeErrorMessage);
+    }
 
+    if (invokeFailed) {
+      console.warn(`[startAnalysisJob] Falling back to in-process analysis for ${jobId}`);
+      try {
+        await processAnalysisJob(jobId, url, pastedText, data.accessToken ?? null, data.sessionJwt ?? null);
+      } catch (fallbackErr) {
+        const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+        console.error(`[startAnalysisJob] fallback analysis failed for ${jobId}:`, msg);
+        await supabaseAdmin
+          .from("analysis_jobs")
+          .update({
+            status: "error",
+            error: `Failed to start analysis: ${invokeErrorMessage}; fallback failed: ${msg}`,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", jobId);
+      }
+    }
 
     return { jobId };
   });
