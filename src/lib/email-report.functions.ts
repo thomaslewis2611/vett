@@ -353,16 +353,49 @@ function buildReportHtml(opts: {
       <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>`;
   }
 
-  return `<!doctype html><html><body style="margin:0;padding:0;background:#F1EFE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-  <div style="max-width:640px;margin:0 auto;padding:0;">
-    <div style="background:#1A1108;padding:20px 24px;">
+  return `<!doctype html><html lang="en"><head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="x-apple-disable-message-reformatting">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <title>Roovr report</title>
+  <style>
+    /* Mobile-first overrides — desktop rendering is unchanged */
+    @media only screen and (max-width: 600px) {
+      .content { width: 100% !important; max-width: 100% !important; }
+      .px { padding-left: 18px !important; padding-right: 18px !important; }
+      /* Stack 2-col label/value tables vertically */
+      table.stack, table.stack tbody, table.stack tr, table.stack td { display: block !important; width: 100% !important; }
+      table.stack td { text-align: left !important; padding: 8px 0 0 !important; font-size: 14px !important; border-bottom: none !important; }
+      table.stack td + td { padding: 2px 0 10px !important; font-weight: 600 !important; border-bottom: 1px solid rgba(26,17,8,0.08) !important; }
+      /* Stack 3-col tables (renovation, schools) */
+      table.stack3, table.stack3 tbody, table.stack3 tr, table.stack3 td, table.stack3 th { display: block !important; width: 100% !important; box-sizing: border-box !important; }
+      table.stack3 th { display: none !important; }
+      table.stack3 td { text-align: left !important; padding: 6px 0 !important; font-size: 14px !important; }
+      table.stack3 tr { padding: 10px 0 !important; border-bottom: 1px solid rgba(26,17,8,0.08) !important; }
+      /* Header row in score / two-col layouts (address + score badge) */
+      table.hero, table.hero tbody, table.hero tr, table.hero td { display: block !important; width: 100% !important; text-align: left !important; }
+      table.hero td[align="right"] { margin-top: 14px !important; text-align: left !important; }
+      /* Minimum readable font size */
+      body, p, li, div, td, th, a, span { font-size: 14px !important; line-height: 1.55 !important; }
+      h1 { font-size: 20px !important; }
+      h2 { font-size: 17px !important; }
+      .small-note { font-size: 12px !important; }
+      /* Full-width tappable CTA */
+      .cta-btn { display: block !important; width: 100% !important; min-height: 44px !important; padding: 14px 16px !important; box-sizing: border-box !important; font-size: 16px !important; }
+    }
+  </style>
+</head><body style="margin:0;padding:0;background:#F1EFE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <div class="content" style="max-width:600px;margin:0 auto;padding:0;">
+    <div class="px" style="background:#1A1108;padding:20px 24px;">
       <div style="font-size:20px;font-weight:700;color:#FFFDF9;letter-spacing:-0.01em;">
         <span style="color:#D85A30;">●</span> Roovr
       </div>
     </div>
 
-    <div style="background:#FFFDF9;padding:32px 24px;">
-      <table width="100%" cellpadding="0" cellspacing="0"><tr>
+    <div class="px" style="background:#FFFDF9;padding:32px 24px;">
+      <table class="hero" width="100%" cellpadding="0" cellspacing="0"><tr>
         <td valign="top">
           <h1 style="font-size:18px;font-weight:600;color:#1A1108;margin:0 0 8px;line-height:1.3;">${escapeHtml(a.property.address)}</h1>
           <div style="font-size:24px;font-weight:600;color:#1A1108;">${gbp(a.property.price)}</div>
@@ -378,17 +411,17 @@ function buildReportHtml(opts: {
       ${a.scoreLabel ? `<p style="font-size:14px;color:#1A1108;margin:14px 0 0;font-style:italic;">${escapeHtml(a.scoreLabel)}</p>` : ""}
 
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Score breakdown</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${subScoresHtml}</table>
+      <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${subScoresHtml}</table>
 
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Key metrics</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
         <tr><td ${rowStyle}>Price per sq ft</td><td ${valStyle}>${gbp(pricePerSqFt)}</td></tr>
         <tr><td ${rowStyle}>Days on market</td><td ${valStyle}>${num(daysOnMarket)}</td></tr>
         <tr><td ${rowStyle}>Council tax band</td><td ${valStyle}>${txt(a.metrics?.councilTaxBand)}</td></tr>
       </table>
 
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Stamp duty</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
         <tr><td ${rowStyle}>First-time buyer</td><td ${valStyle}>${gbp(sdltFtb)}</td></tr>
         <tr><td ${rowStyle}>Main residence</td><td ${valStyle}>${gbp(sdlt)}</td></tr>
         <tr><td ${rowStyle}>Additional property</td><td ${valStyle}>${gbp(sdltAdditional)}</td></tr>
@@ -414,14 +447,14 @@ function buildReportHtml(opts: {
       ${schoolsHtml}
 
       <div style="margin:36px 0 8px;text-align:center;">
-        <a href="${escapeHtml(resultsUrl)}" style="background:#D85A30;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 24px;text-decoration:none;display:inline-block;">View full report online →</a>
+        <a href="${escapeHtml(resultsUrl)}" class="cta-btn" style="background:#D85A30;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 24px;text-decoration:none;display:inline-block;min-height:44px;line-height:1.2;">View full report online →</a>
       </div>
 
-      <p style="font-size:12px;color:#888780;line-height:1.5;margin:32px 0 0;text-align:center;">This report is AI-generated and advisory only. Always seek independent professional advice before making any offer.</p>
+      <p class="small-note" style="font-size:12px;color:#888780;line-height:1.5;margin:32px 0 0;text-align:center;">This report is AI-generated and advisory only. Always seek independent professional advice before making any offer.</p>
     </div>
 
-    <div style="padding:20px 24px;text-align:center;">
-      <p style="font-size:12px;color:#888780;margin:0;">© 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.</p>
+    <div class="px" style="padding:20px 24px;text-align:center;">
+      <p class="small-note" style="font-size:12px;color:#888780;margin:0;">© 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.</p>
     </div>
   </div>
 </body></html>`;
