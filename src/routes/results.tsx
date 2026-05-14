@@ -656,8 +656,8 @@ function LoadingState({ url }: { url?: string }) {
   );
 }
 
-function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean }) {
-  const access = useAccess(listingUrl, token);
+function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId, savedOwnerEmail }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean; savedId?: string; savedOwnerEmail?: string | null }) {
+  const access = useAccess(listingUrl, token, savedId, savedOwnerEmail);
   const unlocked = access.level !== "none";
   const showChat = access.level === "pass";
 
