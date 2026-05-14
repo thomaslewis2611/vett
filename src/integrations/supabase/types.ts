@@ -178,6 +178,7 @@ export type Database = {
       }
       single_report_tokens: {
         Row: {
+          analysis_json: Json | null
           created_at: string
           expires_at: string
           id: string
@@ -187,6 +188,7 @@ export type Database = {
           user_email: string | null
         }
         Insert: {
+          analysis_json?: Json | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -196,6 +198,7 @@ export type Database = {
           user_email?: string | null
         }
         Update: {
+          analysis_json?: Json | null
           created_at?: string
           expires_at?: string
           id?: string
