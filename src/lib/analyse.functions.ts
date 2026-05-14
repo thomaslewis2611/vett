@@ -2007,3 +2007,120 @@ Return ONLY valid JSON (no prose, no markdown fences) matching exactly this shap
 
     return { ok: true as const, floodRisk: floodOut };
   });
+
+// ---------------- Manual sq ft analysis ----------------
+// Computes price per sq ft and area comparison when the listing didn't
+// include square footage. Optionally patches the saved_analyses row so the
+// value persists.
+const manualSqftSchema = z.object({
+  pricePerSqFt: z.number(),
+  vsAreaAvg: z.string(),
+  vsAreaAvgLabel: z.enum(["above", "below"]),
+  commentary: z.string(),
+});
+
+export const analyseManualSqft = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      sqft: z.number().min(50).max(50000),
+      price: z.number().min(1),
+      propertyType: z.string().max(120).nullable().optional(),
+      address: z.string().max(500).nullable().optional(),
+      areaAvgPricePerSqFt: z.number().nullable().optional(),
+      email: z.string().email().max(320).nullable().optional(),
+      listingUrl: z.string().max(2000).nullable().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
+
+    const ppsf = Math.round(data.price / data.sqft);
+    const propertyType = data.propertyType ?? "property";
+    const address = data.address ?? "this address";
+    const areaAvg =
+      typeof data.areaAvgPricePerSqFt === "number" && data.areaAvgPricePerSqFt > 0
+        ? data.areaAvgPricePerSqFt
+        : null;
+
+    const prompt = `The user has provided the square footage as ${data.sqft} sq ft for this ${propertyType} at ${address} priced at £${data.price.toLocaleString("en-GB")}. Calculate price per sq ft as £${ppsf}. The area average is ${areaAvg ? `£${areaAvg}/sqft` : "unknown"}. Return ONLY valid JSON (no prose, no markdown fences) matching: { "pricePerSqFt": number, "vsAreaAvg": string (e.g. "+8.2%" or "-4.1%", or "n/a" if area avg unknown), "vsAreaAvgLabel": "above" | "below", "commentary": string (2 sentences: is this good or bad value per sq ft for this area and property type, and what does it mean for the buyer) }`;
+
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 400,
+      system:
+        "You are a UK property valuation specialist. Return ONLY a single valid JSON object.",
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw =
+      message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+
+    let parsed: z.infer<typeof manualSqftSchema>;
+    try {
+      parsed = manualSqftSchema.parse(JSON.parse(cleaned));
+    } catch (err) {
+      console.error("[analyseManualSqft] parse failed:", err, raw);
+      // Fallback to local computation if Claude misbehaves.
+      const pct =
+        areaAvg != null
+          ? ((ppsf - areaAvg) / areaAvg) * 100
+          : null;
+      parsed = {
+        pricePerSqFt: ppsf,
+        vsAreaAvg:
+          pct == null ? "n/a" : `${pct > 0 ? "+" : ""}${pct.toFixed(1)}%`,
+        vsAreaAvgLabel: pct != null && pct < 0 ? "below" : "above",
+        commentary:
+          "Price per sq ft computed from your entered size. Compare against similar nearby listings before drawing conclusions.",
+      };
+    }
+
+    const out = {
+      sqft: data.sqft,
+      pricePerSqFt: parsed.pricePerSqFt || ppsf,
+      vsAreaAvg: parsed.vsAreaAvg,
+      vsAreaAvgLabel: parsed.vsAreaAvgLabel,
+      commentary: parsed.commentary,
+    };
+
+    // Best-effort patch into saved_analyses for paying users.
+    if (data.email && data.listingUrl) {
+      try {
+        const { data: rows } = await supabaseAdmin
+          .from("saved_analyses")
+          .select("id, analysis_json, created_at")
+          .ilike("user_email", data.email)
+          .eq("listing_url", data.listingUrl)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const row = rows?.[0];
+        if (row) {
+          const existing = (row.analysis_json as any) ?? {};
+          const property = { ...(existing.property ?? {}), sqft: data.sqft };
+          const metrics = {
+            ...(existing.metrics ?? {}),
+            pricePerSqFt: out.pricePerSqFt,
+          };
+          const merged = {
+            ...existing,
+            property,
+            metrics,
+            manualSqftAnalysis: out,
+          };
+          await supabaseAdmin
+            .from("saved_analyses")
+            .update({ analysis_json: merged })
+            .eq("id", row.id as string);
+        }
+      } catch (err) {
+        console.error("[analyseManualSqft] save failed:", err);
+      }
+    }
+
+    return { ok: true as const, manualSqftAnalysis: out };
+  });
