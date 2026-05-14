@@ -215,7 +215,7 @@ function buildReportHtml(opts: {
   const trueCostHtml = isSingle && costs
     ? `
     <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">True cost breakdown</h2>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+    <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
       <tr><td ${rowStyle}>Purchase price</td><td ${valStyle}>${gbp(costs.purchasePrice)}</td></tr>
       <tr><td ${rowStyle}>Stamp duty (main residence)</td><td ${valStyle}>${gbp(sdlt)}</td></tr>
       <tr><td ${rowStyle}>Legal fees</td><td ${valStyle}>${gbp(costs.legalFees)}</td></tr>
