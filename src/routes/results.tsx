@@ -459,7 +459,11 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
           >
             ← Analyse another property
           </Link>
-          <DownloadPdfButton />
+          <EmailReportButton
+            analysis={a}
+            isPaid={access.level === "pass" || access.level === "single"}
+            userEmail={access.email}
+          />
         </div>
 
         {/* Property header */}
