@@ -100,12 +100,23 @@ const STAMP_DUTY_LABELS: Record<StampDutyMode, string> = {
   ftb: "First-time buyer",
 };
 
-type AccessLevel = "none" | "single" | "pass";
+type AccessLevel = "none" | "single" | "pass" | "expired";
 
-function useAccess(listingUrl: string | undefined, token: string | undefined): { level: AccessLevel; email: string | null; loading: boolean } {
-  const [state, setState] = useState<{ level: AccessLevel; email: string | null; loading: boolean }>({
+function useAccess(listingUrl: string | undefined, token: string | undefined): {
+  level: AccessLevel;
+  email: string | null;
+  expiresAt: string | null;
+  loading: boolean;
+} {
+  const [state, setState] = useState<{
+    level: AccessLevel;
+    email: string | null;
+    expiresAt: string | null;
+    loading: boolean;
+  }>({
     level: "none",
     email: null,
+    expiresAt: null,
     loading: true,
   });
   const validateToken = useServerFn(validateSingleReportToken);
@@ -115,15 +126,21 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
     let cancelled = false;
     (async () => {
       // 1. Buyer Pass (auth)
+      let signedInEmail: string | null = null;
+      let expiredFromPass: { expiresAt: string | null } | null = null;
       try {
         const { data } = await supabase.auth.getUser();
         const email = data.user?.email ?? null;
+        signedInEmail = email;
         if (email) {
           const r = await checkPass({ data: { email } });
           if (cancelled) return;
           if (r.hasPass) {
-            setState({ level: "pass", email, loading: false });
+            setState({ level: "pass", email, expiresAt: r.expiresAt, loading: false });
             return;
+          }
+          if (r.expired) {
+            expiredFromPass = { expiresAt: r.expiresAt };
           }
         }
       } catch { /* ignore */ }
@@ -134,13 +151,26 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
           const r = await validateToken({ data: { token, listingUrl: listingUrl ?? null } });
           if (cancelled) return;
           if (r.valid) {
-            setState({ level: "single", email: null, loading: false });
+            setState({ level: "single", email: signedInEmail, expiresAt: null, loading: false });
             return;
           }
         } catch { /* ignore */ }
       }
 
-      if (!cancelled) setState({ level: "none", email: null, loading: false });
+      // 3. Signed-in user with expired pass: surface the expired state
+      if (expiredFromPass) {
+        if (!cancelled) {
+          setState({
+            level: "expired",
+            email: signedInEmail,
+            expiresAt: expiredFromPass.expiresAt,
+            loading: false,
+          });
+        }
+        return;
+      }
+
+      if (!cancelled) setState({ level: "none", email: null, expiresAt: null, loading: false });
     })();
     return () => { cancelled = true; };
   }, [listingUrl, token, validateToken, checkPass]);
