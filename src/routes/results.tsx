@@ -1882,11 +1882,11 @@ function EpcSection({ analysis }: { analysis: AnalysisResult }) {
 
 function EmailReportButton({
   analysis,
-  isPaid,
+  tier,
   userEmail,
 }: {
   analysis: AnalysisResult;
-  isPaid: boolean;
+  tier: "free" | "single" | "pass";
   userEmail: string | null;
 }) {
   const sendFn = useServerFn(sendReportEmail);
@@ -1901,7 +1901,7 @@ function EmailReportButton({
     setErrorMsg(null);
     try {
       const resultsUrl = typeof window !== "undefined" ? window.location.href : "";
-      const r = await sendFn({ data: { email: to, analysis, resultsUrl, isPaid } });
+      const r = await sendFn({ data: { email: to, analysis, resultsUrl, tier } });
       if (r.ok) {
         setSentTo(to);
         setStatus("sent");
