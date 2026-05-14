@@ -783,7 +783,8 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     ? `${pcCompact.slice(0, -3)} ${pcCompact.slice(-3)}`
     : pcCompact;
   const pcParam = encodeURIComponent(pcFormatted);
-  const url = `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${pcParam}&radius=1.6&fields=school_name,ofsted_rating,school_type,distance`;
+  // 8 km ≈ 5 miles search radius
+  const url = `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${pcParam}&radius=8&fields=school_name,ofsted_rating,school_type,distance`;
 
   let raw: NearbySchoolsRaw;
   try {
