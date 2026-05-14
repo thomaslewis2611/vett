@@ -130,11 +130,14 @@ function DashboardPage() {
   const expiryDateShort = expiresAt ? formatDateShort(expiresAt) : "";
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background" style={{ width: "100%", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box" }}>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12" style={{ boxSizing: "border-box" }}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-          <div className="min-w-0">
+      <main
+        className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 sm:py-12"
+        style={{ boxSizing: "border-box", maxWidth: "100%", overflowX: "hidden" }}
+      >
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4" style={{ maxWidth: "100%", boxSizing: "border-box" }}>
+          <div className="min-w-0" style={{ maxWidth: "100%" }}>
             <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
             <p className="mt-1 truncate text-sm" style={{ color: "#5F5E5A" }}>{email}</p>
             {passStatus === "active" && expiresAt && (
@@ -142,11 +145,19 @@ function DashboardPage() {
                 Buyer Pass active · Expires {expiryDateShort}
               </p>
             )}
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="mt-2 inline-flex items-center gap-1.5 sm:hidden"
+              style={{ fontSize: 12, color: "#888780" }}
+            >
+              <LogOut className="h-3.5 w-3.5" /> Sign out
+            </button>
           </div>
           <button
             type="button"
             onClick={onSignOut}
-            className="inline-flex w-fit items-center gap-2"
+            className="hidden w-fit items-center gap-2 sm:inline-flex"
             style={{ fontSize: 13, color: "#5F5E5A" }}
           >
             <LogOut className="h-4 w-4" /> Sign out
