@@ -1379,7 +1379,7 @@ async function fetchBroadband(
   console.log(`[broadband] ${cacheKey} → ${raw.connectionType} / ${raw.speedRating} (source=${raw.source})`);
   return raw;
 }
-
+type FetchedListing = {
   text: string;
   landRegistry: LandRegistryResult;
   scotland: boolean;
@@ -1387,6 +1387,7 @@ async function fetchBroadband(
   floodRisk: FloodRiskRaw | null;
   nearbySchools: NearbySchoolsRaw | null;
   crime: CrimeRaw | null;
+  broadband: BroadbandRaw | null;
 };
 
 async function fetchListingText(url: string): Promise<FetchedListing> {
