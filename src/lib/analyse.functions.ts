@@ -1083,12 +1083,14 @@ async function runAnalysis(
   let floodRiskRaw: FloodRiskRaw | null = null;
   let nearbySchoolsRaw: NearbySchoolsRaw | null = null;
   if (!listingContent && url) {
+    console.log(`[runAnalysis] Fetching listing content for ${url}...`);
     const fetched = await fetchListingText(url);
     listingContent = fetched.text;
     landRegistry = fetched.landRegistry;
     scotland = fetched.scotland;
     floodRiskRaw = fetched.floodRisk;
     nearbySchoolsRaw = fetched.nearbySchools;
+    console.log(`[runAnalysis] Listing content fetched, length: ${listingContent?.length ?? 0}`);
   }
   if (!listingContent || listingContent.length < 100) {
     throw new Error(
@@ -1164,17 +1166,23 @@ async function runAnalysis(
   try {
     let parsed: unknown;
     try {
+      console.log("[runAnalysis] Calling Claude API...");
       const responseText = await callClaude(SYSTEM_PROMPT, 6000);
+      console.log(`[runAnalysis] Claude response received, length: ${responseText.length}`);
+      console.log("[runAnalysis] Parsing JSON response...");
       parsed = parseWithRepair(responseText);
     } catch (primaryErr) {
       console.error(
-        "[analyseListing] Primary analysis parse failed, retrying with simplified schema (no renovationCosts).",
+        "[runAnalysis] Primary analysis parse failed, retrying with simplified schema (no renovationCosts).",
         primaryErr
       );
       const simplifiedPrompt =
         SYSTEM_PROMPT +
         "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response to keep it compact. Set it to null.";
+      console.log("[runAnalysis] Calling Claude API (fallback)...");
       const fallbackText = await callClaude(simplifiedPrompt, 6000);
+      console.log(`[runAnalysis] Claude fallback response received, length: ${fallbackText.length}`);
+      console.log("[runAnalysis] Parsing fallback JSON response...");
       const fallbackParsed = parseWithRepair(fallbackText) as Record<string, unknown>;
       fallbackParsed.renovationCosts = null;
       parsed = fallbackParsed;
@@ -1384,7 +1392,10 @@ async function processAnalysisJob(
   url: string,
   pastedText: string,
 ): Promise<void> {
+  console.log(`[processAnalysisJob] started for jobId: ${jobId}`);
+  let step = "init";
   try {
+    step = "read-api-key";
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
@@ -1393,12 +1404,15 @@ async function processAnalysisJob(
     if (url && !pastedText) {
       const cached = recentAnalyses.get(url);
       if (cached && Date.now() - cached.at < ANALYSIS_DEDUPE_TTL_MS) {
+        console.log(`[processAnalysisJob] using cached analysis for ${url}`);
         full = cached.full;
       } else {
         const existing = inflightAnalyses.get(url);
         if (existing) {
+          console.log(`[processAnalysisJob] joining in-flight analysis for ${url}`);
           full = await existing;
         } else {
+          step = "run-analysis";
           const promise = runAnalysis(url, pastedText, apiKey)
             .then((result) => {
               recentAnalyses.set(url, { at: Date.now(), full: result });
@@ -1412,10 +1426,13 @@ async function processAnalysisJob(
         }
       }
     } else {
+      step = "run-analysis";
       full = await runAnalysis(url, pastedText, apiKey);
     }
 
-    await supabaseAdmin
+    step = "update-job-row";
+    console.log(`[processAnalysisJob] Analysis complete, updating job row ${jobId}...`);
+    const { error: updateError } = await supabaseAdmin
       .from("analysis_jobs")
       .update({
         status: "complete",
@@ -1423,20 +1440,24 @@ async function processAnalysisJob(
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
+    if (updateError) {
+      throw new Error(`DB update failed: ${updateError.message}`);
+    }
+    console.log(`[processAnalysisJob] job ${jobId} marked complete`);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Analysis failed";
-    console.error("[processAnalysisJob] failed", { jobId, error: message });
+    console.error(`[processAnalysisJob] Error at ${step} for jobId ${jobId}: ${message}`, err);
     try {
       await supabaseAdmin
         .from("analysis_jobs")
         .update({
           status: "error",
-          error: message,
+          error: `[${step}] ${message}`,
           updated_at: new Date().toISOString(),
         })
         .eq("id", jobId);
     } catch (updateErr) {
-      console.error("[processAnalysisJob] failed to record error", updateErr);
+      console.error(`[processAnalysisJob] failed to record error for jobId ${jobId}`, updateErr);
     }
   }
 }
@@ -1481,8 +1502,22 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     }
 
     const jobId = row.id as string;
-    // Fire-and-forget background work, kept alive by ctx.waitUntil on Cloudflare.
-    scheduleBackground(processAnalysisJob(jobId, url, pastedText));
+    console.log(`[startAnalysisJob] scheduling background job ${jobId}`);
+    // Kick off the background work. We wrap in an async IIFE so we can log
+    // immediately when the callback fires (confirms the runtime actually
+    // started executing it), then hand the resulting promise to
+    // scheduleBackground so ctx.waitUntil keeps the Worker alive past the
+    // response when available — and falls back to a dangling promise (with
+    // its own .catch logger) when it isn't.
+    const backgroundPromise = (async () => {
+      console.log(`[startAnalysisJob] background callback started for ${jobId}`);
+      try {
+        await processAnalysisJob(jobId, url, pastedText);
+      } catch (err) {
+        console.error(`[startAnalysisJob] processAnalysisJob failed for ${jobId}:`, err);
+      }
+    })();
+    scheduleBackground(backgroundPromise);
 
     return { jobId };
   });
