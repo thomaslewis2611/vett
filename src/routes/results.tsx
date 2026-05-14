@@ -3349,7 +3349,7 @@ function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisRes
   );
 
   return (
-    <section className="mt-10">
+    <section className="mt-10" style={debugBorder} data-section="viewing-checklist">
       <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
         Viewing checklist
       </h2>
