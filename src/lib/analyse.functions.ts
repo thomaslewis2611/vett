@@ -782,8 +782,11 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     ) {
       try {
         const parsed = JSON.parse(cached.text_content) as NearbySchoolsRaw;
-        console.log(`fetchNearbySchools returned cached for ${postcode} (${parsed.schools?.length ?? 0})`);
-        return parsed;
+        // Ignore stale empty/unavailable cached entries so we re-try new endpoint.
+        if ((parsed.schools?.length ?? 0) > 0) {
+          console.log(`fetchNearbySchools returned cached for ${postcode} (${parsed.schools.length})`);
+          return parsed;
+        }
       } catch { /* ignore */ }
     }
   } catch (err) {
