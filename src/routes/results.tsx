@@ -729,8 +729,12 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
         {/* Free tier: viewing checklist (all tiers) + renovation teaser */}
         {!unlocked && (
           <>
-            <ViewingChecklistSection analysis={a} />
-            <RenovationCostsSection analysis={a} unlocked={false} />
+            <SafeSection name="viewingChecklist">
+              <ViewingChecklistSection analysis={a} />
+            </SafeSection>
+            <SafeSection name="renovationCosts">
+              <RenovationCostsSection analysis={a} unlocked={false} />
+            </SafeSection>
           </>
         )}
       </main>
