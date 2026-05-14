@@ -3021,3 +3021,158 @@ function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResu
     </section>
   );
 }
+
+function AIChatLockedTeaser({ onUpgrade }: { onUpgrade?: () => void }) {
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        AI chat
+      </h2>
+      <div
+        className="mt-4 relative overflow-hidden"
+        style={{
+          background: "#FFFDF9",
+          border: "0.5px solid rgba(26,17,8,0.12)",
+          borderRadius: 12,
+          padding: 20,
+          minHeight: 160,
+        }}
+      >
+        <div style={{ filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}>
+          <p style={{ fontSize: 13, color: "#5F5E5A" }}>You: Is this fair value for the area?</p>
+          <p className="mt-2" style={{ fontSize: 13, color: "#1A1108" }}>
+            Roovr: Based on comparable sales in SW18 over the last 12 months…
+          </p>
+          <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A" }}>You: What should I ask at the viewing?</p>
+        </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6" style={{ background: "rgba(255,253,249,0.85)" }}>
+          <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+          <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+            Ask anything about this property — Buyer Pass only
+          </p>
+          {onUpgrade && (
+            <button
+              type="button"
+              onClick={onUpgrade}
+              className="mt-3 hover:underline"
+              style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
+            >
+              Unlock with Buyer Pass →
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const handleClick = async () => {
+    setErr(null);
+    setLoading(true);
+    try {
+      const r = await checkoutFn({
+        data: { priceId: PRICE_PASS, listingUrl: listingUrl ?? "", tier: "pass" },
+      });
+      if (r?.url) window.location.href = r.url;
+    } catch (e) {
+      setErr((e as Error).message ?? "Couldn't start checkout. Try again.");
+      setLoading(false);
+    }
+  };
+
+  const features = [
+    "Flood risk — Environment Agency data",
+    "Nearby schools with Ofsted ratings",
+    "AI chat — ask anything about this property",
+    "Unlimited analyses for 90 days",
+    "All reports saved to your account",
+  ];
+
+  return (
+    <section
+      className="mt-10"
+      style={{
+        background: "#FAECE7",
+        borderRadius: 12,
+        padding: "28px 24px",
+        marginTop: 16,
+      }}
+    >
+      <p
+        style={{
+          fontSize: 11,
+          color: "#D85A30",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          fontWeight: 600,
+          margin: 0,
+        }}
+      >
+        Buyer Pass
+      </p>
+      <h3
+        style={{
+          fontSize: 20,
+          color: "#1A1108",
+          fontWeight: 500,
+          margin: "8px 0 8px",
+          letterSpacing: "-0.01em",
+        }}
+      >
+        Unlock the full picture
+      </h3>
+      <p style={{ fontSize: 14, color: "#5F5E5A", margin: 0, lineHeight: 1.5 }}>
+        Get flood risk, nearby schools with Ofsted ratings, AI chat on this property, and unlimited analyses for 90 days.
+      </p>
+      <ul style={{ listStyle: "none", padding: 0, margin: "16px 0 0" }}>
+        {features.map((f) => (
+          <li
+            key={f}
+            style={{ fontSize: 13, color: "#1A1108", padding: "4px 0", display: "flex", gap: 8, alignItems: "flex-start" }}
+          >
+            <span style={{ color: "#D85A30", fontWeight: 700 }}>✓</span>
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <div style={{ marginTop: 20 }}>
+        <div style={{ fontSize: 24, color: "#1A1108", fontWeight: 500, lineHeight: 1.1 }}>£24.99</div>
+        <div style={{ fontSize: 12, color: "#888780", marginTop: 4 }}>
+          90-day pass · one-off payment
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={loading}
+        style={{
+          display: "block",
+          width: "100%",
+          marginTop: 16,
+          background: "#D85A30",
+          color: "#FFFDF9",
+          borderRadius: 100,
+          padding: 14,
+          fontSize: 15,
+          fontWeight: 500,
+          border: 0,
+          cursor: loading ? "default" : "pointer",
+          opacity: loading ? 0.7 : 1,
+        }}
+      >
+        {loading ? "Redirecting to checkout…" : "Get Buyer Pass →"}
+      </button>
+      <p style={{ fontSize: 12, color: "#888780", margin: "10px 0 0", textAlign: "center" }}>
+        One-off payment. No subscription. Access ends 90 days after purchase.
+      </p>
+      {err && (
+        <p style={{ fontSize: 12, color: "#A32D2D", margin: "8px 0 0", textAlign: "center" }}>{err}</p>
+      )}
+    </section>
+  );
+}
