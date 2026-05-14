@@ -216,7 +216,7 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
             style={{ fontSize: 13, color: "#1A1108" }}
           >
             <LayoutDashboard className="h-4 w-4" style={{ color: "#5F5E5A" }} />{" "}
-            {hasPass ? "My analyses" : "My report"}
+            {hasPass ? "My reports" : "My report"}
           </Link>
           <button
             type="button"
@@ -254,14 +254,16 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav className="flex items-center gap-4 sm:gap-6">
-          <Link
-            to="/pricing"
-            style={{ fontSize: 13, color: "#888780" }}
-            className="hover:text-foreground transition-colors"
-            activeProps={{ style: { fontSize: 13, color: "#1A1108" } }}
-          >
-            Pricing
-          </Link>
+          {!loggedIn && (
+            <Link
+              to="/pricing"
+              style={{ fontSize: 13, color: "#888780" }}
+              className="hover:text-foreground transition-colors"
+              activeProps={{ style: { fontSize: 13, color: "#1A1108" } }}
+            >
+              Pricing
+            </Link>
+          )}
 
           {loggedIn ? (
             <>
@@ -277,7 +279,7 @@ export function SiteHeader() {
                   padding: "10px 20px",
                 }}
               >
-                {hasPass ? "My analyses" : "My report"}
+                {hasPass ? "My reports" : "My report"}
               </Link>
               <UserMenu email={email!} hasPass={hasPass} />
             </>

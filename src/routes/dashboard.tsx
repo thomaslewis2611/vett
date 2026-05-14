@@ -10,7 +10,7 @@ import { createCheckoutSession } from "@/lib/checkout.functions";
 const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — Roovr" }] }),
+  head: () => ({ meta: [{ title: "My Reports — Roovr" }] }),
   component: DashboardPage,
 });
 
@@ -266,7 +266,7 @@ function DashboardPage() {
         </form>
 
         <section className="mt-12">
-          <h2 className="text-xl font-semibold tracking-tight">Your recent analyses</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Your recent reports</h2>
           {rows.length === 0 ? (
             <div
               className="mt-4 p-8 text-center"
