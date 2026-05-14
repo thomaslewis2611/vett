@@ -822,10 +822,12 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
         </section>
 
 
-        {/* Seller motivation — all tiers (signals/commentary locked for free) */}
-        <SafeSection name="sellerMotivation">
-          <SellerMotivationSection analysis={a} unlocked={unlocked} />
-        </SafeSection>
+        {/* Seller motivation — paid tiers only (Single Report + Buyer Pass) */}
+        {unlocked && (
+          <SafeSection name="sellerMotivation">
+            <SellerMotivationSection analysis={a} unlocked={unlocked} />
+          </SafeSection>
+        )}
 
         {/* EPC */}
         <EpcSection
