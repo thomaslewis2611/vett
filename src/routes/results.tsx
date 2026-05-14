@@ -396,20 +396,20 @@ function LoadingState({ url }: { url?: string }) {
   );
 }
 
-function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResult; listingUrl?: string; token?: string }) {
+function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean }) {
   const access = useAccess(listingUrl, token);
   const unlocked = access.level !== "none";
   const showChat = access.level === "pass";
 
-  // Auto-save analysis for Buyer Pass users
+  // Auto-save analysis for Buyer Pass users (skip when loaded from a saved report)
   const saveFn = useServerFn(saveAnalysisForUser);
   const savedRef = useRef(false);
   useEffect(() => {
-    if (showChat && access.email && !savedRef.current && listingUrl) {
+    if (!fromSaved && showChat && access.email && !savedRef.current && listingUrl) {
       savedRef.current = true;
       saveFn({ data: { email: access.email, listingUrl, analysis: a } }).catch(() => { /* ignore */ });
     }
-  }, [showChat, access.email, listingUrl, a, saveFn]);
+  }, [showChat, access.email, listingUrl, a, saveFn, fromSaved]);
 
   const [sdMode, setSdMode] = useState<StampDutyMode>("main");
   const stampDuty = calcStampDuty(a.property.price, sdMode);
