@@ -2827,7 +2827,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
           </div>
         )}
         <p className="mt-4" style={{ fontSize: 10, color: "#888780" }}>
-          Source: DfE / Ofsted
+          Source: DfE / Ofsted — schools within 5 miles
         </p>
       </div>
     </section>
