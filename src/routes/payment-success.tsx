@@ -22,8 +22,8 @@ function PaymentSuccessPage() {
 
   const [state, setState] = useState<
     | { status: "loading" }
-    | { status: "single"; email: string }
-    | { status: "pass"; email: string }
+    | { status: "single"; email: string; hadAnalysisJob: boolean }
+    | { status: "pass"; email: string; hadAnalysisJob: boolean }
     | { status: "error"; message: string }
   >({ status: "loading" });
   const [resendMsg, setResendMsg] = useState<string | null>(null);
@@ -45,9 +45,9 @@ function PaymentSuccessPage() {
         const effectiveTier = res.tier ?? tier;
         const emailFallback = res.email ?? "your email";
         if (effectiveTier === "single") {
-          setState({ status: "single", email: emailFallback });
+          setState({ status: "single", email: emailFallback, hadAnalysisJob: res.hadAnalysisJob });
         } else if (effectiveTier === "pass") {
-          setState({ status: "pass", email: emailFallback });
+          setState({ status: "pass", email: emailFallback, hadAnalysisJob: res.hadAnalysisJob });
         } else {
           setState({ status: "error", message: "Unknown purchase type." });
         }
