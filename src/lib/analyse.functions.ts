@@ -1516,10 +1516,9 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
       hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     });
 
-    // Try invoking the Edge Function. We await the result so we actually
-    // observe network/auth failures synchronously (a true fire-and-forget
-    // promise can be cancelled when the Worker shuts down). The Edge Function
-    // itself updates the analysis_jobs row when it finishes.
+    // Try invoking the Edge Function. We await the result so we observe
+    // network/auth failures synchronously. The Edge Function itself updates
+    // the analysis_jobs row when it finishes.
     let invokeFailed = false;
     let invokeErrorMessage = "";
     try {
@@ -1540,7 +1539,34 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
       console.error(`[startAnalysisJob] Edge Function invoke failed:`, invokeErrorMessage);
     }
 
-    if (invokeFailed) {
+    // Reliability check: even if the invoke call returned ok, the Edge
+    // Function may not actually be running (silent failure). Wait 2s and
+    // verify the job has moved off `pending`. If not, fall back to running
+    // the analysis in-process.
+    let needsFallback = invokeFailed;
+    if (!invokeFailed) {
+      await new Promise((r) => setTimeout(r, 2000));
+      try {
+        const { data: statusRow } = await supabaseAdmin
+          .from("analysis_jobs")
+          .select("status")
+          .eq("id", jobId)
+          .maybeSingle();
+        const currentStatus = (statusRow?.status as string | undefined) ?? "pending";
+        console.log(`[startAnalysisJob] post-invoke status check for ${jobId}: ${currentStatus}`);
+        if (currentStatus === "pending") {
+          console.warn(`[startAnalysisJob] Edge Function did not pick up job ${jobId}; falling back in-process`);
+          needsFallback = true;
+          invokeErrorMessage = invokeErrorMessage || "Edge Function did not start within 2s";
+        }
+      } catch (err) {
+        console.error(`[startAnalysisJob] post-invoke status check failed:`, err);
+        needsFallback = true;
+        invokeErrorMessage = invokeErrorMessage || (err instanceof Error ? err.message : String(err));
+      }
+    }
+
+    if (needsFallback) {
       console.warn(`[startAnalysisJob] Falling back to in-process analysis for ${jobId}`);
       try {
         await processAnalysisJob(jobId, url, pastedText);
