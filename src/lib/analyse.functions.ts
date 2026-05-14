@@ -796,34 +796,49 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     ? `${pcCompact.slice(0, -3)} ${pcCompact.slice(-3)}`
     : pcCompact;
   const pcParam = encodeURIComponent(pcFormatted);
-  // 8 km ≈ 5 miles search radius
-  const url = `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${pcParam}&radius=8&fields=school_name,ofsted_rating,school_type,distance`;
 
-  let raw: NearbySchoolsRaw;
-  try {
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 10_000);
-    const res = await fetch(url, {
-      headers: {
-        "Accept": "application/json",
-        "User-Agent": "Roovr/1.0 (property analysis tool; hello@roovr.co)",
-        "Referer": "https://roovr.co",
-      },
-      signal: ctrl.signal,
-    });
-    clearTimeout(t);
-    if (!res.ok) {
-      console.error(`[nearbySchools] HTTP ${res.status} for ${url}`);
-      return { schools: [], unavailable: true };
-    }
-    const json = (await res.json()) as unknown;
-    const list: any[] = Array.isArray(json)
-      ? (json as any[])
-      : Array.isArray((json as any)?.results)
-        ? (json as any).results
-        : Array.isArray((json as any)?.data)
-          ? (json as any).data
-          : [];
+  const headers = {
+    "Accept": "application/json",
+    "User-Agent": "Mozilla/5.0 (compatible; Roovr/1.0; +https://roovr.co)",
+    "Referer": "https://roovr.co",
+  };
+
+  // Try multiple endpoints in order. 8 km ≈ 5 miles.
+  const endpoints = [
+    `https://api.get-information-schools.service.gov.uk/api/schools/search?location=${pcParam}&radiusInMiles=5`,
+    `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${pcParam}&radius=8&fields=school_name,ofsted_rating,school_type,distance`,
+  ];
+
+  let raw: NearbySchoolsRaw | null = null;
+  for (const url of endpoints) {
+    try {
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 10_000);
+      const res = await fetch(url, { headers, signal: ctrl.signal });
+      clearTimeout(t);
+      const bodyText = await res.text();
+      console.log(`[nearbySchools] ${url} → HTTP ${res.status}, body[0..400]: ${bodyText.slice(0, 400)}`);
+      if (!res.ok) continue;
+      let json: unknown;
+      try { json = JSON.parse(bodyText); } catch {
+        console.error(`[nearbySchools] non-JSON body from ${url}`);
+        continue;
+      }
+      const list: any[] = Array.isArray(json)
+        ? (json as any[])
+        : Array.isArray((json as any)?.results)
+          ? (json as any).results
+          : Array.isArray((json as any)?.data)
+            ? (json as any).data
+            : Array.isArray((json as any)?.schools)
+              ? (json as any).schools
+              : Array.isArray((json as any)?.establishments)
+                ? (json as any).establishments
+                : [];
+      if (list.length === 0) {
+        console.warn(`[nearbySchools] empty list from ${url}`);
+        continue;
+      }
 
     const schools: SchoolEntry[] = list
       .map((s) => {
