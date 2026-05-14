@@ -1096,28 +1096,88 @@ async function runAnalysis(
   }
 
   let output: z.infer<typeof analysisSchema>;
-  try {
-    const client = new Anthropic({ apiKey, timeout: 120_000, maxRetries: 1 });
+  const client = new Anthropic({ apiKey, timeout: 120_000, maxRetries: 1 });
+  const userContent = `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
+
+  const cleanResponse = (raw: string) =>
+    raw.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+
+  const tryRepairJson = (text: string): string => {
+    // Strip trailing incomplete content after the last complete field.
+    let s = text;
+    // Drop a trailing partial token like `, "key": "abc` or `, "key":`
+    const lastComma = s.lastIndexOf(",");
+    const lastBrace = s.lastIndexOf("}");
+    if (lastBrace < lastComma) {
+      s = s.slice(0, lastComma);
+    }
+    // Balance braces and brackets
+    let curly = 0;
+    let square = 0;
+    let inStr = false;
+    let esc = false;
+    for (const ch of s) {
+      if (esc) { esc = false; continue; }
+      if (ch === "\\") { esc = true; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (inStr) continue;
+      if (ch === "{") curly++;
+      else if (ch === "}") curly--;
+      else if (ch === "[") square++;
+      else if (ch === "]") square--;
+    }
+    if (inStr) s += '"';
+    while (square-- > 0) s += "]";
+    while (curly-- > 0) s += "}";
+    return s;
+  };
+
+  const callClaude = async (system: string, maxTokens: number) => {
     const message = await client.messages.create({
       model: "claude-sonnet-4-5",
-      max_tokens: 3500,
-      system: SYSTEM_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`,
-        },
-      ],
+      max_tokens: maxTokens,
+      system,
+      messages: [{ role: "user", content: userContent }],
     });
+    return message.content[0].type === "text" ? message.content[0].text : "";
+  };
 
-    const responseText =
-      message.content[0].type === "text" ? message.content[0].text : "";
-    const cleaned = responseText
-      .trim()
-      .replace(/^```(?:json)?\s*/i, "")
-      .replace(/\s*```$/i, "");
+  const parseWithRepair = (raw: string) => {
+    const cleaned = cleanResponse(raw);
+    const endsClean = cleaned.endsWith("}") || cleaned.endsWith("}}");
+    if (!endsClean) {
+      console.warn(
+        "[analyseListing] Claude response appears truncated; attempting JSON repair."
+      );
+      const repaired = tryRepairJson(cleaned);
+      return JSON.parse(repaired);
+    }
+    try {
+      return JSON.parse(cleaned);
+    } catch (e) {
+      console.warn("[analyseListing] JSON.parse failed; attempting repair.", e);
+      return JSON.parse(tryRepairJson(cleaned));
+    }
+  };
 
-    const parsed = JSON.parse(cleaned);
+  try {
+    let parsed: unknown;
+    try {
+      const responseText = await callClaude(SYSTEM_PROMPT, 6000);
+      parsed = parseWithRepair(responseText);
+    } catch (primaryErr) {
+      console.error(
+        "[analyseListing] Primary analysis parse failed, retrying with simplified schema (no renovationCosts).",
+        primaryErr
+      );
+      const simplifiedPrompt =
+        SYSTEM_PROMPT +
+        "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response to keep it compact. Set it to null.";
+      const fallbackText = await callClaude(simplifiedPrompt, 6000);
+      const fallbackParsed = parseWithRepair(fallbackText) as Record<string, unknown>;
+      fallbackParsed.renovationCosts = null;
+      parsed = fallbackParsed;
+    }
     output = analysisSchema.parse(parsed);
   } catch (err: unknown) {
     console.error("[analyseListing] Anthropic/parse error:", err);
