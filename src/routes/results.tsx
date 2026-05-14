@@ -499,13 +499,17 @@ function LoadingState({ url }: { url?: string }) {
   );
 }
 
-function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean }) {
+function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean }) {
   const access = useAccess(listingUrl, token);
   const unlocked = access.level !== "none";
   const showChat = access.level === "pass";
 
+  // Local copy of the analysis so we can patch in flood/schools after a Buyer
+  // Pass upgrade — without ever re-running the Claude analysis.
+  const [a, setA] = useState<AnalysisResult>(initialA);
+  useEffect(() => { setA(initialA); }, [initialA]);
+
   // Auto-save analysis for signed-in paying users (Buyer Pass or Single Report).
-  // Skip when this analysis was loaded from a saved report.
   const saveFn = useServerFn(saveAnalysisForUser);
   const savedRef = useRef(false);
   useEffect(() => {
@@ -515,6 +519,34 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
       saveFn({ data: { email: access.email, listingUrl, analysis: a } }).catch(() => { /* ignore */ });
     }
   }, [access.level, access.email, listingUrl, a, saveFn, fromSaved]);
+
+  // Post-upgrade: if a Buyer Pass user is viewing a report that was analysed
+  // BEFORE they had the pass, flood risk / nearby schools may be missing.
+  // Fetch ONLY those two datasets and patch the saved row in-place.
+  const extrasFn = useServerFn(fetchBuyerPassExtras);
+  const [fetchingExtras, setFetchingExtras] = useState(false);
+  const extrasRef = useRef(false);
+  useEffect(() => {
+    if (extrasRef.current) return;
+    if (access.level !== "pass" || !access.email || !listingUrl) return;
+    const needsFlood = a.floodRisk == null;
+    const needsSchools = a.nearbySchools == null;
+    if (!needsFlood && !needsSchools) return;
+    extrasRef.current = true;
+    setFetchingExtras(true);
+    extrasFn({ data: { email: access.email, listingUrl } })
+      .then((r) => {
+        if (r?.ok) {
+          setA((prev) => ({
+            ...prev,
+            floodRisk: r.floodRisk ?? prev.floodRisk,
+            nearbySchools: r.nearbySchools ?? prev.nearbySchools,
+          }));
+        }
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => setFetchingExtras(false));
+  }, [access.level, access.email, listingUrl, a.floodRisk, a.nearbySchools, extrasFn]);
 
   const [sdMode, setSdMode] = useState<StampDutyMode>("main");
   const stampDuty = calcStampDuty(a.property.price, sdMode);
