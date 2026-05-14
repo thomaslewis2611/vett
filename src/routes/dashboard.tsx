@@ -78,8 +78,18 @@ function DashboardPage() {
         .from("saved_analyses")
         .select("id, listing_url, analysis_json, created_at")
         .order("created_at", { ascending: false })
-        .limit(10);
-      setRows((saved as SavedRow[]) ?? []);
+        .limit(50);
+      // Deduplicate by listing_url, keeping the most recent entry per URL.
+      const seen = new Set<string>();
+      const deduped: SavedRow[] = [];
+      for (const r of (saved as SavedRow[]) ?? []) {
+        const key = r.listing_url ?? `__no_url__${r.id}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        deduped.push(r);
+        if (deduped.length >= 10) break;
+      }
+      setRows(deduped);
       setLoading(false);
     })();
     return () => {

@@ -259,16 +259,23 @@ export const saveAnalysisForUser = createServerFn({ method: "POST" })
 
     if (!allowed) return { ok: false };
 
-    // Avoid duplicate inserts for the same (email, listing_url)
+    // Update existing row for same (email, listing_url) instead of inserting a duplicate.
     if (data.listingUrl) {
       const { data: existing } = await supabaseAdmin
         .from("saved_analyses")
         .select("id")
         .ilike("user_email", email)
         .eq("listing_url", data.listingUrl)
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (existing) return { ok: true };
+      if (existing) {
+        await supabaseAdmin
+          .from("saved_analyses")
+          .update({ analysis_json: data.analysis as never })
+          .eq("id", (existing as { id: string }).id);
+        return { ok: true };
+      }
     }
 
     await supabaseAdmin.from("saved_analyses").insert({
