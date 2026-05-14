@@ -2493,7 +2493,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         fetchTransport(
           postcode,
           analysis.property?.address ?? "",
-          analysis.property?.propertyType ?? null,
+          analysis.property?.type ?? null,
           process.env.ANTHROPIC_API_KEY,
         ).catch((err) => {
           console.error("[fetchBuyerPassExtras] transport failed:", err);
