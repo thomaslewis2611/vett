@@ -674,7 +674,12 @@ async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | n
     console.error("[floodRisk] cache lookup failed:", err);
   }
 
-  const pcParam = encodeURIComponent(postcode.replace(/\s+/g, ""));
+  // EA API requires properly-formatted UK postcode with a space before the last 3 chars.
+  const pcCompact = postcode.replace(/\s+/g, "").toUpperCase();
+  const pcFormatted = pcCompact.length > 3
+    ? `${pcCompact.slice(0, -3)} ${pcCompact.slice(-3)}`
+    : pcCompact;
+  const pcParam = encodeURIComponent(pcFormatted);
   const url = `https://check-long-term-flood-risk.service.gov.uk/api/flood-risk-by-postcode/${pcParam}`;
 
   let raw: FloodRiskRaw | null = null;
