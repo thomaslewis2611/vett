@@ -2837,7 +2837,23 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
   );
 }
 
-function FloodRiskSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+function FloodRiskSection({
+  analysis,
+  isBuyerPass,
+  fetching,
+  onUpgrade,
+  listingUrl,
+  userEmail,
+  onFloodRiskUpdate,
+}: {
+  analysis: AnalysisResult;
+  isBuyerPass: boolean;
+  fetching?: boolean;
+  onUpgrade?: () => void;
+  listingUrl?: string;
+  userEmail?: string | null;
+  onFloodRiskUpdate?: (fr: NonNullable<AnalysisResult["floodRisk"]>) => void;
+}) {
   try {
     const fr = analysis.floodRisk;
 
@@ -2916,75 +2932,27 @@ function FloodRiskSection({ analysis, isBuyerPass, fetching, onUpgrade }: { anal
       );
     }
 
-    // API failure / unavailable
-    if (!fr || fr.unavailable) {
-      return (
-        <section className="mt-10">
-          {headingNode}
-          <div className="mt-4" style={cardStyle}>
-            <p style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
-              Flood risk data temporarily unavailable. Check directly at{" "}
-              <a href="https://check-long-term-flood-risk.service.gov.uk" target="_blank" rel="noopener noreferrer" style={{ color: "#185FA5", textDecoration: "underline" }}>
-                check-long-term-flood-risk.service.gov.uk
-              </a>
-            </p>
-          </div>
-        </section>
-      );
-    }
-
-    // No data returned by EA for this postcode (API responded but no risk values)
+    // No data returned by EA for this postcode (or API unavailable) — offer manual zone input
     const hasNoData =
-      !fr.overallRisk &&
-      !fr.riversAndSea &&
-      !fr.surfaceWater &&
-      !fr.groundwater &&
-      fr.reservoir == null;
+      !fr ||
+      fr.unavailable ||
+      (!fr.manualZone &&
+        !fr.overallRisk &&
+        !fr.riversAndSea &&
+        !fr.surfaceWater &&
+        !fr.groundwater &&
+        fr.reservoir == null);
     if (hasNoData) {
       return (
         <section className="mt-10">
           {headingNode}
-          <div
-            className="mt-4"
-            style={{
-              background: "#F1EFE8",
-              border: "0.5px solid rgba(26,17,8,0.12)",
-              borderRadius: 12,
-              padding: 20,
-            }}
-          >
-            <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 600 }}>
-              Flood risk not returned for this postcode
-            </p>
-            <p className="mt-2" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-              The Environment Agency returned no specific flood risk data for this property. This
-              may indicate a low-risk area, but we recommend verifying directly before making an
-              offer.
-            </p>
-            <a
-              href="https://check-long-term-flood-risk.service.gov.uk"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-4 inline-flex items-center gap-1"
-              style={{
-                background: "#D85A30",
-                color: "#FFFDF9",
-                fontSize: 13,
-                fontWeight: 500,
-                borderRadius: 100,
-                padding: "10px 18px",
-                textDecoration: "none",
-              }}
-            >
-              Check your flood risk at check-long-term-flood-risk.service.gov.uk →
-            </a>
-            <p className="mt-3" style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.6 }}>
-              Enter the property postcode on the Government's official flood risk checker for a
-              confirmed result.
-            </p>
-            <div style={{ fontSize: 10, color: "#888780", marginTop: 12 }}>
-              Source: Environment Agency
-            </div>
+          <div className="mt-4" style={cardStyle}>
+            <FloodRiskNoDataCard
+              analysis={analysis}
+              listingUrl={listingUrl}
+              userEmail={userEmail}
+              onFloodRiskUpdate={onFloodRiskUpdate}
+            />
           </div>
         </section>
       );
