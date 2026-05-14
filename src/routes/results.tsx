@@ -2681,7 +2681,7 @@ const CARD_STYLE: CSSProperties = {
   padding: 20,
 };
 
-function SellerMotivationSection({ analysis }: { analysis: AnalysisResult }) {
+function SellerMotivationSection({ analysis, unlocked }: { analysis: AnalysisResult; unlocked: boolean }) {
   const sm = analysis.sellerMotivation;
   if (!sm) return null;
 
@@ -2691,34 +2691,46 @@ function SellerMotivationSection({ analysis }: { analysis: AnalysisResult }) {
   else if (sm.score >= 7) { bg = "#FAECE7"; fg = "#993C1D"; }
   else if (sm.score >= 5) { bg = "#FAEEDA"; fg = "#7A5A0A"; }
 
+  const hasDetails = sm.signals.length > 0 || !!sm.commentary;
+
   return (
     <section className="mt-10">
       <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
         Seller motivation
       </h2>
       <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between" style={CARD_STYLE}>
-        <div className="min-w-0 flex-1">
-          {sm.signals.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {sm.signals.map((s, i) => (
-                <span
-                  key={i}
-                  style={{
-                    background: "#F1EFE8",
-                    color: "#5F5E5A",
-                    fontSize: 11,
-                    borderRadius: 100,
-                    padding: "3px 9px",
-                  }}
-                >
-                  {s}
-                </span>
-              ))}
+        <div className="min-w-0 flex-1 relative">
+          <div style={!unlocked && hasDetails ? { filter: "blur(4px)", userSelect: "none", pointerEvents: "none" } : undefined}>
+            {sm.signals.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {sm.signals.map((s, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      background: "#F1EFE8",
+                      color: "#5F5E5A",
+                      fontSize: 11,
+                      borderRadius: 100,
+                      padding: "3px 9px",
+                    }}
+                  >
+                    {s}
+                  </span>
+                ))}
+              </div>
+            )}
+            <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+              {sm.commentary}
+            </p>
+          </div>
+          {!unlocked && hasDetails && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+              <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+              <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+                Unlock seller motivation details with Single Report or Buyer Pass
+              </p>
             </div>
           )}
-          <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            {sm.commentary}
-          </p>
         </div>
         <div className="flex flex-row items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
           <div
