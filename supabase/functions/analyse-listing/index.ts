@@ -171,7 +171,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "negotiation": { "isAuction": boolean, "maxBid": number, "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] },
   "sellerMotivation": { "score": number, "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
   "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] },
-  "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "Essential"|"Recommended"|"Optional", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
+  "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "High priority"|"Medium priority"|"Low priority", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
   "comparables": []
 }
 
