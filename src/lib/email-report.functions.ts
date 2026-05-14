@@ -173,7 +173,7 @@ function buildReportHtml(opts: {
   const epcHtml = epc
     ? `
     <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Energy performance</h2>
-    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+    <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
       <tr><td ${rowStyle}>EPC rating</td><td ${valStyle}>${txt(epc.rating)}${epc.score != null ? ` (${epc.score})` : ""}</td></tr>
       ${epc.potentialRating ? `<tr><td ${rowStyle}>Potential rating</td><td ${valStyle}>${txt(epc.potentialRating)}</td></tr>` : ""}
       ${epc.estimatedAnnualEnergyCost ? `<tr><td ${rowStyle}>Est. annual energy cost</td><td ${valStyle}>${txt(epc.estimatedAnnualEnergyCost)}</td></tr>` : ""}
