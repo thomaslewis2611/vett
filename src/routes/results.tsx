@@ -568,6 +568,9 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
         </section>
 
 
+        {/* Seller motivation — all tiers */}
+        <SellerMotivationSection analysis={a} />
+
         {/* EPC */}
         <EpcSection analysis={a} />
 
