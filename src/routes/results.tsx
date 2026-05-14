@@ -2683,21 +2683,29 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
     <section className="mt-10">
       {heading}
       <div className="mt-4" style={cardStyle}>
-        {ns?.unavailable || empty ? (
-          <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            No schools found within 5 miles. Search schools at{" "}
-            <a
-              href="https://get-information-schools.service.gov.uk"
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{ color: "#D85A30" }}
-              className="hover:underline"
-            >
-              get-information-schools.service.gov.uk
-            </a>
-            .
-          </p>
-        ) : (
+        {ns?.unavailable || empty ? (() => {
+          const addr = analysis.property?.address ?? "";
+          const pcMatch = addr.match(/[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}/i);
+          const pc = pcMatch ? pcMatch[0].toUpperCase() : "";
+          const giasUrl = pc
+            ? `https://www.get-information-schools.service.gov.uk/Search?SelectedTab=Establishments&Searchtext=${encodeURIComponent(pc)}`
+            : "https://www.get-information-schools.service.gov.uk";
+          return (
+            <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+              No schools found within 5 miles{pc ? ` of ${pc}` : ""}. Search schools{pc ? ` near ${pc}` : ""} at{" "}
+              <a
+                href={giasUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: "#D85A30" }}
+                className="hover:underline"
+              >
+                get-information-schools.service.gov.uk
+              </a>
+              .
+            </p>
+          );
+        })() : (
           <div className="flex flex-col gap-6">
             {primary.length > 0 && (
               <div>
