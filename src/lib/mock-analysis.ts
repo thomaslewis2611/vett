@@ -71,6 +71,16 @@ export type AnalysisResult = {
     scotland?: boolean | null;
     unavailable?: boolean | null;
   } | null;
+  nearbySchools?: {
+    schools: {
+      name: string;
+      ofstedRating: number | null;
+      schoolType: string | null;
+      phase: "primary" | "secondary" | "other";
+      distanceMiles: number;
+    }[];
+    unavailable?: boolean | null;
+  } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
     avgSoldPriceArea: number | null;

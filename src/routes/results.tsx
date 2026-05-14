@@ -641,6 +641,9 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
               {/* Flood risk — full for Buyer Pass, locked teaser for Single Report */}
               <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
 
+              {/* Nearby schools — full for Buyer Pass, locked teaser for Single Report */}
+              <NearbySchoolsSection analysis={a} isBuyerPass={access.level === "pass"} />
+
               {showChat && <PropertyChat analysis={a} />}
 
               {access.level === "pass" && (
@@ -2186,6 +2189,137 @@ function PriceHistorySection({ analysis }: { analysis: AnalysisResult }) {
     console.error("[PriceHistorySection] render failed:", err);
     return null;
   }
+}
+
+function OfstedBadge({ rating }: { rating: number | null }) {
+  const map: Record<number, { label: string; bg: string; fg: string }> = {
+    1: { label: "Outstanding", bg: "#EAF3DE", fg: "#27500A" },
+    2: { label: "Good", bg: "#F1F7E5", fg: "#3F6B12" },
+    3: { label: "Requires Improvement", bg: "#FAEEDA", fg: "#633806" },
+    4: { label: "Inadequate", bg: "#FAECE7", fg: "#A32D2D" },
+  };
+  const m = rating && map[rating];
+  if (!m) {
+    return (
+      <span style={{ background: "#F1EFE8", color: "#5F5E5A", borderRadius: 999, padding: "3px 8px", fontSize: 11, fontWeight: 500 }}>
+        Not rated
+      </span>
+    );
+  }
+  return (
+    <span style={{ background: m.bg, color: m.fg, borderRadius: 999, padding: "3px 8px", fontSize: 11, fontWeight: 500 }}>
+      {m.label}
+    </span>
+  );
+}
+
+function SchoolRow({ s }: { s: NonNullable<AnalysisResult["nearbySchools"]>["schools"][number] }) {
+  return (
+    <li className="flex items-start justify-between gap-3 py-2.5" style={{ borderTop: "0.5px solid rgba(26,17,8,0.08)" }}>
+      <div className="min-w-0 flex-1">
+        <div className="truncate" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>{s.name}</div>
+        <div className="mt-0.5 flex flex-wrap items-center gap-x-3" style={{ fontSize: 11, color: "#888780" }}>
+          <span>{s.distanceMiles.toFixed(1)} miles</span>
+          {s.schoolType && <span>{s.schoolType}</span>}
+        </div>
+      </div>
+      <div className="shrink-0">
+        <OfstedBadge rating={s.ofstedRating} />
+      </div>
+    </li>
+  );
+}
+
+function NearbySchoolsSection({ analysis, isBuyerPass }: { analysis: AnalysisResult; isBuyerPass: boolean }) {
+  const cardStyle: CSSProperties = {
+    background: "#FFFDF9",
+    border: "0.5px solid rgba(26,17,8,0.12)",
+    borderRadius: 12,
+    padding: 20,
+  };
+
+  const heading = (
+    <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+      Nearby schools
+    </h2>
+  );
+
+  if (!isBuyerPass) {
+    return (
+      <section className="mt-10">
+        {heading}
+        <div className="mt-4 relative overflow-hidden" style={cardStyle}>
+          <div style={{ filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}>
+            <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>St Mary's Primary School</p>
+            <p className="mt-1" style={{ fontSize: 11, color: "#888780" }}>0.4 miles · Primary</p>
+            <p className="mt-3" style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>Greenfield Secondary</p>
+            <p className="mt-1" style={{ fontSize: 11, color: "#888780" }}>0.7 miles · Secondary</p>
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: "rgba(255,253,249,0.85)" }}>
+            <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+            <p className="text-center" style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+              Unlock with Buyer Pass to see nearby schools and Ofsted ratings
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const ns = analysis.nearbySchools;
+  const allSchools = ns?.schools ?? [];
+  const primary = allSchools.filter((s) => s.phase === "primary").slice(0, 3);
+  const secondary = allSchools.filter((s) => s.phase === "secondary").slice(0, 3);
+  const empty = primary.length === 0 && secondary.length === 0;
+
+  return (
+    <section className="mt-10">
+      {heading}
+      <div className="mt-4" style={cardStyle}>
+        {ns?.unavailable || empty ? (
+          <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            No schools found within 1 mile. Search schools at{" "}
+            <a
+              href="https://get-information-schools.service.gov.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: "#D85A30" }}
+              className="hover:underline"
+            >
+              get-information-schools.service.gov.uk
+            </a>
+            .
+          </p>
+        ) : (
+          <div className="flex flex-col gap-6">
+            {primary.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: 12, fontWeight: 500, color: "#888780", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Primary
+                </h3>
+                <ul className="mt-2">
+                  {primary.map((s, i) => <SchoolRow key={`p-${i}`} s={s} />)}
+                </ul>
+              </div>
+            )}
+            {secondary.length > 0 && (
+              <div>
+                <h3 style={{ fontSize: 12, fontWeight: 500, color: "#888780", textTransform: "uppercase", letterSpacing: 0.5 }}>
+                  Secondary
+                </h3>
+                <ul className="mt-2">
+                  {secondary.map((s, i) => <SchoolRow key={`s-${i}`} s={s} />)}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+        <p className="mt-4" style={{ fontSize: 10, color: "#888780" }}>
+          Source: DfE / Ofsted
+        </p>
+      </div>
+    </section>
+  );
 }
 
 function FloodRiskSection({ analysis, isBuyerPass }: { analysis: AnalysisResult; isBuyerPass: boolean }) {
