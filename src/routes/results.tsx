@@ -551,7 +551,7 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
           </Link>
           <EmailReportButton
             analysis={a}
-            isPaid={access.level === "pass" || access.level === "single"}
+            tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
             userEmail={access.email}
           />
         </div>
