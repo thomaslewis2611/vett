@@ -243,3 +243,21 @@ export const saveAnalysisForUser = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+export const getSavedAnalysis = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ id: z.string().uuid() }))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("saved_analyses")
+      .select("id, listing_url, analysis_json, created_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error || !row) return { found: false as const };
+    return {
+      found: true as const,
+      listingUrl: (row as { listing_url: string | null }).listing_url,
+      analysis: (row as { analysis_json: unknown }).analysis_json,
+    };
+  });
