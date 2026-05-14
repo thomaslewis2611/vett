@@ -2779,6 +2779,151 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
   );
 }
 
+function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+  const cardStyle: CSSProperties = {
+    background: "#FFFDF9",
+    border: "0.5px solid rgba(26,17,8,0.12)",
+    borderRadius: 12,
+    padding: 20,
+  };
+  const heading = (
+    <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+      Crime statistics
+    </h2>
+  );
+
+  if (!isBuyerPass) {
+    return (
+      <section className="mt-10">
+        {heading}
+        <div className="mt-4 relative overflow-hidden" style={cardStyle}>
+          <div style={{ filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}>
+            <div className="flex items-center justify-between">
+              <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>Recorded crimes (last month)</p>
+              <span style={{ background: "#FAEEDA", color: "#633806", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 500 }}>Moderate</span>
+            </div>
+            <div className="mt-3 space-y-2">
+              <div style={{ fontSize: 13, color: "#5F5E5A" }}>Anti-social behaviour: 42</div>
+              <div style={{ fontSize: 13, color: "#5F5E5A" }}>Violence and sexual offences: 28</div>
+              <div style={{ fontSize: 13, color: "#5F5E5A" }}>Vehicle crime: 14</div>
+              <div style={{ fontSize: 13, color: "#5F5E5A" }}>Burglary: 9</div>
+            </div>
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+            <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+            <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
+              Unlock with Buyer Pass to see local crime statistics
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const crime = analysis.crime;
+
+  if (fetching && !crime) {
+    return (
+      <section className="mt-10">
+        {heading}
+        <div className="mt-4" style={cardStyle}>
+          <p style={{ fontSize: 13, color: "#5F5E5A" }}>Loading crime statistics…</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!crime || crime.unavailable) {
+    return (
+      <section className="mt-10">
+        {heading}
+        <div className="mt-4" style={cardStyle}>
+          <p style={{ fontSize: 13, color: "#5F5E5A" }}>
+            Crime data is currently unavailable for this postcode. Check{" "}
+            <a href="https://www.police.uk/pu/your-area/" target="_blank" rel="noopener noreferrer" style={{ color: "#D85A30" }} className="hover:underline">
+              police.uk
+            </a>{" "}
+            directly.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  const badgeStyle = (level: string): CSSProperties => {
+    const v = level.toLowerCase();
+    if (v === "very high") return { background: "#7A1D1D", color: "#FFFFFF" };
+    if (v === "high") return { background: "#FAECE7", color: "#A32D2D" };
+    if (v === "moderate") return { background: "#FAEEDA", color: "#633806" };
+    return { background: "#EAF3DE", color: "#27500A" };
+  };
+
+  const top = crime.topCategories.slice(0, 4);
+  const maxCount = top.reduce((m, c) => Math.max(m, c.count), 1);
+  const monthLabel = (() => {
+    const [y, m] = crime.month.split("-").map(Number);
+    if (!y || !m) return crime.month;
+    return new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+  })();
+
+  return (
+    <section className="mt-10">
+      {heading}
+      <div className="mt-4" style={cardStyle}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
+              {crime.totalCrimes} recorded crime{crime.totalCrimes === 1 ? "" : "s"}
+            </p>
+            <p style={{ fontSize: 11, color: "#888780", marginTop: 2 }}>Within ~1 mile · {monthLabel}</p>
+          </div>
+          <span style={{ ...badgeStyle(crime.riskLevel), borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 500 }}>
+            {crime.riskLevel}
+          </span>
+        </div>
+
+        {top.length > 0 && (
+          <ul className="mt-4 space-y-2.5">
+            {top.map((c) => (
+              <li key={c.category}>
+                <div className="flex items-center justify-between" style={{ fontSize: 13, color: "#1A1108" }}>
+                  <span>{c.label}</span>
+                  <span style={{ color: "#5F5E5A", fontVariantNumeric: "tabular-nums" }}>{c.count}</span>
+                </div>
+                <div style={{ marginTop: 4, height: 4, background: "#F1EFE8", borderRadius: 4, overflow: "hidden" }}>
+                  <div style={{ width: `${Math.max(4, (c.count / maxCount) * 100)}%`, height: "100%", background: "#D85A30" }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {crime.commentary && (
+          <p className="mt-4" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            {crime.commentary}
+          </p>
+        )}
+
+        <p className="mt-3" style={{ fontSize: 11, color: "#888780" }}>
+          Based on {monthLabel} data. Crime rates vary — always check local knowledge.
+        </p>
+        <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
+          <span style={{ fontSize: 10, color: "#888780" }}>Source: data.police.uk</span>
+          <a
+            href="https://www.police.uk/pu/your-area/"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 12, color: "#D85A30" }}
+            className="hover:underline"
+          >
+            View full crime map →
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FloodRiskSection({
   analysis,
   isBuyerPass,
