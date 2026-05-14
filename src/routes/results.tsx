@@ -771,21 +771,39 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
           </SafeSection>
         )}
 
-        {/* Flood risk — Buyer Pass only (Single Report sees locked teaser) */}
-        {unlocked && (
-          <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
+        {/* Flood risk — Buyer Pass renders data; Single Report sees locked teaser */}
+        {(unlocked || access.level === "single") && (access.level === "single" || access.level === "pass") && (
+          <FloodRiskSection
+            analysis={a}
+            isBuyerPass={access.level === "pass"}
+            fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
+            onUpgrade={() => upgradeToPass(listingUrl)}
+          />
         )}
 
-        {/* Nearby schools — Buyer Pass only (Single Report sees locked teaser) */}
-        {unlocked && (
-          <NearbySchoolsSection analysis={a} isBuyerPass={access.level === "pass"} />
+        {/* Nearby schools — Buyer Pass renders data; Single Report sees locked teaser */}
+        {(unlocked || access.level === "single") && (access.level === "single" || access.level === "pass") && (
+          <NearbySchoolsSection
+            analysis={a}
+            isBuyerPass={access.level === "pass"}
+            fetching={access.level === "pass" && fetchingExtras && a.nearbySchools == null}
+            onUpgrade={() => upgradeToPass(listingUrl)}
+          />
         )}
 
-        {/* AI chat (Buyer Pass only) */}
+        {/* AI chat — Buyer Pass renders chat; Single Report sees locked teaser */}
         {unlocked && showChat && (
           <section className="mt-10">
             <PropertyChat analysis={a} />
           </section>
+        )}
+        {access.level === "single" && (
+          <AIChatLockedTeaser onUpgrade={() => upgradeToPass(listingUrl)} />
+        )}
+
+        {/* Inline Buyer Pass upgrade — Single Report users only */}
+        {access.level === "single" && (
+          <InlineBuyerPassUpgrade listingUrl={listingUrl} />
         )}
 
         {unlocked && access.level === "pass" && (
