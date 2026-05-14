@@ -1058,6 +1058,7 @@ function toPreview(a: AnalysisResult): AnalysisResult {
     viewingQuestions: [],
     comparables: [],
     nearbySchools: null,
+    renovationCosts: null,
   };
 }
 
