@@ -692,12 +692,134 @@ async function fetchFloodRisk(postcode: string | null): Promise<FloodRiskRaw | n
   return raw;
 }
 
+// ---------------- Nearby Schools (DfE / Ofsted) ----------------
+type SchoolEntry = {
+  name: string;
+  ofstedRating: number | null;
+  schoolType: string | null;
+  phase: "primary" | "secondary" | "other";
+  distanceMiles: number;
+};
+type NearbySchoolsRaw = {
+  schools: SchoolEntry[];
+  unavailable?: boolean;
+};
+
+const NEARBY_SCHOOLS_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+function classifyPhase(schoolType: string | null): "primary" | "secondary" | "other" {
+  if (!schoolType) return "other";
+  const s = schoolType.toLowerCase();
+  if (/(secondary|sixth|all[- ]through|upper)/.test(s)) return "secondary";
+  if (/(primary|infant|junior|first|nursery)/.test(s)) return "primary";
+  return "other";
+}
+
+async function fetchNearbySchools(postcode: string | null): Promise<NearbySchoolsRaw | null> {
+  if (!postcode) return null;
+  console.log(`fetchNearbySchools called with postcode: ${postcode}`);
+
+  const cacheKey = `schools:${postcode}`;
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, fetched_at")
+      .eq("url", cacheKey)
+      .maybeSingle();
+    if (
+      cached?.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < NEARBY_SCHOOLS_TTL_MS
+    ) {
+      try {
+        const parsed = JSON.parse(cached.text_content) as NearbySchoolsRaw;
+        console.log(`fetchNearbySchools returned cached for ${postcode} (${parsed.schools?.length ?? 0})`);
+        return parsed;
+      } catch { /* ignore */ }
+    }
+  } catch (err) {
+    console.error("[nearbySchools] cache lookup failed:", err);
+  }
+
+  const pcParam = encodeURIComponent(postcode.trim());
+  const url = `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${pcParam}&radius=1.6&fields=school_name,ofsted_rating,school_type,distance`;
+
+  let raw: NearbySchoolsRaw;
+  try {
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10_000);
+    const res = await fetch(url, {
+      headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" },
+      signal: ctrl.signal,
+    });
+    clearTimeout(t);
+    if (!res.ok) {
+      console.error(`[nearbySchools] HTTP ${res.status} for ${url}`);
+      return { schools: [], unavailable: true };
+    }
+    const json = (await res.json()) as unknown;
+    const list: any[] = Array.isArray(json)
+      ? (json as any[])
+      : Array.isArray((json as any)?.results)
+        ? (json as any).results
+        : Array.isArray((json as any)?.data)
+          ? (json as any).data
+          : [];
+
+    const schools: SchoolEntry[] = list
+      .map((s) => {
+        const name: string =
+          s.school_name ?? s.name ?? s.schoolName ?? s.establishmentName ?? "";
+        const ofstedRaw = s.ofsted_rating ?? s.ofstedRating ?? s.ofsted;
+        const ofstedRating =
+          typeof ofstedRaw === "number"
+            ? ofstedRaw
+            : typeof ofstedRaw === "string" && /^\d$/.test(ofstedRaw)
+              ? Number(ofstedRaw)
+              : null;
+        const schoolType: string | null =
+          s.school_type ?? s.schoolType ?? s.type ?? null;
+        const distRaw = s.distance ?? s.distance_km ?? s.distanceKm;
+        const distKm = typeof distRaw === "number" ? distRaw : Number(distRaw);
+        const distanceMiles = Number.isFinite(distKm) ? distKm * 0.621371 : NaN;
+        return {
+          name,
+          ofstedRating,
+          schoolType,
+          phase: classifyPhase(schoolType),
+          distanceMiles,
+        };
+      })
+      .filter((s) => s.name && Number.isFinite(s.distanceMiles))
+      .sort((a, b) => a.distanceMiles - b.distanceMiles);
+
+    raw = { schools };
+  } catch (err) {
+    console.error("[nearbySchools] fetch failed:", err);
+    return { schools: [], unavailable: true };
+  }
+
+  try {
+    await supabaseAdmin
+      .from("listing_cache")
+      .upsert(
+        { url: cacheKey, text_content: JSON.stringify(raw), fetched_at: new Date().toISOString() },
+        { onConflict: "url" },
+      );
+  } catch (err) {
+    console.error("[nearbySchools] cache upsert failed:", err);
+  }
+
+  console.log(`fetchNearbySchools returned ${raw.schools.length} schools`);
+  return raw;
+}
+
 type FetchedListing = {
   text: string;
   landRegistry: LandRegistryResult;
   scotland: boolean;
   postcode: string | null;
   floodRisk: FloodRiskRaw | null;
+  nearbySchools: NearbySchoolsRaw | null;
 };
 
 async function fetchListingText(url: string): Promise<FetchedListing> {
