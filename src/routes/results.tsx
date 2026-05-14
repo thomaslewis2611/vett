@@ -801,11 +801,6 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
         <section className="mt-8">
           <h2 className="text-xl font-semibold tracking-tight">Key metrics</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <MetricCard
-              label="Price / sq ft"
-              value={a.metrics.pricePerSqFt > 0 ? `£${a.metrics.pricePerSqFt}` : "—"}
-              icon={PoundSterling}
-            />
             <PricePerSqftCard
               analysis={a}
               listingUrl={listingUrl}
