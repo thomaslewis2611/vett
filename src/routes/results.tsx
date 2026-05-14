@@ -482,55 +482,140 @@ class SafeSection extends Component<{ children: ReactNode; name?: string }, { ha
   }
 }
 
-const PROGRESS_MESSAGES = [
-  "Fetching listing...",
-  "Analysing property...",
-  "Almost done...",
+const LOADING_STEPS: { label: string; tickAt: number }[] = [
+  { label: "Fetching listing content", tickAt: 5 },
+  { label: "Reading agent description", tickAt: 15 },
+  { label: "Spotting red flags", tickAt: 30 },
+  { label: "Calculating true costs", tickAt: 45 },
+  { label: "Building negotiation strategy", tickAt: 60 },
 ];
 
+const LOADING_TIPS = [
+  "Tip: Average buyers view 8 properties before making an offer",
+  "Tip: 68% of buyers say they missed red flags on their first viewing",
+  "Tip: Properties with undisclosed square footage are often smaller than comparable listings",
+  "Tip: The negotiation strategy is tailored to this specific property and market",
+  "Tip: Your viewing checklist will be specific to the red flags found in this listing",
+];
+
+const CORAL = "#D85A30";
+
+function prettyUrl(url?: string): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    return u.hostname.replace(/^www\./, "") + u.pathname;
+  } catch {
+    return url;
+  }
+}
+
 function LoadingState({ url }: { url?: string }) {
-  const [phase, setPhase] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [tipIdx, setTipIdx] = useState(0);
+
   useEffect(() => {
+    const start = Date.now();
     const id = setInterval(() => {
-      setPhase((p) => Math.min(p + 1, PROGRESS_MESSAGES.length - 1));
-    }, 10_000);
+      setElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 500);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setTipIdx((i) => (i + 1) % LOADING_TIPS.length);
+    }, 15_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Progress 0 → 95% over 75 seconds, capped.
+  const progress = Math.min(95, (elapsed / 75) * 95);
+  const finalising = elapsed >= 60;
+  const anchor = prettyUrl(url);
+
   return (
-    <main className="mx-auto flex max-w-xl flex-col items-center px-6 py-24 text-center">
-      <div className="relative">
-        <div
-          className="absolute inset-0 animate-ping rounded-full opacity-30"
-          style={{ background: "var(--primary)" }}
-        />
-        <div
-          className="relative flex h-16 w-16 items-center justify-center rounded-full"
-          style={{ background: "var(--gradient-primary)" }}
-        >
-          <Loader2 className="h-7 w-7 animate-spin text-primary-foreground" />
+    <main className="mx-auto flex max-w-xl flex-col px-6 py-12 sm:py-16 animate-in fade-in duration-500">
+      <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
+        {/* Progress bar */}
+        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full transition-[width] duration-700 ease-out"
+            style={{ width: `${progress}%`, background: CORAL }}
+          />
+        </div>
+
+        {/* Anchor: property URL */}
+        {anchor && (
+          <div className="mt-5">
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">
+              Analysing
+            </p>
+            <p className="mt-1 truncate text-sm font-medium text-foreground" title={url}>
+              {anchor}
+            </p>
+          </div>
+        )}
+
+        <h1 className="mt-6 text-xl font-semibold tracking-tight sm:text-2xl">
+          Building your Roovr report
+        </h1>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Decoding agent jargon, estimating true costs and drafting your negotiation
+          strategy. This usually takes 60–90 seconds.
+        </p>
+
+        {/* Step indicators */}
+        <ul className="mt-6 space-y-3 text-sm">
+          {LOADING_STEPS.map((step) => {
+            const done = elapsed >= step.tickAt;
+            const active = !done && elapsed >= step.tickAt - 5;
+            return (
+              <li
+                key={step.label}
+                className={`flex items-center gap-3 transition-opacity duration-500 ${
+                  done || active ? "opacity-100" : "opacity-40"
+                }`}
+              >
+                <span
+                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                    done ? "bg-emerald-500/15" : "bg-muted"
+                  }`}
+                >
+                  {done ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-600" />
+                  ) : active ? (
+                    <Loader2 className="h-3 w-3 animate-spin" style={{ color: CORAL }} />
+                  ) : (
+                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                  )}
+                </span>
+                <span className={done ? "text-foreground" : "text-muted-foreground"}>
+                  {step.label}
+                </span>
+              </li>
+            );
+          })}
+          {finalising && (
+            <li className="flex items-center gap-3 animate-in fade-in duration-500">
+              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                <Loader2 className="h-4 w-4 animate-spin" style={{ color: CORAL }} />
+              </span>
+              <span className="text-foreground">Finalising your report…</span>
+            </li>
+          )}
+        </ul>
+
+        {/* Rotating tip */}
+        <div className="mt-8 rounded-xl bg-muted/60 p-4">
+          <p
+            key={tipIdx}
+            className="text-xs leading-relaxed text-muted-foreground animate-in fade-in slide-in-from-bottom-1 duration-500"
+          >
+            {LOADING_TIPS[tipIdx]}
+          </p>
         </div>
       </div>
-      <h1 className="mt-8 text-2xl font-semibold tracking-tight">{PROGRESS_MESSAGES[phase]}</h1>
-      <p className="mt-3 max-w-md text-sm text-muted-foreground">
-        Reading the description, decoding agent jargon, estimating costs and building your
-        negotiation strategy. Some listings take up to 60 seconds.
-      </p>
-      {url && (
-        <p className="mt-4 max-w-md truncate text-xs text-muted-foreground">{url}</p>
-      )}
-      <ul className="mt-8 space-y-2 text-left text-sm text-muted-foreground">
-        {[
-          "Fetching listing content",
-          "Spotting red flags",
-          "Calculating true cost",
-          "Drafting negotiation strategy",
-        ].map((step) => (
-          <li key={step} className="flex items-center gap-2">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
-            {step}
-          </li>
-        ))}
-      </ul>
     </main>
   );
 }
@@ -603,7 +688,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
       <SiteHeader />
 
       {access.level === "pass" && (
