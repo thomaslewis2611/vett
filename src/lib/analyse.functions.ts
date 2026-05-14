@@ -38,7 +38,7 @@ const analysisSchema = z.object({
     pricePerSqFt: z.number().describe("Price per sq ft in GBP, 0 if unknown"),
     daysOnMarket: z.number().describe("Days listed, estimate from 'added/reduced' date if visible, 0 if unknown"),
     councilTaxBand: z.string().describe("A-H letter, or 'Unknown'"),
-    estimatedStampDuty: z.number().describe("Estimated UK stamp duty in GBP for a second-home / additional property buyer"),
+    estimatedStampDuty: z.number().describe("Estimated UK stamp duty (SDLT) in GBP for a main residence buyer (England/NI standard rates, not the additional / second-home rate)"),
   }),
   epc: z.object({
     rating: z.string().nullable().describe("EPC band letter A-G, or null if not in listing"),
