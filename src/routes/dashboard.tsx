@@ -287,7 +287,26 @@ function DashboardPage() {
         </form>
 
         <section className="mt-12">
-          <h2 className="text-xl font-semibold tracking-tight">Your recent reports</h2>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-xl font-semibold tracking-tight">Your recent reports</h2>
+            {!expired && rows.length >= 2 && (
+              <Link
+                to="/compare"
+                className="inline-flex items-center"
+                style={{
+                  border: "1.5px solid #1A1108",
+                  borderRadius: 100,
+                  padding: "8px 16px",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "#1A1108",
+                  background: "transparent",
+                }}
+              >
+                Compare two properties →
+              </Link>
+            )}
+          </div>
           {rows.length === 0 ? (
             <div
               className="mt-4 p-8 text-center"
