@@ -1207,22 +1207,31 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
       })
     : Promise.resolve(null);
 
+  const crimePromise: Promise<CrimeRaw | null> = postcode
+    ? fetchCrimeStats(postcode, sourceForExtraction.slice(0, 200), process.env.ANTHROPIC_API_KEY).catch((err) => {
+        console.error("[crime] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
   if (cachedText) {
-    const [landRegistry, floodRisk, nearbySchools] = await Promise.all([
+    const [landRegistry, floodRisk, nearbySchools, crime] = await Promise.all([
       landRegistryPromise,
       floodRiskPromise,
       nearbySchoolsPromise,
+      crimePromise,
     ]);
-    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools };
+    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime };
   }
 
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  const [landRegistry, floodRisk, nearbySchools] = await Promise.all([
+  const [landRegistry, floodRisk, nearbySchools, crime] = await Promise.all([
     landRegistryPromise,
     floodRiskPromise,
     nearbySchoolsPromise,
+    crimePromise,
   ]);
 
   const notes: string[] = [];
