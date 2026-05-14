@@ -28,6 +28,26 @@ const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
 const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
 const ANALYSIS_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
+
+// Persist the current analysis_jobs id per listing URL so that when an
+// unauthenticated user clicks "Get Buyer Pass" / "Get this report" we can
+// pass it through Stripe metadata. The webhook then copies the analysis
+// into saved_analyses for the new user's email.
+function jobIdKey(url?: string | null) {
+  return url ? `roovrJobId:${url}` : null;
+}
+function rememberJobId(url: string | undefined | null, jobId: string) {
+  if (typeof window === "undefined") return;
+  const key = jobIdKey(url);
+  if (!key) return;
+  try { sessionStorage.setItem(key, jobId); } catch { /* ignore */ }
+}
+function recallJobId(url: string | undefined | null): string | undefined {
+  if (typeof window === "undefined") return undefined;
+  const key = jobIdKey(url);
+  if (!key) return undefined;
+  try { return sessionStorage.getItem(key) ?? undefined; } catch { return undefined; }
+}
 const ANALYSIS_CACHE_PREFIX = "roovr:analysis:";
 
 function analysisCacheKey(url?: string, text?: string, token?: string) {
@@ -265,6 +285,7 @@ function ResultsPage() {
       const { jobId } = await startJobFn({
         data: { url, text, accessToken: token ?? null, sessionJwt },
       });
+      rememberJobId(url, jobId);
 
       const startedAt = Date.now();
       // First poll after a short delay to give the worker a head start.
@@ -678,8 +699,15 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
   const checkoutFn = useServerFn(createCheckoutSession);
   const upgradeToPass = async (lurl?: string) => {
     try {
+      const targetUrl = lurl ?? listingUrl ?? "";
       const r = await checkoutFn({
-        data: { priceId: PRICE_PASS, listingUrl: lurl ?? listingUrl ?? "", tier: "pass" },
+        data: {
+          priceId: PRICE_PASS,
+          listingUrl: targetUrl,
+          tier: "pass",
+          analysisJobId: recallJobId(targetUrl),
+          source: "results_page_upgrade",
+        },
       });
       if (r?.url) window.location.href = r.url;
     } catch (e) {
@@ -1174,7 +1202,13 @@ function ExpiredPassGate({
     setLoading(true);
     try {
       const res = await checkoutFn({
-        data: { priceId: PRICE_PASS, listingUrl: listingUrl ?? "", tier: "pass" },
+        data: {
+          priceId: PRICE_PASS,
+          listingUrl: listingUrl ?? "",
+          tier: "pass",
+          analysisJobId: recallJobId(listingUrl),
+          source: "results_page_upgrade",
+        },
       });
       window.location.href = res.url;
     } catch (e) {
@@ -1441,7 +1475,15 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
     setLoadingTier(tier);
     try {
       const priceId = tier === "single" ? PRICE_SINGLE : PRICE_PASS;
-      const res = await checkoutFn({ data: { priceId, listingUrl: listingUrl ?? "", tier } });
+      const res = await checkoutFn({
+        data: {
+          priceId,
+          listingUrl: listingUrl ?? "",
+          tier,
+          analysisJobId: recallJobId(listingUrl),
+          source: "results_page_upgrade",
+        },
+      });
       // Persist current results URL in history so the browser back button from
       // Stripe returns to this exact page with the listing URL param intact.
       try {

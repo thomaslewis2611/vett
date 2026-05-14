@@ -126,10 +126,19 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       priceId: z.string().min(1).max(200),
       listingUrl: z.string().max(2000).optional().default(""),
       tier: z.enum(["single", "pass"]),
+      analysisJobId: z.string().uuid().optional(),
+      source: z.string().max(40).optional(),
     })
   )
   .handler(async ({ data }): Promise<{ url: string }> => {
     const stripe = getStripe();
+    const metadata: Record<string, string> = {
+      tier: data.tier,
+      listing_url: data.listingUrl,
+    };
+    if (data.analysisJobId) metadata.analysis_job_id = data.analysisJobId;
+    if (data.source) metadata.source = data.source;
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       currency: "gbp",
@@ -139,10 +148,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       customer_creation: "always",
       success_url: `${SITE_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}&tier=${data.tier}`,
       cancel_url: `${SITE_URL}/pricing`,
-      metadata: {
-        tier: data.tier,
-        listing_url: data.listingUrl,
-      },
+      metadata,
     });
     if (!session.url) throw new Error("Stripe did not return a checkout URL");
     return { url: session.url };
@@ -159,6 +165,7 @@ export const verifyCheckoutSession = createServerFn({ method: "POST" })
       email: string | null;
       token: string | null;
       listingUrl: string | null;
+      hadAnalysisJob: boolean;
     }> => {
       const stripe = getStripe();
       const session = await stripe.checkout.sessions.retrieve(data.sessionId);
@@ -166,6 +173,7 @@ export const verifyCheckoutSession = createServerFn({ method: "POST" })
       const tier = (session.metadata?.tier as "single" | "pass" | undefined) ?? null;
       const email = session.customer_details?.email ?? null;
       const listingUrl = session.metadata?.listing_url ?? null;
+      const hadAnalysisJob = Boolean(session.metadata?.analysis_job_id);
 
       let token: string | null = null;
       if (paid && tier === "single") {
@@ -177,7 +185,7 @@ export const verifyCheckoutSession = createServerFn({ method: "POST" })
         token = row?.token ?? null;
       }
 
-      return { paid, tier, email, token, listingUrl };
+      return { paid, tier, email, token, listingUrl, hadAnalysisJob };
     }
   );
 
