@@ -182,6 +182,7 @@ const searchSchema = z.object({
   url: z.string().optional(),
   text: z.string().optional(),
   token: z.string().optional(),
+  saved_id: z.string().optional(),
 });
 
 
