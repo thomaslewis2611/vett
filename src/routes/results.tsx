@@ -748,7 +748,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
   };
 
   return (
-    <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
+    <div className="flex min-h-screen flex-col bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
       <SiteHeader />
 
       {access.level === "pass" && (
