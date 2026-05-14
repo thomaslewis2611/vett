@@ -73,6 +73,7 @@ const analysisSchema = z.object({
       distanceMiles: z.number(),
     })),
     unavailable: z.boolean().nullable().optional(),
+    aiSourced: z.boolean().nullable().optional(),
   }).nullable().optional(),
   crime: z.object({
     totalCrimes: z.number(),
