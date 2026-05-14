@@ -70,8 +70,20 @@ function calcMainResidenceSDLT(price: number): number {
   return Math.round(tax);
 }
 
+function calcFirstTimeBuyerSDLT(price: number): number {
+  if (!price || price <= 0) return 0;
+  // FTB relief only applies up to £625,000. Above that, standard main residence rates apply.
+  if (price > 625_000) return calcMainResidenceSDLT(price);
+  if (price <= 425_000) return 0;
+  return Math.round((price - 425_000) * 0.05);
+}
+
+function calcAdditionalPropertySDLT(price: number): number {
+  if (!price || price <= 0) return 0;
+  return calcMainResidenceSDLT(price) + Math.round(price * 0.03);
+}
+
 function pickStampDuty(a: AnalysisResult): number {
-  // Always recompute using main residence rate to be consistent.
   return calcMainResidenceSDLT(Number(a.property?.price ?? 0));
 }
 
