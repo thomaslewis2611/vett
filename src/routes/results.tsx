@@ -408,7 +408,34 @@ function BlockedFallback({ url, message }: { url?: string; message: string }) {
   );
 }
 
+class SafeSection extends Component<{ children: ReactNode; name?: string }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(error: unknown) {
+    console.error(`[SafeSection] ${this.props.name ?? "section"} failed to render`, error);
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
+const PROGRESS_MESSAGES = [
+  "Fetching listing...",
+  "Analysing property...",
+  "Almost done...",
+];
+
 function LoadingState({ url }: { url?: string }) {
+  const [phase, setPhase] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPhase((p) => Math.min(p + 1, PROGRESS_MESSAGES.length - 1));
+    }, 10_000);
+    return () => clearInterval(id);
+  }, []);
   return (
     <main className="mx-auto flex max-w-xl flex-col items-center px-6 py-24 text-center">
       <div className="relative">
@@ -423,10 +450,10 @@ function LoadingState({ url }: { url?: string }) {
           <Loader2 className="h-7 w-7 animate-spin text-primary-foreground" />
         </div>
       </div>
-      <h1 className="mt-8 text-2xl font-semibold tracking-tight">Analysing the listing…</h1>
+      <h1 className="mt-8 text-2xl font-semibold tracking-tight">{PROGRESS_MESSAGES[phase]}</h1>
       <p className="mt-3 max-w-md text-sm text-muted-foreground">
         Reading the description, decoding agent jargon, estimating costs and building your
-        negotiation strategy. This usually takes 15–30 seconds.
+        negotiation strategy. Some listings take up to 60 seconds.
       </p>
       {url && (
         <p className="mt-4 max-w-md truncate text-xs text-muted-foreground">{url}</p>
