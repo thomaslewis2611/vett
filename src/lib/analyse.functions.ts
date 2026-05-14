@@ -840,10 +840,13 @@ async function hasFullAccess(opts: {
         if (email) {
           const { data: row } = await supabaseAdmin
             .from("buyer_pass_users")
-            .select("email")
+            .select("email, expires_at")
             .ilike("email", email)
             .maybeSingle();
-          if (row) return true;
+          if (row) {
+            const expiresAt = (row as { expires_at: string | null }).expires_at;
+            if (!expiresAt || new Date(expiresAt).getTime() > Date.now()) return true;
+          }
         }
       } catch {
         /* ignore */
