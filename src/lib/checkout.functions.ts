@@ -185,11 +185,13 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
     const email = data.email.trim().toLowerCase();
     const { data: bp } = await supabaseAdmin
       .from("buyer_pass_users")
-      .select("email")
+      .select("email, expires_at")
       .ilike("email", email)
       .maybeSingle();
 
     let redirectTo = `${SITE_URL}/dashboard`;
+    // Treat any buyer_pass_users row (active OR expired) as "found" so the
+    // user can sign in and see the renewal state on the dashboard.
     let found = Boolean(bp);
 
     if (!found) {
