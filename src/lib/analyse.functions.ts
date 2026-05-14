@@ -1652,7 +1652,7 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
     : Promise.resolve(null);
 
   const nearbySchoolsPromise: Promise<NearbySchoolsRaw | null> = postcode
-    ? fetchNearbySchools(postcode).catch((err) => {
+    ? fetchNearbySchools(postcode, sourceForExtraction.slice(0, 200), process.env.ANTHROPIC_API_KEY).catch((err) => {
         console.error("[nearbySchools] lookup failed:", err);
         return null;
       })
