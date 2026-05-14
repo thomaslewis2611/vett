@@ -15,6 +15,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
+import { DisclaimerBar } from "@/components/disclaimer-bar";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
 import { analyseListing } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
@@ -263,6 +264,7 @@ function ResultsPage() {
             Analyse a property
           </Link>
         </main>
+        <DisclaimerBar />
         <SiteFooter />
       </div>
     );
@@ -273,6 +275,7 @@ function ResultsPage() {
       <div className="min-h-screen bg-background">
         <SiteHeader />
         <LoadingState url={url} />
+        <DisclaimerBar />
         <SiteFooter />
       </div>
     );
@@ -312,6 +315,7 @@ function ResultsPage() {
             </div>
           )}
         </main>
+        <DisclaimerBar />
         <SiteFooter />
       </div>
     );
@@ -651,7 +655,8 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
         </section>
       </main>
 
-      <SiteFooter />
+      <DisclaimerBar />
+        <SiteFooter />
     </div>
   );
 }

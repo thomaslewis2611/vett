@@ -333,8 +333,8 @@ export function SiteFooter() {
         <div className="flex gap-6" style={{ fontSize: 13, color: "#888780" }}>
           <Link to="/pricing" className="hover:text-[#FFFDF9] transition-colors">Pricing</Link>
           <Link to="/about" className="hover:text-[#FFFDF9] transition-colors">About</Link>
-          <a href="#" className="hover:text-[#FFFDF9] transition-colors">Privacy</a>
-          <a href="#" className="hover:text-[#FFFDF9] transition-colors">Terms</a>
+          <Link to="/privacy" className="hover:text-[#FFFDF9] transition-colors">Privacy</Link>
+          <Link to="/terms" className="hover:text-[#FFFDF9] transition-colors">Terms</Link>
         </div>
       </div>
     </footer>
