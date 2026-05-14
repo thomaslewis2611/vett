@@ -229,8 +229,29 @@ function ResultsPage() {
     queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
     queryFn: async (): Promise<AnalysisResult> => {
       if (saved_id) {
-        const r = await getSavedFn({ data: { id: saved_id } });
-        if (!r.found) throw new Error("Saved report not found or no longer accessible.");
+        // Wait for auth session to hydrate so the bearer token is attached.
+        const { data: sess } = await supabase.auth.getSession();
+        if (!sess.session) {
+          // Brief wait + one re-check; auth restore can lag on first paint.
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        console.log("[results] loading saved report", { saved_id });
+        let r = await getSavedFn({ data: { id: saved_id } });
+        if (!r.found) {
+          console.warn("[results] saved report not found on first try, retrying in 1s", {
+            saved_id,
+            errorMessage: (r as { errorMessage?: string }).errorMessage,
+          });
+          await new Promise((res) => setTimeout(res, 1000));
+          r = await getSavedFn({ data: { id: saved_id } });
+        }
+        if (!r.found) {
+          console.error("[results] saved report unavailable after retry", {
+            saved_id,
+            errorMessage: (r as { errorMessage?: string }).errorMessage,
+          });
+          throw new Error("SAVED_NOT_FOUND");
+        }
         return r.analysis;
       }
       const { data: sess } = await supabase.auth.getSession();
