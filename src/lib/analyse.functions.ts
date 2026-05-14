@@ -785,7 +785,10 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     const ctrl = new AbortController();
     const t = setTimeout(() => ctrl.abort(), 10_000);
     const res = await fetch(url, {
-      headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" },
+      headers: {
+        Accept: "application/json",
+        "User-Agent": "Roovr/1.0 (roovr.co; hello@roovr.co)",
+      },
       signal: ctrl.signal,
     });
     clearTimeout(t);
