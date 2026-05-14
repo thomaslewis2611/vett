@@ -41,35 +41,41 @@ function PricingPage() {
           <Plan
             title="Single report"
             price="£4.99"
-            cadence="one-off"
+            cadence="One-off payment"
             cta="Buy a report"
             features={[
-              "Full analysis for 1 property",
-              "All red flags",
-              "True cost breakdown",
-              "Viewing questions tailored to the listing",
-              "Negotiation strategy",
+              "Full analysis for one property",
+              "All red flags and costs",
+              "Viewing questions and negotiation strategy",
             ]}
-            footnote="No AI chat. No saving or comparing."
+            footnote="No AI chat, no schools, no flood risk."
           />
           <Plan
             title="Buyer Pass"
-            price="£29.99"
-            cadence="one-time"
+            price="£24.99"
+            cadence="90-day pass · one-off payment"
             cta="Get Buyer Pass"
             highlight
+            headline="Your entire property search, covered"
             features={[
-              "Unlimited analyses for your entire property search",
-              "All red flags, costs, viewing questions & negotiation strategy",
+              "Unlimited analyses for 90 days",
+              "All red flags, costs and negotiation",
               "AI chat on every property",
-              "Save & compare up to 50 properties",
+              "Flood risk and nearby schools",
+              "Save and compare reports",
+              "Report emailed to you",
             ]}
-            subnote="Average buyer analyses 8 properties — works out at £3.75 each."
-            footnote="One-time payment for your entire property search — not a subscription."
+            subnote="Average search takes 8–12 weeks — 90 days covers it comfortably."
+            footnote="One-off payment. Access ends 90 days after purchase."
           />
         </div>
 
-        <div className="mt-16 text-center text-sm text-muted-foreground">
+        <div className="mt-10 text-center text-sm" style={{ color: "#5F5E5A" }}>
+          Buyer Pass access expires 90 days after purchase. Renew at any time
+          for £24.99.
+        </div>
+
+        <div className="mt-12 text-center text-sm text-muted-foreground">
           Need it for your team or agency?{" "}
           <a href="mailto:hello@roovr.co.uk" className="text-primary hover:underline">
             Get in touch
