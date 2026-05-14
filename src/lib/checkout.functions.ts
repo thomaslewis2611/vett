@@ -205,7 +205,7 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
         .maybeSingle();
       if (sr) {
         found = true;
-        redirectTo = `${SITE_URL}/my-report`;
+        redirectTo = `${SITE_URL}/my-reports`;
       }
     }
 
@@ -228,17 +228,51 @@ export const saveAnalysisForUser = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ data }): Promise<{ ok: boolean }> => {
-    // Verify the user has an ACTIVE (non-expired) Buyer Pass before saving
+    const email = data.email.toLowerCase();
+
+    // Allow if user has an ACTIVE Buyer Pass...
     const { data: bp } = await supabaseAdmin
       .from("buyer_pass_users")
       .select("email, expires_at")
-      .ilike("email", data.email)
+      .ilike("email", email)
       .maybeSingle();
-    if (!bp) return { ok: false };
-    const expiresAt = (bp as { expires_at: string | null }).expires_at;
-    if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) return { ok: false };
+    let allowed = false;
+    if (bp) {
+      const exp = (bp as { expires_at: string | null }).expires_at;
+      if (!exp || new Date(exp).getTime() > Date.now()) allowed = true;
+    }
+
+    // ...OR an active Single Report token for this email
+    if (!allowed) {
+      const { data: sr } = await supabaseAdmin
+        .from("single_report_tokens")
+        .select("token, expires_at")
+        .ilike("user_email", email)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (sr) {
+        const exp = (sr as { expires_at: string }).expires_at;
+        if (!exp || new Date(exp).getTime() > Date.now()) allowed = true;
+      }
+    }
+
+    if (!allowed) return { ok: false };
+
+    // Avoid duplicate inserts for the same (email, listing_url)
+    if (data.listingUrl) {
+      const { data: existing } = await supabaseAdmin
+        .from("saved_analyses")
+        .select("id")
+        .ilike("user_email", email)
+        .eq("listing_url", data.listingUrl)
+        .limit(1)
+        .maybeSingle();
+      if (existing) return { ok: true };
+    }
+
     await supabaseAdmin.from("saved_analyses").insert({
-      user_email: data.email.toLowerCase(),
+      user_email: email,
       listing_url: data.listingUrl ?? null,
       analysis_json: data.analysis as never,
     });

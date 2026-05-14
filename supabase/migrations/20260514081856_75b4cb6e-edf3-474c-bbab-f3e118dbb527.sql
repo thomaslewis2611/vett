@@ -1,0 +1,1 @@
+ALTER TABLE public.single_report_tokens ADD COLUMN IF NOT EXISTS analysis_json jsonb;

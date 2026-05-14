@@ -210,7 +210,7 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
             </div>
           </div>
           <Link
-            to={hasPass ? "/dashboard" : "/my-report"}
+            to={hasPass ? "/dashboard" : "/my-reports"}
             onClick={() => setOpen(false)}
             className="flex items-center gap-2 px-3 py-2 transition-colors hover:bg-[#F1EFE8]"
             style={{ fontSize: 13, color: "#1A1108" }}
@@ -268,7 +268,7 @@ export function SiteHeader() {
           {loggedIn ? (
             <>
               <Link
-                to={hasPass ? "/dashboard" : "/my-report"}
+                to={hasPass ? "/dashboard" : "/my-reports"}
                 className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
                 style={{
                   background: "#1A1108",
