@@ -2,6 +2,8 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import type { AnalysisResult } from "@/lib/mock-analysis";
 
 const SITE_URL = "https://roovr.co";
 const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
@@ -241,4 +243,22 @@ export const saveAnalysisForUser = createServerFn({ method: "POST" })
       analysis_json: data.analysis as never,
     });
     return { ok: true };
+  });
+
+export const getSavedAnalysis = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(z.object({ id: z.string().uuid() }))
+  .handler(async ({ data, context }) => {
+    const { supabase } = context;
+    const { data: row, error } = await supabase
+      .from("saved_analyses")
+      .select("id, listing_url, analysis_json, created_at")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (error || !row) return { found: false as const };
+    return {
+      found: true as const,
+      listingUrl: (row as { listing_url: string | null }).listing_url,
+      analysis: (row as unknown as { analysis_json: AnalysisResult }).analysis_json,
+    };
   });

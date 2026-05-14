@@ -19,7 +19,7 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
 import { analyseListing } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
-import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser } from "@/lib/checkout.functions";
+import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser, getSavedAnalysis } from "@/lib/checkout.functions";
 import { validateSingleReportToken, checkBuyerPassByEmail } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -182,6 +182,7 @@ const searchSchema = z.object({
   url: z.string().optional(),
   text: z.string().optional(),
   token: z.string().optional(),
+  saved_id: z.string().optional(),
 });
 
 
@@ -201,17 +202,23 @@ export const Route = createFileRoute("/results")({
 });
 
 function ResultsPage() {
-  const { url, text, token } = Route.useSearch();
+  const { url, text, token, saved_id } = Route.useSearch();
   const navigate = useNavigate();
   const analyseFn = useServerFn(analyseListing);
+  const getSavedFn = useServerFn(getSavedAnalysis);
 
-  const hasInput = Boolean(url || text);
+  const hasInput = Boolean(url || text || saved_id);
 
-  const cached = readCachedAnalysis(url, text, token);
+  const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
 
   const query = useQuery({
-    queryKey: ["analysis", url ?? "", text ?? "", token ?? ""],
-    queryFn: async () => {
+    queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
+    queryFn: async (): Promise<AnalysisResult> => {
+      if (saved_id) {
+        const r = await getSavedFn({ data: { id: saved_id } });
+        if (!r.found) throw new Error("Saved report not found or no longer accessible.");
+        return r.analysis;
+      }
       const { data: sess } = await supabase.auth.getSession();
       const sessionJwt = sess.session?.access_token ?? null;
       const result = await analyseFn({
@@ -297,7 +304,7 @@ function ResultsPage() {
     );
   }
 
-  return <ReportView analysis={query.data!} listingUrl={url} token={token} />;
+  return <ReportView analysis={query.data!} listingUrl={url} token={token} fromSaved={Boolean(saved_id)} />;
 }
 
 function BlockedFallback({ url, message }: { url?: string; message: string }) {
@@ -389,20 +396,20 @@ function LoadingState({ url }: { url?: string }) {
   );
 }
 
-function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResult; listingUrl?: string; token?: string }) {
+function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean }) {
   const access = useAccess(listingUrl, token);
   const unlocked = access.level !== "none";
   const showChat = access.level === "pass";
 
-  // Auto-save analysis for Buyer Pass users
+  // Auto-save analysis for Buyer Pass users (skip when loaded from a saved report)
   const saveFn = useServerFn(saveAnalysisForUser);
   const savedRef = useRef(false);
   useEffect(() => {
-    if (showChat && access.email && !savedRef.current && listingUrl) {
+    if (!fromSaved && showChat && access.email && !savedRef.current && listingUrl) {
       savedRef.current = true;
       saveFn({ data: { email: access.email, listingUrl, analysis: a } }).catch(() => { /* ignore */ });
     }
-  }, [showChat, access.email, listingUrl, a, saveFn]);
+  }, [showChat, access.email, listingUrl, a, saveFn, fromSaved]);
 
   const [sdMode, setSdMode] = useState<StampDutyMode>("main");
   const stampDuty = calcStampDuty(a.property.price, sdMode);
