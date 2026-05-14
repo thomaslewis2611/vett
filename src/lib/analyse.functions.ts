@@ -2586,6 +2586,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         ? {
             schools: schoolsRaw.schools ?? [],
             unavailable: schoolsRaw.unavailable ?? null,
+            aiSourced: schoolsRaw.aiSourced ?? null,
           }
         : null;
 
