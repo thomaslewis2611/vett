@@ -1751,3 +1751,106 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
       };
     }
   });
+
+// ---------------- Manual EPC analysis ----------------
+// Generates an EPC commentary for a user-entered band when the listing
+// didn't show one. Optionally patches the saved_analyses row so the EPC
+// data persists for paying users without re-running the main analysis.
+const epcSchema = z.object({
+  rating: z.string(),
+  estimatedAnnualCost: z.string().nullable(),
+  commentary: z.string(),
+  potentialRating: z.string().nullable().optional(),
+  score: z.number().nullable().optional(),
+  estimatedAnnualEnergyCost: z.string().nullable().optional(),
+});
+
+export const analyseEpcRating = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      epcRating: z.string().regex(/^[A-Ga-g]$/),
+      propertyType: z.string().max(120).nullable().optional(),
+      sqft: z.number().nullable().optional(),
+      address: z.string().max(500).nullable().optional(),
+      price: z.number().nullable().optional(),
+      email: z.string().email().max(320).nullable().optional(),
+      listingUrl: z.string().max(2000).nullable().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
+
+    const rating = data.epcRating.toUpperCase();
+    const propertyType = data.propertyType ?? "property";
+    const sqft = data.sqft && data.sqft > 0 ? `${data.sqft}` : "unknown";
+    const address = data.address ?? "this address";
+    const priceStr =
+      data.price && data.price > 0 ? data.price.toLocaleString("en-GB") : "unknown";
+
+    const prompt = `Generate an EPC analysis for a ${propertyType} at ${address} priced at £${priceStr} with ${sqft} sq ft, rated EPC band ${rating}.
+
+Return ONLY valid JSON (no prose, no markdown fences) matching exactly this shape:
+{
+  "rating": "${rating}",
+  "estimatedAnnualCost": "£X,XXX - £X,XXX",
+  "commentary": "3-4 sentences: what this rating means for running costs at this property size, what improvement to the next band would cost and save, mortgage lender implications if below C, whether this rating is typical for this property type and age."
+}`;
+
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 800,
+      system:
+        "You are a UK energy performance specialist. Return ONLY a single valid JSON object. Use realistic 2026 UK energy prices and typical retrofit costs.",
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw =
+      message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+
+    let parsed: z.infer<typeof epcSchema>;
+    try {
+      parsed = epcSchema.parse(JSON.parse(cleaned));
+    } catch (err) {
+      console.error("[analyseEpcRating] parse failed:", err, raw);
+      throw new Error("Could not parse EPC analysis");
+    }
+
+    const epcOut = {
+      rating,
+      score: parsed.score ?? null,
+      potentialRating: parsed.potentialRating ?? null,
+      estimatedAnnualEnergyCost:
+        parsed.estimatedAnnualEnergyCost ?? parsed.estimatedAnnualCost ?? null,
+      commentary: parsed.commentary,
+    };
+
+    // Best-effort patch into saved_analyses (paying users only — RLS bypass via admin).
+    if (data.email && data.listingUrl) {
+      try {
+        const { data: rows } = await supabaseAdmin
+          .from("saved_analyses")
+          .select("id, analysis_json, created_at")
+          .ilike("user_email", data.email)
+          .eq("listing_url", data.listingUrl)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const row = rows?.[0];
+        if (row) {
+          const merged = { ...((row.analysis_json as any) ?? {}), epc: epcOut };
+          await supabaseAdmin
+            .from("saved_analyses")
+            .update({ analysis_json: merged })
+            .eq("id", row.id as string);
+        }
+      } catch (err) {
+        console.error("[analyseEpcRating] save failed:", err);
+      }
+    }
+
+    return { ok: true as const, epc: epcOut };
+  });
