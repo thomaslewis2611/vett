@@ -414,15 +414,17 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
   const unlocked = access.level !== "none";
   const showChat = access.level === "pass";
 
-  // Auto-save analysis for Buyer Pass users (skip when loaded from a saved report)
+  // Auto-save analysis for signed-in paying users (Buyer Pass or Single Report).
+  // Skip when this analysis was loaded from a saved report.
   const saveFn = useServerFn(saveAnalysisForUser);
   const savedRef = useRef(false);
   useEffect(() => {
-    if (!fromSaved && showChat && access.email && !savedRef.current && listingUrl) {
+    const eligible = access.level === "pass" || access.level === "single";
+    if (!fromSaved && eligible && access.email && !savedRef.current && listingUrl) {
       savedRef.current = true;
       saveFn({ data: { email: access.email, listingUrl, analysis: a } }).catch(() => { /* ignore */ });
     }
-  }, [showChat, access.email, listingUrl, a, saveFn, fromSaved]);
+  }, [access.level, access.email, listingUrl, a, saveFn, fromSaved]);
 
   const [sdMode, setSdMode] = useState<StampDutyMode>("main");
   const stampDuty = calcStampDuty(a.property.price, sdMode);
