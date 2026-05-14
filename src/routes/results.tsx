@@ -202,17 +202,23 @@ export const Route = createFileRoute("/results")({
 });
 
 function ResultsPage() {
-  const { url, text, token } = Route.useSearch();
+  const { url, text, token, saved_id } = Route.useSearch();
   const navigate = useNavigate();
   const analyseFn = useServerFn(analyseListing);
+  const getSavedFn = useServerFn(getSavedAnalysis);
 
-  const hasInput = Boolean(url || text);
+  const hasInput = Boolean(url || text || saved_id);
 
-  const cached = readCachedAnalysis(url, text, token);
+  const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
 
   const query = useQuery({
-    queryKey: ["analysis", url ?? "", text ?? "", token ?? ""],
-    queryFn: async () => {
+    queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
+    queryFn: async (): Promise<AnalysisResult> => {
+      if (saved_id) {
+        const r = await getSavedFn({ data: { id: saved_id } });
+        if (!r.found) throw new Error("Saved report not found or no longer accessible.");
+        return r.analysis;
+      }
       const { data: sess } = await supabase.auth.getSession();
       const sessionJwt = sess.session?.access_token ?? null;
       const result = await analyseFn({
