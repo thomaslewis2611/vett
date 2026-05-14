@@ -754,7 +754,7 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
         {!unlocked && (
           <>
             <SafeSection name="viewingChecklist">
-              <ViewingChecklistSection analysis={a} />
+              <ViewingChecklistSection analysis={a} unlocked={false} />
             </SafeSection>
             <SafeSection name="renovationCosts">
               <RenovationCostsSection analysis={a} unlocked={false} />
