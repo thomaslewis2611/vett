@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowRight, Check, Link2, Sparkles, FileText } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
@@ -26,21 +26,21 @@ export const Route = createFileRoute("/")({
 function Index() {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
-  const [showPaste, setShowPaste] = useState(false);
-  const [pasted, setPasted] = useState("");
 
   const handleAnalyse = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmedUrl = url.trim();
-    const trimmedText = pasted.trim();
-    if (!trimmedUrl && !trimmedText) return;
+    if (!trimmedUrl) return;
     navigate({
       to: "/results",
-      search: {
-        url: trimmedUrl || undefined,
-        text: trimmedText || undefined,
-      },
+      search: { url: trimmedUrl },
     });
+  };
+
+  const scrollToTop = () => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   return (
@@ -112,35 +112,7 @@ function Index() {
             </button>
           </form>
 
-          {showPaste ? (
-            <div
-              className="mx-auto mt-3 max-w-2xl"
-              style={{
-                border: "0.5px solid rgba(26,17,8,0.12)",
-                borderRadius: 12,
-                background: "#FFFDF9",
-                padding: 12,
-              }}
-            >
-              <textarea
-                value={pasted}
-                onChange={(e) => setPasted(e.target.value)}
-                placeholder="Or paste the full listing text here…"
-                rows={5}
-                className="w-full resize-none bg-transparent p-2 outline-none"
-                style={{ fontSize: 14, color: "#1A1108" }}
-              />
-            </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowPaste(true)}
-              className="mt-3 transition-colors"
-              style={{ fontSize: 12, color: "#888780" }}
-            >
-              Or paste listing text instead
-            </button>
-          )}
+
 
           <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             {[
@@ -251,14 +223,14 @@ function Index() {
       <section style={{ background: "#1A1108", padding: "48px 32px" }}>
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
           <h2 style={{ color: "#FFFDF9", fontSize: 32, fontWeight: 500, letterSpacing: "-1px" }}>
-            Try it on your <span style={{ color: "#D85A30" }}>next viewing</span>
+            Ready to <span style={{ color: "#D85A30" }}>rove</span> your next listing?
           </h2>
           <p style={{ color: "#888780", fontSize: 15, maxWidth: 520 }}>
-            First analysis is on us. See the full report before you spend a penny.
+            Paste any Rightmove or Zoopla link and get your full analysis in 30 seconds.
           </p>
-          <Link
-            to="/results"
-            search={{ url: "https://www.rightmove.co.uk/properties/example" }}
+          <button
+            type="button"
+            onClick={scrollToTop}
             className="inline-flex items-center gap-2 transition-colors hover:bg-[#993C1D]"
             style={{
               background: "#D85A30",
@@ -269,9 +241,9 @@ function Index() {
               padding: "12px 24px",
             }}
           >
-            See a sample report
+            Analyse a property
             <ArrowRight className="h-4 w-4" />
-          </Link>
+          </button>
         </div>
       </section>
 
