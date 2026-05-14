@@ -3597,10 +3597,11 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
   };
 
   const features = [
-    "Flood risk — Environment Agency data",
-    "Nearby schools with Ofsted ratings",
-    "AI chat — ask anything about this property",
     "Unlimited analyses for 90 days",
+    "AI chat — ask anything about this property",
+    "Seller motivation score",
+    "Renovation cost estimator",
+    "Compare properties side by side",
     "All reports saved to your account",
   ];
 
