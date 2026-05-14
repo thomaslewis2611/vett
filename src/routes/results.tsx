@@ -121,6 +121,7 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
   });
   const validateToken = useServerFn(validateSingleReportToken);
   const checkPass = useServerFn(checkBuyerPassByEmail);
+  const checkSingleByEmail = useServerFn(getSingleReportByEmail);
 
   useEffect(() => {
     let cancelled = false;
@@ -145,7 +146,19 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
         }
       } catch { /* ignore */ }
 
-      // 2. Single token
+      // 2. Signed-in user with an active Single Report token (any device)
+      if (signedInEmail) {
+        try {
+          const r = await checkSingleByEmail({ data: { email: signedInEmail } });
+          if (cancelled) return;
+          if (r.token) {
+            setState({ level: "single", email: signedInEmail, expiresAt: r.expiresAt, loading: false });
+            return;
+          }
+        } catch { /* ignore */ }
+      }
+
+      // 3. Single token via URL (legacy / fresh post-payment link)
       if (token) {
         try {
           const r = await validateToken({ data: { token, listingUrl: listingUrl ?? null } });
@@ -157,7 +170,7 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
         } catch { /* ignore */ }
       }
 
-      // 3. Signed-in user with expired pass: surface the expired state
+      // 4. Signed-in user with expired pass: surface the expired state
       if (expiredFromPass) {
         if (!cancelled) {
           setState({
@@ -173,7 +186,7 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
       if (!cancelled) setState({ level: "none", email: null, expiresAt: null, loading: false });
     })();
     return () => { cancelled = true; };
-  }, [listingUrl, token, validateToken, checkPass]);
+  }, [listingUrl, token, validateToken, checkPass, checkSingleByEmail]);
 
   return state;
 }
