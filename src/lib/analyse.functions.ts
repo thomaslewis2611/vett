@@ -47,22 +47,7 @@ const analysisSchema = z.object({
     estimatedAnnualEnergyCost: z.string().nullable().describe("e.g. '£1,800 per year', or null"),
     commentary: z.string().describe("2-3 sentences: what this rating means for THIS property — typical annual energy bills for this size+rating, cost+saving of upgrading one band, mortgage lender implications if below D"),
   }).nullable(),
-  priceHistory: z.object({
-    entries: z.array(z.object({
-      date: z.string(),
-      price: z.number(),
-      event: z.enum(["sold", "listed", "reduced", "relisted"]),
-    })).nullable(),
-    firstSalePrice: z.number().nullable(),
-    firstSaleDate: z.string().nullable(),
-    totalAppreciation: z.number().nullable().describe("% change from first sold price to current asking"),
-    annualGrowthRate: z.number().nullable().describe("% per year compounded from first sale to now"),
-    yearsHeld: z.number().nullable(),
-    commentary: z.string().describe("2-3 sentences: vs UK ~5%/yr, aggressive pricing concerns, relist gaps, etc."),
-    source: z.enum(["land_registry"]).nullable().optional(),
-    nearbyMode: z.boolean().nullable().optional(),
-    scotland: z.boolean().nullable().optional(),
-  }).nullable(),
+  priceHistory: z.unknown().nullable().optional(),
   floodRisk: z.object({
     riversAndSea: z.string().nullable(),
     surfaceWater: z.string().nullable(),
@@ -198,7 +183,7 @@ You must:
 - IMPORTANT: Only identify a property as an auction listing if the listing text explicitly contains one or more of these exact terms: auction, auctioneer, lot number, reserve price, unconditional exchange, sold prior to auction, online auction. Do NOT infer auction status from: guide price, offers over, offers in excess of, or any other pricing language. These are standard estate agent terms used on normal listings and must never be interpreted as auction indicators. If you incorrectly flag a non-auction property as an auction listing, this causes serious harm to users who may make incorrect financial decisions. When in doubt, do not flag as auction.
 - Tailor the 8 viewing questions to specific things in this listing, not generic boilerplate.
 - EPC: Look for the pattern "EPC RATING EXTRACTED: [letter]" at the top of the listing content — this is the confirmed EPC rating, always use it as epc.rating. Also look for variations like "EPC rating D", "EPC Rating: D", or "* EPC rating D" in the description text. If the listing content begins with a line like "EXTRACTED FROM PAGE HTML — EPC rating: X", trust that value. If the listing content contains council tax band information, look in the same section for an EPC rating — on Rightmove they appear together (common format: "Council Tax band X" alongside "EPC rating Y", often in an "Additional Property Information" bullet list). Do NOT guess or invent an EPC rating. If the listing genuinely does not show one, return epc: null. If you find one, populate rating, score, potentialRating and estimatedAnnualEnergyCost where visible (otherwise null), and ALWAYS write a 2-3 sentence commentary tailored to THIS property's size and rating: typical annual energy bills for a property this size at this rating, the cost and saving of upgrading to the next band, and mortgage lender implications if rated below D.
-- PRICE HISTORY: If "PRICE HISTORY DATA:" is provided at the top of the listing content, use it to populate the priceHistory field. Each line lists "[event] [date]: £[price]". Set entries (sorted oldest-first), firstSalePrice / firstSaleDate from the earliest sold (or earliest listed if no sold) entry, yearsHeld = years between firstSaleDate and today, totalAppreciation = ((currentAskingPrice - firstSalePrice) / firstSalePrice * 100) rounded to 1 decimal, annualGrowthRate = (((currentAskingPrice / firstSalePrice) ^ (1 / yearsHeld)) - 1) * 100 rounded to 1 decimal. Write a 2-3 sentence commentary comparing growth to the UK average (~5%/yr), flagging aggressive pricing if annualGrowthRate exceeds 8%/yr, flagging negative appreciation if price has fallen, and flagging if there is a gap of more than 6 months between listing/relisting events. If no PRICE HISTORY DATA is provided, set priceHistory to null. NEVER fabricate historical prices.
+- PRICE HISTORY: Always set priceHistory to null. Do not include any historical sale data.
 - FLOOD RISK: If "ENVIRONMENT AGENCY FLOOD RISK" data is provided in the listing content, populate floodRisk with EXACTLY those values for riversAndSea, surfaceWater, reservoir, groundwater and overallRisk. Set autoRedFlag=true ONLY if Rivers/Sea risk is "High". Write a 2-3 sentence commentary explaining the practical implications: buildings insurance cost, mortgage lender concerns, what the buyer should do. For High risk specifically mention that some insurers refuse cover or charge 3-5x standard premiums and that some mortgage lenders require flood resilience measures as a condition of lending. If no flood data is provided, set floodRisk to null.
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
 
@@ -215,7 +200,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "scoreReasons": { "valueForMoney": string, "locationQuality": string, "listingTransparency": string, "marketTiming": string, "riskLevel": string, "resalePotential": string },
   "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
   "epc": { "rating": string|null, "score": number|null, "potentialRating": string|null, "estimatedAnnualEnergyCost": string|null, "commentary": string } | null,
-  "priceHistory": { "entries": [{ "date": string, "price": number, "event": "sold"|"listed"|"reduced"|"relisted" }]|null, "firstSalePrice": number|null, "firstSaleDate": string|null, "totalAppreciation": number|null, "annualGrowthRate": number|null, "yearsHeld": number|null, "commentary": string } | null,
+  "priceHistory": null,
   "floodRisk": { "riversAndSea": "Very Low"|"Low"|"Medium"|"High"|null, "surfaceWater": "Very Low"|"Low"|"Medium"|"High"|null, "reservoir": boolean|null, "groundwater": "Very Low"|"Low"|"Medium"|"High"|null, "overallRisk": "Very Low"|"Low"|"Medium"|"High"|null, "commentary": string, "autoRedFlag": boolean } | null,
   "areaContext": { "avgPricePerSqFtArea": number|null, "avgSoldPriceArea": number|null, "priceVsAreaPercent": number|null, "areaDescription": string, "comparableNote": string },
   "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ] (3-8 items),
@@ -948,12 +933,7 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
   const scotland = isScottishPostcode(postcode);
 
   // Run external lookups in parallel with the rest of the work.
-  const landRegistryPromise: Promise<LandRegistryResult> = (postcode && !scotland)
-    ? fetchLandRegistryPriceHistory(postcode, paon, saon, street).catch((err) => {
-        console.error("[landRegistry] lookup failed:", err);
-        return null;
-      })
-    : Promise.resolve(null);
+  const landRegistryPromise: Promise<LandRegistryResult> = Promise.resolve(null);
 
   const floodRiskPromise: Promise<FloodRiskRaw | null> = postcode
     ? fetchFloodRisk(postcode).catch((err) => {
@@ -1001,12 +981,7 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
   if (councilTax) {
     notes.push(`EXTRACTED FROM PAGE HTML — Council Tax Band: ${councilTax}`);
   }
-  if (landRegistry && landRegistry.entries.length) {
-    const lines = landRegistry.entries.map(
-      (p) => `Sold ${p.date}: £${p.price.toLocaleString("en-GB")}`,
-    );
-    notes.push(`LAND REGISTRY PRICE HISTORY (official data):\n${lines.join("\n")}`);
-  }
+  // Price history removed — no Land Registry note injected.
   if (floodRisk && !floodRisk.scotland && !floodRisk.unavailable) {
     const lines: string[] = [
       `Rivers and sea: ${floodRisk.riversAndSea ?? "Unknown"}`,
@@ -1276,38 +1251,8 @@ async function runAnalysis(
     },
   } as AnalysisResult;
 
-  if (landRegistry && landRegistry.entries.length) {
-    const existing = full.priceHistory ?? {
-      entries: null,
-      firstSalePrice: null,
-      firstSaleDate: null,
-      totalAppreciation: null,
-      annualGrowthRate: null,
-      yearsHeld: null,
-      commentary: "",
-    };
-    full.priceHistory = {
-      ...existing,
-      entries: landRegistry.entries,
-      source: "land_registry",
-      nearbyMode: false,
-    };
-  } else if (!scotland) {
-    full.priceHistory = null;
-  }
-
-  if (scotland) {
-    full.priceHistory = {
-      entries: null,
-      firstSalePrice: null,
-      firstSaleDate: null,
-      totalAppreciation: null,
-      annualGrowthRate: null,
-      yearsHeld: null,
-      commentary: "",
-      scotland: true,
-    };
-  }
+  // Price history removed entirely — never set on the result.
+  full.priceHistory = null;
 
   if (floodRiskRaw) {
     if (floodRiskRaw.scotland) {

@@ -2146,7 +2146,7 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
           <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>{ac.comparableNote}</p>
         )}
         <p className="mt-4 text-xs" style={{ color: "#888780" }}>
-          Area estimates based on listing data and Claude's training knowledge — not live Land Registry data.
+          Area estimates based on listing data and Claude's training knowledge.
         </p>
       </div>
     </section>
