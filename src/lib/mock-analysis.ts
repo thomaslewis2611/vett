@@ -126,11 +126,18 @@ export type AnalysisResult = {
     items: {
       issue: string;
       estimatedCost: string;
-      priority: "Essential" | "Recommended" | "Optional";
+      priority: "High priority" | "Medium priority" | "Low priority";
       notes: string;
     }[];
     totalEstimatedMin: number;
     totalEstimatedMax: number;
+    commentary: string;
+  } | null;
+  manualSqftAnalysis?: {
+    sqft: number;
+    pricePerSqFt: number;
+    vsAreaAvg: string;
+    vsAreaAvgLabel: "above" | "below";
     commentary: string;
   } | null;
   negotiation: {
