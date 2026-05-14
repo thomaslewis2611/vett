@@ -1026,6 +1026,7 @@ function toPreview(a: AnalysisResult): AnalysisResult {
     redFlags: a.redFlags.slice(0, 2),
     viewingQuestions: [],
     comparables: [],
+    nearbySchools: null,
   };
 }
 
