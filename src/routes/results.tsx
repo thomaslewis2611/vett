@@ -2563,3 +2563,241 @@ function FloodRiskSection({ analysis, isBuyerPass }: { analysis: AnalysisResult;
     return null;
   }
 }
+
+/* ============================================================
+ * Seller motivation, viewing checklist, renovation costs
+ * ============================================================ */
+
+const CARD_STYLE: CSSProperties = {
+  background: "#FFFDF9",
+  border: "0.5px solid rgba(26,17,8,0.12)",
+  borderRadius: 12,
+  padding: 20,
+};
+
+function SellerMotivationSection({ analysis }: { analysis: AnalysisResult }) {
+  const sm = analysis.sellerMotivation;
+  if (!sm) return null;
+
+  let bg = "#F1EFE8";
+  let fg = "#5F5E5A";
+  if (sm.score >= 9) { bg = "#FEE2E2"; fg = "#A32D2D"; }
+  else if (sm.score >= 7) { bg = "#FAECE7"; fg = "#993C1D"; }
+  else if (sm.score >= 5) { bg = "#FAEEDA"; fg = "#7A5A0A"; }
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        Seller motivation
+      </h2>
+      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between" style={CARD_STYLE}>
+        <div className="min-w-0 flex-1">
+          {sm.signals.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {sm.signals.map((s, i) => (
+                <span
+                  key={i}
+                  style={{
+                    background: "#F1EFE8",
+                    color: "#5F5E5A",
+                    fontSize: 11,
+                    borderRadius: 100,
+                    padding: "3px 9px",
+                  }}
+                >
+                  {s}
+                </span>
+              ))}
+            </div>
+          )}
+          <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            {sm.commentary}
+          </p>
+        </div>
+        <div className="flex flex-row items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
+          <div
+            className="flex items-center justify-center"
+            style={{
+              width: 64,
+              height: 64,
+              borderRadius: "50%",
+              background: bg,
+              color: fg,
+              fontSize: 18,
+              fontWeight: 600,
+            }}
+          >
+            {sm.score}/10
+          </div>
+          <div style={{ fontSize: 12, fontWeight: 500, color: "#1A1108" }}>{sm.label}</div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const CHECKLIST_CATEGORIES = ["Structure", "Legal", "Running costs", "Negotiation", "Practical"] as const;
+
+function ViewingChecklistSection({ analysis }: { analysis: AnalysisResult }) {
+  const vc = analysis.viewingChecklist;
+  if (!vc || vc.items.length === 0) return null;
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        Viewing checklist
+      </h2>
+      <p className="mt-1 text-sm" style={{ color: "#5F5E5A" }}>
+        Specific to this property — take this to your viewing
+      </p>
+      <div className="mt-4 flex flex-col gap-5" style={CARD_STYLE}>
+        {CHECKLIST_CATEGORIES.map((cat) => {
+          const items = vc.items.filter((it) => it.category === cat);
+          if (items.length === 0) return null;
+          return (
+            <div key={cat}>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  color: "#888780",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                {cat}
+              </div>
+              <ul className="mt-2 space-y-3">
+                {items.map((it, i) => (
+                  <li key={i} className="flex gap-2.5">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 shrink-0"
+                      style={{
+                        width: 14,
+                        height: 14,
+                        borderRadius: 3,
+                        border: "1px solid rgba(26,17,8,0.25)",
+                        background: "#FFFDF9",
+                      }}
+                    />
+                    <div className="min-w-0">
+                      <div style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.5 }}>{it.item}</div>
+                      <div className="mt-0.5" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
+                        {it.why}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResult; unlocked: boolean }) {
+  if (!unlocked) {
+    return (
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+          Renovation estimate
+        </h2>
+        <div className="mt-4 relative overflow-hidden" style={CARD_STYLE}>
+          <div style={{ filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}>
+            <div className="flex items-center justify-between">
+              <span style={{ fontSize: 13, color: "#1A1108", fontWeight: 500 }}>Replace boiler</span>
+              <span style={{ fontSize: 13, color: "#1A1108" }}>£3,000 – £4,500</span>
+            </div>
+            <div className="mt-2 flex items-center justify-between">
+              <span style={{ fontSize: 13, color: "#1A1108", fontWeight: 500 }}>Refurb kitchen</span>
+              <span style={{ fontSize: 13, color: "#1A1108" }}>£12,000 – £20,000</span>
+            </div>
+            <div className="mt-3" style={{ fontSize: 13, color: "#5F5E5A" }}>
+              Total estimated renovation: £15,000 – £24,500
+            </div>
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+            <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+            <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+              Unlock to see the full renovation cost estimate for this property
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const rc = analysis.renovationCosts;
+  if (!rc || rc.items.length === 0) return null;
+
+  const priorityStyle = (p: string): CSSProperties => {
+    if (p === "Essential") return { background: "#FEE2E2", color: "#A32D2D" };
+    if (p === "Recommended") return { background: "#FAEEDA", color: "#7A5A0A" };
+    return { background: "#F1EFE8", color: "#5F5E5A" };
+  };
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        Renovation estimate
+      </h2>
+      <p className="mt-1 text-sm" style={{ color: "#5F5E5A" }}>
+        Based on issues identified in this listing
+      </p>
+      <div className="mt-4" style={CARD_STYLE}>
+        <ul className="space-y-4">
+          {rc.items.map((it, i) => (
+            <li key={i}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span style={{ fontSize: 13, color: "#1A1108", fontWeight: 500 }}>{it.issue}</span>
+                    <span
+                      style={{
+                        ...priorityStyle(it.priority),
+                        fontSize: 11,
+                        fontWeight: 500,
+                        borderRadius: 100,
+                        padding: "2px 8px",
+                      }}
+                    >
+                      {it.priority}
+                    </span>
+                  </div>
+                  {it.notes && (
+                    <div className="mt-1" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
+                      {it.notes}
+                    </div>
+                  )}
+                </div>
+                <div className="shrink-0 text-right" style={{ fontSize: 13, color: "#1A1108" }}>
+                  {it.estimatedCost}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div
+          className="mt-5 pt-4 flex items-center justify-between"
+          style={{ borderTop: "0.5px solid rgba(26,17,8,0.12)" }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>Total estimated renovation</span>
+          <span style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>
+            {formatGBP(rc.totalEstimatedMin)} – {formatGBP(rc.totalEstimatedMax)}
+          </span>
+        </div>
+        {rc.commentary && (
+          <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            {rc.commentary}
+          </p>
+        )}
+        <p className="mt-3" style={{ fontSize: 11, color: "#888780" }}>
+          Estimates based on typical UK contractor rates 2026. Get quotes before proceeding.
+        </p>
+      </div>
+    </section>
+  );
+}
