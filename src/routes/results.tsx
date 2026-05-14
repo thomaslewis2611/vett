@@ -735,7 +735,12 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
         </SafeSection>
 
         {/* EPC */}
-        <EpcSection analysis={a} />
+        <EpcSection
+          analysis={a}
+          listingUrl={listingUrl}
+          userEmail={access.email}
+          onEpcUpdate={(epc) => setA((prev) => ({ ...prev, epc }))}
+        />
 
         {/* Price history (free + paid) */}
         <PriceHistorySection analysis={a} />
