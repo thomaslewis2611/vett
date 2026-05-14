@@ -319,24 +319,39 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <footer style={{ background: "#1A1108", marginTop: "auto" }}>
-      <div className="mx-auto flex max-w-6xl flex-col gap-4 px-8 py-10 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="inline-block"
-            style={{ width: 8, height: 8, borderRadius: 9999, background: "#D85A30" }}
-          />
-          <span style={{ fontSize: 18, fontWeight: 500, color: "#FFFDF9" }}>Roovr</span>
-          <span style={{ fontSize: 13, color: "#888780", marginLeft: 12 }}>© 2026 Roovr</span>
-        </div>
-        <div className="flex gap-6" style={{ fontSize: 13, color: "#888780" }}>
-          <Link to="/pricing" className="hover:text-[#FFFDF9] transition-colors">Pricing</Link>
-          <Link to="/about" className="hover:text-[#FFFDF9] transition-colors">About</Link>
-          <Link to="/privacy" className="hover:text-[#FFFDF9] transition-colors">Privacy</Link>
-          <Link to="/terms" className="hover:text-[#FFFDF9] transition-colors">Terms</Link>
-        </div>
+    <div style={{ display: "flex", flexDirection: "column", marginTop: "auto" }}>
+      <div
+        style={{
+          background: "#F1EFE8",
+          color: "#888780",
+          fontSize: 12,
+          textAlign: "center",
+          padding: "14px 24px",
+          width: "100%",
+          margin: 0,
+        }}
+      >
+        Roovr reports are AI-generated and advisory only. Always verify information independently and seek professional advice from a solicitor, surveyor, and mortgage broker before making any offer.
       </div>
-    </footer>
+      <footer style={{ background: "#1A1108", margin: 0 }}>
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-8 py-10 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-2">
+            <span
+              aria-hidden
+              className="inline-block"
+              style={{ width: 8, height: 8, borderRadius: 9999, background: "#D85A30" }}
+            />
+            <span style={{ fontSize: 18, fontWeight: 500, color: "#FFFDF9" }}>Roovr</span>
+            <span style={{ fontSize: 13, color: "#888780", marginLeft: 12 }}>© 2026 Roovr</span>
+          </div>
+          <div className="flex gap-6" style={{ fontSize: 13, color: "#888780" }}>
+            <Link to="/pricing" className="hover:text-[#FFFDF9] transition-colors">Pricing</Link>
+            <Link to="/about" className="hover:text-[#FFFDF9] transition-colors">About</Link>
+            <Link to="/privacy" className="hover:text-[#FFFDF9] transition-colors">Privacy</Link>
+            <Link to="/terms" className="hover:text-[#FFFDF9] transition-colors">Terms</Link>
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
