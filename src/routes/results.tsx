@@ -1010,6 +1010,14 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           />
         )}
 
+        {/* Crime statistics — Buyer Pass renders data; free + Single Report see locked teaser */}
+        <CrimeSection
+          analysis={a}
+          isBuyerPass={access.level === "pass"}
+          fetching={access.level === "pass" && fetchingExtras && a.crime == null}
+          onUpgrade={() => upgradeToPass(listingUrl)}
+        />
+
         {/* AI chat — Buyer Pass renders chat; Single Report sees locked teaser */}
         {unlocked && showChat && (
           <section className="mt-10">
