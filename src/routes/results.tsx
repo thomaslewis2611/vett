@@ -1202,7 +1202,13 @@ function ExpiredPassGate({
     setLoading(true);
     try {
       const res = await checkoutFn({
-        data: { priceId: PRICE_PASS, listingUrl: listingUrl ?? "", tier: "pass" },
+        data: {
+          priceId: PRICE_PASS,
+          listingUrl: listingUrl ?? "",
+          tier: "pass",
+          analysisJobId: recallJobId(listingUrl),
+          source: "results_page_upgrade",
+        },
       });
       window.location.href = res.url;
     } catch (e) {
