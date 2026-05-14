@@ -728,7 +728,7 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
 
               {/* Viewing checklist — replaces previous viewing questions list */}
               <SafeSection name="viewingChecklist">
-                <ViewingChecklistSection analysis={a} />
+                <ViewingChecklistSection analysis={a} unlocked />
               </SafeSection>
 
               {/* Flood risk — full for Buyer Pass, locked teaser for Single Report */}
