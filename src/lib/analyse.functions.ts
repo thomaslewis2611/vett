@@ -779,6 +779,7 @@ type SchoolEntry = {
 type NearbySchoolsRaw = {
   schools: SchoolEntry[];
   unavailable?: boolean;
+  aiSourced?: boolean;
 };
 
 const NEARBY_SCHOOLS_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -791,11 +792,92 @@ function classifyPhase(schoolType: string | null): "primary" | "secondary" | "ot
   return "other";
 }
 
-async function fetchNearbySchools(postcode: string | null): Promise<NearbySchoolsRaw | null> {
+function normaliseSchoolList(list: any[]): SchoolEntry[] {
+  return list
+    .map((s) => {
+      const name: string =
+        s.school_name ?? s.name ?? s.schoolName ?? s.establishmentName ?? s.EstablishmentName ?? "";
+      const ofstedRaw =
+        s.ofsted_rating ?? s.ofstedRating ?? s.ofsted ?? s.ofstedRatingName ?? s.OfstedRating;
+      const ofstedRating =
+        typeof ofstedRaw === "number"
+          ? ofstedRaw
+          : typeof ofstedRaw === "string" && /^\d$/.test(ofstedRaw)
+            ? Number(ofstedRaw)
+            : null;
+      const schoolType: string | null =
+        s.school_type ?? s.schoolType ?? s.type ?? s.phaseOfEducation ?? s.PhaseOfEducation ?? s.TypeOfEstablishment ?? null;
+      const milesRaw = s.distanceInMiles ?? s.distance_miles ?? s.distanceMiles;
+      let distanceMiles: number;
+      if (milesRaw != null && Number.isFinite(Number(milesRaw))) {
+        distanceMiles = Number(milesRaw);
+      } else {
+        const distRaw = s.distance ?? s.distance_km ?? s.distanceKm ?? s.distance_metres ?? s.distanceMetres;
+        const distNum = typeof distRaw === "number" ? distRaw : Number(distRaw);
+        if (Number.isFinite(distNum)) {
+          // Heuristic: >100 → metres, else km
+          distanceMiles = distNum > 100 ? distNum / 1609.34 : distNum * 0.621371;
+        } else {
+          distanceMiles = NaN;
+        }
+      }
+      return {
+        name,
+        ofstedRating,
+        schoolType,
+        phase: classifyPhase(schoolType),
+        distanceMiles,
+      };
+    })
+    .filter((s) => s.name && Number.isFinite(s.distanceMiles))
+    .sort((a, b) => a.distanceMiles - b.distanceMiles);
+}
+
+async function fetchSchoolsFromClaude(
+  postcode: string,
+  address: string,
+  coordinates: { lat: number; lng: number } | null,
+  apiKey: string | undefined,
+): Promise<SchoolEntry[]> {
+  if (!apiKey) return [];
+  try {
+    const client = new Anthropic({ apiKey, timeout: 25_000, maxRetries: 0 });
+    const coordStr = coordinates ? ` (approx ${coordinates.lat.toFixed(4)}, ${coordinates.lng.toFixed(4)})` : "";
+    const prompt = `List up to 8 primary and secondary schools within approximately 5 miles of ${address || postcode} ${postcode}${coordStr} in the UK. Include school name, approximate distance, Ofsted rating if known, and school type. Base this on your training knowledge of UK schools. If you are not confident about specific schools in this area, say so clearly rather than guessing.
+
+Return ONLY a single valid JSON object (no markdown, no code fences) of this exact shape:
+{
+  "schools": [
+    { "name": string, "distanceMiles": number, "ofstedRating": number | null, "schoolType": "Primary" | "Secondary" | "All-through" | "Other" }
+  ]
+}
+Use ofstedRating 1=Outstanding, 2=Good, 3=Requires Improvement, 4=Inadequate, or null if unknown. If not confident in any specific schools for this area, return { "schools": [] }.`;
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 800,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as { schools?: any[] };
+    if (!Array.isArray(parsed.schools)) return [];
+    return normaliseSchoolList(parsed.schools);
+  } catch (err) {
+    console.error("[nearbySchools] Claude fallback failed:", err);
+    return [];
+  }
+}
+
+async function fetchNearbySchools(
+  postcode: string | null,
+  address: string,
+  apiKey: string | undefined,
+): Promise<NearbySchoolsRaw | null> {
   if (!postcode) return null;
   console.log(`fetchNearbySchools called with postcode: ${postcode}`);
 
-  const cacheKey = `schools:${postcode}`;
+  const cacheKey = `schools:v2:${postcode}`;
   try {
     const { data: cached } = await supabaseAdmin
       .from("listing_cache")
@@ -808,9 +890,8 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     ) {
       try {
         const parsed = JSON.parse(cached.text_content) as NearbySchoolsRaw;
-        // Ignore stale empty/unavailable cached entries so we re-try new endpoint.
         if ((parsed.schools?.length ?? 0) > 0) {
-          console.log(`fetchNearbySchools returned cached for ${postcode} (${parsed.schools.length})`);
+          console.log(`fetchNearbySchools cached hit for ${postcode} (${parsed.schools.length})`);
           return parsed;
         }
       } catch { /* ignore */ }
@@ -819,7 +900,6 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     console.error("[nearbySchools] cache lookup failed:", err);
   }
 
-  // DfE API requires properly-formatted UK postcode with a space before the last 3 chars.
   const pcCompact = postcode.replace(/\s+/g, "").toUpperCase();
   const pcFormatted = pcCompact.length > 3
     ? `${pcCompact.slice(0, -3)} ${pcCompact.slice(-3)}`
@@ -832,87 +912,62 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     "Referer": "https://roovr.co",
   };
 
-  // Try multiple endpoints in order. 8 km ≈ 5 miles.
-  const endpoints = [
-    `https://api.get-information-schools.service.gov.uk/api/schools/search?location=${pcParam}&radiusInMiles=5`,
-    `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${pcParam}&radius=8&fields=school_name,ofsted_rating,school_type,distance`,
-  ];
-
-  let raw: NearbySchoolsRaw | null = null;
-  for (const url of endpoints) {
+  const tryFetch = async (url: string): Promise<SchoolEntry[]> => {
     try {
       const ctrl = new AbortController();
       const t = setTimeout(() => ctrl.abort(), 10_000);
       const res = await fetch(url, { headers, signal: ctrl.signal });
       clearTimeout(t);
       const bodyText = await res.text();
-      console.log(`[nearbySchools] ${url} → HTTP ${res.status}, body[0..400]: ${bodyText.slice(0, 400)}`);
-      if (!res.ok) continue;
+      console.log(`[nearbySchools] ${url} → HTTP ${res.status}, body[0..200]: ${bodyText.slice(0, 200)}`);
+      if (!res.ok) return [];
       let json: unknown;
-      try { json = JSON.parse(bodyText); } catch {
-        console.error(`[nearbySchools] non-JSON body from ${url}`);
-        continue;
-      }
+      try { json = JSON.parse(bodyText); } catch { return []; }
       const list: any[] = Array.isArray(json)
         ? (json as any[])
-        : Array.isArray((json as any)?.results)
-          ? (json as any).results
-          : Array.isArray((json as any)?.data)
-            ? (json as any).data
-            : Array.isArray((json as any)?.schools)
-              ? (json as any).schools
-              : Array.isArray((json as any)?.establishments)
-                ? (json as any).establishments
-                : [];
-      if (list.length === 0) {
-        console.warn(`[nearbySchools] empty list from ${url}`);
-        continue;
-      }
-
-      const schools: SchoolEntry[] = list
-        .map((s) => {
-          const name: string =
-            s.school_name ?? s.name ?? s.schoolName ?? s.establishmentName ?? "";
-          const ofstedRaw =
-            s.ofsted_rating ?? s.ofstedRating ?? s.ofsted ?? s.ofstedRatingName;
-          const ofstedRating =
-            typeof ofstedRaw === "number"
-              ? ofstedRaw
-              : typeof ofstedRaw === "string" && /^\d$/.test(ofstedRaw)
-                ? Number(ofstedRaw)
-                : null;
-          const schoolType: string | null =
-            s.school_type ?? s.schoolType ?? s.type ?? s.phaseOfEducation ?? null;
-          const milesRaw = s.distanceInMiles ?? s.distance_miles ?? s.distanceMiles;
-          let distanceMiles: number;
-          if (milesRaw != null && Number.isFinite(Number(milesRaw))) {
-            distanceMiles = Number(milesRaw);
-          } else {
-            const distRaw = s.distance ?? s.distance_km ?? s.distanceKm;
-            const distKm = typeof distRaw === "number" ? distRaw : Number(distRaw);
-            distanceMiles = Number.isFinite(distKm) ? distKm * 0.621371 : NaN;
-          }
-          return {
-            name,
-            ofstedRating,
-            schoolType,
-            phase: classifyPhase(schoolType),
-            distanceMiles,
-          };
-        })
-        .filter((s) => s.name && Number.isFinite(s.distanceMiles))
-        .sort((a, b) => a.distanceMiles - b.distanceMiles);
-
-      raw = { schools };
-      break;
+        : Array.isArray((json as any)?.results) ? (json as any).results
+        : Array.isArray((json as any)?.data) ? (json as any).data
+        : Array.isArray((json as any)?.schools) ? (json as any).schools
+        : Array.isArray((json as any)?.establishments) ? (json as any).establishments
+        : [];
+      return normaliseSchoolList(list);
     } catch (err) {
       console.error(`[nearbySchools] fetch failed for ${url}:`, err);
+      return [];
+    }
+  };
+
+  // 1. Primary: GIAS API
+  let schools = await tryFetch(
+    `https://get-information-schools.service.gov.uk/api/v1/schools?location=${pcParam}&radiusInMiles=5&includeReligious=true`,
+  );
+  let aiSourced = false;
+
+  // 2. Alt: data.education.gov.uk with lat/lng
+  if (schools.length === 0) {
+    const coords = await postcodeToLatLng(pcFormatted);
+    if (coords) {
+      schools = await tryFetch(
+        `https://data.education.gov.uk/api/establishments?filters[gor_name]=any&filters[location]=${coords.lat},${coords.lng}&filters[distance]=8000&page[size]=20`,
+      );
     }
   }
 
-  if (!raw) {
+  // 3. Claude knowledge fallback
+  if (schools.length === 0) {
+    const coords = await postcodeToLatLng(pcFormatted);
+    const claudeSchools = await fetchSchoolsFromClaude(pcFormatted, address, coords, apiKey);
+    if (claudeSchools.length > 0) {
+      schools = claudeSchools;
+      aiSourced = true;
+    }
+  }
+
+  if (schools.length === 0) {
     return { schools: [], unavailable: true };
   }
+
+  const raw: NearbySchoolsRaw = { schools, aiSourced };
 
   try {
     await supabaseAdmin
@@ -925,7 +980,7 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     console.error("[nearbySchools] cache upsert failed:", err);
   }
 
-  console.log(`fetchNearbySchools returned ${raw.schools.length} schools`);
+  console.log(`fetchNearbySchools returned ${raw.schools.length} schools (aiSourced=${aiSourced})`);
   return raw;
 }
 
