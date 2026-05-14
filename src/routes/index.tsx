@@ -23,9 +23,22 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+const HEADLINES = [
+  { main: "The red flags", highlight: "estate agents won't show you" },
+  { main: "Know exactly what", highlight: "you're buying before you offer" },
+  { main: "What your surveyor", highlight: "finds out too late" },
+  { main: "Don't offer", highlight: "blind" },
+  { main: "The property check estate agents", highlight: "wish didn't exist" },
+];
+
 function Index() {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
+  const [headlineIdx, setHeadlineIdx] = useState(0);
+  useEffect(() => {
+    setHeadlineIdx(Math.floor(Math.random() * HEADLINES.length));
+  }, []);
+  const headline = HEADLINES[headlineIdx];
 
   const handleAnalyse = (e: React.FormEvent) => {
     e.preventDefault();
