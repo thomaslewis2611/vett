@@ -478,8 +478,8 @@ function ComparisonView({
             </thead>
             <tbody>
               {sections.map((section) => (
-                <>
-                  <tr key={`h-${section.title}`}>
+                <Fragment key={section.title}>
+                  <tr>
                     <td colSpan={3} style={{ padding: "14px 12px", background: "#F1EFE8", fontSize: 11, fontWeight: 700, color: "#888780", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                       {section.title}
                     </td>
@@ -494,7 +494,7 @@ function ComparisonView({
                       </tr>
                     );
                   })}
-                </>
+                </Fragment>
               ))}
               {/* Red flags summary */}
               <tr>
