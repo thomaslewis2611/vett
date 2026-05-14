@@ -266,7 +266,8 @@ Deno.serve(async (req) => {
           const email = customerEmail.toLowerCase();
           const savedId = await captureAnalysisForEmail(email);
           const redirectTo = buildRedirect(savedId, `${SITE_URL}/my-reports`);
-          await sendBuyerPassMagicLinkEdge(email, redirectTo);
+          const variant = await resolveVariantFromSession(session, "single");
+          await sendMagicLinkEdge(email, redirectTo, variant);
         } catch (e) {
           console.error("single magic link error:", (e as Error).message);
         }
@@ -304,7 +305,8 @@ Deno.serve(async (req) => {
       try {
         const savedId = await captureAnalysisForEmail(email);
         const redirectTo = buildRedirect(savedId, `${SITE_URL}/dashboard`);
-        await sendBuyerPassMagicLinkEdge(email, redirectTo);
+        const variant = await resolveVariantFromSession(session, "pass");
+        await sendMagicLinkEdge(email, redirectTo, variant);
       } catch (e) {
         console.error("buyer pass magic link error:", (e as Error).message);
       }
