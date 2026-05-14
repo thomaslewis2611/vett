@@ -322,7 +322,7 @@ function buildReportHtml(opts: {
   if (isPass && flood && !flood.unavailable) {
     floodHtml = `
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Flood risk</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
         <tr><td ${rowStyle}>Overall risk</td><td ${valStyle}>${txt(flood.overallRisk)}</td></tr>
         <tr><td ${rowStyle}>Rivers &amp; sea</td><td ${valStyle}>${txt(flood.riversAndSea)}</td></tr>
         <tr><td ${rowStyle}>Surface water</td><td ${valStyle}>${txt(flood.surfaceWater)}</td></tr>
