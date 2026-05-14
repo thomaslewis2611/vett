@@ -1875,3 +1875,127 @@ Return ONLY valid JSON (no prose, no markdown fences) matching exactly this shap
 
     return { ok: true as const, epc: epcOut };
   });
+
+const floodZoneSchema = z.object({
+  zone: z.string(),
+  riskLevel: z.string(),
+  insuranceImplications: z.string(),
+  mortgageImplications: z.string(),
+  resaleImpact: z.string(),
+  commentary: z.string(),
+  autoRedFlag: z.boolean(),
+});
+
+export const analyseFloodZone = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      floodZone: z.enum(["1", "2", "3a", "3b"]),
+      propertyType: z.string().max(120).nullable().optional(),
+      address: z.string().max(500).nullable().optional(),
+      price: z.number().nullable().optional(),
+      email: z.string().email().max(320).nullable().optional(),
+      listingUrl: z.string().max(2000).nullable().optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
+
+    const zone = data.floodZone;
+    const propertyType = data.propertyType ?? "property";
+    const address = data.address ?? "this address";
+    const priceStr =
+      data.price && data.price > 0 ? data.price.toLocaleString("en-GB") : "unknown";
+
+    const prompt = `Generate a flood risk assessment for a ${propertyType} at ${address} priced at £${priceStr} in Flood Zone ${zone}.
+
+Explain what this means for: buildings insurance (likelihood of refusal or premium increase), mortgage availability, future resale value, and what mitigation measures exist.
+
+Return ONLY valid JSON (no prose, no markdown fences) matching exactly this shape:
+{
+  "zone": "${zone}",
+  "riskLevel": "Low" | "Medium" | "High" | "Very High",
+  "insuranceImplications": "2-3 sentences on buildings insurance availability and premiums",
+  "mortgageImplications": "2-3 sentences on mortgage availability and lender attitudes",
+  "resaleImpact": "2 sentences on impact to future resale value",
+  "commentary": "2-3 sentences summary plus mitigation measures (flood doors, air-brick covers, sump pumps, Flood Re scheme)",
+  "autoRedFlag": ${zone === "3a" || zone === "3b" ? "true" : "false"}
+}`;
+
+    const client = new Anthropic({ apiKey });
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 800,
+      system:
+        "You are a UK flood risk and home insurance specialist. Return ONLY a single valid JSON object. Use realistic 2026 UK insurance and mortgage market context, including the Flood Re scheme.",
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw =
+      message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = raw
+      .replace(/^```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+
+    let parsed: z.infer<typeof floodZoneSchema>;
+    try {
+      parsed = floodZoneSchema.parse(JSON.parse(cleaned));
+    } catch (err) {
+      console.error("[analyseFloodZone] parse failed:", err, raw);
+      throw new Error("Could not parse flood zone analysis");
+    }
+
+    const floodOut = {
+      riversAndSea: null,
+      surfaceWater: null,
+      reservoir: null,
+      groundwater: null,
+      overallRisk: parsed.riskLevel,
+      commentary: parsed.commentary,
+      autoRedFlag: parsed.autoRedFlag,
+      manualZone: zone,
+      riskLevel: parsed.riskLevel,
+      insuranceImplications: parsed.insuranceImplications,
+      mortgageImplications: parsed.mortgageImplications,
+      resaleImpact: parsed.resaleImpact,
+    };
+
+    // Best-effort patch into saved_analyses (paying users only).
+    if (data.email && data.listingUrl) {
+      try {
+        const { data: rows } = await supabaseAdmin
+          .from("saved_analyses")
+          .select("id, analysis_json, created_at")
+          .ilike("user_email", data.email)
+          .eq("listing_url", data.listingUrl)
+          .order("created_at", { ascending: false })
+          .limit(1);
+        const row = rows?.[0];
+        if (row) {
+          const existing = (row.analysis_json as any) ?? {};
+          const existingFlags = Array.isArray(existing.redFlags) ? existing.redFlags : [];
+          const newFlags = parsed.autoRedFlag
+            ? [
+                ...existingFlags.filter(
+                  (f: any) => !(typeof f?.title === "string" && f.title.startsWith("High flood risk — Zone")),
+                ),
+                {
+                  severity: "high" as const,
+                  title: `High flood risk — Zone ${zone}`,
+                  detail: parsed.commentary,
+                },
+              ]
+            : existingFlags;
+          const merged = { ...existing, floodRisk: floodOut, redFlags: newFlags };
+          await supabaseAdmin
+            .from("saved_analyses")
+            .update({ analysis_json: merged })
+            .eq("id", row.id as string);
+        }
+      } catch (err) {
+        console.error("[analyseFloodZone] save failed:", err);
+      }
+    }
+
+    return { ok: true as const, floodRisk: floodOut };
+  });
