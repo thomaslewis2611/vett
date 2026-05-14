@@ -104,7 +104,7 @@ function Index() {
                 id="url-input"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://www.rightmove.co.uk/properties/..."
+                placeholder="Paste a property listing URL"
                 className="w-full bg-transparent py-2.5 outline-none"
                 style={{ fontSize: 14, color: "#1A1108" }}
                 aria-label="Property listing URL"
@@ -127,12 +127,13 @@ function Index() {
             </button>
           </form>
 
-
+          <p className="mx-auto mt-3" style={{ fontSize: 11, color: "#888780" }}>
+            Works best with Rightmove listings
+          </p>
 
           <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
             {[
               "One-time payment, no subscription",
-              "Works with Rightmove & Zoopla",
               "Reports from £4.99",
             ].map((t) => (
               <li key={t} className="flex items-center gap-2" style={{ fontSize: 12, color: "#888780" }}>
