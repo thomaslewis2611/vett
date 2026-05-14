@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ResultsRouteImport } from './routes/results'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PaymentSuccessRouteImport } from './routes/payment-success'
 import { Route as MyReportsRouteImport } from './routes/my-reports'
@@ -31,6 +32,11 @@ const TermsRoute = TermsRouteImport.update({
 const ResultsRoute = ResultsRouteImport.update({
   id: '/results',
   path: '/results',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PricingRoute = PricingRouteImport.update({
@@ -99,6 +105,7 @@ export interface FileRoutesByFullPath {
   '/my-reports': typeof MyReportsRoute
   '/payment-success': typeof PaymentSuccessRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/results': typeof ResultsRoute
   '/terms': typeof TermsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/my-reports': typeof MyReportsRoute
   '/payment-success': typeof PaymentSuccessRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/results': typeof ResultsRoute
   '/terms': typeof TermsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/my-reports': typeof MyReportsRoute
   '/payment-success': typeof PaymentSuccessRoute
   '/pricing': typeof PricingRoute
+  '/privacy': typeof PrivacyRoute
   '/results': typeof ResultsRoute
   '/terms': typeof TermsRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -147,6 +156,7 @@ export interface FileRouteTypes {
     | '/my-reports'
     | '/payment-success'
     | '/pricing'
+    | '/privacy'
     | '/results'
     | '/terms'
     | '/lovable/email/auth/preview'
@@ -162,6 +172,7 @@ export interface FileRouteTypes {
     | '/my-reports'
     | '/payment-success'
     | '/pricing'
+    | '/privacy'
     | '/results'
     | '/terms'
     | '/lovable/email/auth/preview'
@@ -177,6 +188,7 @@ export interface FileRouteTypes {
     | '/my-reports'
     | '/payment-success'
     | '/pricing'
+    | '/privacy'
     | '/results'
     | '/terms'
     | '/lovable/email/auth/preview'
@@ -193,6 +205,7 @@ export interface RootRouteChildren {
   MyReportsRoute: typeof MyReportsRoute
   PaymentSuccessRoute: typeof PaymentSuccessRoute
   PricingRoute: typeof PricingRoute
+  PrivacyRoute: typeof PrivacyRoute
   ResultsRoute: typeof ResultsRoute
   TermsRoute: typeof TermsRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -214,6 +227,13 @@ declare module '@tanstack/react-router' {
       path: '/results'
       fullPath: '/results'
       preLoaderRoute: typeof ResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/pricing': {
@@ -305,6 +325,7 @@ const rootRouteChildren: RootRouteChildren = {
   MyReportsRoute: MyReportsRoute,
   PaymentSuccessRoute: PaymentSuccessRoute,
   PricingRoute: PricingRoute,
+  PrivacyRoute: PrivacyRoute,
   ResultsRoute: ResultsRoute,
   TermsRoute: TermsRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
