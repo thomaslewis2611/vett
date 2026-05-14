@@ -67,12 +67,11 @@ function PricingPage() {
             plusIntro="Everything in Single Report, plus:"
             features={[
               "Unlimited analyses for 90 days",
-              "AI chat on every property",
-              "Flood risk assessment",
-              "Nearby schools with Ofsted ratings",
-              "Save and compare reports",
-              "Report emailed to you",
-              "Access anywhere — all reports saved to your account",
+              "AI chat — ask anything about this property",
+              "Seller motivation score",
+              "Renovation cost estimator",
+              "Compare properties side by side",
+              "All reports saved to your account",
             ]}
             footnote="One-off payment. Access ends 90 days after purchase."
           />
