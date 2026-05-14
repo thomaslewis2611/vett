@@ -328,13 +328,21 @@ function ResultsPage() {
     const isBlocked = rawMsg.startsWith("FETCH_BLOCKED");
     const isSavedMissing = rawMsg === "SAVED_NOT_FOUND" || Boolean(saved_id);
     const isTimeout = rawMsg === "ANALYSIS_TIMEOUT";
+    // Sanitize: never expose raw HTML / JSON / upstream gateway errors to the user.
+    const looksLikeHtml = /<\/?[a-z!][^>]*>/i.test(rawMsg);
+    const looksLikeJson = /^\s*[{[]/.test(rawMsg);
+    const looksLikeGateway = /\b(502|503|504|bad gateway|gateway time-?out|cloudflare)\b/i.test(rawMsg);
+    const safeRawMsg =
+      looksLikeHtml || looksLikeJson || looksLikeGateway || rawMsg.length > 200
+        ? "Analysis failed — please try again."
+        : rawMsg;
     const friendlyMsg = isBlocked
       ? "We couldn't automatically read this listing. You can paste the listing description below to get your full analysis."
       : isTimeout
         ? "This is taking longer than usual. Try again or try a different listing."
         : isSavedMissing
           ? "We couldn't load this report. Try opening it from your dashboard."
-          : rawMsg;
+          : safeRawMsg;
 
     return (
       <div className="min-h-screen bg-background">
