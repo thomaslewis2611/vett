@@ -3,6 +3,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { scheduleBackground } from "@/lib/execution-context";
 import type { AnalysisResult } from "./mock-analysis";
 
 const analysisSchema = z.object({
