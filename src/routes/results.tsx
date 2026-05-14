@@ -962,13 +962,82 @@ function CostBreakdown({
         </ul>
       </div>
       <div className="rounded-xl bg-primary-soft p-5">
-        <div className="text-xs uppercase tracking-wider text-primary">Monthly mortgage</div>
-        <div className="mt-1 text-3xl font-semibold tracking-tight text-primary">
-          {formatGBP(c.monthlyMortgage)}
-        </div>
-        <p className="mt-3 text-sm text-foreground/80">{c.mortgageAssumptions}</p>
+        <MortgageCalculator purchasePrice={c.purchasePrice} />
       </div>
     </div>
+  );
+}
+
+function MortgageCalculator({ purchasePrice }: { purchasePrice: number }) {
+  const [term, setTerm] = useState(30);
+  const [rate, setRate] = useState(4.8);
+  const depositPct = 0.15;
+  const loan = purchasePrice * (1 - depositPct);
+  const monthly = (() => {
+    const r = rate / 100 / 12;
+    const n = term * 12;
+    if (r === 0) return loan / n;
+    const pow = Math.pow(1 + r, n);
+    return (loan * (r * pow)) / (pow - 1);
+  })();
+  const inputBg: CSSProperties = {
+    background: "#F1EFE8",
+    borderRadius: 8,
+    border: "0.5px solid rgba(26,17,8,0.12)",
+  };
+  return (
+    <>
+      <div className="text-xs uppercase tracking-wider text-primary">Monthly mortgage</div>
+      <div className="mt-1 text-3xl font-semibold tracking-tight text-primary">
+        {formatGBP(Math.round(monthly))}
+      </div>
+      <p className="mt-3 text-sm text-foreground/80">
+        Based on {Math.round(depositPct * 100)}% deposit ({formatGBP(Math.round(purchasePrice * depositPct))}),{" "}
+        {term}-year term at {rate.toFixed(1)}% fixed.
+      </p>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Mortgage term</span>
+          <div className="mt-1 flex items-center gap-2">
+            <input
+              type="range"
+              min={5}
+              max={35}
+              step={1}
+              value={term}
+              onChange={(e) => setTerm(Number(e.target.value))}
+              className="flex-1 accent-primary"
+            />
+            <input
+              type="number"
+              min={5}
+              max={35}
+              step={1}
+              value={term}
+              onChange={(e) => setTerm(Math.min(35, Math.max(5, Number(e.target.value) || 0)))}
+              className="w-14 px-2 py-1 text-xs outline-none"
+              style={inputBg}
+            />
+          </div>
+        </label>
+        <label className="block">
+          <span className="text-xs text-muted-foreground">Interest rate %</span>
+          <input
+            type="number"
+            min={1}
+            max={15}
+            step={0.1}
+            value={rate}
+            onChange={(e) => setRate(Math.min(15, Math.max(1, Number(e.target.value) || 0)))}
+            className="mt-1 w-full px-3 py-1.5 text-sm outline-none"
+            style={inputBg}
+          />
+        </label>
+      </div>
+      <p className="mt-3 text-xs text-muted-foreground">
+        Repayment mortgage estimate. Speak to a mortgage broker for a personalised quote.
+      </p>
+    </>
   );
 }
 
