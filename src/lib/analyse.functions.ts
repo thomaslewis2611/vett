@@ -1502,8 +1502,25 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     }
 
     const jobId = row.id as string;
-    // Fire-and-forget background work, kept alive by ctx.waitUntil on Cloudflare.
-    scheduleBackground(processAnalysisJob(jobId, url, pastedText));
+    // Direct fire-and-forget — ctx.waitUntil proved unreliable in this runtime,
+    // so we kick off the background task and rely on processAnalysisJob's own
+    // try/catch + DB row updates to record progress and errors.
+    console.log(`[startAnalysisJob] scheduling background job ${jobId}`);
+    void (async () => {
+      console.log(`[startAnalysisJob] background callback started for ${jobId}`);
+      try {
+        await processAnalysisJob(jobId, url, pastedText);
+      } catch (err) {
+        console.error(`[startAnalysisJob] processAnalysisJob failed for ${jobId}:`, err);
+      }
+    })();
+    // Also schedule via waitUntil if available, so the Worker keeps the
+    // promise alive past the response — harmless if it's not.
+    try {
+      scheduleBackground(Promise.resolve());
+    } catch {
+      /* ignore */
+    }
 
     return { jobId };
   });
