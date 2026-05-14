@@ -151,7 +151,7 @@ You must:
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
 - Populate sellerMotivation based on days on market, reductions, chain status, language urgency. Score 1-10, label Low/Moderate/High/Very High, signals as short concrete strings, 2-3 sentence commentary.
 - Populate viewingChecklist with 8-15 specific actionable items (each in category Structure/Legal/Running costs/Negotiation/Practical, plus a one-sentence "why").
-- Populate renovationCosts only for issues identified. estimatedCost as "£15,000 – £25,000" style range. priority Essential/Recommended/Optional. Sum totalEstimatedMin/Max. 2-3 sentence commentary. If none, items: [], totals: 0.
+- Populate renovationCosts only for issues identified. estimatedCost as "£15,000 – £25,000" style range. priority is one of "High priority", "Medium priority", "Low priority". For renovation priority: use "High priority" for items that affect safety, mortgageability, or immediate habitability; "Medium priority" for items that affect comfort, energy efficiency, or resale value within 5 years; "Low priority" for cosmetic or lifestyle improvements the buyer may choose to defer or skip entirely. Never use "Essential" as this implies no choice — buyers may choose to accept any condition. Sum totalEstimatedMin/Max. 2-3 sentence commentary. If none, items: [], totals: 0.
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
