@@ -73,6 +73,11 @@ const analysisSchema = z.object({
     autoRedFlag: z.boolean(),
     scotland: z.boolean().nullable().optional(),
     unavailable: z.boolean().nullable().optional(),
+    manualZone: z.string().nullable().optional(),
+    riskLevel: z.string().nullable().optional(),
+    insuranceImplications: z.string().nullable().optional(),
+    mortgageImplications: z.string().nullable().optional(),
+    resaleImpact: z.string().nullable().optional(),
   }).nullable().optional(),
   nearbySchools: z.object({
     schools: z.array(z.object({
