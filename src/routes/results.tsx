@@ -629,17 +629,15 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
                 <CostBreakdown analysis={a} stampDuty={stampDuty} stampDutyMode={sdMode} />
               </UnlockedSection>
 
+              {/* Renovation cost estimator — paid only */}
+              <RenovationCostsSection analysis={a} unlocked />
+
               <UnlockedSection title="Negotiation strategy">
                 <Negotiation analysis={a} />
               </UnlockedSection>
 
-              <UnlockedSection title="8 questions to ask at the viewing">
-                <ol className="list-decimal space-y-2 pl-5 text-sm">
-                  {a.viewingQuestions.map((q, i) => (
-                    <li key={i}>{q}</li>
-                  ))}
-                </ol>
-              </UnlockedSection>
+              {/* Viewing checklist — replaces previous viewing questions list */}
+              <ViewingChecklistSection analysis={a} />
 
               {/* Flood risk — full for Buyer Pass, locked teaser for Single Report */}
               <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
