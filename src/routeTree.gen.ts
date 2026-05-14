@@ -17,6 +17,7 @@ import { Route as PaymentSuccessRouteImport } from './routes/payment-success'
 import { Route as MyReportsRouteImport } from './routes/my-reports'
 import { Route as MyReportRouteImport } from './routes/my-report'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as CompareRouteImport } from './routes/compare'
 import { Route as BuyerLoginRouteImport } from './routes/buyer-login'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
@@ -65,6 +66,11 @@ const DashboardRoute = DashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompareRoute = CompareRouteImport.update({
+  id: '/compare',
+  path: '/compare',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BuyerLoginRoute = BuyerLoginRouteImport.update({
   id: '/buyer-login',
   path: '/buyer-login',
@@ -107,6 +113,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/buyer-login': typeof BuyerLoginRoute
+  '/compare': typeof CompareRoute
   '/dashboard': typeof DashboardRoute
   '/my-report': typeof MyReportRoute
   '/my-reports': typeof MyReportsRoute
@@ -124,6 +131,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/buyer-login': typeof BuyerLoginRoute
+  '/compare': typeof CompareRoute
   '/dashboard': typeof DashboardRoute
   '/my-report': typeof MyReportRoute
   '/my-reports': typeof MyReportsRoute
@@ -142,6 +150,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/buyer-login': typeof BuyerLoginRoute
+  '/compare': typeof CompareRoute
   '/dashboard': typeof DashboardRoute
   '/my-report': typeof MyReportRoute
   '/my-reports': typeof MyReportsRoute
@@ -161,6 +170,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/buyer-login'
+    | '/compare'
     | '/dashboard'
     | '/my-report'
     | '/my-reports'
@@ -178,6 +188,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/buyer-login'
+    | '/compare'
     | '/dashboard'
     | '/my-report'
     | '/my-reports'
@@ -195,6 +206,7 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/buyer-login'
+    | '/compare'
     | '/dashboard'
     | '/my-report'
     | '/my-reports'
@@ -213,6 +225,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   BuyerLoginRoute: typeof BuyerLoginRoute
+  CompareRoute: typeof CompareRoute
   DashboardRoute: typeof DashboardRoute
   MyReportRoute: typeof MyReportRoute
   MyReportsRoute: typeof MyReportsRoute
@@ -285,6 +298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compare': {
+      id: '/compare'
+      path: '/compare'
+      fullPath: '/compare'
+      preLoaderRoute: typeof CompareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/buyer-login': {
       id: '/buyer-login'
       path: '/buyer-login'
@@ -341,6 +361,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   BuyerLoginRoute: BuyerLoginRoute,
+  CompareRoute: CompareRoute,
   DashboardRoute: DashboardRoute,
   MyReportRoute: MyReportRoute,
   MyReportsRoute: MyReportsRoute,
