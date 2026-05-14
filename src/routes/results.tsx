@@ -1475,7 +1475,15 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
     setLoadingTier(tier);
     try {
       const priceId = tier === "single" ? PRICE_SINGLE : PRICE_PASS;
-      const res = await checkoutFn({ data: { priceId, listingUrl: listingUrl ?? "", tier } });
+      const res = await checkoutFn({
+        data: {
+          priceId,
+          listingUrl: listingUrl ?? "",
+          tier,
+          analysisJobId: recallJobId(listingUrl),
+          source: "results_page_upgrade",
+        },
+      });
       // Persist current results URL in history so the browser back button from
       // Stripe returns to this exact page with the listing URL param intact.
       try {
