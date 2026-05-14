@@ -259,6 +259,6 @@ export const getSavedAnalysis = createServerFn({ method: "POST" })
     return {
       found: true as const,
       listingUrl: (row as { listing_url: string | null }).listing_url,
-      analysis: (row as { analysis_json: Record<string, unknown> }).analysis_json,
+      analysis: (row as { analysis_json: AnalysisResult }).analysis_json,
     };
   });
