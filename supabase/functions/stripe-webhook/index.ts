@@ -16,14 +16,43 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 const SITE_URL = "https://roovr.co";
 const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
 
-function buildMagicLinkHtml(actionLink: string): { html: string; text: string } {
+type EmailVariant = "single" | "pass";
+
+const SINGLE_REPORT_PRICE_ID = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
+const BUYER_PASS_PRICE_ID = "price_1TWtPLCfTT0mXB2cU829oJlb";
+
+const EMAIL_COPY: Record<EmailVariant, {
+  subject: string;
+  heading: string;
+  body: string;
+  button: string;
+  textIntro: string;
+}> = {
+  single: {
+    subject: "Your Roovr report is ready",
+    heading: "Your report is ready",
+    body: "Your property analysis is saved to your account. Click below to access your full report.",
+    button: "Access my report →",
+    textIntro: "Your Roovr report is ready",
+  },
+  pass: {
+    subject: "Activate your Roovr Buyer Pass",
+    heading: "Activate your Buyer Pass",
+    body: "Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses for 90 days, including flood risk data, AI chat, and more.",
+    button: "Activate my Buyer Pass →",
+    textIntro: "Activate your Roovr Buyer Pass",
+  },
+};
+
+function buildMagicLinkHtml(actionLink: string, variant: EmailVariant): { html: string; text: string } {
+  const c = EMAIL_COPY[variant];
   const html = `<!doctype html><html><body style="margin:0;padding:32px 0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:0 20px;">
     <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#D85A30;letter-spacing:-0.01em;">● Roovr</div></div>
     <div style="background:#FFFDF9;border:1px solid rgba(26,17,8,0.12);border-radius:12px;padding:32px;">
-      <h1 style="font-size:24px;font-weight:700;color:#1A1108;margin:0 0 12px;line-height:1.3;">Activate your Buyer Pass</h1>
-      <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses for 90 days, including flood risk data, AI chat, and more.</p>
-      <a href="${actionLink}" style="background:#D85A30;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 22px;text-decoration:none;display:inline-block;">Activate my Buyer Pass →</a>
+      <h1 style="font-size:24px;font-weight:700;color:#1A1108;margin:0 0 12px;line-height:1.3;">${c.heading}</h1>
+      <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">${c.body}</p>
+      <a href="${actionLink}" style="background:#D85A30;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 22px;text-decoration:none;display:inline-block;">${c.button}</a>
       <hr style="border:none;border-top:1px solid rgba(26,17,8,0.12);margin:28px 0 20px;" />
       <p style="font-size:13px;color:#888780;line-height:1.5;margin:0 0 8px;">If the button does not work, copy and paste this link into your browser:</p>
       <a href="${actionLink}" style="font-size:13px;color:#D85A30;word-break:break-all;">${actionLink}</a>
@@ -32,12 +61,16 @@ function buildMagicLinkHtml(actionLink: string): { html: string; text: string } 
     <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.</p></div>
   </div>
 </body></html>`;
-  const text = `Activate your Roovr Buyer Pass\n\nThanks for purchasing a Roovr Buyer Pass. Activate your account here:\n${actionLink}\n\nIf you did not request this, you can safely ignore this email.`;
+  const text = `${c.textIntro}\n\n${c.body}\n${actionLink}\n\nIf you did not request this, you can safely ignore this email.`;
   return { html, text };
 }
 
-async function sendBuyerPassMagicLinkEdge(email: string, redirectTo: string): Promise<void> {
-  console.log("Magic link flow started for:", email);
+async function sendMagicLinkEdge(
+  email: string,
+  redirectTo: string,
+  variant: EmailVariant,
+): Promise<void> {
+  console.log(`Magic link flow started for: ${email} (variant=${variant})`);
 
   const { data: createData, error: createErr } = await supabase.auth.admin.createUser({
     email,
@@ -68,7 +101,8 @@ async function sendBuyerPassMagicLinkEdge(email: string, redirectTo: string): Pr
     return;
   }
 
-  const { html } = buildMagicLinkHtml(actionLink);
+  const copy = EMAIL_COPY[variant];
+  const { html } = buildMagicLinkHtml(actionLink, variant);
 
   const resendResponse = await fetch("https://api.resend.com/emails", {
     method: "POST",
@@ -79,7 +113,7 @@ async function sendBuyerPassMagicLinkEdge(email: string, redirectTo: string): Pr
     body: JSON.stringify({
       from: FROM_ADDRESS,
       to: email,
-      subject: "Activate your Buyer Pass",
+      subject: copy.subject,
       html,
     }),
   });
@@ -90,7 +124,25 @@ async function sendBuyerPassMagicLinkEdge(email: string, redirectTo: string): Pr
     return;
   }
 
-  console.log("Magic link email sent successfully via Resend to:", email);
+  console.log(`Magic link email (${variant}) sent successfully via Resend to: ${email}`);
+}
+
+async function resolveVariantFromSession(
+  session: Stripe.Checkout.Session,
+  fallback: EmailVariant,
+): Promise<EmailVariant> {
+  try {
+    const items = await stripe.checkout.sessions.listLineItems(session.id, { limit: 5 });
+    const priceIds = items.data
+      .map((li) => (typeof li.price === "string" ? li.price : li.price?.id ?? null))
+      .filter((p): p is string => !!p);
+    console.log("Stripe session price IDs:", JSON.stringify(priceIds), "session:", session.id);
+    if (priceIds.some((p) => p === SINGLE_REPORT_PRICE_ID)) return "single";
+    if (priceIds.some((p) => p === BUYER_PASS_PRICE_ID)) return "pass";
+  } catch (e) {
+    console.error("listLineItems error:", (e as Error).message);
+  }
+  return fallback;
 }
 
 // ── Legacy Lovable email-queue path (kept for restoration) ──────────────────
