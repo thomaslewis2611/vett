@@ -3043,10 +3043,10 @@ function FloodRiskSection({
 }
 
 const FLOOD_ZONES: { id: "1" | "2" | "3a" | "3b"; label: string; desc: string }[] = [
-  { id: "1", label: "Zone 1", desc: "Low probability (less than 0.1% annual chance)" },
-  { id: "2", label: "Zone 2", desc: "Medium probability (0.1% to 1% annual chance)" },
-  { id: "3a", label: "Zone 3a", desc: "High probability (greater than 1% annual chance)" },
-  { id: "3b", label: "Zone 3b", desc: "The Functional Floodplain (regularly floods)" },
+  { id: "1", label: "Zone 1", desc: "Less than 0.1% annual chance of flooding" },
+  { id: "2", label: "Zone 2", desc: "Between 0.1% and 1% annual chance" },
+  { id: "3a", label: "Zone 3a", desc: "Greater than 1% annual chance" },
+  { id: "3b", label: "Zone 3b", desc: "Regularly floods — highest risk category" },
 ];
 
 function FloodRiskNoDataCard({
@@ -3092,60 +3092,63 @@ function FloodRiskNoDataCard({
   return (
     <div>
       <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 600 }}>
-        No flood risk data found
+        No flood risk data found for this postcode
       </p>
       <p className="mt-2" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-        This property's postcode doesn't appear in the Environment Agency's flood risk database.
-        This is common for properties outside mapped flood zones, but it doesn't guarantee no risk
-        exists.
+        Properties outside mapped flood zones may not appear in the Environment Agency database —
+        this doesn't necessarily mean there is no flood risk. We recommend checking directly at the
+        Environment Agency using this property's postcode.
       </p>
       <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-        We recommend checking directly at{" "}
+        If you know the flood zone for this property — from the Environment Agency checker, your
+        surveyor, or local knowledge — enter it below for a full assessment of what it means for
+        insurance, mortgages and resale value.
+      </p>
+      <p className="mt-3">
         <a
           href="https://check-long-term-flood-risk.service.gov.uk"
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: "#185FA5", textDecoration: "underline" }}
+          style={{ color: "#185FA5", textDecoration: "underline", fontSize: 13, fontWeight: 500 }}
         >
-          check-long-term-flood-risk.service.gov.uk
-        </a>{" "}
-        using the property postcode.
+          Check at Environment Agency →
+        </a>
       </p>
-      <p className="mt-4" style={{ fontSize: 13, color: "#1A1108", fontWeight: 500 }}>
-        Know the flood zone? Enter it below for a full assessment.
-      </p>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div
+        className="mt-5 grid gap-3"
+        style={{ gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}
+      >
         {FLOOD_ZONES.map((z) => {
           const selected = pick === z.id;
           return (
-            <button
-              key={z.id}
-              type="button"
-              onClick={() => setPick(z.id)}
-              disabled={submitting}
-              aria-pressed={selected}
-              className="inline-flex items-center justify-center rounded-full transition-all"
-              style={{
-                background: selected ? "#D85A30" : "transparent",
-                color: selected ? "#FFFFFF" : "#5F5E5A",
-                border: selected ? "1px solid #D85A30" : "1px solid #5F5E5A",
-                padding: "8px 16px",
-                fontSize: 13,
-                fontWeight: 500,
-              }}
-            >
-              {z.label}
-            </button>
+            <div key={z.id} className="flex flex-col items-stretch">
+              <button
+                type="button"
+                onClick={() => setPick(z.id)}
+                disabled={submitting}
+                aria-pressed={selected}
+                className="inline-flex items-center justify-center rounded-full transition-all"
+                style={{
+                  background: selected ? "#D85A30" : "transparent",
+                  color: selected ? "#FFFFFF" : "#5F5E5A",
+                  border: selected ? "1px solid #D85A30" : "1px solid #5F5E5A",
+                  padding: "8px 16px",
+                  fontSize: 13,
+                  fontWeight: 500,
+                }}
+              >
+                {z.label}
+              </button>
+              <p
+                className="mt-2 text-center"
+                style={{ fontSize: 11, color: "#888780", lineHeight: 1.4 }}
+              >
+                {z.desc}
+              </p>
+            </div>
           );
         })}
       </div>
-      <ul className="mt-3 space-y-1.5">
-        {FLOOD_ZONES.map((z) => (
-          <li key={z.id} style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.5 }}>
-            <span style={{ fontWeight: 500, color: "#1A1108" }}>{z.label}:</span> {z.desc}
-          </li>
-        ))}
-      </ul>
       <div className="mt-4">
         <button
           type="button"
