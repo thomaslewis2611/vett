@@ -304,7 +304,7 @@ function ResultsPage() {
     );
   }
 
-  return <ReportView analysis={query.data!} listingUrl={url} token={token} />;
+  return <ReportView analysis={query.data!} listingUrl={url} token={token} fromSaved={Boolean(saved_id)} />;
 }
 
 function BlockedFallback({ url, message }: { url?: string; message: string }) {
