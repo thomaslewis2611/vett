@@ -2951,7 +2951,9 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
   }
 
   const ns = analysis.nearbySchools;
-  const allSchools = ns?.schools ?? [];
+  const allSchools = [...(ns?.schools ?? [])].sort(
+    (a, b) => (a.distanceMiles ?? 999) - (b.distanceMiles ?? 999),
+  );
   const primary = allSchools.filter((s) => s.phase === "primary").slice(0, 5);
   const secondary = allSchools.filter((s) => s.phase === "secondary").slice(0, 5);
   const empty = primary.length === 0 && secondary.length === 0;
