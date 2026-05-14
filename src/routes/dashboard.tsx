@@ -124,7 +124,7 @@ function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
         <main className="mx-auto max-w-3xl px-6 py-24 text-center" style={{ color: "#5F5E5A" }}>
           Loading your dashboard…
