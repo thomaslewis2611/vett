@@ -1083,12 +1083,14 @@ async function runAnalysis(
   let floodRiskRaw: FloodRiskRaw | null = null;
   let nearbySchoolsRaw: NearbySchoolsRaw | null = null;
   if (!listingContent && url) {
+    console.log(`[runAnalysis] Fetching listing content for ${url}...`);
     const fetched = await fetchListingText(url);
     listingContent = fetched.text;
     landRegistry = fetched.landRegistry;
     scotland = fetched.scotland;
     floodRiskRaw = fetched.floodRisk;
     nearbySchoolsRaw = fetched.nearbySchools;
+    console.log(`[runAnalysis] Listing content fetched, length: ${listingContent?.length ?? 0}`);
   }
   if (!listingContent || listingContent.length < 100) {
     throw new Error(
