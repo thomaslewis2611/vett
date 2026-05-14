@@ -96,6 +96,18 @@ export type AnalysisResult = {
     coordinates?: { lat: number; lng: number } | null;
     unavailable?: boolean | null;
   } | null;
+  broadband?: {
+    downloadSpeed: string;
+    uploadSpeed: string;
+    connectionType: "Full fibre" | "Fibre to cabinet" | "ADSL" | "Limited";
+    suitableForRemoteWork: boolean;
+    mobileSignal: "Excellent" | "Good" | "Limited" | "Poor";
+    commentary: string;
+    speedRating: "Excellent" | "Good" | "Average" | "Poor";
+    source?: string | null;
+    unavailable?: boolean | null;
+    autoRedFlag?: boolean | null;
+  } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
     avgSoldPriceArea: number | null;

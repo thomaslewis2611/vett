@@ -88,6 +88,18 @@ const analysisSchema = z.object({
     coordinates: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(),
     unavailable: z.boolean().nullable().optional(),
   }).nullable().optional(),
+  broadband: z.object({
+    downloadSpeed: z.string(),
+    uploadSpeed: z.string(),
+    connectionType: z.enum(["Full fibre", "Fibre to cabinet", "ADSL", "Limited"]),
+    suitableForRemoteWork: z.boolean(),
+    mobileSignal: z.enum(["Excellent", "Good", "Limited", "Poor"]),
+    commentary: z.string(),
+    speedRating: z.enum(["Excellent", "Good", "Average", "Poor"]),
+    source: z.string().nullable().optional(),
+    unavailable: z.boolean().nullable().optional(),
+    autoRedFlag: z.boolean().nullable().optional(),
+  }).nullable().optional(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
@@ -1145,6 +1157,228 @@ async function fetchCrimeStats(
   return raw;
 }
 
+// ---------------- Broadband (Ofcom Connected Nations + Claude estimation) ----------------
+type BroadbandRaw = {
+  downloadSpeed: string;
+  uploadSpeed: string;
+  connectionType: "Full fibre" | "Fibre to cabinet" | "ADSL" | "Limited";
+  suitableForRemoteWork: boolean;
+  mobileSignal: "Excellent" | "Good" | "Limited" | "Poor";
+  commentary: string;
+  speedRating: "Excellent" | "Good" | "Average" | "Poor";
+  source: "Ofcom" | "Estimated";
+  unavailable?: boolean;
+  autoRedFlag?: boolean;
+};
+
+const BROADBAND_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+type OfcomBroadband = {
+  maxDownloadSpeed?: number;
+  maxUploadSpeed?: number;
+  fttcAvailable?: boolean;
+  fttpAvailable?: boolean;
+  ultraFastAvailable?: boolean;
+  mobileSignal?: string;
+};
+
+async function fetchOfcomBroadband(postcode: string): Promise<OfcomBroadband | null> {
+  try {
+    const pc = encodeURIComponent(postcode.trim());
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8_000);
+    const res = await fetch(
+      `https://api.ofcom.org.uk/connected-nations/broadband-coverage?postcode=${pc}`,
+      { headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" }, signal: ctrl.signal },
+    );
+    clearTimeout(t);
+    if (!res.ok) {
+      console.log(`[broadband] Ofcom HTTP ${res.status} — falling back to estimation`);
+      return null;
+    }
+    const json = (await res.json()) as OfcomBroadband;
+    return json ?? null;
+  } catch (err) {
+    console.log("[broadband] Ofcom unavailable, falling back to estimation:", (err as Error).message);
+    return null;
+  }
+}
+
+async function fetchPostcodeArea(postcode: string): Promise<{
+  admin_district?: string;
+  region?: string;
+  rural_urban?: string | null;
+  parish?: string | null;
+} | null> {
+  try {
+    const pc = encodeURIComponent(postcode.trim());
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8_000);
+    const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    const j = (await res.json()) as { result?: Record<string, unknown> };
+    const r = j.result;
+    if (!r) return null;
+    return {
+      admin_district: typeof r.admin_district === "string" ? r.admin_district : undefined,
+      region: typeof r.region === "string" ? r.region : undefined,
+      rural_urban: null,
+      parish: typeof r.parish === "string" ? (r.parish as string) : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function ratingFromSpeed(maxDown: number): BroadbandRaw["speedRating"] {
+  if (maxDown >= 300) return "Excellent";
+  if (maxDown >= 80) return "Good";
+  if (maxDown >= 24) return "Average";
+  return "Poor";
+}
+
+function connectionFromOfcom(o: OfcomBroadband): BroadbandRaw["connectionType"] {
+  if (o.fttpAvailable || o.ultraFastAvailable) return "Full fibre";
+  if (o.fttcAvailable) return "Fibre to cabinet";
+  if ((o.maxDownloadSpeed ?? 0) >= 10) return "ADSL";
+  return "Limited";
+}
+
+async function generateBroadbandFromClaude(
+  apiKey: string | undefined,
+  payload: { postcode: string; area: { admin_district?: string; region?: string } | null; ofcom: OfcomBroadband | null },
+): Promise<BroadbandRaw> {
+  const fallback: BroadbandRaw = {
+    downloadSpeed: "Up to 67 Mbps",
+    uploadSpeed: "Up to 18 Mbps",
+    connectionType: "Fibre to cabinet",
+    suitableForRemoteWork: true,
+    mobileSignal: "Good",
+    commentary: "Typical UK broadband speeds in this area should support remote working, video calls and streaming. Confirm exact availability with providers before committing.",
+    speedRating: "Good",
+    source: payload.ofcom ? "Ofcom" : "Estimated",
+    autoRedFlag: false,
+  };
+  if (!apiKey) return fallback;
+
+  try {
+    const client = new Anthropic({ apiKey, timeout: 25_000, maxRetries: 0 });
+    const ofcomBlock = payload.ofcom
+      ? `Ofcom Connected Nations data:
+- Max download speed: ${payload.ofcom.maxDownloadSpeed ?? "unknown"} Mbps
+- Max upload speed: ${payload.ofcom.maxUploadSpeed ?? "unknown"} Mbps
+- FTTP (full fibre) available: ${payload.ofcom.fttpAvailable ?? "unknown"}
+- FTTC (fibre to cabinet) available: ${payload.ofcom.fttcAvailable ?? "unknown"}
+- Ultrafast (300Mbps+) available: ${payload.ofcom.ultraFastAvailable ?? "unknown"}
+- Mobile signal: ${payload.ofcom.mobileSignal ?? "unknown"}`
+      : `No Ofcom coverage data was returned. Estimate typical speeds based on the area type (urban / suburban / rural) and what is normally available across the UK in similar areas in 2025.`;
+
+    const prompt = `You are a UK property connectivity analyst. Postcode: ${payload.postcode}. Area: ${payload.area?.admin_district ?? "unknown"}, ${payload.area?.region ?? "unknown"}.
+
+${ofcomBlock}
+
+Return ONLY a single valid JSON object (no markdown, no code fences) of this exact shape:
+{
+  "downloadSpeed": string (e.g. "Up to 67 Mbps"),
+  "uploadSpeed": string (e.g. "Up to 18 Mbps"),
+  "connectionType": "Full fibre" | "Fibre to cabinet" | "ADSL" | "Limited",
+  "suitableForRemoteWork": boolean (true if download is at least ~30 Mbps and upload at least ~5 Mbps),
+  "mobileSignal": "Excellent" | "Good" | "Limited" | "Poor",
+  "commentary": string (2 sentences: is this adequate for modern use, any concerns for remote workers / heavy users / smart-home devices),
+  "speedRating": "Excellent" (300+ Mbps full fibre) | "Good" (80-299 Mbps) | "Average" (24-79 Mbps FTTC) | "Poor" (<24 Mbps ADSL or limited)
+}`;
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 600,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as Partial<BroadbandRaw>;
+
+    const connectionType =
+      (["Full fibre", "Fibre to cabinet", "ADSL", "Limited"] as const).includes(parsed.connectionType as never)
+        ? (parsed.connectionType as BroadbandRaw["connectionType"])
+        : fallback.connectionType;
+    const speedRating =
+      (["Excellent", "Good", "Average", "Poor"] as const).includes(parsed.speedRating as never)
+        ? (parsed.speedRating as BroadbandRaw["speedRating"])
+        : (payload.ofcom ? ratingFromSpeed(payload.ofcom.maxDownloadSpeed ?? 0) : fallback.speedRating);
+    const mobileSignal =
+      (["Excellent", "Good", "Limited", "Poor"] as const).includes(parsed.mobileSignal as never)
+        ? (parsed.mobileSignal as BroadbandRaw["mobileSignal"])
+        : fallback.mobileSignal;
+
+    const autoRedFlag = connectionType === "ADSL" || connectionType === "Limited" || speedRating === "Poor";
+
+    return {
+      downloadSpeed: typeof parsed.downloadSpeed === "string" ? parsed.downloadSpeed : fallback.downloadSpeed,
+      uploadSpeed: typeof parsed.uploadSpeed === "string" ? parsed.uploadSpeed : fallback.uploadSpeed,
+      connectionType,
+      suitableForRemoteWork: typeof parsed.suitableForRemoteWork === "boolean" ? parsed.suitableForRemoteWork : speedRating !== "Poor",
+      mobileSignal,
+      commentary: typeof parsed.commentary === "string" && parsed.commentary.length > 10 ? parsed.commentary : fallback.commentary,
+      speedRating,
+      source: payload.ofcom ? "Ofcom" : "Estimated",
+      autoRedFlag,
+    };
+  } catch (err) {
+    console.error("[broadband] Claude commentary failed:", err);
+    return fallback;
+  }
+}
+
+async function fetchBroadband(
+  postcode: string | null,
+  apiKey: string | undefined,
+): Promise<BroadbandRaw | null> {
+  if (!postcode) return null;
+  const cacheKey = `broadband:${postcode.toUpperCase().replace(/\s+/g, "")}`;
+
+  // Cache lookup
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, fetched_at")
+      .eq("url", cacheKey)
+      .maybeSingle();
+    if (
+      cached?.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < BROADBAND_TTL_MS
+    ) {
+      try {
+        const parsed = JSON.parse(cached.text_content) as BroadbandRaw;
+        console.log(`[broadband] cache hit for ${cacheKey}`);
+        return parsed;
+      } catch { /* ignore */ }
+    }
+  } catch (err) {
+    console.error("[broadband] cache lookup failed:", err);
+  }
+
+  const [ofcom, area] = await Promise.all([
+    fetchOfcomBroadband(postcode),
+    fetchPostcodeArea(postcode),
+  ]);
+
+  const raw = await generateBroadbandFromClaude(apiKey, { postcode, area, ofcom });
+
+  try {
+    await supabaseAdmin
+      .from("listing_cache")
+      .upsert(
+        { url: cacheKey, text_content: JSON.stringify(raw), fetched_at: new Date().toISOString() },
+        { onConflict: "url" },
+      );
+  } catch (err) {
+    console.error("[broadband] cache upsert failed:", err);
+  }
+
+  console.log(`[broadband] ${cacheKey} → ${raw.connectionType} / ${raw.speedRating} (source=${raw.source})`);
+  return raw;
+}
 type FetchedListing = {
   text: string;
   landRegistry: LandRegistryResult;
@@ -1153,6 +1387,7 @@ type FetchedListing = {
   floodRisk: FloodRiskRaw | null;
   nearbySchools: NearbySchoolsRaw | null;
   crime: CrimeRaw | null;
+  broadband: BroadbandRaw | null;
 };
 
 async function fetchListingText(url: string): Promise<FetchedListing> {
@@ -1214,24 +1449,33 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
       })
     : Promise.resolve(null);
 
+  const broadbandPromise: Promise<BroadbandRaw | null> = postcode
+    ? fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY).catch((err) => {
+        console.error("[broadband] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
   if (cachedText) {
-    const [landRegistry, floodRisk, nearbySchools, crime] = await Promise.all([
+    const [landRegistry, floodRisk, nearbySchools, crime, broadband] = await Promise.all([
       landRegistryPromise,
       floodRiskPromise,
       nearbySchoolsPromise,
       crimePromise,
+      broadbandPromise,
     ]);
-    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime };
+    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband };
   }
 
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  const [landRegistry, floodRisk, nearbySchools, crime] = await Promise.all([
+  const [landRegistry, floodRisk, nearbySchools, crime, broadband] = await Promise.all([
     landRegistryPromise,
     floodRiskPromise,
     nearbySchoolsPromise,
     crimePromise,
+    broadbandPromise,
   ]);
 
   const notes: string[] = [];
@@ -1277,7 +1521,7 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
     }
   }
 
-  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime };
+  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband };
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
@@ -1375,6 +1619,7 @@ function toPreview(a: AnalysisResult): AnalysisResult {
     comparables: [],
     nearbySchools: null,
     crime: null,
+    broadband: null,
     renovationCosts: null,
   };
 }
@@ -1399,6 +1644,7 @@ async function runAnalysis(
   let floodRiskRaw: FloodRiskRaw | null = null;
   let nearbySchoolsRaw: NearbySchoolsRaw | null = null;
   let crimeRaw: CrimeRaw | null = null;
+  let broadbandRaw: BroadbandRaw | null = null;
   if (!listingContent && url) {
     console.log(`[runAnalysis] Fetching listing content for ${url}...`);
     const fetched = await fetchListingText(url);
@@ -1408,6 +1654,7 @@ async function runAnalysis(
     floodRiskRaw = fetched.floodRisk;
     nearbySchoolsRaw = fetched.nearbySchools;
     crimeRaw = fetched.crime;
+    broadbandRaw = fetched.broadband;
     console.log(`[runAnalysis] Listing content fetched, length: ${listingContent?.length ?? 0}`);
   }
   if (!listingContent || listingContent.length < 100) {
@@ -1614,6 +1861,36 @@ async function runAnalysis(
     }
   } else {
     full.crime = null;
+  }
+
+  if (broadbandRaw) {
+    full.broadband = {
+      downloadSpeed: broadbandRaw.downloadSpeed,
+      uploadSpeed: broadbandRaw.uploadSpeed,
+      connectionType: broadbandRaw.connectionType,
+      suitableForRemoteWork: broadbandRaw.suitableForRemoteWork,
+      mobileSignal: broadbandRaw.mobileSignal,
+      commentary: broadbandRaw.commentary,
+      speedRating: broadbandRaw.speedRating,
+      source: broadbandRaw.source,
+      unavailable: broadbandRaw.unavailable ?? false,
+      autoRedFlag: broadbandRaw.autoRedFlag ?? false,
+    };
+    if (broadbandRaw.autoRedFlag && !broadbandRaw.unavailable) {
+      const title = "Poor broadband connectivity";
+      if (!full.redFlags.some((f) => f.title === title)) {
+        full.redFlags = [
+          ...full.redFlags,
+          {
+            severity: "medium",
+            title,
+            detail: "This postcode has limited broadband speeds which may affect remote working, streaming, and smart home devices. Check with providers before committing.",
+          },
+        ];
+      }
+    }
+  } else {
+    full.broadband = null;
   }
 
   return full;
@@ -1952,6 +2229,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
     floodRisk: AnalysisResult["floodRisk"] | null;
     nearbySchools: AnalysisResult["nearbySchools"] | null;
     crime: AnalysisResult["crime"] | null;
+    broadband: AnalysisResult["broadband"] | null;
     error?: string;
   }> => {
     try {
@@ -1964,7 +2242,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
       const valid =
         pass && pass.expires_at && new Date(pass.expires_at as string).getTime() > Date.now();
       if (!valid) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, error: "Buyer Pass required" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "Buyer Pass required" };
       }
 
       // 2. Load existing saved analysis row (most recent for this user+listing).
@@ -1977,11 +2255,11 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         .limit(1);
       const row = rows?.[0];
       if (!row) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, error: "No saved analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "No saved analysis" };
       }
       const analysis = (row.analysis_json as AnalysisResult) ?? null;
       if (!analysis) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, error: "Empty analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "Empty analysis" };
       }
 
       // 3. Extract postcode from saved address.
@@ -1989,8 +2267,8 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         extractPostcode(analysis.property?.address ?? "") ??
         extractPostcode((analysis as any)?.property?.listingUrl ?? "");
 
-      // 4. Fetch flood + schools + crime in parallel (cached; cheap on repeat).
-      const [floodRaw, schoolsRaw, crimeRawResult] = await Promise.all([
+      // 4. Fetch flood + schools + crime + broadband in parallel (cached).
+      const [floodRaw, schoolsRaw, crimeRawResult, broadbandRawResult] = await Promise.all([
         fetchFloodRisk(postcode).catch((err) => {
           console.error("[fetchBuyerPassExtras] flood failed:", err);
           return null;
@@ -2001,6 +2279,10 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         }),
         fetchCrimeStats(postcode, analysis.property?.address ?? "", process.env.ANTHROPIC_API_KEY).catch((err) => {
           console.error("[fetchBuyerPassExtras] crime failed:", err);
+          return null;
+        }),
+        fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY).catch((err) => {
+          console.error("[fetchBuyerPassExtras] broadband failed:", err);
           return null;
         }),
       ]);
@@ -2049,8 +2331,23 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
           }
         : null;
 
+      const broadband: AnalysisResult["broadband"] = broadbandRawResult
+        ? {
+            downloadSpeed: broadbandRawResult.downloadSpeed,
+            uploadSpeed: broadbandRawResult.uploadSpeed,
+            connectionType: broadbandRawResult.connectionType,
+            suitableForRemoteWork: broadbandRawResult.suitableForRemoteWork,
+            mobileSignal: broadbandRawResult.mobileSignal,
+            commentary: broadbandRawResult.commentary,
+            speedRating: broadbandRawResult.speedRating,
+            source: broadbandRawResult.source,
+            unavailable: broadbandRawResult.unavailable ?? null,
+            autoRedFlag: broadbandRawResult.autoRedFlag ?? null,
+          }
+        : null;
+
       // 6. Patch the saved analysis row (admin client bypasses RLS).
-      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime };
+      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime, broadband };
       try {
         await supabaseAdmin
           .from("saved_analyses")
@@ -2060,7 +2357,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         console.error("[fetchBuyerPassExtras] update failed:", err);
       }
 
-      return { ok: true, floodRisk, nearbySchools, crime };
+      return { ok: true, floodRisk, nearbySchools, crime, broadband };
     } catch (err) {
       console.error("[fetchBuyerPassExtras] failed:", err);
       return {
@@ -2068,6 +2365,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         floodRisk: null,
         nearbySchools: null,
         crime: null,
+        broadband: null,
         error: (err as Error).message ?? "Unknown error",
       };
     }
