@@ -1041,6 +1041,162 @@ function ScoreBadge({ score, label }: { score: number; label: string }) {
   );
 }
 
+type ManualSqftPatch = NonNullable<AnalysisResult["manualSqftAnalysis"]>;
+
+function PricePerSqftCard({
+  analysis,
+  listingUrl,
+  userEmail,
+  onUpdate,
+}: {
+  analysis: AnalysisResult;
+  listingUrl?: string;
+  userEmail?: string | null;
+  onUpdate: (patch: ManualSqftPatch) => void;
+}) {
+  const ppsf = analysis.metrics?.pricePerSqFt;
+  const manual = analysis.manualSqftAnalysis ?? null;
+  const hasValue = (typeof ppsf === "number" && ppsf > 0) || !!manual;
+  const areaAvg = analysis.areaContext?.avgPricePerSqFtArea ?? null;
+
+  const analyseFn = useServerFn(analyseManualSqft);
+  const [editing, setEditing] = useState(!hasValue);
+  const [input, setInput] = useState<string>(
+    manual?.sqft ? String(manual.sqft) : "",
+  );
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    setError(null);
+    const cleaned = input.replace(/[^0-9]/g, "");
+    const sqft = Number(cleaned);
+    if (!sqft || sqft < 50 || sqft > 50000) {
+      setError("Enter a sq ft between 50 and 50,000");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const r = await analyseFn({
+        data: {
+          sqft,
+          price: analysis.property?.price ?? 0,
+          propertyType: analysis.property?.type ?? null,
+          address: analysis.property?.address ?? null,
+          areaAvgPricePerSqFt: areaAvg,
+          email: userEmail ?? null,
+          listingUrl: listingUrl ?? null,
+        },
+      });
+      onUpdate({ ...r.manualSqftAnalysis, sqft });
+      setEditing(false);
+    } catch (err) {
+      console.error("[PricePerSqftCard] failed", err);
+      setError("Could not calculate. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const deltaColor =
+    manual?.vsAreaAvgLabel === "below" ? "#3B6D11" : "#A32D2D";
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Price / sq ft
+        </span>
+        <PoundSterling className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="mt-3 text-2xl font-semibold tracking-tight">
+        {hasValue && !editing
+          ? `£${(manual?.pricePerSqFt ?? ppsf ?? 0).toLocaleString()}`
+          : "—"}
+      </div>
+      {hasValue && !editing && manual && (
+        <>
+          <div
+            className="mt-1 text-xs"
+            style={{ color: deltaColor, fontWeight: 500 }}
+          >
+            {manual.vsAreaAvg} {manual.vsAreaAvgLabel} area avg
+          </div>
+          <div
+            className="mt-2 text-[11px]"
+            style={{ color: "#5F5E5A", lineHeight: 1.5 }}
+          >
+            {manual.commentary}
+          </div>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="mt-2 text-[11px]"
+            style={{ color: "#D85A30", fontWeight: 500 }}
+          >
+            Edit →
+          </button>
+        </>
+      )}
+      {editing && (
+        <div className="mt-2">
+          {!submitting && (
+            <div
+              className="text-[11px]"
+              style={{ color: "#5F5E5A", lineHeight: 1.4 }}
+            >
+              Know the sq ft? Add it for a price analysis
+            </div>
+          )}
+          {submitting ? (
+            <div
+              className="mt-2 text-xs"
+              style={{ color: "#5F5E5A" }}
+            >
+              Calculating…
+            </div>
+          ) : (
+            <div className="mt-2 flex items-center gap-1.5">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  placeholder="e.g. 1,200"
+                  className="w-full rounded-md border border-border bg-background px-2 py-1 pr-10 text-xs"
+                />
+                <span
+                  className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10px]"
+                  style={{ color: "#888780" }}
+                >
+                  sq ft
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={submit}
+                className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-medium text-white"
+                style={{ background: "#D85A30" }}
+              >
+                Calculate →
+              </button>
+            </div>
+          )}
+          {error && (
+            <div
+              className="mt-1.5 text-[11px]"
+              style={{ color: "#A32D2D" }}
+            >
+              {error}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function MetricCard({
   label,
   value,
