@@ -1157,7 +1157,229 @@ async function fetchCrimeStats(
   return raw;
 }
 
-type FetchedListing = {
+// ---------------- Broadband (Ofcom Connected Nations + Claude estimation) ----------------
+type BroadbandRaw = {
+  downloadSpeed: string;
+  uploadSpeed: string;
+  connectionType: "Full fibre" | "Fibre to cabinet" | "ADSL" | "Limited";
+  suitableForRemoteWork: boolean;
+  mobileSignal: "Excellent" | "Good" | "Limited" | "Poor";
+  commentary: string;
+  speedRating: "Excellent" | "Good" | "Average" | "Poor";
+  source: "Ofcom" | "Estimated";
+  unavailable?: boolean;
+  autoRedFlag?: boolean;
+};
+
+const BROADBAND_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+type OfcomBroadband = {
+  maxDownloadSpeed?: number;
+  maxUploadSpeed?: number;
+  fttcAvailable?: boolean;
+  fttpAvailable?: boolean;
+  ultraFastAvailable?: boolean;
+  mobileSignal?: string;
+};
+
+async function fetchOfcomBroadband(postcode: string): Promise<OfcomBroadband | null> {
+  try {
+    const pc = encodeURIComponent(postcode.trim());
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8_000);
+    const res = await fetch(
+      `https://api.ofcom.org.uk/connected-nations/broadband-coverage?postcode=${pc}`,
+      { headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" }, signal: ctrl.signal },
+    );
+    clearTimeout(t);
+    if (!res.ok) {
+      console.log(`[broadband] Ofcom HTTP ${res.status} — falling back to estimation`);
+      return null;
+    }
+    const json = (await res.json()) as OfcomBroadband;
+    return json ?? null;
+  } catch (err) {
+    console.log("[broadband] Ofcom unavailable, falling back to estimation:", (err as Error).message);
+    return null;
+  }
+}
+
+async function fetchPostcodeArea(postcode: string): Promise<{
+  admin_district?: string;
+  region?: string;
+  rural_urban?: string | null;
+  parish?: string | null;
+} | null> {
+  try {
+    const pc = encodeURIComponent(postcode.trim());
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8_000);
+    const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    const j = (await res.json()) as { result?: Record<string, unknown> };
+    const r = j.result;
+    if (!r) return null;
+    return {
+      admin_district: typeof r.admin_district === "string" ? r.admin_district : undefined,
+      region: typeof r.region === "string" ? r.region : undefined,
+      rural_urban: null,
+      parish: typeof r.parish === "string" ? (r.parish as string) : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function ratingFromSpeed(maxDown: number): BroadbandRaw["speedRating"] {
+  if (maxDown >= 300) return "Excellent";
+  if (maxDown >= 80) return "Good";
+  if (maxDown >= 24) return "Average";
+  return "Poor";
+}
+
+function connectionFromOfcom(o: OfcomBroadband): BroadbandRaw["connectionType"] {
+  if (o.fttpAvailable || o.ultraFastAvailable) return "Full fibre";
+  if (o.fttcAvailable) return "Fibre to cabinet";
+  if ((o.maxDownloadSpeed ?? 0) >= 10) return "ADSL";
+  return "Limited";
+}
+
+async function generateBroadbandFromClaude(
+  apiKey: string | undefined,
+  payload: { postcode: string; area: { admin_district?: string; region?: string } | null; ofcom: OfcomBroadband | null },
+): Promise<BroadbandRaw> {
+  const fallback: BroadbandRaw = {
+    downloadSpeed: "Up to 67 Mbps",
+    uploadSpeed: "Up to 18 Mbps",
+    connectionType: "Fibre to cabinet",
+    suitableForRemoteWork: true,
+    mobileSignal: "Good",
+    commentary: "Typical UK broadband speeds in this area should support remote working, video calls and streaming. Confirm exact availability with providers before committing.",
+    speedRating: "Good",
+    source: payload.ofcom ? "Ofcom" : "Estimated",
+    autoRedFlag: false,
+  };
+  if (!apiKey) return fallback;
+
+  try {
+    const client = new Anthropic({ apiKey, timeout: 25_000, maxRetries: 0 });
+    const ofcomBlock = payload.ofcom
+      ? `Ofcom Connected Nations data:
+- Max download speed: ${payload.ofcom.maxDownloadSpeed ?? "unknown"} Mbps
+- Max upload speed: ${payload.ofcom.maxUploadSpeed ?? "unknown"} Mbps
+- FTTP (full fibre) available: ${payload.ofcom.fttpAvailable ?? "unknown"}
+- FTTC (fibre to cabinet) available: ${payload.ofcom.fttcAvailable ?? "unknown"}
+- Ultrafast (300Mbps+) available: ${payload.ofcom.ultraFastAvailable ?? "unknown"}
+- Mobile signal: ${payload.ofcom.mobileSignal ?? "unknown"}`
+      : `No Ofcom coverage data was returned. Estimate typical speeds based on the area type (urban / suburban / rural) and what is normally available across the UK in similar areas in 2025.`;
+
+    const prompt = `You are a UK property connectivity analyst. Postcode: ${payload.postcode}. Area: ${payload.area?.admin_district ?? "unknown"}, ${payload.area?.region ?? "unknown"}.
+
+${ofcomBlock}
+
+Return ONLY a single valid JSON object (no markdown, no code fences) of this exact shape:
+{
+  "downloadSpeed": string (e.g. "Up to 67 Mbps"),
+  "uploadSpeed": string (e.g. "Up to 18 Mbps"),
+  "connectionType": "Full fibre" | "Fibre to cabinet" | "ADSL" | "Limited",
+  "suitableForRemoteWork": boolean (true if download is at least ~30 Mbps and upload at least ~5 Mbps),
+  "mobileSignal": "Excellent" | "Good" | "Limited" | "Poor",
+  "commentary": string (2 sentences: is this adequate for modern use, any concerns for remote workers / heavy users / smart-home devices),
+  "speedRating": "Excellent" (300+ Mbps full fibre) | "Good" (80-299 Mbps) | "Average" (24-79 Mbps FTTC) | "Poor" (<24 Mbps ADSL or limited)
+}`;
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 600,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as Partial<BroadbandRaw>;
+
+    const connectionType =
+      (["Full fibre", "Fibre to cabinet", "ADSL", "Limited"] as const).includes(parsed.connectionType as never)
+        ? (parsed.connectionType as BroadbandRaw["connectionType"])
+        : fallback.connectionType;
+    const speedRating =
+      (["Excellent", "Good", "Average", "Poor"] as const).includes(parsed.speedRating as never)
+        ? (parsed.speedRating as BroadbandRaw["speedRating"])
+        : (payload.ofcom ? ratingFromSpeed(payload.ofcom.maxDownloadSpeed ?? 0) : fallback.speedRating);
+    const mobileSignal =
+      (["Excellent", "Good", "Limited", "Poor"] as const).includes(parsed.mobileSignal as never)
+        ? (parsed.mobileSignal as BroadbandRaw["mobileSignal"])
+        : fallback.mobileSignal;
+
+    const autoRedFlag = connectionType === "ADSL" || connectionType === "Limited" || speedRating === "Poor";
+
+    return {
+      downloadSpeed: typeof parsed.downloadSpeed === "string" ? parsed.downloadSpeed : fallback.downloadSpeed,
+      uploadSpeed: typeof parsed.uploadSpeed === "string" ? parsed.uploadSpeed : fallback.uploadSpeed,
+      connectionType,
+      suitableForRemoteWork: typeof parsed.suitableForRemoteWork === "boolean" ? parsed.suitableForRemoteWork : speedRating !== "Poor",
+      mobileSignal,
+      commentary: typeof parsed.commentary === "string" && parsed.commentary.length > 10 ? parsed.commentary : fallback.commentary,
+      speedRating,
+      source: payload.ofcom ? "Ofcom" : "Estimated",
+      autoRedFlag,
+    };
+  } catch (err) {
+    console.error("[broadband] Claude commentary failed:", err);
+    return fallback;
+  }
+}
+
+async function fetchBroadband(
+  postcode: string | null,
+  apiKey: string | undefined,
+): Promise<BroadbandRaw | null> {
+  if (!postcode) return null;
+  const cacheKey = `broadband:${postcode.toUpperCase().replace(/\s+/g, "")}`;
+
+  // Cache lookup
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, fetched_at")
+      .eq("url", cacheKey)
+      .maybeSingle();
+    if (
+      cached?.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < BROADBAND_TTL_MS
+    ) {
+      try {
+        const parsed = JSON.parse(cached.text_content) as BroadbandRaw;
+        console.log(`[broadband] cache hit for ${cacheKey}`);
+        return parsed;
+      } catch { /* ignore */ }
+    }
+  } catch (err) {
+    console.error("[broadband] cache lookup failed:", err);
+  }
+
+  const [ofcom, area] = await Promise.all([
+    fetchOfcomBroadband(postcode),
+    fetchPostcodeArea(postcode),
+  ]);
+
+  const raw = await generateBroadbandFromClaude(apiKey, { postcode, area, ofcom });
+
+  try {
+    await supabaseAdmin
+      .from("listing_cache")
+      .upsert(
+        { url: cacheKey, text_content: JSON.stringify(raw), fetched_at: new Date().toISOString() },
+        { onConflict: "url" },
+      );
+  } catch (err) {
+    console.error("[broadband] cache upsert failed:", err);
+  }
+
+  console.log(`[broadband] ${cacheKey} → ${raw.connectionType} / ${raw.speedRating} (source=${raw.source})`);
+  return raw;
+}
+
   text: string;
   landRegistry: LandRegistryResult;
   scotland: boolean;
