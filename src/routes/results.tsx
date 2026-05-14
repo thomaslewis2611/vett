@@ -3538,7 +3538,7 @@ function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResu
                         padding: "2px 8px",
                       }}
                     >
-                      {it.priority}
+                      {displayPriority(it.priority)}
                     </span>
                   </div>
                   {it.notes && (
