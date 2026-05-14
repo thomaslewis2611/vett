@@ -822,10 +822,12 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
         </section>
 
 
-        {/* Seller motivation — all tiers (signals/commentary locked for free) */}
-        <SafeSection name="sellerMotivation">
-          <SellerMotivationSection analysis={a} unlocked={unlocked} />
-        </SafeSection>
+        {/* Seller motivation — paid tiers only (Single Report + Buyer Pass) */}
+        {unlocked && (
+          <SafeSection name="sellerMotivation">
+            <SellerMotivationSection analysis={a} unlocked={unlocked} />
+          </SafeSection>
+        )}
 
         {/* EPC */}
         <EpcSection
@@ -1494,9 +1496,12 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
             "True cost breakdown (stamp duty, legal fees, mortgage estimate)",
             "Viewing questions to ask the agent",
             "Negotiation strategy and recommended offer range",
+            "Seller motivation score",
+            "Viewing checklist — specific to this property",
+            "Renovation cost estimator",
             "Access anywhere — report saved to your account",
           ]}
-          upsell={{ text: "Upgrade to Buyer Pass for AI chat and the renovation cost estimator →", targetId: "buyer-pass-card" }}
+          upsell={{ text: "Upgrade to Buyer Pass for AI chat, flood risk and nearby schools →", targetId: "buyer-pass-card" }}
         />
         <PlanCard
           id="buyer-pass-card"
@@ -1511,9 +1516,8 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           features={[
             "Unlimited analyses for 90 days",
             "AI chat on every property",
-            "Seller motivation score",
-            "Viewing checklist — specific to this property",
-            "Renovation cost estimator",
+            "Flood risk assessment",
+            "Nearby schools with Ofsted ratings",
             "Save and compare reports",
             "Report emailed to you",
             "Access anywhere — all reports saved to your account",
