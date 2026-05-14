@@ -111,7 +111,10 @@ function PaymentSuccessPage() {
           title: "Payment confirmed",
           body: (
             <>
-              Your report is saved to your account. We've sent a magic link to{" "}
+              {state.hadAnalysisJob
+                ? "Your report is saved. Click your magic link to view it with full Single Report access."
+                : "Your report is saved to your account."}{" "}
+              We've sent a magic link to{" "}
               <span style={{ fontWeight: 500 }}>{state.email}</span> — click it to access your report from any device.
             </>
           ),
@@ -129,6 +132,9 @@ function PaymentSuccessPage() {
             title: "You're all set",
             body: (
               <>
+                {state.hadAnalysisJob
+                  ? "Your report is saved. Click your magic link to view it with full Buyer Pass access. "
+                  : ""}
                 Your Buyer Pass is active until <span style={{ fontWeight: 500 }}>{expiryLabel}</span>. We've sent a magic link to{" "}
                 <span style={{ fontWeight: 500 }}>{state.email}</span> — click it to start analysing properties.
               </>
