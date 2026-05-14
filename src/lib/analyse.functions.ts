@@ -1627,3 +1627,121 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
       error: null,
     };
   });
+
+// ---------------- Buyer Pass Extras (post-upgrade fetch) ----------------
+// Fetches ONLY flood risk + nearby schools for an existing saved analysis,
+// then patches the saved row. Does NOT re-run Claude — the rest of the
+// report stays exactly as it was when first analysed.
+export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      email: z.string().email().max(320),
+      listingUrl: z.string().max(2000),
+    }),
+  )
+  .handler(async ({ data }): Promise<{
+    ok: boolean;
+    floodRisk: AnalysisResult["floodRisk"] | null;
+    nearbySchools: AnalysisResult["nearbySchools"] | null;
+    error?: string;
+  }> => {
+    try {
+      // 1. Verify caller has Buyer Pass.
+      const { data: pass } = await supabaseAdmin
+        .from("buyer_pass_users")
+        .select("expires_at")
+        .ilike("email", data.email)
+        .maybeSingle();
+      const valid =
+        pass && pass.expires_at && new Date(pass.expires_at as string).getTime() > Date.now();
+      if (!valid) {
+        return { ok: false, floodRisk: null, nearbySchools: null, error: "Buyer Pass required" };
+      }
+
+      // 2. Load existing saved analysis row (most recent for this user+listing).
+      const { data: rows } = await supabaseAdmin
+        .from("saved_analyses")
+        .select("id, analysis_json, created_at")
+        .ilike("user_email", data.email)
+        .eq("listing_url", data.listingUrl)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const row = rows?.[0];
+      if (!row) {
+        return { ok: false, floodRisk: null, nearbySchools: null, error: "No saved analysis" };
+      }
+      const analysis = (row.analysis_json as AnalysisResult) ?? null;
+      if (!analysis) {
+        return { ok: false, floodRisk: null, nearbySchools: null, error: "Empty analysis" };
+      }
+
+      // 3. Extract postcode from saved address.
+      const postcode =
+        extractPostcode(analysis.property?.address ?? "") ??
+        extractPostcode((analysis as any)?.property?.listingUrl ?? "");
+
+      // 4. Fetch flood + schools in parallel (cached; cheap on repeat).
+      const [floodRaw, schoolsRaw] = await Promise.all([
+        fetchFloodRisk(postcode).catch((err) => {
+          console.error("[fetchBuyerPassExtras] flood failed:", err);
+          return null;
+        }),
+        fetchNearbySchools(postcode).catch((err) => {
+          console.error("[fetchBuyerPassExtras] schools failed:", err);
+          return null;
+        }),
+      ]);
+
+      // 5. Build the AnalysisResult-shaped objects.
+      const floodRisk: AnalysisResult["floodRisk"] = floodRaw
+        ? {
+            riversAndSea: floodRaw.riversAndSea,
+            surfaceWater: floodRaw.surfaceWater,
+            reservoir: floodRaw.reservoir,
+            groundwater: floodRaw.groundwater,
+            overallRisk: floodRaw.overallRisk,
+            commentary:
+              floodRaw.unavailable
+                ? "Flood risk data is currently unavailable for this postcode. Try the Environment Agency long-term flood risk service directly."
+                : floodRaw.scotland
+                  ? "Environment Agency flood data covers England only. For Scotland use SEPA's flood maps."
+                  : floodRaw.overallRisk === "High"
+                    ? "Overall flood risk is High. Some insurers refuse cover or charge 3-5x standard premiums, and lenders may require flood-resilience measures. Get an insurance quote and a flood-history search before exchange."
+                    : floodRaw.overallRisk === "Medium"
+                      ? "Overall flood risk is Medium. Insurance is normally available but premiums may be higher than average. Confirm cover and excess before exchange."
+                      : "Overall flood risk is low. Standard buildings insurance should be readily available.",
+            autoRedFlag: floodRaw.overallRisk === "High",
+            scotland: floodRaw.scotland ?? null,
+            unavailable: floodRaw.unavailable ?? null,
+          }
+        : null;
+
+      const nearbySchools: AnalysisResult["nearbySchools"] = schoolsRaw
+        ? {
+            schools: schoolsRaw.schools ?? [],
+            unavailable: schoolsRaw.unavailable ?? null,
+          }
+        : null;
+
+      // 6. Patch the saved analysis row (admin client bypasses RLS).
+      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools };
+      try {
+        await supabaseAdmin
+          .from("saved_analyses")
+          .update({ analysis_json: merged as any })
+          .eq("id", row.id as string);
+      } catch (err) {
+        console.error("[fetchBuyerPassExtras] update failed:", err);
+      }
+
+      return { ok: true, floodRisk, nearbySchools };
+    } catch (err) {
+      console.error("[fetchBuyerPassExtras] failed:", err);
+      return {
+        ok: false,
+        floodRisk: null,
+        nearbySchools: null,
+        error: (err as Error).message ?? "Unknown error",
+      };
+    }
+  });

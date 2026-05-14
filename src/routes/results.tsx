@@ -17,7 +17,7 @@ import {
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { DisclaimerBar } from "@/components/disclaimer-bar";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
-import { startAnalysisJob, getAnalysisJob } from "@/lib/analyse.functions";
+import { startAnalysisJob, getAnalysisJob, fetchBuyerPassExtras } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
 import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser, getSavedAnalysis } from "@/lib/checkout.functions";
 import { sendReportEmail } from "@/lib/email-report.functions";
@@ -499,13 +499,17 @@ function LoadingState({ url }: { url?: string }) {
   );
 }
 
-function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean }) {
+function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean }) {
   const access = useAccess(listingUrl, token);
   const unlocked = access.level !== "none";
   const showChat = access.level === "pass";
 
+  // Local copy of the analysis so we can patch in flood/schools after a Buyer
+  // Pass upgrade — without ever re-running the Claude analysis.
+  const [a, setA] = useState<AnalysisResult>(initialA);
+  useEffect(() => { setA(initialA); }, [initialA]);
+
   // Auto-save analysis for signed-in paying users (Buyer Pass or Single Report).
-  // Skip when this analysis was loaded from a saved report.
   const saveFn = useServerFn(saveAnalysisForUser);
   const savedRef = useRef(false);
   useEffect(() => {
@@ -516,8 +520,51 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
     }
   }, [access.level, access.email, listingUrl, a, saveFn, fromSaved]);
 
+  // Post-upgrade: if a Buyer Pass user is viewing a report that was analysed
+  // BEFORE they had the pass, flood risk / nearby schools may be missing.
+  // Fetch ONLY those two datasets and patch the saved row in-place.
+  const extrasFn = useServerFn(fetchBuyerPassExtras);
+  const [fetchingExtras, setFetchingExtras] = useState(false);
+  const extrasRef = useRef(false);
+  useEffect(() => {
+    if (extrasRef.current) return;
+    if (access.level !== "pass" || !access.email || !listingUrl) return;
+    const needsFlood = a.floodRisk == null;
+    const needsSchools = a.nearbySchools == null;
+    if (!needsFlood && !needsSchools) return;
+    extrasRef.current = true;
+    setFetchingExtras(true);
+    extrasFn({ data: { email: access.email, listingUrl } })
+      .then((r) => {
+        if (r?.ok) {
+          setA((prev) => ({
+            ...prev,
+            floodRisk: r.floodRisk ?? prev.floodRisk,
+            nearbySchools: r.nearbySchools ?? prev.nearbySchools,
+          }));
+        }
+      })
+      .catch(() => { /* ignore */ })
+      .finally(() => setFetchingExtras(false));
+  }, [access.level, access.email, listingUrl, a.floodRisk, a.nearbySchools, extrasFn]);
+
   const [sdMode, setSdMode] = useState<StampDutyMode>("main");
   const stampDuty = calcStampDuty(a.property.price, sdMode);
+
+  // Single shared "upgrade to Buyer Pass" handler used by inline upgrade
+  // prompts on locked sections. Uses the existing checkout flow — does NOT
+  // change any payment / Stripe logic.
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const upgradeToPass = async (lurl?: string) => {
+    try {
+      const r = await checkoutFn({
+        data: { priceId: PRICE_PASS, listingUrl: lurl ?? listingUrl ?? "", tier: "pass" },
+      });
+      if (r?.url) window.location.href = r.url;
+    } catch (e) {
+      console.error("[upgradeToPass] checkout failed:", e);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -739,21 +786,39 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
           </SafeSection>
         )}
 
-        {/* Flood risk — Buyer Pass only (Single Report sees locked teaser) */}
-        {unlocked && (
-          <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
+        {/* Flood risk — Buyer Pass renders data; Single Report sees locked teaser */}
+        {(unlocked || access.level === "single") && (access.level === "single" || access.level === "pass") && (
+          <FloodRiskSection
+            analysis={a}
+            isBuyerPass={access.level === "pass"}
+            fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
+            onUpgrade={() => upgradeToPass(listingUrl)}
+          />
         )}
 
-        {/* Nearby schools — Buyer Pass only (Single Report sees locked teaser) */}
-        {unlocked && (
-          <NearbySchoolsSection analysis={a} isBuyerPass={access.level === "pass"} />
+        {/* Nearby schools — Buyer Pass renders data; Single Report sees locked teaser */}
+        {(unlocked || access.level === "single") && (access.level === "single" || access.level === "pass") && (
+          <NearbySchoolsSection
+            analysis={a}
+            isBuyerPass={access.level === "pass"}
+            fetching={access.level === "pass" && fetchingExtras && a.nearbySchools == null}
+            onUpgrade={() => upgradeToPass(listingUrl)}
+          />
         )}
 
-        {/* AI chat (Buyer Pass only) */}
+        {/* AI chat — Buyer Pass renders chat; Single Report sees locked teaser */}
         {unlocked && showChat && (
           <section className="mt-10">
             <PropertyChat analysis={a} />
           </section>
+        )}
+        {access.level === "single" && (
+          <AIChatLockedTeaser onUpgrade={() => upgradeToPass(listingUrl)} />
+        )}
+
+        {/* Inline Buyer Pass upgrade — Single Report users only */}
+        {access.level === "single" && (
+          <InlineBuyerPassUpgrade listingUrl={listingUrl} />
         )}
 
         {unlocked && access.level === "pass" && (
@@ -2338,7 +2403,7 @@ function SchoolRow({ s }: { s: NonNullable<AnalysisResult["nearbySchools"]>["sch
   );
 }
 
-function NearbySchoolsSection({ analysis, isBuyerPass }: { analysis: AnalysisResult; isBuyerPass: boolean }) {
+function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -2430,7 +2495,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass }: { analysis: AnalysisRes
   );
 }
 
-function FloodRiskSection({ analysis, isBuyerPass }: { analysis: AnalysisResult; isBuyerPass: boolean }) {
+function FloodRiskSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
   try {
     const fr = analysis.floodRisk;
 
@@ -2953,6 +3018,161 @@ function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResu
           Estimates based on typical UK contractor rates 2026. Get quotes before proceeding.
         </p>
       </div>
+    </section>
+  );
+}
+
+function AIChatLockedTeaser({ onUpgrade }: { onUpgrade?: () => void }) {
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        AI chat
+      </h2>
+      <div
+        className="mt-4 relative overflow-hidden"
+        style={{
+          background: "#FFFDF9",
+          border: "0.5px solid rgba(26,17,8,0.12)",
+          borderRadius: 12,
+          padding: 20,
+          minHeight: 160,
+        }}
+      >
+        <div style={{ filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}>
+          <p style={{ fontSize: 13, color: "#5F5E5A" }}>You: Is this fair value for the area?</p>
+          <p className="mt-2" style={{ fontSize: 13, color: "#1A1108" }}>
+            Roovr: Based on comparable sales in SW18 over the last 12 months…
+          </p>
+          <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A" }}>You: What should I ask at the viewing?</p>
+        </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6" style={{ background: "rgba(255,253,249,0.85)" }}>
+          <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+          <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+            Ask anything about this property — Buyer Pass only
+          </p>
+          {onUpgrade && (
+            <button
+              type="button"
+              onClick={onUpgrade}
+              className="mt-3 hover:underline"
+              style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
+            >
+              Unlock with Buyer Pass →
+            </button>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const handleClick = async () => {
+    setErr(null);
+    setLoading(true);
+    try {
+      const r = await checkoutFn({
+        data: { priceId: PRICE_PASS, listingUrl: listingUrl ?? "", tier: "pass" },
+      });
+      if (r?.url) window.location.href = r.url;
+    } catch (e) {
+      setErr((e as Error).message ?? "Couldn't start checkout. Try again.");
+      setLoading(false);
+    }
+  };
+
+  const features = [
+    "Flood risk — Environment Agency data",
+    "Nearby schools with Ofsted ratings",
+    "AI chat — ask anything about this property",
+    "Unlimited analyses for 90 days",
+    "All reports saved to your account",
+  ];
+
+  return (
+    <section
+      className="mt-10"
+      style={{
+        background: "#FAECE7",
+        borderRadius: 12,
+        padding: "28px 24px",
+        marginTop: 16,
+      }}
+    >
+      <p
+        style={{
+          fontSize: 11,
+          color: "#D85A30",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          fontWeight: 600,
+          margin: 0,
+        }}
+      >
+        Buyer Pass
+      </p>
+      <h3
+        style={{
+          fontSize: 20,
+          color: "#1A1108",
+          fontWeight: 500,
+          margin: "8px 0 8px",
+          letterSpacing: "-0.01em",
+        }}
+      >
+        Unlock the full picture
+      </h3>
+      <p style={{ fontSize: 14, color: "#5F5E5A", margin: 0, lineHeight: 1.5 }}>
+        Get flood risk, nearby schools with Ofsted ratings, AI chat on this property, and unlimited analyses for 90 days.
+      </p>
+      <ul style={{ listStyle: "none", padding: 0, margin: "16px 0 0" }}>
+        {features.map((f) => (
+          <li
+            key={f}
+            style={{ fontSize: 13, color: "#1A1108", padding: "4px 0", display: "flex", gap: 8, alignItems: "flex-start" }}
+          >
+            <span style={{ color: "#D85A30", fontWeight: 700 }}>✓</span>
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+      <div style={{ marginTop: 20 }}>
+        <div style={{ fontSize: 24, color: "#1A1108", fontWeight: 500, lineHeight: 1.1 }}>£24.99</div>
+        <div style={{ fontSize: 12, color: "#888780", marginTop: 4 }}>
+          90-day pass · one-off payment
+        </div>
+      </div>
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={loading}
+        style={{
+          display: "block",
+          width: "100%",
+          marginTop: 16,
+          background: "#D85A30",
+          color: "#FFFDF9",
+          borderRadius: 100,
+          padding: 14,
+          fontSize: 15,
+          fontWeight: 500,
+          border: 0,
+          cursor: loading ? "default" : "pointer",
+          opacity: loading ? 0.7 : 1,
+        }}
+      >
+        {loading ? "Redirecting to checkout…" : "Get Buyer Pass →"}
+      </button>
+      <p style={{ fontSize: 12, color: "#888780", margin: "10px 0 0", textAlign: "center" }}>
+        One-off payment. No subscription. Access ends 90 days after purchase.
+      </p>
+      {err && (
+        <p style={{ fontSize: 12, color: "#A32D2D", margin: "8px 0 0", textAlign: "center" }}>{err}</p>
+      )}
     </section>
   );
 }
