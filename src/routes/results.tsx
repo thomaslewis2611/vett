@@ -1892,7 +1892,54 @@ const EPC_BANDS: { letter: string; bg: string; fg: string }[] = [
   { letter: "G", bg: "#D43A2F", fg: "#FFFFFF" },
 ];
 
-function EpcSection({ analysis }: { analysis: AnalysisResult }) {
+type EpcData = NonNullable<AnalysisResult["epc"]>;
+
+const EPC_SESSION_PREFIX = "roovr:epc:";
+function epcSessionKey(listingUrl?: string) {
+  return listingUrl ? `${EPC_SESSION_PREFIX}${listingUrl}` : null;
+}
+function readSessionEpc(listingUrl?: string): EpcData | null {
+  const key = epcSessionKey(listingUrl);
+  if (!key || typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(key);
+    return raw ? (JSON.parse(raw) as EpcData) : null;
+  } catch {
+    return null;
+  }
+}
+function writeSessionEpc(listingUrl: string | undefined, epc: EpcData) {
+  const key = epcSessionKey(listingUrl);
+  if (!key || typeof window === "undefined") return;
+  try {
+    window.sessionStorage.setItem(key, JSON.stringify(epc));
+  } catch {
+    /* ignore quota errors */
+  }
+}
+
+function EpcSection({
+  analysis,
+  listingUrl,
+  userEmail,
+  onEpcUpdate,
+}: {
+  analysis: AnalysisResult;
+  listingUrl?: string;
+  userEmail?: string | null;
+  onEpcUpdate?: (epc: EpcData) => void;
+}) {
+  const analyseFn = useServerFn(analyseEpcRating);
+
+  // Hydrate from sessionStorage on mount for free users who entered a rating
+  // earlier and refreshed the page.
+  useEffect(() => {
+    if (analysis.epc?.rating) return;
+    const cached = readSessionEpc(listingUrl);
+    if (cached && onEpcUpdate) onEpcUpdate(cached);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const epc = analysis.epc;
   const rating =
     epc?.rating && /^[A-G]$/i.test(epc.rating.trim())
@@ -1900,14 +1947,126 @@ function EpcSection({ analysis }: { analysis: AnalysisResult }) {
       : null;
   const activeBand = rating ? EPC_BANDS.find((b) => b.letter === rating) : null;
 
+  const [editing, setEditing] = useState(false);
+  const [pick, setPick] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const startEdit = () => {
+    setPick(rating ?? null);
+    setError(null);
+    setEditing(true);
+  };
+
+  const handleAnalyse = async () => {
+    if (!pick) return;
+    setSubmitting(true);
+    setError(null);
+    try {
+      const r = await analyseFn({
+        data: {
+          epcRating: pick,
+          propertyType: analysis.property?.type ?? null,
+          sqft: analysis.property?.sqft ?? null,
+          address: analysis.property?.address ?? null,
+          price: analysis.property?.price ?? null,
+          email: userEmail ?? null,
+          listingUrl: listingUrl ?? null,
+        },
+      });
+      const next: EpcData = r.epc;
+      writeSessionEpc(listingUrl, next);
+      onEpcUpdate?.(next);
+      setEditing(false);
+    } catch (err) {
+      console.error("[EpcSection] analyse failed:", err);
+      setError("Could not analyse that EPC rating. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const showInput = editing || !rating;
+
   return (
     <section className="mt-10">
       <h2 className="text-xl font-semibold tracking-tight">Energy performance (EPC)</h2>
       <div className="mt-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-        {!rating ? (
-          <p className="text-sm" style={{ color: "#1A1108" }}>
-            EPC rating not shown in this listing — ask the agent before viewing. An EPC is legally required for all sales.
-          </p>
+        {showInput ? (
+          <div>
+            <p className="text-sm" style={{ color: "#1A1108" }}>
+              Know the EPC rating? Enter it below and we'll analyse what it means for this property.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {EPC_BANDS.map((b) => {
+                const selected = pick === b.letter;
+                return (
+                  <button
+                    key={b.letter}
+                    type="button"
+                    onClick={() => setPick(b.letter)}
+                    disabled={submitting}
+                    aria-pressed={selected}
+                    className="inline-flex items-center justify-center rounded-full text-sm font-semibold transition-all"
+                    style={{
+                      width: 44,
+                      height: 44,
+                      background: selected ? "#D85A30" : "transparent",
+                      color: selected ? "#FFFFFF" : "#5F5E5A",
+                      border: selected ? "1px solid #D85A30" : "1px solid #5F5E5A",
+                    }}
+                  >
+                    {b.letter}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleAnalyse}
+                disabled={!pick || submitting}
+                className="inline-flex items-center justify-center rounded-full transition-opacity hover:opacity-90 disabled:opacity-50"
+                style={{
+                  background: "#D85A30",
+                  color: "#FFFDF9",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  padding: "10px 20px",
+                }}
+              >
+                {submitting ? (
+                  <>
+                    <span
+                      aria-hidden
+                      className="mr-2 inline-block h-3 w-3 animate-spin rounded-full"
+                      style={{ border: "2px solid #FFFDF9", borderTopColor: "transparent" }}
+                    />
+                    Analysing energy performance…
+                  </>
+                ) : (
+                  "Analyse EPC →"
+                )}
+              </button>
+              {editing && rating && (
+                <button
+                  type="button"
+                  onClick={() => setEditing(false)}
+                  disabled={submitting}
+                  className="text-sm transition-colors hover:text-foreground"
+                  style={{ color: "#888780" }}
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+            {error && (
+              <p className="mt-3 text-sm" style={{ color: "#D43A2F" }}>{error}</p>
+            )}
+            <p className="mt-3" style={{ fontSize: 11, color: "#888780" }}>
+              You can find the EPC rating on the agent's brochure, the EPC register at epcregister.com, or by asking the agent directly.
+            </p>
+          </div>
         ) : (
           <>
             <div className="grid gap-6 sm:grid-cols-[1fr_auto] sm:items-center">
@@ -1971,6 +2130,14 @@ function EpcSection({ analysis }: { analysis: AnalysisResult }) {
             {epc?.commentary && (
               <p className="mt-3 text-sm" style={{ color: "#1A1108" }}>{epc.commentary}</p>
             )}
+            <button
+              type="button"
+              onClick={startEdit}
+              className="mt-4 transition-colors hover:text-foreground"
+              style={{ fontSize: 11, color: "#888780" }}
+            >
+              Edit EPC rating →
+            </button>
           </>
         )}
       </div>
