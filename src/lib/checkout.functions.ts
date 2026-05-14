@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import Stripe from "stripe";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 
 const SITE_URL = "https://roovr.co";
 const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
