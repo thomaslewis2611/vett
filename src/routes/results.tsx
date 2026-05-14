@@ -985,18 +985,19 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         />
         <PlanCard
           title="Buyer Pass"
-          price="£29.99"
-          cadence="One-off payment · your entire search"
+          price="£24.99"
+          cadence="90-day pass · one-off payment"
           cta="Get Buyer Pass"
           highlight
           loading={loadingTier === "pass"}
           onClick={() => handleBuy("pass")}
-          subnote="Average buyer views 8 properties — works out at £3.75 each."
+          subnote="Average search takes 8–12 weeks — 90 days covers it comfortably."
           features={[
-            "Unlimited analyses",
+            "Unlimited analyses for 90 days",
             "All red flags, costs and negotiation",
             "AI chat on every property",
-            "Save and compare up to 50 properties",
+            "Flood risk and nearby schools",
+            "Save and compare reports",
           ]}
         />
       </div>
