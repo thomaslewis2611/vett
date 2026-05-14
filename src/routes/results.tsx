@@ -1073,9 +1073,11 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           loading={loadingTier === "single"}
           onClick={() => handleBuy("single")}
           features={[
-            "Full analysis for this property",
-            "All red flags and costs",
-            "Viewing questions and negotiation strategy",
+            "Full analysis for one property",
+            "All red flags spotted in the listing",
+            "True cost breakdown (stamp duty, legal fees, mortgage estimate)",
+            "Viewing questions to ask the agent",
+            "Negotiation strategy and recommended offer range",
           ]}
           footnote="No AI chat, no saving."
         />
@@ -1087,14 +1089,16 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           highlight
           loading={loadingTier === "pass"}
           onClick={() => handleBuy("pass")}
-          subnote="Average search takes 8–12 weeks — 90 days covers it comfortably."
+          plusIntro="Everything in Single Report, plus:"
           features={[
             "Unlimited analyses for 90 days",
-            "All red flags, costs and negotiation",
             "AI chat on every property",
-            "Flood risk and nearby schools",
+            "Flood risk assessment",
+            "Nearby schools with Ofsted ratings",
             "Save and compare reports",
+            "Report emailed to you",
           ]}
+          footnote="One-off payment. Access ends 90 days after purchase."
         />
       </div>
 
@@ -1147,6 +1151,7 @@ function PlanCard({
   cta,
   footnote,
   subnote,
+  plusIntro,
   onClick,
   loading,
 }: {
@@ -1158,6 +1163,7 @@ function PlanCard({
   cta: string;
   footnote?: string;
   subnote?: string;
+  plusIntro?: string;
   onClick?: () => void;
   loading?: boolean;
 }) {
@@ -1184,7 +1190,12 @@ function PlanCard({
       </div>
       <p className="mt-1" style={{ fontSize: 12, color: "#888780" }}>{cadence}</p>
       {subnote && <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A" }}>{subnote}</p>}
-      <ul className="mt-5 space-y-2.5">
+      {plusIntro && (
+        <p className="mt-5" style={{ fontSize: 13, color: "#888780", fontStyle: "italic" }}>
+          {plusIntro}
+        </p>
+      )}
+      <ul className={plusIntro ? "mt-2 space-y-2.5" : "mt-5 space-y-2.5"}>
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
             <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#D85A30" }} />
