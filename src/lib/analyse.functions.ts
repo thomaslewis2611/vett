@@ -1393,6 +1393,151 @@ async function fetchBroadband(
   console.log(`[broadband] ${cacheKey} → ${raw.connectionType} / ${raw.speedRating} (source=${raw.source})`);
   return raw;
 }
+
+// ---------------- Transport links (Claude geographic knowledge) ----------------
+const TRANSPORT_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+type TransportRaw = {
+  nearestStation: string;
+  distanceToStation: string;
+  journeyToNearestCity: string;
+  nearestCity: string;
+  busLinks: string;
+  motorwayAccess: string;
+  airportAccess: string;
+  transportRating: "Excellent" | "Good" | "Average" | "Poor";
+  commentary: string;
+  parkingNotes?: string | null;
+  unavailable?: boolean | null;
+  autoRedFlag?: boolean | null;
+};
+
+async function fetchTransport(
+  postcode: string | null,
+  address: string,
+  propertyType: string | null | undefined,
+  apiKey: string | undefined,
+): Promise<TransportRaw | null> {
+  if (!postcode) return null;
+  const cacheKey = `transport:${postcode.toUpperCase().replace(/\s+/g, "")}`;
+
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, fetched_at")
+      .eq("url", cacheKey)
+      .maybeSingle();
+    if (
+      cached?.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < TRANSPORT_TTL_MS
+    ) {
+      try {
+        const parsed = JSON.parse(cached.text_content) as TransportRaw;
+        console.log(`[transport] cache hit for ${cacheKey}`);
+        return parsed;
+      } catch { /* ignore */ }
+    }
+  } catch (err) {
+    console.error("[transport] cache lookup failed:", err);
+  }
+
+  if (!apiKey) {
+    return {
+      nearestStation: "Unknown",
+      distanceToStation: "—",
+      journeyToNearestCity: "—",
+      nearestCity: "—",
+      busLinks: "Unknown",
+      motorwayAccess: "Unknown",
+      airportAccess: "Unknown",
+      transportRating: "Average",
+      commentary: "Transport data is currently unavailable for this postcode.",
+      unavailable: true,
+    };
+  }
+
+  try {
+    const client = new Anthropic({ apiKey, timeout: 25_000, maxRetries: 0 });
+    const prompt = `You are a UK transport and geography analyst. Assess transport connectivity for this property.
+
+Address: ${address || "(unknown)"}
+Postcode: ${postcode}
+Property type: ${propertyType ?? "unknown"}
+
+Base transport information on your training knowledge of UK geography, train lines, and road networks. Be accurate for well-known locations. For less familiar locations, be appropriately cautious and say "approximately" where uncertain.
+
+Return ONLY a single valid JSON object (no markdown, no code fences) of this exact shape:
+{
+  "nearestStation": string (name of the nearest National Rail / tube / metro station),
+  "distanceToStation": string (e.g. "0.4 miles" or "12 min walk"),
+  "journeyToNearestCity": string (e.g. "approximately 22 minutes to Bristol Temple Meads by train"),
+  "nearestCity": string (the major city this postcode commutes to),
+  "busLinks": string (1 short sentence on bus connectivity — e.g. "Good — frequent services to town centre" or "Limited — hourly rural service"),
+  "motorwayAccess": string (e.g. "M5 J19, approximately 4 miles" or "No motorway within 20 miles"),
+  "airportAccess": string (e.g. "Bristol Airport approximately 35 minutes by car"),
+  "transportRating": "Excellent" | "Good" | "Average" | "Poor",
+  "commentary": string (2-3 sentences: overall transport connectivity assessment, who this suits — commuters, families, retirees — and any limitations),
+  "parkingNotes": string | null (1 short sentence if relevant — on-street parking pressure, permit zones, off-street availability typical for the area; null if nothing meaningful to add)
+}
+
+Rating guide: Excellent = central city / direct fast trains to a major hub + frequent buses + motorway nearby. Good = decent train service + reasonable bus links OR strong road links. Average = workable but limited frequency / longer journeys. Poor = rural, no nearby station, infrequent buses, car-dependent.`;
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 800,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const text = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as Partial<TransportRaw>;
+
+    const ratings = ["Excellent", "Good", "Average", "Poor"] as const;
+    const transportRating = (ratings as readonly string[]).includes(parsed.transportRating ?? "")
+      ? (parsed.transportRating as TransportRaw["transportRating"])
+      : "Average";
+
+    const raw: TransportRaw = {
+      nearestStation: typeof parsed.nearestStation === "string" ? parsed.nearestStation : "Unknown",
+      distanceToStation: typeof parsed.distanceToStation === "string" ? parsed.distanceToStation : "—",
+      journeyToNearestCity: typeof parsed.journeyToNearestCity === "string" ? parsed.journeyToNearestCity : "—",
+      nearestCity: typeof parsed.nearestCity === "string" ? parsed.nearestCity : "—",
+      busLinks: typeof parsed.busLinks === "string" ? parsed.busLinks : "Unknown",
+      motorwayAccess: typeof parsed.motorwayAccess === "string" ? parsed.motorwayAccess : "Unknown",
+      airportAccess: typeof parsed.airportAccess === "string" ? parsed.airportAccess : "Unknown",
+      transportRating,
+      commentary: typeof parsed.commentary === "string" ? parsed.commentary : "",
+      parkingNotes: typeof parsed.parkingNotes === "string" && parsed.parkingNotes.length > 0 ? parsed.parkingNotes : null,
+      autoRedFlag: transportRating === "Poor",
+    };
+
+    try {
+      await supabaseAdmin
+        .from("listing_cache")
+        .upsert(
+          { url: cacheKey, text_content: JSON.stringify(raw), fetched_at: new Date().toISOString() },
+          { onConflict: "url" },
+        );
+    } catch (err) {
+      console.error("[transport] cache upsert failed:", err);
+    }
+
+    console.log(`[transport] ${cacheKey} → ${raw.nearestStation} (${raw.transportRating})`);
+    return raw;
+  } catch (err) {
+    console.error("[transport] Claude assessment failed:", err);
+    return {
+      nearestStation: "Unknown",
+      distanceToStation: "—",
+      journeyToNearestCity: "—",
+      nearestCity: "—",
+      busLinks: "Unknown",
+      motorwayAccess: "Unknown",
+      airportAccess: "Unknown",
+      transportRating: "Average",
+      commentary: "Transport data could not be generated for this postcode.",
+      unavailable: true,
+    };
+  }
+}
 type FetchedListing = {
   text: string;
   landRegistry: LandRegistryResult;
