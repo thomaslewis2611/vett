@@ -1587,6 +1587,34 @@ async function runAnalysis(
     full.nearbySchools = null;
   }
 
+  if (crimeRaw) {
+    full.crime = {
+      totalCrimes: crimeRaw.totalCrimes,
+      month: crimeRaw.month,
+      topCategories: crimeRaw.topCategories,
+      riskLevel: crimeRaw.riskLevel,
+      commentary: crimeRaw.commentary,
+      autoRedFlag: crimeRaw.autoRedFlag,
+      coordinates: crimeRaw.coordinates,
+      unavailable: crimeRaw.unavailable ?? false,
+    };
+    if (crimeRaw.autoRedFlag && !crimeRaw.unavailable) {
+      const title = "High crime rate in this area";
+      if (!full.redFlags.some((f) => f.title === title)) {
+        full.redFlags = [
+          {
+            severity: "high",
+            title,
+            detail: `Police data shows ${crimeRaw.totalCrimes} recorded crimes near this property in ${formatCrimeMonthLabel(crimeRaw.month)}, significantly above typical UK residential levels. Check insurance implications and consider security measures in your budget.`,
+          },
+          ...full.redFlags,
+        ];
+      }
+    }
+  } else {
+    full.crime = null;
+  }
+
   return full;
 }
 
