@@ -66,7 +66,7 @@ async function sendMagicLinkViaResend(
     variant === "buyer-pass"
       ? {
           heading: "Activate your Buyer Pass",
-          body: "Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses, flood risk data, AI chat, and more.",
+          body: "Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses for 90 days, including flood risk data, AI chat, and more.",
           cta: "Activate my Buyer Pass →",
         }
       : {
