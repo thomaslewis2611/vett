@@ -3500,9 +3500,17 @@ function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResu
   if (!rc || rc.items.length === 0) return null;
 
   const priorityStyle = (p: string): CSSProperties => {
-    if (p === "Essential") return { background: "#FEE2E2", color: "#A32D2D" };
-    if (p === "Recommended") return { background: "#FAEEDA", color: "#7A5A0A" };
+    const n = (p || "").toLowerCase();
+    if (n === "high priority" || n === "essential" || n === "high") return { background: "#FEE2E2", color: "#A32D2D" };
+    if (n === "medium priority" || n === "recommended" || n === "medium") return { background: "#FAEEDA", color: "#7A5A0A" };
     return { background: "#F1EFE8", color: "#5F5E5A" };
+  };
+  const displayPriority = (p: string): string => {
+    const n = (p || "").toLowerCase();
+    if (n === "essential") return "High priority";
+    if (n === "recommended") return "Medium priority";
+    if (n === "optional") return "Low priority";
+    return p;
   };
 
   return (
