@@ -1502,11 +1502,14 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     }
 
     const jobId = row.id as string;
-    // Direct fire-and-forget — ctx.waitUntil proved unreliable in this runtime,
-    // so we kick off the background task and rely on processAnalysisJob's own
-    // try/catch + DB row updates to record progress and errors.
     console.log(`[startAnalysisJob] scheduling background job ${jobId}`);
-    void (async () => {
+    // Kick off the background work. We wrap in an async IIFE so we can log
+    // immediately when the callback fires (confirms the runtime actually
+    // started executing it), then hand the resulting promise to
+    // scheduleBackground so ctx.waitUntil keeps the Worker alive past the
+    // response when available — and falls back to a dangling promise (with
+    // its own .catch logger) when it isn't.
+    const backgroundPromise = (async () => {
       console.log(`[startAnalysisJob] background callback started for ${jobId}`);
       try {
         await processAnalysisJob(jobId, url, pastedText);
@@ -1514,13 +1517,7 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
         console.error(`[startAnalysisJob] processAnalysisJob failed for ${jobId}:`, err);
       }
     })();
-    // Also schedule via waitUntil if available, so the Worker keeps the
-    // promise alive past the response — harmless if it's not.
-    try {
-      scheduleBackground(Promise.resolve());
-    } catch {
-      /* ignore */
-    }
+    scheduleBackground(backgroundPromise);
 
     return { jobId };
   });
