@@ -386,7 +386,12 @@ function ResultsPage() {
 function BlockedFallback({ url, message }: { url?: string; message: string }) {
   const navigate = useNavigate();
   const [text, setText] = useState("");
+  const [showPaste, setShowPaste] = useState(false);
   const trimmed = text.trim();
+  const isZoopla = Boolean(url && /zoopla\.co\.uk/i.test(url));
+  const displayMessage = isZoopla
+    ? "We find Rightmove listings easier to analyse accurately. If this property is listed on Rightmove, try that link for best results. Alternatively, paste the full listing description text below."
+    : message;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,40 +399,63 @@ function BlockedFallback({ url, message }: { url?: string; message: string }) {
     navigate({ to: "/results", search: { url, text: trimmed } });
   };
 
+  const tryRightmove = () => {
+    navigate({ to: "/", search: { url: "" } });
+  };
+
   return (
     <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
       <div className="inline-flex items-center gap-2 rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
-        <AlertTriangle className="h-3.5 w-3.5" /> Couldn't read the listing
+        <AlertTriangle className="h-3.5 w-3.5" /> {isZoopla ? "Zoopla listing" : "Couldn't read the listing"}
       </div>
       <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-        Paste the listing description to continue
+        {isZoopla ? "Try Rightmove for best results" : "Paste the listing description to continue"}
       </h1>
-      <p className="mt-2 text-sm text-muted-foreground">{message}</p>
+      <p className="mt-2 text-sm text-muted-foreground">{displayMessage}</p>
       {url && (
         <p className="mt-2 truncate text-xs text-muted-foreground">{url}</p>
       )}
 
-      <form onSubmit={handleSubmit} className="mt-5 space-y-3">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          rows={10}
-          placeholder="Paste the full listing description here — address, price, beds, key features, agent copy…"
-          className="w-full resize-y rounded-xl border border-border bg-background p-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-        />
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-muted-foreground">
-            Tip: select the description on the listing page and copy-paste it here.
-          </p>
-          <button
-            type="submit"
-            disabled={trimmed.length < 50}
-            className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
-          >
-            Analyse pasted text
-          </button>
-        </div>
-      </form>
+      <div className="mt-5 flex flex-wrap items-center gap-4">
+        <button
+          type="button"
+          onClick={() => setShowPaste((v) => !v)}
+          className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+        >
+          {showPaste ? "Hide paste box" : "Paste listing text instead"}
+        </button>
+        <button
+          type="button"
+          onClick={tryRightmove}
+          className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+        >
+          Try Rightmove instead →
+        </button>
+      </div>
+
+      {showPaste && (
+        <form onSubmit={handleSubmit} className="mt-5 space-y-3">
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            rows={10}
+            placeholder="Paste the full listing description here — address, price, beds, key features, agent copy…"
+            className="w-full resize-y rounded-xl border border-border bg-background p-3 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          />
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-muted-foreground">
+              Tip: select the description on the listing page and copy-paste it here.
+            </p>
+            <button
+              type="submit"
+              disabled={trimmed.length < 50}
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:opacity-50"
+            >
+              Analyse pasted text
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }
