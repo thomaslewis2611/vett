@@ -88,6 +88,18 @@ const analysisSchema = z.object({
     coordinates: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(),
     unavailable: z.boolean().nullable().optional(),
   }).nullable().optional(),
+  broadband: z.object({
+    downloadSpeed: z.string(),
+    uploadSpeed: z.string(),
+    connectionType: z.enum(["Full fibre", "Fibre to cabinet", "ADSL", "Limited"]),
+    suitableForRemoteWork: z.boolean(),
+    mobileSignal: z.enum(["Excellent", "Good", "Limited", "Poor"]),
+    commentary: z.string(),
+    speedRating: z.enum(["Excellent", "Good", "Average", "Poor"]),
+    source: z.string().nullable().optional(),
+    unavailable: z.boolean().nullable().optional(),
+    autoRedFlag: z.boolean().nullable().optional(),
+  }).nullable().optional(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
