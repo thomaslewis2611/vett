@@ -1449,24 +1449,33 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
       })
     : Promise.resolve(null);
 
+  const broadbandPromise: Promise<BroadbandRaw | null> = postcode
+    ? fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY).catch((err) => {
+        console.error("[broadband] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
   if (cachedText) {
-    const [landRegistry, floodRisk, nearbySchools, crime] = await Promise.all([
+    const [landRegistry, floodRisk, nearbySchools, crime, broadband] = await Promise.all([
       landRegistryPromise,
       floodRiskPromise,
       nearbySchoolsPromise,
       crimePromise,
+      broadbandPromise,
     ]);
-    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime };
+    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband };
   }
 
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  const [landRegistry, floodRisk, nearbySchools, crime] = await Promise.all([
+  const [landRegistry, floodRisk, nearbySchools, crime, broadband] = await Promise.all([
     landRegistryPromise,
     floodRiskPromise,
     nearbySchoolsPromise,
     crimePromise,
+    broadbandPromise,
   ]);
 
   const notes: string[] = [];
