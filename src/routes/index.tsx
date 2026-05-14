@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowRight, Check, Link2, Sparkles, FileText } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
