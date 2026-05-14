@@ -695,71 +695,73 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
           </div>
         </section>
 
-        {/* Paywall + locked / unlocked content */}
-        <section className="mt-10">
-          {!unlocked && (
-            <>
-              <LockedFeaturesGrid />
-              <div className="mt-8">
-                {access.level === "expired" ? (
-                  <ExpiredPassGate expiresAt={access.expiresAt} listingUrl={listingUrl} />
-                ) : (
-                  <PaywallGate listingUrl={listingUrl} />
-                )}
-              </div>
-            </>
-          )}
-
-          {unlocked && (
-            <div className="space-y-8">
-
-              <UnlockedSection title="True cost breakdown">
-                <CostBreakdown analysis={a} stampDuty={stampDuty} stampDutyMode={sdMode} />
-              </UnlockedSection>
-
-              {/* Renovation cost estimator — paid only */}
-              <SafeSection name="renovationCosts">
-                <RenovationCostsSection analysis={a} unlocked />
-              </SafeSection>
-
-              <UnlockedSection title="Negotiation strategy">
-                <Negotiation analysis={a} />
-              </UnlockedSection>
-
-              {/* Viewing checklist — replaces previous viewing questions list */}
-              <SafeSection name="viewingChecklist">
-                <ViewingChecklistSection analysis={a} unlocked />
-              </SafeSection>
-
-              {/* Flood risk — full for Buyer Pass, locked teaser for Single Report */}
-              <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
-
-              {/* Nearby schools — full for Buyer Pass, locked teaser for Single Report */}
-              <NearbySchoolsSection analysis={a} isBuyerPass={access.level === "pass"} />
-
-              {showChat && <PropertyChat analysis={a} />}
-
-              {access.level === "pass" && (
-                <div className="text-center">
-                  <Link to="/dashboard" style={{ fontSize: 13, color: "#D85A30" }}>
-                    Go to your dashboard →
-                  </Link>
-                </div>
+        {/* Paywall (free users only) — sits between Red flags and the paid sections */}
+        {!unlocked && (
+          <section className="mt-10">
+            <LockedFeaturesGrid />
+            <div className="mt-8">
+              {access.level === "expired" ? (
+                <ExpiredPassGate expiresAt={access.expiresAt} listingUrl={listingUrl} />
+              ) : (
+                <PaywallGate listingUrl={listingUrl} />
               )}
             </div>
-          )}
-        </section>
+          </section>
+        )}
 
-        {/* Free tier: viewing checklist (all tiers) + renovation teaser */}
-        {!unlocked && (
-          <>
-            <SafeSection name="viewingChecklist">
-              <ViewingChecklistSection analysis={a} unlocked={false} />
-            </SafeSection>
-            <SafeSection name="renovationCosts">
-              <RenovationCostsSection analysis={a} unlocked={false} />
-            </SafeSection>
-          </>
+        {/* True cost breakdown (paid only) */}
+        {unlocked && (
+          <section className="mt-10">
+            <UnlockedSection title="True cost breakdown">
+              <CostBreakdown analysis={a} stampDuty={stampDuty} stampDutyMode={sdMode} />
+            </UnlockedSection>
+          </section>
+        )}
+
+        {/* Negotiation strategy (paid only) */}
+        {unlocked && (
+          <section className="mt-10">
+            <UnlockedSection title="Negotiation strategy">
+              <Negotiation analysis={a} />
+            </UnlockedSection>
+          </section>
+        )}
+
+        {/* Viewing checklist — all users (first 2 free, rest blurred for free) */}
+        <SafeSection name="viewingChecklist">
+          <ViewingChecklistSection analysis={a} unlocked={unlocked} />
+        </SafeSection>
+
+        {/* Renovation cost estimator — paid only */}
+        {unlocked && (
+          <SafeSection name="renovationCosts">
+            <RenovationCostsSection analysis={a} unlocked />
+          </SafeSection>
+        )}
+
+        {/* Flood risk — Buyer Pass only (Single Report sees locked teaser) */}
+        {unlocked && (
+          <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
+        )}
+
+        {/* Nearby schools — Buyer Pass only (Single Report sees locked teaser) */}
+        {unlocked && (
+          <NearbySchoolsSection analysis={a} isBuyerPass={access.level === "pass"} />
+        )}
+
+        {/* AI chat (Buyer Pass only) */}
+        {unlocked && showChat && (
+          <section className="mt-10">
+            <PropertyChat analysis={a} />
+          </section>
+        )}
+
+        {unlocked && access.level === "pass" && (
+          <div className="mt-10 text-center">
+            <Link to="/dashboard" style={{ fontSize: 13, color: "#D85A30" }}>
+              Go to your dashboard →
+            </Link>
+          </div>
         )}
       </main>
 
