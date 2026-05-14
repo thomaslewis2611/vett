@@ -694,14 +694,18 @@ function ReportView({ analysis: a, listingUrl, token, fromSaved }: { analysis: A
               </UnlockedSection>
 
               {/* Renovation cost estimator — paid only */}
-              <RenovationCostsSection analysis={a} unlocked />
+              <SafeSection name="renovationCosts">
+                <RenovationCostsSection analysis={a} unlocked />
+              </SafeSection>
 
               <UnlockedSection title="Negotiation strategy">
                 <Negotiation analysis={a} />
               </UnlockedSection>
 
               {/* Viewing checklist — replaces previous viewing questions list */}
-              <ViewingChecklistSection analysis={a} />
+              <SafeSection name="viewingChecklist">
+                <ViewingChecklistSection analysis={a} />
+              </SafeSection>
 
               {/* Flood risk — full for Buyer Pass, locked teaser for Single Report */}
               <FloodRiskSection analysis={a} isBuyerPass={access.level === "pass"} />
