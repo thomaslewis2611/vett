@@ -550,21 +550,25 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
         {/* Auction warning (free + paid) */}
         <AuctionWarning analysis={a} />
 
-        {/* Top red flags (free) */}
+        {/* Red flags — unified for paid, free preview for unpaid */}
         <section className="mt-10">
           <div className="flex items-end justify-between">
             <div>
               <h2 className="text-xl font-semibold tracking-tight">Red flags</h2>
-              <p className="text-sm text-muted-foreground">
-                Top issues spotted in the listing — full list unlocked below.
-              </p>
+              {!unlocked && (
+                <p className="text-sm text-muted-foreground">
+                  Top issues spotted in the listing — full list unlocked below.
+                </p>
+              )}
             </div>
-            <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
-              Free preview
-            </span>
+            {!unlocked && (
+              <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
+                Free preview
+              </span>
+            )}
           </div>
           <div className="mt-4 space-y-3">
-            {a.redFlags.slice(0, 2).map((f, i) => (
+            {(unlocked ? a.redFlags : a.redFlags.slice(0, 2)).map((f, i) => (
               <RedFlagItem key={i} flag={f} />
             ))}
           </div>
@@ -587,13 +591,6 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
 
           {unlocked && (
             <div className="space-y-8">
-              <UnlockedSection title="Full red flags list">
-                <div className="space-y-3">
-                  {a.redFlags.slice(2).map((f, i) => (
-                    <RedFlagItem key={i} flag={f} />
-                  ))}
-                </div>
-              </UnlockedSection>
 
               <UnlockedSection title="True cost breakdown">
                 <CostBreakdown analysis={a} stampDuty={stampDuty} stampDutyMode={sdMode} />
