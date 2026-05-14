@@ -226,13 +226,15 @@ export const saveAnalysisForUser = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ data }): Promise<{ ok: boolean }> => {
-    // Verify the user actually has a Buyer Pass before saving
+    // Verify the user has an ACTIVE (non-expired) Buyer Pass before saving
     const { data: bp } = await supabaseAdmin
       .from("buyer_pass_users")
-      .select("email")
+      .select("email, expires_at")
       .ilike("email", data.email)
       .maybeSingle();
     if (!bp) return { ok: false };
+    const expiresAt = (bp as { expires_at: string | null }).expires_at;
+    if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) return { ok: false };
     await supabaseAdmin.from("saved_analyses").insert({
       user_email: data.email.toLowerCase(),
       listing_url: data.listingUrl ?? null,
