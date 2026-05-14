@@ -88,6 +88,7 @@ function PricingPage() {
 }
 
 function Plan({
+  id,
   title,
   price,
   cadence,
@@ -98,7 +99,9 @@ function Plan({
   footnote,
   subnote,
   plusIntro,
+  upsell,
 }: {
+  id?: string;
   title: string;
   price: string;
   cadence: string;
@@ -109,9 +112,11 @@ function Plan({
   footnote?: string;
   subnote?: string;
   plusIntro?: string;
+  upsell?: { text: string; targetId: string };
 }) {
   return (
     <div
+      id={id}
       className="relative p-8"
       style={{
         background: "#FFFDF9",
