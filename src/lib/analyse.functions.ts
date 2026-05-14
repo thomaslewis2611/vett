@@ -777,7 +777,12 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     console.error("[nearbySchools] cache lookup failed:", err);
   }
 
-  const pcParam = encodeURIComponent(postcode.trim());
+  // DfE API requires properly-formatted UK postcode with a space before the last 3 chars.
+  const pcCompact = postcode.replace(/\s+/g, "").toUpperCase();
+  const pcFormatted = pcCompact.length > 3
+    ? `${pcCompact.slice(0, -3)} ${pcCompact.slice(-3)}`
+    : pcCompact;
+  const pcParam = encodeURIComponent(pcFormatted);
   const url = `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${pcParam}&radius=1.6&fields=school_name,ofsted_rating,school_type,distance`;
 
   let raw: NearbySchoolsRaw;
@@ -786,8 +791,9 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
     const t = setTimeout(() => ctrl.abort(), 10_000);
     const res = await fetch(url, {
       headers: {
-        Accept: "application/json",
-        "User-Agent": "Roovr/1.0 (roovr.co; hello@roovr.co)",
+        "Accept": "application/json",
+        "User-Agent": "Roovr/1.0 (property analysis tool; hello@roovr.co)",
+        "Referer": "https://roovr.co",
       },
       signal: ctrl.signal,
     });
