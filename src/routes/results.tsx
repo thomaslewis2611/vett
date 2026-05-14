@@ -2952,8 +2952,8 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
 
   const ns = analysis.nearbySchools;
   const allSchools = ns?.schools ?? [];
-  const primary = allSchools.filter((s) => s.phase === "primary").slice(0, 3);
-  const secondary = allSchools.filter((s) => s.phase === "secondary").slice(0, 3);
+  const primary = allSchools.filter((s) => s.phase === "primary").slice(0, 5);
+  const secondary = allSchools.filter((s) => s.phase === "secondary").slice(0, 5);
   const empty = primary.length === 0 && secondary.length === 0;
 
   return (
