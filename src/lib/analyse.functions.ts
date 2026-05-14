@@ -1502,22 +1502,25 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     }
 
     const jobId = row.id as string;
-    console.log(`[startAnalysisJob] scheduling background job ${jobId}`);
-    // Kick off the background work. We wrap in an async IIFE so we can log
-    // immediately when the callback fires (confirms the runtime actually
-    // started executing it), then hand the resulting promise to
-    // scheduleBackground so ctx.waitUntil keeps the Worker alive past the
-    // response when available — and falls back to a dangling promise (with
-    // its own .catch logger) when it isn't.
-    const backgroundPromise = (async () => {
-      console.log(`[startAnalysisJob] background callback started for ${jobId}`);
-      try {
-        await processAnalysisJob(jobId, url, pastedText);
-      } catch (err) {
-        console.error(`[startAnalysisJob] processAnalysisJob failed for ${jobId}:`, err);
-      }
-    })();
-    scheduleBackground(backgroundPromise);
+    console.log(`[startAnalysisJob] invoking analyse-listing edge function for ${jobId}`);
+
+    // Fire-and-forget: the Supabase Edge Function runs independently with its
+    // own ~150s execution budget, so it survives the Cloudflare Worker
+    // shutting down once we return the jobId. The frontend polls
+    // getAnalysisJob until status === 'complete' | 'error'.
+    void supabaseAdmin.functions
+      .invoke("analyse-listing", {
+        body: { jobId, url, pastedText },
+      })
+      .then((res) => {
+        if (res.error) {
+          console.error(`[startAnalysisJob] edge fn returned error for ${jobId}:`, res.error);
+        }
+      })
+      .catch((err) => {
+        console.error(`[startAnalysisJob] edge fn invoke failed for ${jobId}:`, err);
+      });
+
 
     return { jobId };
   });
