@@ -1361,3 +1361,169 @@ export const analyseListing = createServerFn({ method: "POST" })
 
     return unlocked ? full : toPreview(full);
   });
+
+// =====================================================================
+// Async job pipeline
+//
+// The synchronous analyseListing path can take 30–90s end-to-end, which
+// exceeds the Cloudflare Worker request budget on heavier listings. The
+// pattern below splits the work in two:
+//
+//   1. startAnalysisJob — inserts a `pending` row, schedules the long
+//      analysis via ctx.waitUntil so it survives past the response,
+//      and returns the job id within ~1s.
+//   2. getAnalysisJob  — polled by the client every 2s; returns the
+//      current status + result once `complete`.
+//
+// Gating (preview vs full) is applied at READ time in getAnalysisJob, so
+// the stored result_json is always the full analysis.
+// =====================================================================
+
+async function processAnalysisJob(
+  jobId: string,
+  url: string,
+  pastedText: string,
+): Promise<void> {
+  try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
+    }
+    let full: FullAnalysis;
+    if (url && !pastedText) {
+      const cached = recentAnalyses.get(url);
+      if (cached && Date.now() - cached.at < ANALYSIS_DEDUPE_TTL_MS) {
+        full = cached.full;
+      } else {
+        const existing = inflightAnalyses.get(url);
+        if (existing) {
+          full = await existing;
+        } else {
+          const promise = runAnalysis(url, pastedText, apiKey)
+            .then((result) => {
+              recentAnalyses.set(url, { at: Date.now(), full: result });
+              return result;
+            })
+            .finally(() => {
+              inflightAnalyses.delete(url);
+            });
+          inflightAnalyses.set(url, promise);
+          full = await promise;
+        }
+      }
+    } else {
+      full = await runAnalysis(url, pastedText, apiKey);
+    }
+
+    await supabaseAdmin
+      .from("analysis_jobs")
+      .update({
+        status: "complete",
+        result_json: full as unknown as Record<string, unknown>,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", jobId);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Analysis failed";
+    console.error("[processAnalysisJob] failed", { jobId, error: message });
+    try {
+      await supabaseAdmin
+        .from("analysis_jobs")
+        .update({
+          status: "error",
+          error: message,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", jobId);
+    } catch (updateErr) {
+      console.error("[processAnalysisJob] failed to record error", updateErr);
+    }
+  }
+}
+
+export const startAnalysisJob = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      url: z.string().max(2000).optional(),
+      text: z.string().max(50000).optional(),
+      accessToken: z.string().max(200).optional().nullable(),
+      sessionJwt: z.string().max(4000).optional().nullable(),
+    })
+  )
+  .handler(async ({ data }): Promise<{ jobId: string }> => {
+    const url = data.url?.trim() ?? "";
+    const pastedText = data.text?.trim() ?? "";
+    if (!url && !pastedText) throw new Error("Provide a listing URL or pasted text");
+
+    if (url) {
+      try {
+        validateListingUrl(url);
+      } catch (e) {
+        throw e instanceof Error ? e : new Error("INVALID_URL: Unsupported URL.");
+      }
+    }
+
+    const { data: row, error } = await supabaseAdmin
+      .from("analysis_jobs")
+      .insert({
+        url: url || "(pasted text)",
+        pasted_text: pastedText || null,
+        access_token: data.accessToken ?? null,
+        session_jwt: data.sessionJwt ?? null,
+        status: "pending",
+      })
+      .select("id")
+      .single();
+
+    if (error || !row) {
+      console.error("[startAnalysisJob] insert failed", error);
+      throw new Error("Failed to start analysis. Please try again.");
+    }
+
+    const jobId = row.id as string;
+    // Fire-and-forget background work, kept alive by ctx.waitUntil on Cloudflare.
+    scheduleBackground(processAnalysisJob(jobId, url, pastedText));
+
+    return { jobId };
+  });
+
+export const getAnalysisJob = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      jobId: z.string().uuid(),
+      sessionJwt: z.string().max(4000).optional().nullable(),
+    })
+  )
+  .handler(async ({ data }): Promise<{
+    status: "pending" | "complete" | "error";
+    analysis: AnalysisResult | null;
+    error: string | null;
+  }> => {
+    const { data: row, error } = await supabaseAdmin
+      .from("analysis_jobs")
+      .select("status, result_json, error, url, access_token")
+      .eq("id", data.jobId)
+      .maybeSingle();
+
+    if (error || !row) {
+      return { status: "error", analysis: null, error: "Job not found." };
+    }
+
+    const status = (row.status as "pending" | "complete" | "error") ?? "pending";
+    if (status !== "complete" || !row.result_json) {
+      return { status, analysis: null, error: (row.error as string | null) ?? null };
+    }
+
+    const full = row.result_json as unknown as FullAnalysis;
+    const unlocked = await hasFullAccess({
+      accessToken: (row.access_token as string | null) ?? null,
+      sessionJwt: data.sessionJwt ?? null,
+      listingUrl: (row.url as string | null) ?? null,
+    });
+
+    return {
+      status: "complete",
+      analysis: unlocked ? full : toPreview(full),
+      error: null,
+    };
+  });
