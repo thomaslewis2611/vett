@@ -101,6 +101,7 @@ function Index() {
             <div className="flex flex-1 items-center gap-2 px-4">
               <Link2 className="h-4 w-4 shrink-0" style={{ color: "#888780" }} />
               <input
+                id="url-input"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
                 placeholder="https://www.rightmove.co.uk/properties/..."
