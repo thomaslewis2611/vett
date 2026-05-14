@@ -69,6 +69,7 @@ function PricingPage() {
               "Nearby schools with Ofsted ratings",
               "Save and compare reports",
               "Report emailed to you",
+              "Access anywhere — all reports saved to your account",
             ]}
             footnote="One-off payment. Access ends 90 days after purchase."
           />
