@@ -415,7 +415,16 @@ function ResultsPage() {
     );
   }
 
-  return <ReportView analysis={query.data!} listingUrl={url} token={token} fromSaved={Boolean(saved_id)} />;
+  return (
+    <ReportView
+      analysis={query.data!.analysis}
+      listingUrl={url ?? query.data!.savedListingUrl ?? undefined}
+      token={token}
+      fromSaved={Boolean(saved_id)}
+      savedId={saved_id}
+      savedOwnerEmail={query.data!.savedOwnerEmail ?? null}
+    />
+  );
 }
 
 function BlockedFallback({ url, message }: { url?: string; message: string }) {
