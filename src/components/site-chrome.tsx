@@ -319,7 +319,7 @@ export function SiteHeader() {
 
 export function SiteFooter() {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 0, width: "100%", margin: 0, padding: 0 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 0, width: "100%", margin: 0, padding: 0, marginTop: "auto" }}>
       <div
         style={{
           background: "#F1EFE8",

@@ -46,7 +46,7 @@ function BuyerLoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <SiteHeader />
       <main className="mx-auto max-w-md px-6 py-20">
         <div className="text-center">

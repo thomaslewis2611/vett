@@ -336,7 +336,7 @@ function ResultsPage() {
 
   if (!hasInput) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
         <main className="mx-auto max-w-xl px-6 py-24 text-center">
           <h1 className="text-2xl font-semibold tracking-tight">No listing to analyse</h1>
@@ -358,7 +358,7 @@ function ResultsPage() {
 
   if (query.isPending) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
         <LoadingState url={url} />
         <DisclaimerBar />
@@ -389,7 +389,7 @@ function ResultsPage() {
           : safeRawMsg;
 
     return (
-      <div className="min-h-screen bg-background">
+      <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
         <main className="mx-auto max-w-xl px-6 py-20">
           {isBlocked ? (
@@ -748,7 +748,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
   };
 
   return (
-    <div className="min-h-screen bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
+    <div className="flex min-h-screen flex-col bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
       <SiteHeader />
 
       {access.level === "pass" && (
