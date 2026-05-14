@@ -70,6 +70,11 @@ export type AnalysisResult = {
     autoRedFlag: boolean;
     scotland?: boolean | null;
     unavailable?: boolean | null;
+    manualZone?: string | null;
+    riskLevel?: string | null;
+    insuranceImplications?: string | null;
+    mortgageImplications?: string | null;
+    resaleImpact?: string | null;
   } | null;
   nearbySchools?: {
     schools: {
