@@ -104,6 +104,30 @@ export type AnalysisResult = {
     mortgageAssumptions: string;
   };
   viewingQuestions: string[];
+  sellerMotivation?: {
+    score: number;
+    label: "Low" | "Moderate" | "High" | "Very High";
+    signals: string[];
+    commentary: string;
+  } | null;
+  viewingChecklist?: {
+    items: {
+      category: "Structure" | "Legal" | "Running costs" | "Negotiation" | "Practical";
+      item: string;
+      why: string;
+    }[];
+  } | null;
+  renovationCosts?: {
+    items: {
+      issue: string;
+      estimatedCost: string;
+      priority: "Essential" | "Recommended" | "Optional";
+      notes: string;
+    }[];
+    totalEstimatedMin: number;
+    totalEstimatedMax: number;
+    commentary: string;
+  } | null;
   negotiation: {
     isAuction?: boolean;
     maxBid?: number;

@@ -124,6 +124,30 @@ const analysisSchema = z.object({
     rationale: z.string().describe("2-3 sentence justification (or auction bidding strategy if isAuction)"),
     leverage: z.array(z.string()).min(3).max(6).describe("Concrete negotiating points"),
   }),
+  sellerMotivation: z.object({
+    score: z.number().min(1).max(10),
+    label: z.enum(["Low", "Moderate", "High", "Very High"]),
+    signals: z.array(z.string()),
+    commentary: z.string(),
+  }).nullable().optional(),
+  viewingChecklist: z.object({
+    items: z.array(z.object({
+      category: z.enum(["Structure", "Legal", "Running costs", "Negotiation", "Practical"]),
+      item: z.string(),
+      why: z.string(),
+    })).min(8).max(15),
+  }).nullable().optional(),
+  renovationCosts: z.object({
+    items: z.array(z.object({
+      issue: z.string(),
+      estimatedCost: z.string(),
+      priority: z.enum(["Essential", "Recommended", "Optional"]),
+      notes: z.string(),
+    })),
+    totalEstimatedMin: z.number(),
+    totalEstimatedMax: z.number(),
+    commentary: z.string(),
+  }).nullable().optional(),
   comparables: z
     .array(
       z.object({
@@ -164,6 +188,10 @@ You must:
 - FLOOD RISK: If "ENVIRONMENT AGENCY FLOOD RISK" data is provided in the listing content, populate floodRisk with EXACTLY those values for riversAndSea, surfaceWater, reservoir, groundwater and overallRisk. Set autoRedFlag=true ONLY if Rivers/Sea risk is "High". Write a 2-3 sentence commentary explaining the practical implications: buildings insurance cost, mortgage lender concerns, what the buyer should do. For High risk specifically mention that some insurers refuse cover or charge 3-5x standard premiums and that some mortgage lenders require flood resilience measures as a condition of lending. If no flood data is provided, set floodRisk to null.
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
 
+- Populate sellerMotivation based on: days on market, number of price reductions, chain status, reason for sale if mentioned, listing language urgency, and time of year. Score 1-3 = low motivation (recently listed, no reductions, strong market), 4-6 = moderate, 7-8 = high (30+ days, reduced, or chain free with emphasis), 9-10 = very high (multiple reductions, long time on market, vacant, urgent language). Signals must be short concrete strings drawn from the listing (e.g. "35 days on market", "Price reduced twice", "No onward chain", "Vacant possession"). Commentary is 2-3 sentences explaining what the motivation level means for the buyer's negotiating position.
+- Populate viewingChecklist with 8-15 specific actionable items derived from the red flags and property characteristics identified. Every item must be specific to THIS property — not generic advice. Reference specific details from the listing. Each item belongs to one of: "Structure", "Legal", "Running costs", "Negotiation", "Practical". The "why" is one sentence explaining why this matters for THIS specific property.
+- Populate renovationCosts only for issues identified in the red flags or listing. Do not invent issues not mentioned. Use realistic UK contractor pricing for 2026. estimatedCost should be a string range like "£15,000 – £25,000". priority is one of "Essential", "Recommended", "Optional". Set totalEstimatedMin and totalEstimatedMax as the sum of min/max integers across items. Commentary is 2-3 sentences on overall renovation picture and whether costs are factored into asking price. If no renovation is needed, return { items: [], totalEstimatedMin: 0, totalEstimatedMax: 0, commentary: "..." }.
+
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
   "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "listingUrl": string },
@@ -180,6 +208,9 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
   "viewingQuestions": string[] (exactly 8),
   "negotiation": { "isAuction": boolean (optional), "maxBid": number (optional, auction only), "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] (3-6) },
+  "sellerMotivation": { "score": number (1-10), "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
+  "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] (8-15) },
+  "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "Essential"|"Recommended"|"Optional", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
   "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4)
 }
 
@@ -1027,6 +1058,7 @@ function toPreview(a: AnalysisResult): AnalysisResult {
     viewingQuestions: [],
     comparables: [],
     nearbySchools: null,
+    renovationCosts: null,
   };
 }
 
