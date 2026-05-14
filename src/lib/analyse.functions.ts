@@ -74,6 +74,20 @@ const analysisSchema = z.object({
     })),
     unavailable: z.boolean().nullable().optional(),
   }).nullable().optional(),
+  crime: z.object({
+    totalCrimes: z.number(),
+    month: z.string(),
+    topCategories: z.array(z.object({
+      category: z.string(),
+      count: z.number(),
+      label: z.string(),
+    })),
+    riskLevel: z.enum(["Low", "Moderate", "High", "Very High"]),
+    commentary: z.string(),
+    autoRedFlag: z.boolean(),
+    coordinates: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(),
+    unavailable: z.boolean().nullable().optional(),
+  }).nullable().optional(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
