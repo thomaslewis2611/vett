@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowRight, Check, Link2, Sparkles, FileText } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 
@@ -23,9 +23,22 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+const HEADLINES = [
+  { main: "The red flags", highlight: "estate agents won't show you" },
+  { main: "Know exactly what", highlight: "you're buying before you offer" },
+  { main: "What your surveyor", highlight: "finds out too late" },
+  { main: "Don't offer", highlight: "blind" },
+  { main: "The property check estate agents", highlight: "wish didn't exist" },
+];
+
 function Index() {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
+  const [headlineIdx, setHeadlineIdx] = useState(0);
+  useEffect(() => {
+    setHeadlineIdx(Math.floor(Math.random() * HEADLINES.length));
+  }, []);
+  const headline = HEADLINES[headlineIdx];
 
   const handleAnalyse = (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,9 +76,9 @@ function Index() {
           >
             AI-powered property analysis
           </span>
-          <h1 className="mt-6 text-balance">
-            The red flags{" "}
-            <span style={{ color: "#D85A30" }}>estate agents won't show you</span>
+          <h1 className="mt-6 text-balance" suppressHydrationWarning>
+            {headline.main}{" "}
+            <span style={{ color: "#D85A30" }}>{headline.highlight}</span>
           </h1>
           <p
             className="mx-auto mt-6 max-w-2xl text-balance"
