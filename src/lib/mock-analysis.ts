@@ -108,6 +108,20 @@ export type AnalysisResult = {
     unavailable?: boolean | null;
     autoRedFlag?: boolean | null;
   } | null;
+  transport?: {
+    nearestStation: string;
+    distanceToStation: string;
+    journeyToNearestCity: string;
+    nearestCity: string;
+    busLinks: string;
+    motorwayAccess: string;
+    airportAccess: string;
+    transportRating: "Excellent" | "Good" | "Average" | "Poor";
+    commentary: string;
+    parkingNotes?: string | null;
+    unavailable?: boolean | null;
+    autoRedFlag?: boolean | null;
+  } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
     avgSoldPriceArea: number | null;
