@@ -551,6 +551,21 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
   const [sdMode, setSdMode] = useState<StampDutyMode>("main");
   const stampDuty = calcStampDuty(a.property.price, sdMode);
 
+  // Single shared "upgrade to Buyer Pass" handler used by inline upgrade
+  // prompts on locked sections. Uses the existing checkout flow — does NOT
+  // change any payment / Stripe logic.
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const upgradeToPass = async (lurl?: string) => {
+    try {
+      const r = await checkoutFn({
+        data: { priceId: PRICE_PASS, listingUrl: lurl ?? listingUrl ?? "", tier: "pass" },
+      });
+      if (r?.url) window.location.href = r.url;
+    } catch (e) {
+      console.error("[upgradeToPass] checkout failed:", e);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
