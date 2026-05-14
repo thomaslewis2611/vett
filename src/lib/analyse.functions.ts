@@ -826,7 +826,7 @@ async function hasFullAccess(opts: {
     }
   }
 
-  // 2. Buyer Pass via authenticated session
+  // 2. Authenticated session: Buyer Pass OR Single Report by email
   if (opts.sessionJwt) {
     const SUPABASE_URL = process.env.SUPABASE_URL;
     const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
@@ -846,6 +846,18 @@ async function hasFullAccess(opts: {
           if (row) {
             const expiresAt = (row as { expires_at: string | null }).expires_at;
             if (!expiresAt || new Date(expiresAt).getTime() > Date.now()) return true;
+          }
+          // Single Report tied to this email
+          const { data: sr } = await supabaseAdmin
+            .from("single_report_tokens")
+            .select("expires_at")
+            .ilike("user_email", email)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (sr) {
+            const exp = (sr as { expires_at: string }).expires_at;
+            if (!exp || new Date(exp).getTime() > Date.now()) return true;
           }
         }
       } catch {
