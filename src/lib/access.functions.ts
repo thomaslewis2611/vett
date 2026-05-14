@@ -43,22 +43,50 @@ export const checkBuyerPassByEmail = createServerFn({ method: "POST" })
     }
   );
 
+// Returns a Single Report match ONLY when the user has a saved analysis
+// for THIS specific listingUrl. Email alone is not enough — Single Report
+// access is per-listing, not per-account.
 export const getSingleReportByEmail = createServerFn({ method: "POST" })
-  .inputValidator(z.object({ email: z.string().email().max(320) }))
+  .inputValidator(
+    z.object({
+      email: z.string().email().max(320),
+      listingUrl: z.string().max(2000).optional().nullable(),
+    }),
+  )
   .handler(
     async ({
       data,
     }): Promise<{ token: string | null; listingUrl: string | null; expiresAt: string | null }> => {
+      if (!data.listingUrl) {
+        return { token: null, listingUrl: null, expiresAt: null };
+      }
+      // Match a paid Single Report for this exact listing URL.
+      const { data: saved } = await supabaseAdmin
+        .from("saved_analyses")
+        .select("id, listing_url, created_at")
+        .ilike("user_email", data.email)
+        .eq("listing_url", data.listingUrl)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!saved) return { token: null, listingUrl: null, expiresAt: null };
+
+      // Optional: surface the matching token's expiry if one exists.
       const { data: row } = await supabaseAdmin
         .from("single_report_tokens")
         .select("token, listing_url, expires_at, created_at")
         .ilike("user_email", data.email)
+        .eq("listing_url", data.listingUrl)
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (!row) return { token: null, listingUrl: null, expiresAt: null };
-      if (new Date(row.expires_at).getTime() < Date.now())
+      if (row && new Date(row.expires_at).getTime() < Date.now()) {
         return { token: null, listingUrl: null, expiresAt: null };
-      return { token: row.token, listingUrl: row.listing_url, expiresAt: row.expires_at };
+      }
+      return {
+        token: row?.token ?? "saved",
+        listingUrl: data.listingUrl,
+        expiresAt: row?.expires_at ?? null,
+      };
     }
   );

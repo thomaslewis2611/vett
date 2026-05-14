@@ -1040,17 +1040,32 @@ async function hasFullAccess(opts: {
             const expiresAt = (row as { expires_at: string | null }).expires_at;
             if (!expiresAt || new Date(expiresAt).getTime() > Date.now()) return true;
           }
-          // Single Report tied to this email
-          const { data: sr } = await supabaseAdmin
-            .from("single_report_tokens")
-            .select("expires_at")
-            .ilike("user_email", email)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-          if (sr) {
-            const exp = (sr as { expires_at: string }).expires_at;
-            if (!exp || new Date(exp).getTime() > Date.now()) return true;
+          // Single Report tied to this email AND this specific listing URL.
+          // Email alone is NOT enough — Single Report access is per-listing.
+          if (opts.listingUrl) {
+            const { data: sr } = await supabaseAdmin
+              .from("single_report_tokens")
+              .select("expires_at")
+              .ilike("user_email", email)
+              .eq("listing_url", opts.listingUrl)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle();
+            if (sr) {
+              const exp = (sr as { expires_at: string }).expires_at;
+              if (!exp || new Date(exp).getTime() > Date.now()) return true;
+            }
+            // Fallback: a saved analysis already exists for this exact listing
+            // (covers cases where the token row was pruned but the report
+            // remains in saved_analyses).
+            const { data: saved } = await supabaseAdmin
+              .from("saved_analyses")
+              .select("id")
+              .ilike("user_email", email)
+              .eq("listing_url", opts.listingUrl)
+              .limit(1)
+              .maybeSingle();
+            if (saved) return true;
           }
         }
       } catch {

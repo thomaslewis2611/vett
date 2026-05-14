@@ -147,10 +147,10 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
         }
       } catch { /* ignore */ }
 
-      // 2. Signed-in user with an active Single Report token (any device)
-      if (signedInEmail) {
+      // 2. Signed-in user with a Single Report for THIS specific listing URL
+      if (signedInEmail && listingUrl) {
         try {
-          const r = await checkSingleByEmail({ data: { email: signedInEmail } });
+          const r = await checkSingleByEmail({ data: { email: signedInEmail, listingUrl } });
           if (cancelled) return;
           if (r.token) {
             setState({ level: "single", email: signedInEmail, expiresAt: r.expiresAt, loading: false });
