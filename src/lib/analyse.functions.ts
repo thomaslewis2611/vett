@@ -2058,6 +2058,7 @@ async function runAnalysis(
     full.nearbySchools = {
       schools: nearbySchoolsRaw.schools,
       unavailable: nearbySchoolsRaw.unavailable ?? false,
+      aiSourced: nearbySchoolsRaw.aiSourced ?? false,
     };
   } else {
     full.nearbySchools = null;
