@@ -1207,7 +1207,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
             "Negotiation strategy and recommended offer range",
             "Access anywhere — report saved to your account",
           ]}
-          upsell={{ text: "Upgrade to Buyer Pass for AI chat, flood risk and nearby schools →", targetId: "buyer-pass-card" }}
+          upsell={{ text: "Upgrade to Buyer Pass for AI chat and the renovation cost estimator →", targetId: "buyer-pass-card" }}
         />
         <PlanCard
           id="buyer-pass-card"
@@ -1222,8 +1222,9 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           features={[
             "Unlimited analyses for 90 days",
             "AI chat on every property",
-            "Flood risk assessment",
-            "Nearby schools with Ofsted ratings",
+            "Seller motivation score",
+            "Viewing checklist — specific to this property",
+            "Renovation cost estimator",
             "Save and compare reports",
             "Report emailed to you",
             "Access anywhere — all reports saved to your account",
