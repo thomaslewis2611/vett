@@ -302,7 +302,7 @@ function buildReportHtml(opts: {
         : "—";
     renovationHtml = `
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Renovation cost estimate</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+      <table class="stack3" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
         <tr>
           <th ${headerCell}>Issue</th>
           <th ${headerCell}>Priority</th>
