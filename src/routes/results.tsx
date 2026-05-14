@@ -229,8 +229,29 @@ function ResultsPage() {
     queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
     queryFn: async (): Promise<AnalysisResult> => {
       if (saved_id) {
-        const r = await getSavedFn({ data: { id: saved_id } });
-        if (!r.found) throw new Error("Saved report not found or no longer accessible.");
+        // Wait for auth session to hydrate so the bearer token is attached.
+        const { data: sess } = await supabase.auth.getSession();
+        if (!sess.session) {
+          // Brief wait + one re-check; auth restore can lag on first paint.
+          await new Promise((r) => setTimeout(r, 500));
+        }
+        console.log("[results] loading saved report", { saved_id });
+        let r = await getSavedFn({ data: { id: saved_id } });
+        if (!r.found) {
+          console.warn("[results] saved report not found on first try, retrying in 1s", {
+            saved_id,
+            errorMessage: (r as { errorMessage?: string }).errorMessage,
+          });
+          await new Promise((res) => setTimeout(res, 1000));
+          r = await getSavedFn({ data: { id: saved_id } });
+        }
+        if (!r.found) {
+          console.error("[results] saved report unavailable after retry", {
+            saved_id,
+            errorMessage: (r as { errorMessage?: string }).errorMessage,
+          });
+          throw new Error("SAVED_NOT_FOUND");
+        }
         return r.analysis;
       }
       const { data: sess } = await supabase.auth.getSession();
@@ -284,9 +305,12 @@ function ResultsPage() {
   if (query.isError) {
     const rawMsg = (query.error as Error)?.message || "Something went wrong while analysing this listing.";
     const isBlocked = rawMsg.startsWith("FETCH_BLOCKED");
+    const isSavedMissing = rawMsg === "SAVED_NOT_FOUND" || Boolean(saved_id);
     const friendlyMsg = isBlocked
       ? "We couldn't automatically read this listing. You can paste the listing description below to get your full analysis."
-      : rawMsg;
+      : isSavedMissing
+        ? "We couldn't load this report. Try opening it from your dashboard."
+        : rawMsg;
 
     return (
       <div className="min-h-screen bg-background">
@@ -296,21 +320,32 @@ function ResultsPage() {
             <BlockedFallback url={url} message={friendlyMsg} />
           ) : (
             <div className="text-center">
-              <h1 className="text-2xl font-semibold tracking-tight">Analysis failed</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {isSavedMissing ? "Report unavailable" : "Analysis failed"}
+              </h1>
               <p className="mt-3 text-sm text-muted-foreground">{friendlyMsg}</p>
-              <div className="mt-6 flex justify-center gap-3">
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <button
                   onClick={() => query.refetch()}
                   className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
                   Try again
                 </button>
-                <button
-                  onClick={() => navigate({ to: "/" })}
-                  className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-medium hover:bg-accent"
-                >
-                  Start over
-                </button>
+                {isSavedMissing ? (
+                  <button
+                    onClick={() => navigate({ to: "/my-reports" })}
+                    className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-medium hover:bg-accent"
+                  >
+                    Go to My Reports →
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate({ to: "/" })}
+                    className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-medium hover:bg-accent"
+                  >
+                    Start over
+                  </button>
+                )}
               </div>
             </div>
           )}
