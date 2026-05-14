@@ -949,6 +949,9 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
             isBuyerPass={access.level === "pass"}
             fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
             onUpgrade={() => upgradeToPass(listingUrl)}
+            listingUrl={listingUrl}
+            userEmail={access.email}
+            onFloodRiskUpdate={(fr) => setA((prev) => ({ ...prev, floodRisk: fr }))}
           />
         )}
 
