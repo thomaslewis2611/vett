@@ -820,6 +820,102 @@ function LockedFeaturesGrid() {
   );
 }
 
+function ExpiredPassGate({
+  expiresAt,
+  listingUrl,
+}: {
+  expiresAt: string | null;
+  listingUrl?: string;
+}) {
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const expiredLabel = expiresAt
+    ? new Date(expiresAt).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : "recently";
+
+  const handleRenew = async () => {
+    setErr(null);
+    setLoading(true);
+    try {
+      const res = await checkoutFn({
+        data: { priceId: PRICE_PASS, listingUrl: listingUrl ?? "", tier: "pass" },
+      });
+      window.location.href = res.url;
+    } catch (e) {
+      setErr((e as Error).message || "Couldn't start checkout. Try again.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="p-6 sm:p-8"
+      style={{
+        background: "#FFFDF9",
+        borderRadius: 12,
+        border: "0.5px solid rgba(26,17,8,0.12)",
+      }}
+    >
+      <div
+        className="inline-flex items-center gap-2"
+        style={{
+          background: "#FAECE7",
+          color: "#993C1D",
+          borderRadius: 100,
+          padding: "4px 10px",
+          fontSize: 11,
+          fontWeight: 500,
+          letterSpacing: "0.04em",
+        }}
+      >
+        BUYER PASS EXPIRED
+      </div>
+      <h3
+        className="mt-4 text-2xl font-semibold tracking-tight"
+        style={{ color: "#1A1108" }}
+      >
+        Your Buyer Pass has expired
+      </h3>
+      <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>
+        Your 90-day pass expired on {expiredLabel}. Renew to continue analysing
+        properties with full access.
+      </p>
+      <button
+        type="button"
+        onClick={handleRenew}
+        disabled={loading}
+        className="mt-6 inline-flex items-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+        style={{
+          background: "#D85A30",
+          color: "#FFFDF9",
+          fontSize: 14,
+          fontWeight: 500,
+          borderRadius: 100,
+          padding: "12px 22px",
+        }}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" /> Starting checkout…
+          </>
+        ) : (
+          <>Renew Buyer Pass — £24.99 →</>
+        )}
+      </button>
+      {err && (
+        <p className="mt-3 text-sm" style={{ color: "#993C1D" }}>
+          {err}
+        </p>
+      )}
+    </div>
+  );
+}
+
 
 function UnlockedSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
