@@ -41,9 +41,18 @@ function severityColor(s: "high" | "medium" | "low"): string {
 }
 
 function priorityColor(p: string): string {
-  if (p === "Essential") return "#B53A1A";
-  if (p === "Recommended") return "#BA7517";
+  const n = (p || "").toLowerCase();
+  if (n === "high priority" || n === "essential" || n === "high") return "#B53A1A";
+  if (n === "medium priority" || n === "recommended" || n === "medium") return "#BA7517";
   return "#5F5E5A";
+}
+
+function displayPriority(p: string): string {
+  const n = (p || "").toLowerCase();
+  if (n === "essential") return "High priority";
+  if (n === "recommended") return "Medium priority";
+  if (n === "optional") return "Low priority";
+  return p;
 }
 
 // UK Stamp Duty — Main residence rates (England/NI, 2026)
