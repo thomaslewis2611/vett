@@ -350,7 +350,7 @@ function buildReportHtml(opts: {
       .join("");
     schoolsHtml = `
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Nearby schools</h2>
-      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>`;
+      <table class="stack3" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>`;
   }
 
   return `<!doctype html><html lang="en"><head>
