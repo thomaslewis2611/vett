@@ -1161,7 +1161,7 @@ function LockedFeaturesGrid() {
         </LockedFeatureCard>
         <LockedFeatureCard
           title="Nearby schools"
-          sub="Ofsted ratings within 1 mile — coming soon"
+          sub="Ofsted ratings within 5 miles — coming soon"
           comingSoon
         >
           <div>Coming soon</div>
