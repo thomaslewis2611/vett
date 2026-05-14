@@ -2756,9 +2756,62 @@ function SellerMotivationSection({ analysis, unlocked }: { analysis: AnalysisRes
 
 const CHECKLIST_CATEGORIES = ["Structure", "Legal", "Running costs", "Negotiation", "Practical"] as const;
 
-function ViewingChecklistSection({ analysis }: { analysis: AnalysisResult }) {
+function ChecklistItem({ item, why }: { item: string; why: string }) {
+  return (
+    <li className="flex gap-2.5">
+      <span
+        aria-hidden
+        className="mt-0.5 shrink-0"
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: 3,
+          border: "1px solid rgba(26,17,8,0.25)",
+          background: "#FFFDF9",
+        }}
+      />
+      <div className="min-w-0">
+        <div style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.5 }}>{item}</div>
+        <div className="mt-0.5" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
+          {why}
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisResult; unlocked: boolean }) {
   const vc = analysis.viewingChecklist;
   if (!vc || vc.items.length === 0) return null;
+
+  const renderCategoryGroups = (items: typeof vc.items) => (
+    <div className="flex flex-col gap-5">
+      {CHECKLIST_CATEGORIES.map((cat) => {
+        const catItems = items.filter((it) => it.category === cat);
+        if (catItems.length === 0) return null;
+        return (
+          <div key={cat}>
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: "#888780",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              {cat}
+            </div>
+            <ul className="mt-2 space-y-3">
+              {catItems.map((it, i) => (
+                <ChecklistItem key={i} item={it.item} why={it.why} />
+              ))}
+            </ul>
+          </div>
+        );
+      })}
+    </div>
+  );
 
   return (
     <section className="mt-10">
@@ -2768,49 +2821,31 @@ function ViewingChecklistSection({ analysis }: { analysis: AnalysisResult }) {
       <p className="mt-1 text-sm" style={{ color: "#5F5E5A" }}>
         Specific to this property — take this to your viewing
       </p>
-      <div className="mt-4 flex flex-col gap-5" style={CARD_STYLE}>
-        {CHECKLIST_CATEGORIES.map((cat) => {
-          const items = vc.items.filter((it) => it.category === cat);
-          if (items.length === 0) return null;
-          return (
-            <div key={cat}>
-              <div
-                style={{
-                  fontSize: 11,
-                  fontWeight: 500,
-                  color: "#888780",
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                {cat}
+      <div className="mt-4" style={CARD_STYLE}>
+        {unlocked ? (
+          renderCategoryGroups(vc.items)
+        ) : (
+          <>
+            <ul className="space-y-3">
+              {vc.items.slice(0, 2).map((it, i) => (
+                <ChecklistItem key={i} item={it.item} why={it.why} />
+              ))}
+            </ul>
+            {vc.items.length > 2 && (
+              <div className="relative mt-5 overflow-hidden">
+                <div style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none" }}>
+                  {renderCategoryGroups(vc.items.slice(2))}
+                </div>
+                <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+                  <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+                  <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+                    Unlock full viewing checklist with Single Report or Buyer Pass
+                  </p>
+                </div>
               </div>
-              <ul className="mt-2 space-y-3">
-                {items.map((it, i) => (
-                  <li key={i} className="flex gap-2.5">
-                    <span
-                      aria-hidden
-                      className="mt-0.5 shrink-0"
-                      style={{
-                        width: 14,
-                        height: 14,
-                        borderRadius: 3,
-                        border: "1px solid rgba(26,17,8,0.25)",
-                        background: "#FFFDF9",
-                      }}
-                    />
-                    <div className="min-w-0">
-                      <div style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.5 }}>{it.item}</div>
-                      <div className="mt-0.5" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
-                        {it.why}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          );
-        })}
+            )}
+          </>
+        )}
       </div>
     </section>
   );
