@@ -2434,6 +2434,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
     nearbySchools: AnalysisResult["nearbySchools"] | null;
     crime: AnalysisResult["crime"] | null;
     broadband: AnalysisResult["broadband"] | null;
+    transport: AnalysisResult["transport"] | null;
     error?: string;
   }> => {
     try {
@@ -2446,7 +2447,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
       const valid =
         pass && pass.expires_at && new Date(pass.expires_at as string).getTime() > Date.now();
       if (!valid) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "Buyer Pass required" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, transport: null, error: "Buyer Pass required" };
       }
 
       // 2. Load existing saved analysis row (most recent for this user+listing).
@@ -2459,11 +2460,11 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         .limit(1);
       const row = rows?.[0];
       if (!row) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "No saved analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, transport: null, error: "No saved analysis" };
       }
       const analysis = (row.analysis_json as AnalysisResult) ?? null;
       if (!analysis) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "Empty analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, transport: null, error: "Empty analysis" };
       }
 
       // 3. Extract postcode from saved address.
@@ -2471,8 +2472,8 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         extractPostcode(analysis.property?.address ?? "") ??
         extractPostcode((analysis as any)?.property?.listingUrl ?? "");
 
-      // 4. Fetch flood + schools + crime + broadband in parallel (cached).
-      const [floodRaw, schoolsRaw, crimeRawResult, broadbandRawResult] = await Promise.all([
+      // 4. Fetch flood + schools + crime + broadband + transport in parallel (cached).
+      const [floodRaw, schoolsRaw, crimeRawResult, broadbandRawResult, transportRawResult] = await Promise.all([
         fetchFloodRisk(postcode).catch((err) => {
           console.error("[fetchBuyerPassExtras] flood failed:", err);
           return null;
@@ -2487,6 +2488,15 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         }),
         fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY).catch((err) => {
           console.error("[fetchBuyerPassExtras] broadband failed:", err);
+          return null;
+        }),
+        fetchTransport(
+          postcode,
+          analysis.property?.address ?? "",
+          analysis.property?.propertyType ?? null,
+          process.env.ANTHROPIC_API_KEY,
+        ).catch((err) => {
+          console.error("[fetchBuyerPassExtras] transport failed:", err);
           return null;
         }),
       ]);
@@ -2550,8 +2560,25 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
           }
         : null;
 
+      const transport: AnalysisResult["transport"] = transportRawResult
+        ? {
+            nearestStation: transportRawResult.nearestStation,
+            distanceToStation: transportRawResult.distanceToStation,
+            journeyToNearestCity: transportRawResult.journeyToNearestCity,
+            nearestCity: transportRawResult.nearestCity,
+            busLinks: transportRawResult.busLinks,
+            motorwayAccess: transportRawResult.motorwayAccess,
+            airportAccess: transportRawResult.airportAccess,
+            transportRating: transportRawResult.transportRating,
+            commentary: transportRawResult.commentary,
+            parkingNotes: transportRawResult.parkingNotes ?? null,
+            unavailable: transportRawResult.unavailable ?? null,
+            autoRedFlag: transportRawResult.autoRedFlag ?? null,
+          }
+        : null;
+
       // 6. Patch the saved analysis row (admin client bypasses RLS).
-      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime, broadband };
+      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime, broadband, transport };
       try {
         await supabaseAdmin
           .from("saved_analyses")
@@ -2561,7 +2588,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         console.error("[fetchBuyerPassExtras] update failed:", err);
       }
 
-      return { ok: true, floodRisk, nearbySchools, crime, broadband };
+      return { ok: true, floodRisk, nearbySchools, crime, broadband, transport };
     } catch (err) {
       console.error("[fetchBuyerPassExtras] failed:", err);
       return {
@@ -2570,6 +2597,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         nearbySchools: null,
         crime: null,
         broadband: null,
+        transport: null,
         error: (err as Error).message ?? "Unknown error",
       };
     }
