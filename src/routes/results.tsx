@@ -265,6 +265,7 @@ function ResultsPage() {
       const { jobId } = await startJobFn({
         data: { url, text, accessToken: token ?? null, sessionJwt },
       });
+      rememberJobId(url, jobId);
 
       const startedAt = Date.now();
       // First poll after a short delay to give the worker a head start.
