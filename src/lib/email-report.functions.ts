@@ -70,8 +70,20 @@ function calcMainResidenceSDLT(price: number): number {
   return Math.round(tax);
 }
 
+function calcFirstTimeBuyerSDLT(price: number): number {
+  if (!price || price <= 0) return 0;
+  // FTB relief only applies up to £625,000. Above that, standard main residence rates apply.
+  if (price > 625_000) return calcMainResidenceSDLT(price);
+  if (price <= 425_000) return 0;
+  return Math.round((price - 425_000) * 0.05);
+}
+
+function calcAdditionalPropertySDLT(price: number): number {
+  if (!price || price <= 0) return 0;
+  return calcMainResidenceSDLT(price) + Math.round(price * 0.03);
+}
+
 function pickStampDuty(a: AnalysisResult): number {
-  // Always recompute using main residence rate to be consistent.
   return calcMainResidenceSDLT(Number(a.property?.price ?? 0));
 }
 
@@ -125,7 +137,10 @@ function buildReportHtml(opts: {
   const flood = a.floodRisk;
   const schools = a.nearbySchools;
 
-  const sdlt = pickStampDuty(a);
+  const price = Number(a.property?.price ?? 0);
+  const sdlt = calcMainResidenceSDLT(price);
+  const sdltFtb = calcFirstTimeBuyerSDLT(price);
+  const sdltAdditional = calcAdditionalPropertySDLT(price);
   const pricePerSqFt = pickPricePerSqFt(a);
   const daysOnMarket = pickDaysOnMarket(a);
 
@@ -361,7 +376,13 @@ function buildReportHtml(opts: {
         <tr><td ${rowStyle}>Price per sq ft</td><td ${valStyle}>${gbp(pricePerSqFt)}</td></tr>
         <tr><td ${rowStyle}>Days on market</td><td ${valStyle}>${num(daysOnMarket)}</td></tr>
         <tr><td ${rowStyle}>Council tax band</td><td ${valStyle}>${txt(a.metrics?.councilTaxBand)}</td></tr>
-        <tr><td ${rowStyle}>Estimated stamp duty (main residence)</td><td ${valStyle}>${gbp(sdlt)}</td></tr>
+      </table>
+
+      <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Stamp duty</h2>
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr><td ${rowStyle}>First-time buyer</td><td ${valStyle}>${gbp(sdltFtb)}</td></tr>
+        <tr><td ${rowStyle}>Main residence</td><td ${valStyle}>${gbp(sdlt)}</td></tr>
+        <tr><td ${rowStyle}>Additional property</td><td ${valStyle}>${gbp(sdltAdditional)}</td></tr>
       </table>
 
       ${ac ? `
