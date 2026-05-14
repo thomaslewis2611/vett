@@ -86,6 +86,16 @@ export type AnalysisResult = {
     }[];
     unavailable?: boolean | null;
   } | null;
+  crime?: {
+    totalCrimes: number;
+    month: string; // "YYYY-MM"
+    topCategories: { category: string; count: number; label: string }[];
+    riskLevel: "Low" | "Moderate" | "High" | "Very High";
+    commentary: string;
+    autoRedFlag: boolean;
+    coordinates?: { lat: number; lng: number } | null;
+    unavailable?: boolean | null;
+  } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
     avgSoldPriceArea: number | null;

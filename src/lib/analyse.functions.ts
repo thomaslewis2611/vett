@@ -74,6 +74,20 @@ const analysisSchema = z.object({
     })),
     unavailable: z.boolean().nullable().optional(),
   }).nullable().optional(),
+  crime: z.object({
+    totalCrimes: z.number(),
+    month: z.string(),
+    topCategories: z.array(z.object({
+      category: z.string(),
+      count: z.number(),
+      label: z.string(),
+    })),
+    riskLevel: z.enum(["Low", "Moderate", "High", "Very High"]),
+    commentary: z.string(),
+    autoRedFlag: z.boolean(),
+    coordinates: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(),
+    unavailable: z.boolean().nullable().optional(),
+  }).nullable().optional(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
@@ -888,6 +902,249 @@ async function fetchNearbySchools(postcode: string | null): Promise<NearbySchool
   return raw;
 }
 
+// ---------------- Crime statistics (data.police.uk) ----------------
+type CrimeRaw = {
+  totalCrimes: number;
+  month: string;
+  topCategories: { category: string; count: number; label: string }[];
+  riskLevel: "Low" | "Moderate" | "High" | "Very High";
+  commentary: string;
+  autoRedFlag: boolean;
+  coordinates: { lat: number; lng: number } | null;
+  unavailable?: boolean;
+};
+
+const CRIME_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+const CRIME_CATEGORY_LABELS: Record<string, string> = {
+  "burglary": "Burglary",
+  "vehicle-crime": "Vehicle crime",
+  "violent-crime": "Violence and sexual offences",
+  "anti-social-behaviour": "Anti-social behaviour",
+  "robbery": "Robbery",
+  "criminal-damage-arson": "Criminal damage and arson",
+  "drugs": "Drugs",
+  "shoplifting": "Shoplifting",
+  "theft-from-the-person": "Theft from the person",
+  "bicycle-theft": "Bicycle theft",
+  "other-theft": "Other theft",
+  "public-order": "Public order",
+  "possession-of-weapons": "Possession of weapons",
+  "other-crime": "Other crime",
+};
+
+function recentCrimeMonth(): string {
+  // Police data lags ~2 months. Use current - 2.
+  const d = new Date();
+  d.setUTCMonth(d.getUTCMonth() - 2);
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  return `${y}-${m}`;
+}
+
+function formatCrimeMonthLabel(ym: string): string {
+  const [y, m] = ym.split("-").map(Number);
+  if (!y || !m) return ym;
+  const d = new Date(Date.UTC(y, m - 1, 1));
+  return d.toLocaleDateString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+async function postcodeToLatLng(postcode: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const pc = encodeURIComponent(postcode.trim());
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 8_000);
+    const res = await fetch(`https://api.postcodes.io/postcodes/${pc}`, { signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) return null;
+    const j = (await res.json()) as { result?: { latitude?: number; longitude?: number } };
+    const lat = j.result?.latitude;
+    const lng = j.result?.longitude;
+    if (typeof lat === "number" && typeof lng === "number") return { lat, lng };
+    return null;
+  } catch (err) {
+    console.error("[crime] postcodes.io failed:", err);
+    return null;
+  }
+}
+
+async function generateCrimeCommentary(
+  apiKey: string | undefined,
+  payload: {
+    crimeData: { category: string; count: number; label: string }[];
+    totalCrimes: number;
+    coordinates: { lat: number; lng: number };
+    address: string;
+    month: string;
+  },
+): Promise<{ riskLevel: CrimeRaw["riskLevel"]; commentary: string; autoRedFlag: boolean }> {
+  // Heuristic fallback risk (also used if Claude fails).
+  const t = payload.totalCrimes;
+  const fallbackRisk: CrimeRaw["riskLevel"] =
+    t < 50 ? "Low" : t < 150 ? "Moderate" : t < 300 ? "High" : "Very High";
+  const fallbackCommentary = `Police recorded ${t} crimes within a 1-mile radius of this property in ${formatCrimeMonthLabel(payload.month)}. Compare with your local knowledge and consider security and insurance implications.`;
+  const fallback = {
+    riskLevel: fallbackRisk,
+    commentary: fallbackCommentary,
+    autoRedFlag: fallbackRisk === "High" || fallbackRisk === "Very High",
+  };
+  if (!apiKey) return fallback;
+
+  try {
+    const client = new Anthropic({ apiKey, timeout: 25_000, maxRetries: 0 });
+    const prompt = `You are a UK property risk analyst. Given the following police-recorded crime data for the area around ${payload.address || "this property"} in ${formatCrimeMonthLabel(payload.month)}:
+
+Total crimes within ~1 mile: ${payload.totalCrimes}
+Top categories:
+${payload.crimeData.slice(0, 8).map((c) => `- ${c.label}: ${c.count}`).join("\n")}
+
+Return ONLY a single valid JSON object (no markdown, no code fences) of this exact shape:
+{
+  "riskLevel": "Low" | "Moderate" | "High" | "Very High",
+  "commentary": string (2-3 sentences: how this compares to a typical UK residential area, any particular crime types worth flagging, practical implications for buildings/contents insurance or security measures),
+  "autoRedFlag": boolean (true ONLY if riskLevel is High or Very High)
+}
+
+UK reference points: a quiet residential area typically sees 30-80 recorded crimes per month within 1 mile; 80-200 is moderate / urban-typical; 200-400 is high; 400+ is very high (often town/city centres). Adjust for likely category mix (e.g. mostly anti-social-behaviour in a town centre is less alarming than burglary or violent-crime dominating a residential street).`;
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 600,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const raw = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as {
+      riskLevel?: string;
+      commentary?: string;
+      autoRedFlag?: boolean;
+    };
+    const riskLevel = (["Low", "Moderate", "High", "Very High"].includes(parsed.riskLevel ?? "")
+      ? parsed.riskLevel
+      : fallbackRisk) as CrimeRaw["riskLevel"];
+    return {
+      riskLevel,
+      commentary: typeof parsed.commentary === "string" && parsed.commentary.length > 10
+        ? parsed.commentary
+        : fallbackCommentary,
+      autoRedFlag: typeof parsed.autoRedFlag === "boolean"
+        ? parsed.autoRedFlag
+        : (riskLevel === "High" || riskLevel === "Very High"),
+    };
+  } catch (err) {
+    console.error("[crime] Claude commentary failed:", err);
+    return fallback;
+  }
+}
+
+async function fetchCrimeStats(
+  postcode: string | null,
+  address: string,
+  apiKey: string | undefined,
+): Promise<CrimeRaw | null> {
+  if (!postcode) return null;
+  const month = recentCrimeMonth();
+  const cacheKey = `crime:${postcode.toUpperCase().replace(/\s+/g, "")}:${month}`;
+
+  // Cache lookup
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, fetched_at")
+      .eq("url", cacheKey)
+      .maybeSingle();
+    if (
+      cached?.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < CRIME_TTL_MS
+    ) {
+      try {
+        const parsed = JSON.parse(cached.text_content) as CrimeRaw;
+        console.log(`[crime] cache hit for ${cacheKey}`);
+        return parsed;
+      } catch { /* ignore */ }
+    }
+  } catch (err) {
+    console.error("[crime] cache lookup failed:", err);
+  }
+
+  const coords = await postcodeToLatLng(postcode);
+  if (!coords) {
+    return {
+      totalCrimes: 0, month, topCategories: [], riskLevel: "Low",
+      commentary: "", autoRedFlag: false, coordinates: null, unavailable: true,
+    };
+  }
+
+  let crimes: { category: string }[] = [];
+  try {
+    const url = `https://data.police.uk/api/crimes-street/all-crime?lat=${coords.lat}&lng=${coords.lng}&date=${month}`;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 15_000);
+    const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" }, signal: ctrl.signal });
+    clearTimeout(t);
+    if (!res.ok) {
+      console.error(`[crime] police.uk HTTP ${res.status}`);
+      return {
+        totalCrimes: 0, month, topCategories: [], riskLevel: "Low",
+        commentary: "", autoRedFlag: false, coordinates: coords, unavailable: true,
+      };
+    }
+    const json = (await res.json()) as { category?: string }[];
+    crimes = Array.isArray(json) ? json.map((c) => ({ category: String(c.category ?? "other-crime") })) : [];
+  } catch (err) {
+    console.error("[crime] police.uk fetch failed:", err);
+    return {
+      totalCrimes: 0, month, topCategories: [], riskLevel: "Low",
+      commentary: "", autoRedFlag: false, coordinates: coords, unavailable: true,
+    };
+  }
+
+  // Aggregate by category
+  const counts = new Map<string, number>();
+  for (const c of crimes) counts.set(c.category, (counts.get(c.category) ?? 0) + 1);
+  const topCategories = [...counts.entries()]
+    .map(([category, count]) => ({
+      category,
+      count,
+      label: CRIME_CATEGORY_LABELS[category] ?? category.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  const totalCrimes = crimes.length;
+
+  const { riskLevel, commentary, autoRedFlag } = await generateCrimeCommentary(apiKey, {
+    crimeData: topCategories,
+    totalCrimes,
+    coordinates: coords,
+    address,
+    month,
+  });
+
+  const raw: CrimeRaw = {
+    totalCrimes,
+    month,
+    topCategories,
+    riskLevel,
+    commentary,
+    autoRedFlag,
+    coordinates: coords,
+  };
+
+  try {
+    await supabaseAdmin
+      .from("listing_cache")
+      .upsert(
+        { url: cacheKey, text_content: JSON.stringify(raw), fetched_at: new Date().toISOString() },
+        { onConflict: "url" },
+      );
+  } catch (err) {
+    console.error("[crime] cache upsert failed:", err);
+  }
+
+  console.log(`[crime] ${cacheKey} → total=${totalCrimes} risk=${riskLevel}`);
+  return raw;
+}
+
 type FetchedListing = {
   text: string;
   landRegistry: LandRegistryResult;
@@ -895,6 +1152,7 @@ type FetchedListing = {
   postcode: string | null;
   floodRisk: FloodRiskRaw | null;
   nearbySchools: NearbySchoolsRaw | null;
+  crime: CrimeRaw | null;
 };
 
 async function fetchListingText(url: string): Promise<FetchedListing> {
@@ -949,22 +1207,31 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
       })
     : Promise.resolve(null);
 
+  const crimePromise: Promise<CrimeRaw | null> = postcode
+    ? fetchCrimeStats(postcode, sourceForExtraction.slice(0, 200), process.env.ANTHROPIC_API_KEY).catch((err) => {
+        console.error("[crime] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
   if (cachedText) {
-    const [landRegistry, floodRisk, nearbySchools] = await Promise.all([
+    const [landRegistry, floodRisk, nearbySchools, crime] = await Promise.all([
       landRegistryPromise,
       floodRiskPromise,
       nearbySchoolsPromise,
+      crimePromise,
     ]);
-    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools };
+    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime };
   }
 
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  const [landRegistry, floodRisk, nearbySchools] = await Promise.all([
+  const [landRegistry, floodRisk, nearbySchools, crime] = await Promise.all([
     landRegistryPromise,
     floodRiskPromise,
     nearbySchoolsPromise,
+    crimePromise,
   ]);
 
   const notes: string[] = [];
@@ -1010,7 +1277,7 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
     }
   }
 
-  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools };
+  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime };
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
@@ -1107,6 +1374,7 @@ function toPreview(a: AnalysisResult): AnalysisResult {
     viewingQuestions: [],
     comparables: [],
     nearbySchools: null,
+    crime: null,
     renovationCosts: null,
   };
 }
@@ -1130,6 +1398,7 @@ async function runAnalysis(
   let scotland = false;
   let floodRiskRaw: FloodRiskRaw | null = null;
   let nearbySchoolsRaw: NearbySchoolsRaw | null = null;
+  let crimeRaw: CrimeRaw | null = null;
   if (!listingContent && url) {
     console.log(`[runAnalysis] Fetching listing content for ${url}...`);
     const fetched = await fetchListingText(url);
@@ -1138,6 +1407,7 @@ async function runAnalysis(
     scotland = fetched.scotland;
     floodRiskRaw = fetched.floodRisk;
     nearbySchoolsRaw = fetched.nearbySchools;
+    crimeRaw = fetched.crime;
     console.log(`[runAnalysis] Listing content fetched, length: ${listingContent?.length ?? 0}`);
   }
   if (!listingContent || listingContent.length < 100) {
@@ -1316,6 +1586,34 @@ async function runAnalysis(
     };
   } else {
     full.nearbySchools = null;
+  }
+
+  if (crimeRaw) {
+    full.crime = {
+      totalCrimes: crimeRaw.totalCrimes,
+      month: crimeRaw.month,
+      topCategories: crimeRaw.topCategories,
+      riskLevel: crimeRaw.riskLevel,
+      commentary: crimeRaw.commentary,
+      autoRedFlag: crimeRaw.autoRedFlag,
+      coordinates: crimeRaw.coordinates,
+      unavailable: crimeRaw.unavailable ?? false,
+    };
+    if (crimeRaw.autoRedFlag && !crimeRaw.unavailable) {
+      const title = "High crime rate in this area";
+      if (!full.redFlags.some((f) => f.title === title)) {
+        full.redFlags = [
+          {
+            severity: "high",
+            title,
+            detail: `Police data shows ${crimeRaw.totalCrimes} recorded crimes near this property in ${formatCrimeMonthLabel(crimeRaw.month)}, significantly above typical UK residential levels. Check insurance implications and consider security measures in your budget.`,
+          },
+          ...full.redFlags,
+        ];
+      }
+    }
+  } else {
+    full.crime = null;
   }
 
   return full;
@@ -1653,6 +1951,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
     ok: boolean;
     floodRisk: AnalysisResult["floodRisk"] | null;
     nearbySchools: AnalysisResult["nearbySchools"] | null;
+    crime: AnalysisResult["crime"] | null;
     error?: string;
   }> => {
     try {
@@ -1665,7 +1964,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
       const valid =
         pass && pass.expires_at && new Date(pass.expires_at as string).getTime() > Date.now();
       if (!valid) {
-        return { ok: false, floodRisk: null, nearbySchools: null, error: "Buyer Pass required" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, error: "Buyer Pass required" };
       }
 
       // 2. Load existing saved analysis row (most recent for this user+listing).
@@ -1678,11 +1977,11 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         .limit(1);
       const row = rows?.[0];
       if (!row) {
-        return { ok: false, floodRisk: null, nearbySchools: null, error: "No saved analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, error: "No saved analysis" };
       }
       const analysis = (row.analysis_json as AnalysisResult) ?? null;
       if (!analysis) {
-        return { ok: false, floodRisk: null, nearbySchools: null, error: "Empty analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, error: "Empty analysis" };
       }
 
       // 3. Extract postcode from saved address.
@@ -1690,14 +1989,18 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         extractPostcode(analysis.property?.address ?? "") ??
         extractPostcode((analysis as any)?.property?.listingUrl ?? "");
 
-      // 4. Fetch flood + schools in parallel (cached; cheap on repeat).
-      const [floodRaw, schoolsRaw] = await Promise.all([
+      // 4. Fetch flood + schools + crime in parallel (cached; cheap on repeat).
+      const [floodRaw, schoolsRaw, crimeRawResult] = await Promise.all([
         fetchFloodRisk(postcode).catch((err) => {
           console.error("[fetchBuyerPassExtras] flood failed:", err);
           return null;
         }),
         fetchNearbySchools(postcode).catch((err) => {
           console.error("[fetchBuyerPassExtras] schools failed:", err);
+          return null;
+        }),
+        fetchCrimeStats(postcode, analysis.property?.address ?? "", process.env.ANTHROPIC_API_KEY).catch((err) => {
+          console.error("[fetchBuyerPassExtras] crime failed:", err);
           return null;
         }),
       ]);
@@ -1733,8 +2036,21 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
           }
         : null;
 
+      const crime: AnalysisResult["crime"] = crimeRawResult
+        ? {
+            totalCrimes: crimeRawResult.totalCrimes,
+            month: crimeRawResult.month,
+            topCategories: crimeRawResult.topCategories,
+            riskLevel: crimeRawResult.riskLevel,
+            commentary: crimeRawResult.commentary,
+            autoRedFlag: crimeRawResult.autoRedFlag,
+            coordinates: crimeRawResult.coordinates,
+            unavailable: crimeRawResult.unavailable ?? null,
+          }
+        : null;
+
       // 6. Patch the saved analysis row (admin client bypasses RLS).
-      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools };
+      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime };
       try {
         await supabaseAdmin
           .from("saved_analyses")
@@ -1744,13 +2060,14 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         console.error("[fetchBuyerPassExtras] update failed:", err);
       }
 
-      return { ok: true, floodRisk, nearbySchools };
+      return { ok: true, floodRisk, nearbySchools, crime };
     } catch (err) {
       console.error("[fetchBuyerPassExtras] failed:", err);
       return {
         ok: false,
         floodRisk: null,
         nearbySchools: null,
+        crime: null,
         error: (err as Error).message ?? "Unknown error",
       };
     }
