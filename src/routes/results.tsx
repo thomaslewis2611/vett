@@ -878,8 +878,6 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
           onEpcUpdate={(epc) => setA((prev) => ({ ...prev, epc }))}
         />
 
-        {/* Price history (free + paid) */}
-        <PriceHistorySection analysis={a} />
 
         {/* Area context */}
         <AreaContextSection analysis={a} />
