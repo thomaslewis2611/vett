@@ -218,12 +218,16 @@ export const Route = createFileRoute("/results")({
 function ResultsPage() {
   const { url, text, token, saved_id } = Route.useSearch();
   const navigate = useNavigate();
-  const analyseFn = useServerFn(analyseListing);
+  const startJobFn = useServerFn(startAnalysisJob);
+  const getJobFn = useServerFn(getAnalysisJob);
   const getSavedFn = useServerFn(getSavedAnalysis);
 
   const hasInput = Boolean(url || text || saved_id);
 
   const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
+
+  const POLL_INTERVAL_MS = 2000;
+  const POLL_TIMEOUT_MS = 90_000;
 
   const query = useQuery({
     queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
@@ -232,7 +236,6 @@ function ResultsPage() {
         // Wait for auth session to hydrate so the bearer token is attached.
         const { data: sess } = await supabase.auth.getSession();
         if (!sess.session) {
-          // Brief wait + one re-check; auth restore can lag on first paint.
           await new Promise((r) => setTimeout(r, 500));
         }
         console.log("[results] loading saved report", { saved_id });
@@ -254,13 +257,31 @@ function ResultsPage() {
         }
         return r.analysis;
       }
+
+      // Async job pipeline: start a job, then poll until it completes.
       const { data: sess } = await supabase.auth.getSession();
       const sessionJwt = sess.session?.access_token ?? null;
-      const result = await analyseFn({
+
+      const { jobId } = await startJobFn({
         data: { url, text, accessToken: token ?? null, sessionJwt },
       });
-      writeCachedAnalysis(result, url, text, token);
-      return result;
+
+      const startedAt = Date.now();
+      // First poll after a short delay to give the worker a head start.
+      while (true) {
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+        const status = await getJobFn({ data: { jobId, sessionJwt } });
+        if (status.status === "complete" && status.analysis) {
+          writeCachedAnalysis(status.analysis, url, text, token);
+          return status.analysis;
+        }
+        if (status.status === "error") {
+          throw new Error(status.error || "Analysis failed");
+        }
+        if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
+          throw new Error("ANALYSIS_TIMEOUT");
+        }
+      }
     },
     enabled: hasInput,
     retry: false,
