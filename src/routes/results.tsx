@@ -2660,6 +2660,141 @@ function shortMoney(n: number): string {
   }).format(n);
 }
 
+function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade: _onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+  const cardStyle: CSSProperties = {
+    background: "#FFFDF9",
+    border: "0.5px solid rgba(26,17,8,0.12)",
+    borderRadius: 12,
+    padding: 20,
+  };
+  const heading = (
+    <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+      Transport links
+    </h2>
+  );
+
+  if (!isBuyerPass) {
+    return (
+      <section className="mt-10">
+        {heading}
+        <div className="mt-4 relative overflow-hidden" style={cardStyle}>
+          <div style={{ filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}>
+            <div className="flex items-center justify-between">
+              <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>Connectivity overview</p>
+              <span style={{ background: "#EAF3DE", color: "#27500A", borderRadius: 999, padding: "4px 10px", fontSize: 12, fontWeight: 500 }}>Good</span>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div style={{ fontSize: 13, color: "#5F5E5A" }}>🚂 Nearest station: ~0.6 miles</div>
+              <div style={{ fontSize: 13, color: "#5F5E5A" }}>🏙️ City centre: ~25 mins</div>
+              <div style={{ fontSize: 13, color: "#5F5E5A" }}>🚌 Bus links: Good</div>
+              <div style={{ fontSize: 13, color: "#5F5E5A" }}>🚗 Motorway: J19, 4 miles</div>
+            </div>
+          </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+            <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+            <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
+              Unlock with Buyer Pass to see transport links and commute times
+            </p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const t = analysis.transport;
+
+  if (fetching && !t) {
+    return (
+      <section className="mt-10">
+        {heading}
+        <div className="mt-4" style={cardStyle}>
+          <p style={{ fontSize: 13, color: "#5F5E5A" }}>Loading transport links…</p>
+        </div>
+      </section>
+    );
+  }
+
+  if (!t || t.unavailable) {
+    return (
+      <section className="mt-10">
+        {heading}
+        <div className="mt-4" style={cardStyle}>
+          <p style={{ fontSize: 13, color: "#5F5E5A" }}>
+            Transport data is currently unavailable for this postcode.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
+  const ratingBadge = (rating: string): CSSProperties => {
+    const v = rating.toLowerCase();
+    if (v === "excellent") return { background: "#27500A", color: "#FFFFFF" };
+    if (v === "good") return { background: "#EAF3DE", color: "#27500A" };
+    if (v === "average") return { background: "#FAEEDA", color: "#633806" };
+    return { background: "#FAECE7", color: "#A32D2D" };
+  };
+
+  const tile: CSSProperties = { padding: 12, background: "#F8F5EF", borderRadius: 8 };
+  const tileLabel: CSSProperties = { fontSize: 11, color: "#888780", textTransform: "uppercase", letterSpacing: 0.4 };
+  const tileValue: CSSProperties = { fontSize: 14, color: "#1A1108", fontWeight: 500, marginTop: 4, lineHeight: 1.4 };
+
+  return (
+    <section className="mt-10">
+      {heading}
+      <div className="mt-4" style={cardStyle}>
+        <div className="flex items-start justify-between">
+          <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>Connectivity overview</p>
+          <span style={{ ...ratingBadge(t.transportRating), borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 500 }}>
+            {t.transportRating}
+          </span>
+        </div>
+
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div style={tile}>
+            <div style={tileLabel}>🚂 Nearest station</div>
+            <div style={tileValue}>{t.nearestStation} · {t.distanceToStation}</div>
+          </div>
+          <div style={tile}>
+            <div style={tileLabel}>🏙️ City centre</div>
+            <div style={tileValue}>{t.journeyToNearestCity}</div>
+          </div>
+          <div style={tile}>
+            <div style={tileLabel}>🚌 Bus links</div>
+            <div style={tileValue}>{t.busLinks}</div>
+          </div>
+          <div style={tile}>
+            <div style={tileLabel}>🚗 Motorway</div>
+            <div style={tileValue}>{t.motorwayAccess}</div>
+          </div>
+        </div>
+
+        {t.airportAccess && (
+          <p className="mt-3" style={{ fontSize: 12, color: "#5F5E5A" }}>
+            ✈️ Airport access: {t.airportAccess}
+          </p>
+        )}
+
+        {t.commentary && (
+          <p className="mt-4" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            {t.commentary}
+          </p>
+        )}
+
+        {t.parkingNotes && (
+          <p className="mt-3" style={{ fontSize: 13, color: "#1A1108" }}>
+            <strong style={{ fontWeight: 500 }}>Parking:</strong> {t.parkingNotes}
+          </p>
+        )}
+
+        <p className="mt-4" style={{ fontSize: 10, color: "#888780" }}>
+          Based on Claude's geographic knowledge — verify locally
+        </p>
+      </div>
+    </section>
+  );
+}
+
 
 function OfstedBadge({ rating }: { rating: number | null }) {
   const map: Record<number, { label: string; bg: string; fg: string }> = {
