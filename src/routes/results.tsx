@@ -699,8 +699,15 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved }: { anal
   const checkoutFn = useServerFn(createCheckoutSession);
   const upgradeToPass = async (lurl?: string) => {
     try {
+      const targetUrl = lurl ?? listingUrl ?? "";
       const r = await checkoutFn({
-        data: { priceId: PRICE_PASS, listingUrl: lurl ?? listingUrl ?? "", tier: "pass" },
+        data: {
+          priceId: PRICE_PASS,
+          listingUrl: targetUrl,
+          tier: "pass",
+          analysisJobId: recallJobId(targetUrl),
+          source: "results_page_upgrade",
+        },
       });
       if (r?.url) window.location.href = r.url;
     } catch (e) {
