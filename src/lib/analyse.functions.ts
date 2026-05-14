@@ -100,6 +100,20 @@ const analysisSchema = z.object({
     unavailable: z.boolean().nullable().optional(),
     autoRedFlag: z.boolean().nullable().optional(),
   }).nullable().optional(),
+  transport: z.object({
+    nearestStation: z.string(),
+    distanceToStation: z.string(),
+    journeyToNearestCity: z.string(),
+    nearestCity: z.string(),
+    busLinks: z.string(),
+    motorwayAccess: z.string(),
+    airportAccess: z.string(),
+    transportRating: z.enum(["Excellent", "Good", "Average", "Poor"]),
+    commentary: z.string(),
+    parkingNotes: z.string().nullable().optional(),
+    unavailable: z.boolean().nullable().optional(),
+    autoRedFlag: z.boolean().nullable().optional(),
+  }).nullable().optional(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),
@@ -1379,6 +1393,151 @@ async function fetchBroadband(
   console.log(`[broadband] ${cacheKey} → ${raw.connectionType} / ${raw.speedRating} (source=${raw.source})`);
   return raw;
 }
+
+// ---------------- Transport links (Claude geographic knowledge) ----------------
+const TRANSPORT_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+type TransportRaw = {
+  nearestStation: string;
+  distanceToStation: string;
+  journeyToNearestCity: string;
+  nearestCity: string;
+  busLinks: string;
+  motorwayAccess: string;
+  airportAccess: string;
+  transportRating: "Excellent" | "Good" | "Average" | "Poor";
+  commentary: string;
+  parkingNotes?: string | null;
+  unavailable?: boolean | null;
+  autoRedFlag?: boolean | null;
+};
+
+async function fetchTransport(
+  postcode: string | null,
+  address: string,
+  propertyType: string | null | undefined,
+  apiKey: string | undefined,
+): Promise<TransportRaw | null> {
+  if (!postcode) return null;
+  const cacheKey = `transport:${postcode.toUpperCase().replace(/\s+/g, "")}`;
+
+  try {
+    const { data: cached } = await supabaseAdmin
+      .from("listing_cache")
+      .select("text_content, fetched_at")
+      .eq("url", cacheKey)
+      .maybeSingle();
+    if (
+      cached?.text_content &&
+      Date.now() - new Date(cached.fetched_at).getTime() < TRANSPORT_TTL_MS
+    ) {
+      try {
+        const parsed = JSON.parse(cached.text_content) as TransportRaw;
+        console.log(`[transport] cache hit for ${cacheKey}`);
+        return parsed;
+      } catch { /* ignore */ }
+    }
+  } catch (err) {
+    console.error("[transport] cache lookup failed:", err);
+  }
+
+  if (!apiKey) {
+    return {
+      nearestStation: "Unknown",
+      distanceToStation: "—",
+      journeyToNearestCity: "—",
+      nearestCity: "—",
+      busLinks: "Unknown",
+      motorwayAccess: "Unknown",
+      airportAccess: "Unknown",
+      transportRating: "Average",
+      commentary: "Transport data is currently unavailable for this postcode.",
+      unavailable: true,
+    };
+  }
+
+  try {
+    const client = new Anthropic({ apiKey, timeout: 25_000, maxRetries: 0 });
+    const prompt = `You are a UK transport and geography analyst. Assess transport connectivity for this property.
+
+Address: ${address || "(unknown)"}
+Postcode: ${postcode}
+Property type: ${propertyType ?? "unknown"}
+
+Base transport information on your training knowledge of UK geography, train lines, and road networks. Be accurate for well-known locations. For less familiar locations, be appropriately cautious and say "approximately" where uncertain.
+
+Return ONLY a single valid JSON object (no markdown, no code fences) of this exact shape:
+{
+  "nearestStation": string (name of the nearest National Rail / tube / metro station),
+  "distanceToStation": string (e.g. "0.4 miles" or "12 min walk"),
+  "journeyToNearestCity": string (e.g. "approximately 22 minutes to Bristol Temple Meads by train"),
+  "nearestCity": string (the major city this postcode commutes to),
+  "busLinks": string (1 short sentence on bus connectivity — e.g. "Good — frequent services to town centre" or "Limited — hourly rural service"),
+  "motorwayAccess": string (e.g. "M5 J19, approximately 4 miles" or "No motorway within 20 miles"),
+  "airportAccess": string (e.g. "Bristol Airport approximately 35 minutes by car"),
+  "transportRating": "Excellent" | "Good" | "Average" | "Poor",
+  "commentary": string (2-3 sentences: overall transport connectivity assessment, who this suits — commuters, families, retirees — and any limitations),
+  "parkingNotes": string | null (1 short sentence if relevant — on-street parking pressure, permit zones, off-street availability typical for the area; null if nothing meaningful to add)
+}
+
+Rating guide: Excellent = central city / direct fast trains to a major hub + frequent buses + motorway nearby. Good = decent train service + reasonable bus links OR strong road links. Average = workable but limited frequency / longer journeys. Poor = rural, no nearby station, infrequent buses, car-dependent.`;
+
+    const message = await client.messages.create({
+      model: "claude-sonnet-4-5",
+      max_tokens: 800,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const text = message.content[0]?.type === "text" ? message.content[0].text.trim() : "";
+    const cleaned = text.replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as Partial<TransportRaw>;
+
+    const ratings = ["Excellent", "Good", "Average", "Poor"] as const;
+    const transportRating = (ratings as readonly string[]).includes(parsed.transportRating ?? "")
+      ? (parsed.transportRating as TransportRaw["transportRating"])
+      : "Average";
+
+    const raw: TransportRaw = {
+      nearestStation: typeof parsed.nearestStation === "string" ? parsed.nearestStation : "Unknown",
+      distanceToStation: typeof parsed.distanceToStation === "string" ? parsed.distanceToStation : "—",
+      journeyToNearestCity: typeof parsed.journeyToNearestCity === "string" ? parsed.journeyToNearestCity : "—",
+      nearestCity: typeof parsed.nearestCity === "string" ? parsed.nearestCity : "—",
+      busLinks: typeof parsed.busLinks === "string" ? parsed.busLinks : "Unknown",
+      motorwayAccess: typeof parsed.motorwayAccess === "string" ? parsed.motorwayAccess : "Unknown",
+      airportAccess: typeof parsed.airportAccess === "string" ? parsed.airportAccess : "Unknown",
+      transportRating,
+      commentary: typeof parsed.commentary === "string" ? parsed.commentary : "",
+      parkingNotes: typeof parsed.parkingNotes === "string" && parsed.parkingNotes.length > 0 ? parsed.parkingNotes : null,
+      autoRedFlag: transportRating === "Poor",
+    };
+
+    try {
+      await supabaseAdmin
+        .from("listing_cache")
+        .upsert(
+          { url: cacheKey, text_content: JSON.stringify(raw), fetched_at: new Date().toISOString() },
+          { onConflict: "url" },
+        );
+    } catch (err) {
+      console.error("[transport] cache upsert failed:", err);
+    }
+
+    console.log(`[transport] ${cacheKey} → ${raw.nearestStation} (${raw.transportRating})`);
+    return raw;
+  } catch (err) {
+    console.error("[transport] Claude assessment failed:", err);
+    return {
+      nearestStation: "Unknown",
+      distanceToStation: "—",
+      journeyToNearestCity: "—",
+      nearestCity: "—",
+      busLinks: "Unknown",
+      motorwayAccess: "Unknown",
+      airportAccess: "Unknown",
+      transportRating: "Average",
+      commentary: "Transport data could not be generated for this postcode.",
+      unavailable: true,
+    };
+  }
+}
 type FetchedListing = {
   text: string;
   landRegistry: LandRegistryResult;
@@ -1388,6 +1547,7 @@ type FetchedListing = {
   nearbySchools: NearbySchoolsRaw | null;
   crime: CrimeRaw | null;
   broadband: BroadbandRaw | null;
+  transport: TransportRaw | null;
 };
 
 async function fetchListingText(url: string): Promise<FetchedListing> {
@@ -1456,26 +1616,35 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
       })
     : Promise.resolve(null);
 
+  const transportPromise: Promise<TransportRaw | null> = postcode
+    ? fetchTransport(postcode, sourceForExtraction.slice(0, 400), null, process.env.ANTHROPIC_API_KEY).catch((err) => {
+        console.error("[transport] lookup failed:", err);
+        return null;
+      })
+    : Promise.resolve(null);
+
   if (cachedText) {
-    const [landRegistry, floodRisk, nearbySchools, crime, broadband] = await Promise.all([
+    const [landRegistry, floodRisk, nearbySchools, crime, broadband, transport] = await Promise.all([
       landRegistryPromise,
       floodRiskPromise,
       nearbySchoolsPromise,
       crimePromise,
       broadbandPromise,
+      transportPromise,
     ]);
-    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband };
+    return { text: cachedText, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband, transport };
   }
 
   const listed = html ? extractListedDate(html) : null;
   const { epc, councilTax } = html ? extractEpcAndCouncilTax(html) : { epc: null, councilTax: null };
   let text = html ? htmlToListingText(html) : "";
-  const [landRegistry, floodRisk, nearbySchools, crime, broadband] = await Promise.all([
+  const [landRegistry, floodRisk, nearbySchools, crime, broadband, transport] = await Promise.all([
     landRegistryPromise,
     floodRiskPromise,
     nearbySchoolsPromise,
     crimePromise,
     broadbandPromise,
+    transportPromise,
   ]);
 
   const notes: string[] = [];
@@ -1521,7 +1690,7 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
     }
   }
 
-  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband };
+  return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband, transport };
 }
 
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
@@ -1620,6 +1789,7 @@ function toPreview(a: AnalysisResult): AnalysisResult {
     nearbySchools: null,
     crime: null,
     broadband: null,
+    transport: null,
     renovationCosts: null,
   };
 }
@@ -1645,6 +1815,7 @@ async function runAnalysis(
   let nearbySchoolsRaw: NearbySchoolsRaw | null = null;
   let crimeRaw: CrimeRaw | null = null;
   let broadbandRaw: BroadbandRaw | null = null;
+  let transportRaw: TransportRaw | null = null;
   if (!listingContent && url) {
     console.log(`[runAnalysis] Fetching listing content for ${url}...`);
     const fetched = await fetchListingText(url);
@@ -1655,6 +1826,7 @@ async function runAnalysis(
     nearbySchoolsRaw = fetched.nearbySchools;
     crimeRaw = fetched.crime;
     broadbandRaw = fetched.broadband;
+    transportRaw = fetched.transport;
     console.log(`[runAnalysis] Listing content fetched, length: ${listingContent?.length ?? 0}`);
   }
   if (!listingContent || listingContent.length < 100) {
@@ -1891,6 +2063,38 @@ async function runAnalysis(
     }
   } else {
     full.broadband = null;
+  }
+
+  if (transportRaw) {
+    full.transport = {
+      nearestStation: transportRaw.nearestStation,
+      distanceToStation: transportRaw.distanceToStation,
+      journeyToNearestCity: transportRaw.journeyToNearestCity,
+      nearestCity: transportRaw.nearestCity,
+      busLinks: transportRaw.busLinks,
+      motorwayAccess: transportRaw.motorwayAccess,
+      airportAccess: transportRaw.airportAccess,
+      transportRating: transportRaw.transportRating,
+      commentary: transportRaw.commentary,
+      parkingNotes: transportRaw.parkingNotes ?? null,
+      unavailable: transportRaw.unavailable ?? false,
+      autoRedFlag: transportRaw.autoRedFlag ?? false,
+    };
+    if (transportRaw.autoRedFlag && !transportRaw.unavailable) {
+      const title = "Limited transport links";
+      if (!full.redFlags.some((f) => f.title === title)) {
+        full.redFlags = [
+          ...full.redFlags,
+          {
+            severity: "low",
+            title,
+            detail: "This property has limited public transport connections. Factor in car dependency costs and check local bus/train services before committing.",
+          },
+        ];
+      }
+    }
+  } else {
+    full.transport = null;
   }
 
   return full;
@@ -2230,6 +2434,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
     nearbySchools: AnalysisResult["nearbySchools"] | null;
     crime: AnalysisResult["crime"] | null;
     broadband: AnalysisResult["broadband"] | null;
+    transport: AnalysisResult["transport"] | null;
     error?: string;
   }> => {
     try {
@@ -2242,7 +2447,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
       const valid =
         pass && pass.expires_at && new Date(pass.expires_at as string).getTime() > Date.now();
       if (!valid) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "Buyer Pass required" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, transport: null, error: "Buyer Pass required" };
       }
 
       // 2. Load existing saved analysis row (most recent for this user+listing).
@@ -2255,11 +2460,11 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         .limit(1);
       const row = rows?.[0];
       if (!row) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "No saved analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, transport: null, error: "No saved analysis" };
       }
       const analysis = (row.analysis_json as AnalysisResult) ?? null;
       if (!analysis) {
-        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, error: "Empty analysis" };
+        return { ok: false, floodRisk: null, nearbySchools: null, crime: null, broadband: null, transport: null, error: "Empty analysis" };
       }
 
       // 3. Extract postcode from saved address.
@@ -2267,8 +2472,8 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         extractPostcode(analysis.property?.address ?? "") ??
         extractPostcode((analysis as any)?.property?.listingUrl ?? "");
 
-      // 4. Fetch flood + schools + crime + broadband in parallel (cached).
-      const [floodRaw, schoolsRaw, crimeRawResult, broadbandRawResult] = await Promise.all([
+      // 4. Fetch flood + schools + crime + broadband + transport in parallel (cached).
+      const [floodRaw, schoolsRaw, crimeRawResult, broadbandRawResult, transportRawResult] = await Promise.all([
         fetchFloodRisk(postcode).catch((err) => {
           console.error("[fetchBuyerPassExtras] flood failed:", err);
           return null;
@@ -2283,6 +2488,15 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         }),
         fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY).catch((err) => {
           console.error("[fetchBuyerPassExtras] broadband failed:", err);
+          return null;
+        }),
+        fetchTransport(
+          postcode,
+          analysis.property?.address ?? "",
+          analysis.property?.type ?? null,
+          process.env.ANTHROPIC_API_KEY,
+        ).catch((err) => {
+          console.error("[fetchBuyerPassExtras] transport failed:", err);
           return null;
         }),
       ]);
@@ -2346,8 +2560,25 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
           }
         : null;
 
+      const transport: AnalysisResult["transport"] = transportRawResult
+        ? {
+            nearestStation: transportRawResult.nearestStation,
+            distanceToStation: transportRawResult.distanceToStation,
+            journeyToNearestCity: transportRawResult.journeyToNearestCity,
+            nearestCity: transportRawResult.nearestCity,
+            busLinks: transportRawResult.busLinks,
+            motorwayAccess: transportRawResult.motorwayAccess,
+            airportAccess: transportRawResult.airportAccess,
+            transportRating: transportRawResult.transportRating,
+            commentary: transportRawResult.commentary,
+            parkingNotes: transportRawResult.parkingNotes ?? null,
+            unavailable: transportRawResult.unavailable ?? null,
+            autoRedFlag: transportRawResult.autoRedFlag ?? null,
+          }
+        : null;
+
       // 6. Patch the saved analysis row (admin client bypasses RLS).
-      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime, broadband };
+      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime, broadband, transport };
       try {
         await supabaseAdmin
           .from("saved_analyses")
@@ -2357,7 +2588,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         console.error("[fetchBuyerPassExtras] update failed:", err);
       }
 
-      return { ok: true, floodRisk, nearbySchools, crime, broadband };
+      return { ok: true, floodRisk, nearbySchools, crime, broadband, transport };
     } catch (err) {
       console.error("[fetchBuyerPassExtras] failed:", err);
       return {
@@ -2366,6 +2597,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
         nearbySchools: null,
         crime: null,
         broadband: null,
+        transport: null,
         error: (err as Error).message ?? "Unknown error",
       };
     }
