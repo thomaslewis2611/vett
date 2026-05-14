@@ -1112,7 +1112,7 @@ export const analyseListing = createServerFn({ method: "POST" })
 
     let output: z.infer<typeof analysisSchema>;
     try {
-      const client = new Anthropic({ apiKey });
+      const client = new Anthropic({ apiKey, timeout: 120_000, maxRetries: 1 });
       const message = await client.messages.create({
         model: "claude-sonnet-4-5",
         max_tokens: 3500,
