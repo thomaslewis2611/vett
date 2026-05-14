@@ -85,6 +85,7 @@ export type AnalysisResult = {
       distanceMiles: number;
     }[];
     unavailable?: boolean | null;
+    aiSourced?: boolean | null;
   } | null;
   crime?: {
     totalCrimes: number;
