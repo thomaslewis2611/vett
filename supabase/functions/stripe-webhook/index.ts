@@ -22,7 +22,7 @@ function buildMagicLinkHtml(actionLink: string): { html: string; text: string } 
     <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#D85A30;letter-spacing:-0.01em;">● Roovr</div></div>
     <div style="background:#FFFDF9;border:1px solid rgba(26,17,8,0.12);border-radius:12px;padding:32px;">
       <h1 style="font-size:24px;font-weight:700;color:#1A1108;margin:0 0 12px;line-height:1.3;">Activate your Buyer Pass</h1>
-      <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses, flood risk data, AI chat, and more.</p>
+      <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses for 90 days, including flood risk data, AI chat, and more.</p>
       <a href="${actionLink}" style="background:#D85A30;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 22px;text-decoration:none;display:inline-block;">Activate my Buyer Pass →</a>
       <hr style="border:none;border-top:1px solid rgba(26,17,8,0.12);margin:28px 0 20px;" />
       <p style="font-size:13px;color:#888780;line-height:1.5;margin:0 0 8px;">If the button does not work, copy and paste this link into your browser:</p>
@@ -161,12 +161,18 @@ Deno.serve(async (req) => {
         console.error("No customer email on Buyer Pass session", session.id);
         return new Response("No email", { status: 400 });
       }
-      // upsert in case of duplicate webhook deliveries
+      // upsert in case of duplicate webhook deliveries.
+      // 90-day Buyer Pass: extend expires_at from now() each time the user pays
+      // (covers both new purchases and renewals).
+      const now = new Date();
+      const expiresAt = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
       const { error } = await supabase.from("buyer_pass_users").upsert(
         {
           email: customerEmail.toLowerCase(),
           stripe_session_id: session.id,
           stripe_customer_id: customerId,
+          activated_at: now.toISOString(),
+          expires_at: expiresAt,
         },
         { onConflict: "email" }
       );

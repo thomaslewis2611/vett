@@ -101,10 +101,13 @@ async function verifyBuyerPass(sessionJwt: string): Promise<boolean> {
     if (!email) return false;
     const { data: row } = await supabaseAdmin
       .from("buyer_pass_users")
-      .select("email")
+      .select("email, expires_at")
       .ilike("email", email)
       .maybeSingle();
-    return Boolean(row);
+    if (!row) return false;
+    const expiresAt = (row as { expires_at: string | null }).expires_at;
+    if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) return false;
+    return true;
   } catch {
     return false;
   }

@@ -207,14 +207,21 @@ function PaymentSuccessPage() {
           </div>
         )}
 
-        {state.status === "pass" && (
+        {state.status === "pass" && (() => {
+          const expiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+          const expiryLabel = expiry.toLocaleDateString("en-GB", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          });
+          return (
           <div className="text-center">
             <div className="mx-auto inline-flex h-12 w-12 items-center justify-center" style={{ background: "#FAECE7", borderRadius: 999 }}>
               <CheckCircle2 className="h-6 w-6" style={{ color: "#D85A30" }} />
             </div>
             <h1 className="mt-6 text-3xl font-semibold tracking-tight">You're all set</h1>
             <p className="mt-3 text-base" style={{ color: "#1A1108" }}>
-              We've sent a magic link to <span style={{ fontWeight: 500 }}>{state.email}</span>. Click it to activate your Buyer Pass and get unlimited access.
+              Your Buyer Pass is active until <span style={{ fontWeight: 500 }}>{expiryLabel}</span>. We've sent a magic link to <span style={{ fontWeight: 500 }}>{state.email}</span> — click it to start analysing properties.
             </p>
             <p className="mt-2 text-sm" style={{ color: "#888780" }}>Can't find it? Check your spam folder.</p>
             <button
@@ -237,7 +244,8 @@ function PaymentSuccessPage() {
               <p className="mt-3 text-sm" style={{ color: "#5F5E5A" }}>{resendMsg}</p>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {state.status === "error" && (
           <div className="text-center">

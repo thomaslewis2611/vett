@@ -19,6 +19,7 @@ export type Database = {
           activated_at: string
           created_at: string
           email: string
+          expires_at: string | null
           id: string
           stripe_customer_id: string | null
           stripe_session_id: string | null
@@ -27,6 +28,7 @@ export type Database = {
           activated_at?: string
           created_at?: string
           email: string
+          expires_at?: string | null
           id?: string
           stripe_customer_id?: string | null
           stripe_session_id?: string | null
@@ -35,6 +37,7 @@ export type Database = {
           activated_at?: string
           created_at?: string
           email?: string
+          expires_at?: string | null
           id?: string
           stripe_customer_id?: string | null
           stripe_session_id?: string | null

@@ -136,7 +136,8 @@ function MyReportPage() {
         <section className="mt-10">
           <h2 className="text-lg font-semibold tracking-tight">Want to analyse another property?</h2>
           <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>
-            Your purchase covers a single report. To unlock unlimited analyses, upgrade to the Buyer Pass.
+            Your purchase covers a single report. To unlock unlimited analyses
+            for 90 days, upgrade to the Buyer Pass.
           </p>
           <div className="mt-4 flex gap-3">
             <Link

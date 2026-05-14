@@ -24,7 +24,7 @@ import { validateSingleReportToken, checkBuyerPassByEmail } from "@/lib/access.f
 import { supabase } from "@/integrations/supabase/client";
 
 const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
-const PRICE_PASS = "price_1TWXv1CfTT0mXB2clPmEQyob";
+const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
 const ANALYSIS_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 const ANALYSIS_CACHE_PREFIX = "roovr:analysis:";
@@ -100,12 +100,23 @@ const STAMP_DUTY_LABELS: Record<StampDutyMode, string> = {
   ftb: "First-time buyer",
 };
 
-type AccessLevel = "none" | "single" | "pass";
+type AccessLevel = "none" | "single" | "pass" | "expired";
 
-function useAccess(listingUrl: string | undefined, token: string | undefined): { level: AccessLevel; email: string | null; loading: boolean } {
-  const [state, setState] = useState<{ level: AccessLevel; email: string | null; loading: boolean }>({
+function useAccess(listingUrl: string | undefined, token: string | undefined): {
+  level: AccessLevel;
+  email: string | null;
+  expiresAt: string | null;
+  loading: boolean;
+} {
+  const [state, setState] = useState<{
+    level: AccessLevel;
+    email: string | null;
+    expiresAt: string | null;
+    loading: boolean;
+  }>({
     level: "none",
     email: null,
+    expiresAt: null,
     loading: true,
   });
   const validateToken = useServerFn(validateSingleReportToken);
@@ -115,15 +126,21 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
     let cancelled = false;
     (async () => {
       // 1. Buyer Pass (auth)
+      let signedInEmail: string | null = null;
+      let expiredFromPass: { expiresAt: string | null } | null = null;
       try {
         const { data } = await supabase.auth.getUser();
         const email = data.user?.email ?? null;
+        signedInEmail = email;
         if (email) {
           const r = await checkPass({ data: { email } });
           if (cancelled) return;
           if (r.hasPass) {
-            setState({ level: "pass", email, loading: false });
+            setState({ level: "pass", email, expiresAt: r.expiresAt, loading: false });
             return;
+          }
+          if (r.expired) {
+            expiredFromPass = { expiresAt: r.expiresAt };
           }
         }
       } catch { /* ignore */ }
@@ -134,13 +151,26 @@ function useAccess(listingUrl: string | undefined, token: string | undefined): {
           const r = await validateToken({ data: { token, listingUrl: listingUrl ?? null } });
           if (cancelled) return;
           if (r.valid) {
-            setState({ level: "single", email: null, loading: false });
+            setState({ level: "single", email: signedInEmail, expiresAt: null, loading: false });
             return;
           }
         } catch { /* ignore */ }
       }
 
-      if (!cancelled) setState({ level: "none", email: null, loading: false });
+      // 3. Signed-in user with expired pass: surface the expired state
+      if (expiredFromPass) {
+        if (!cancelled) {
+          setState({
+            level: "expired",
+            email: signedInEmail,
+            expiresAt: expiredFromPass.expiresAt,
+            loading: false,
+          });
+        }
+        return;
+      }
+
+      if (!cancelled) setState({ level: "none", email: null, expiresAt: null, loading: false });
     })();
     return () => { cancelled = true; };
   }, [listingUrl, token, validateToken, checkPass]);
@@ -546,7 +576,11 @@ function ReportView({ analysis: a, listingUrl, token }: { analysis: AnalysisResu
             <>
               <LockedFeaturesGrid />
               <div className="mt-8">
-                <PaywallGate listingUrl={listingUrl} />
+                {access.level === "expired" ? (
+                  <ExpiredPassGate expiresAt={access.expiresAt} listingUrl={listingUrl} />
+                ) : (
+                  <PaywallGate listingUrl={listingUrl} />
+                )}
               </div>
             </>
           )}
@@ -786,6 +820,102 @@ function LockedFeaturesGrid() {
   );
 }
 
+function ExpiredPassGate({
+  expiresAt,
+  listingUrl,
+}: {
+  expiresAt: string | null;
+  listingUrl?: string;
+}) {
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const expiredLabel = expiresAt
+    ? new Date(expiresAt).toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+      })
+    : "recently";
+
+  const handleRenew = async () => {
+    setErr(null);
+    setLoading(true);
+    try {
+      const res = await checkoutFn({
+        data: { priceId: PRICE_PASS, listingUrl: listingUrl ?? "", tier: "pass" },
+      });
+      window.location.href = res.url;
+    } catch (e) {
+      setErr((e as Error).message || "Couldn't start checkout. Try again.");
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="p-6 sm:p-8"
+      style={{
+        background: "#FFFDF9",
+        borderRadius: 12,
+        border: "0.5px solid rgba(26,17,8,0.12)",
+      }}
+    >
+      <div
+        className="inline-flex items-center gap-2"
+        style={{
+          background: "#FAECE7",
+          color: "#993C1D",
+          borderRadius: 100,
+          padding: "4px 10px",
+          fontSize: 11,
+          fontWeight: 500,
+          letterSpacing: "0.04em",
+        }}
+      >
+        BUYER PASS EXPIRED
+      </div>
+      <h3
+        className="mt-4 text-2xl font-semibold tracking-tight"
+        style={{ color: "#1A1108" }}
+      >
+        Your Buyer Pass has expired
+      </h3>
+      <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>
+        Your 90-day pass expired on {expiredLabel}. Renew to continue analysing
+        properties with full access.
+      </p>
+      <button
+        type="button"
+        onClick={handleRenew}
+        disabled={loading}
+        className="mt-6 inline-flex items-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
+        style={{
+          background: "#D85A30",
+          color: "#FFFDF9",
+          fontSize: 14,
+          fontWeight: 500,
+          borderRadius: 100,
+          padding: "12px 22px",
+        }}
+      >
+        {loading ? (
+          <>
+            <Loader2 className="h-4 w-4 animate-spin" /> Starting checkout…
+          </>
+        ) : (
+          <>Renew Buyer Pass — £24.99 →</>
+        )}
+      </button>
+      {err && (
+        <p className="mt-3 text-sm" style={{ color: "#993C1D" }}>
+          {err}
+        </p>
+      )}
+    </div>
+  );
+}
+
 
 function UnlockedSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -951,18 +1081,19 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         />
         <PlanCard
           title="Buyer Pass"
-          price="£29.99"
-          cadence="One-off payment · your entire search"
+          price="£24.99"
+          cadence="90-day pass · one-off payment"
           cta="Get Buyer Pass"
           highlight
           loading={loadingTier === "pass"}
           onClick={() => handleBuy("pass")}
-          subnote="Average buyer views 8 properties — works out at £3.75 each."
+          subnote="Average search takes 8–12 weeks — 90 days covers it comfortably."
           features={[
-            "Unlimited analyses",
+            "Unlimited analyses for 90 days",
             "All red flags, costs and negotiation",
             "AI chat on every property",
-            "Save and compare up to 50 properties",
+            "Flood risk and nearby schools",
+            "Save and compare reports",
           ]}
         />
       </div>

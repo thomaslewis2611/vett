@@ -66,7 +66,7 @@ async function sendMagicLinkViaResend(
     variant === "buyer-pass"
       ? {
           heading: "Activate your Buyer Pass",
-          body: "Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses, flood risk data, AI chat, and more.",
+          body: "Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses for 90 days, including flood risk data, AI chat, and more.",
           cta: "Activate my Buyer Pass →",
         }
       : {
@@ -185,11 +185,13 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
     const email = data.email.trim().toLowerCase();
     const { data: bp } = await supabaseAdmin
       .from("buyer_pass_users")
-      .select("email")
+      .select("email, expires_at")
       .ilike("email", email)
       .maybeSingle();
 
     let redirectTo = `${SITE_URL}/dashboard`;
+    // Treat any buyer_pass_users row (active OR expired) as "found" so the
+    // user can sign in and see the renewal state on the dashboard.
     let found = Boolean(bp);
 
     if (!found) {
@@ -224,13 +226,15 @@ export const saveAnalysisForUser = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ data }): Promise<{ ok: boolean }> => {
-    // Verify the user actually has a Buyer Pass before saving
+    // Verify the user has an ACTIVE (non-expired) Buyer Pass before saving
     const { data: bp } = await supabaseAdmin
       .from("buyer_pass_users")
-      .select("email")
+      .select("email, expires_at")
       .ilike("email", data.email)
       .maybeSingle();
     if (!bp) return { ok: false };
+    const expiresAt = (bp as { expires_at: string | null }).expires_at;
+    if (expiresAt && new Date(expiresAt).getTime() <= Date.now()) return { ok: false };
     await supabaseAdmin.from("saved_analyses").insert({
       user_email: data.email.toLowerCase(),
       listing_url: data.listingUrl ?? null,
