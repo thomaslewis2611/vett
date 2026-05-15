@@ -173,8 +173,11 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "sellerMotivation": { "score": number, "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
   "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] },
   "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "High priority"|"Medium priority"|"Low priority", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
+  "planningReference": { "found": boolean, "reference": string|null, "relatesTo": string|null, "applicationType": string|null, "isNeighbouring": boolean, "commentary": string|null } | null,
   "comparables": []
 }
+
+PLANNING REFERENCE: Detect any UK planning reference numbers in the listing text (format: XX/XXXXX/XXX e.g. 24/01893/FUL, also older XXXX/XXXX). Look near the words: planning, permission, reference, application, consent, approval. If found, populate planningReference with the reference, what it relates to (e.g. "rear kitchen extension"), the applicationType (Householder | Full Planning | Change of Use | Listed Building Consent | Unknown), whether it is for this property or a neighbouring property (isNeighbouring: true if the listing context indicates the application is on a next-door / adjacent property rather than the subject property), and 2-3 sentences of commentary on what this means for the buyer including what documents to request from the seller's solicitors (planning decision notice, approved drawings, building regs completion certificate). If no planning reference is present, return planningReference: null. Do NOT invent a reference number.
 
 If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for.`;
 
@@ -260,6 +263,106 @@ async function callClaude(
   return block?.type === "text" ? block.text : "";
 }
 
+// ---------- External APIs (postcode-driven) ----------
+const POSTCODE_RE = /[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}/i;
+
+function extractPostcode(text: string): string | null {
+  const m = text.match(POSTCODE_RE);
+  return m ? m[0].toUpperCase().trim() : null;
+}
+
+async function fetchGeo(postcode: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const r = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`);
+    if (!r.ok) return null;
+    const j = await r.json();
+    const lat = j?.result?.latitude;
+    const lng = j?.result?.longitude;
+    if (typeof lat !== "number" || typeof lng !== "number") return null;
+    return { lat, lng };
+  } catch (e) {
+    console.warn("[analyse-listing] geo failed", e);
+    return null;
+  }
+}
+
+async function fetchCrimeStats(lat: number, lng: number) {
+  try {
+    const r = await fetch(`https://data.police.uk/api/crimes-street/all-crime?lat=${lat}&lng=${lng}`);
+    if (!r.ok) return null;
+    const arr = (await r.json()) as Array<{ category?: string }>;
+    if (!Array.isArray(arr)) return null;
+    const byCat: Record<string, number> = {};
+    for (const c of arr) {
+      const k = String(c.category ?? "other");
+      byCat[k] = (byCat[k] ?? 0) + 1;
+    }
+    const topCategories = Object.entries(byCat)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([category, count]) => ({ category, count }));
+    return { totalCrimes: arr.length, topCategories };
+  } catch (e) {
+    console.warn("[analyse-listing] crime failed", e);
+    return null;
+  }
+}
+
+async function fetchBroadband(postcode: string) {
+  try {
+    const r = await fetch(
+      `https://api.ofcom.org.uk/connected-nations/broadband-coverage?postcode=${encodeURIComponent(postcode)}`,
+    );
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j || (typeof j === "object" && Object.keys(j).length === 0)) return null;
+    return j;
+  } catch (e) {
+    console.warn("[analyse-listing] broadband failed", e);
+    return null;
+  }
+}
+
+async function fetchSchools(postcode: string) {
+  const tryParse = (raw: unknown): Array<{ name: string; ofstedRating: string | null; type: string | null; distance: string | null }> | null => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const list = Array.isArray((raw as any)?.results) ? (raw as any).results : Array.isArray(raw) ? (raw as any[]) : null;
+    if (!list) return null;
+    return list
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((s: any) => ({
+        name: String(s?.name ?? s?.establishmentName ?? "").trim(),
+        ofstedRating: s?.ofstedRating ?? s?.ofsted_rating ?? null,
+        type: s?.type ?? s?.establishmentType ?? null,
+        distance: s?.distance != null ? String(s.distance) : null,
+      }))
+      .filter((s) => s.name);
+  };
+  try {
+    const r = await fetch(
+      `https://get-information-schools.service.gov.uk/api/v1/schools?location=${encodeURIComponent(postcode)}&radiusInMiles=5`,
+    );
+    if (r.ok) {
+      const parsed = tryParse(await r.json());
+      if (parsed && parsed.length) return parsed;
+    }
+  } catch (e) {
+    console.warn("[analyse-listing] schools tier1 failed", e);
+  }
+  try {
+    const r = await fetch(
+      `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${encodeURIComponent(postcode)}&radius=8`,
+    );
+    if (r.ok) {
+      const parsed = tryParse(await r.json());
+      if (parsed && parsed.length) return parsed;
+    }
+  } catch (e) {
+    console.warn("[analyse-listing] schools tier2 failed", e);
+  }
+  return null;
+}
+
 // ---------- Main job runner ----------
 async function runJob(jobId: string, url: string, pastedText: string) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -283,26 +386,57 @@ async function runJob(jobId: string, url: string, pastedText: string) {
 
     const userContent = `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
 
-    let parsed: Record<string, unknown>;
-    try {
-      console.log("[analyse-listing] calling Claude (primary)");
-      const text = await callClaude(SYSTEM_PROMPT, userContent, 6000);
-      console.log(`[analyse-listing] Claude response length: ${text.length}`);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
-    } catch (primaryErr) {
-      console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
-      const simplified =
-        SYSTEM_PROMPT +
-        "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
-      const text = await callClaude(simplified, userContent, 6000);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
-      parsed.renovationCosts = null;
-    }
+    // Kick off external API enrichment in parallel with Claude.
+    const postcode = extractPostcode(listingContent);
+    const externalsPromise = (async () => {
+      let crimeStats: unknown = null;
+      let broadbandData: unknown = null;
+      let schoolsData: unknown = null;
+      if (!postcode) return { crimeStats, broadbandData, schoolsData };
+      const geo = await fetchGeo(postcode);
+      const [crime, bb, schools] = await Promise.all([
+        geo ? fetchCrimeStats(geo.lat, geo.lng) : Promise.resolve(null),
+        fetchBroadband(postcode),
+        fetchSchools(postcode),
+      ]);
+      crimeStats = crime;
+      broadbandData = bb;
+      schoolsData = schools;
+      return { crimeStats, broadbandData, schoolsData };
+    })().catch((e) => {
+      console.warn("[analyse-listing] external enrichment failed", e);
+      return { crimeStats: null, broadbandData: null, schoolsData: null };
+    });
+
+    const claudePromise = (async () => {
+      try {
+        console.log("[analyse-listing] calling Claude (primary)");
+        const text = await callClaude(SYSTEM_PROMPT, userContent, 6000);
+        console.log(`[analyse-listing] Claude response length: ${text.length}`);
+        return parseWithRepair(text) as Record<string, unknown>;
+      } catch (primaryErr) {
+        console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
+        const simplified =
+          SYSTEM_PROMPT +
+          "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+        const text = await callClaude(simplified, userContent, 6000);
+        const p = parseWithRepair(text) as Record<string, unknown>;
+        p.renovationCosts = null;
+        return p;
+      }
+    })();
+
+    const [parsed, externals] = await Promise.all([claudePromise, externalsPromise]);
 
     // Make sure listingUrl is set on the property block.
     const property = (parsed.property ?? {}) as Record<string, unknown>;
     if (!property.listingUrl) property.listingUrl = url || "";
     parsed.property = property;
+
+    // Merge external enrichment (planningReference comes from Claude directly).
+    parsed.crimeStats = externals.crimeStats;
+    parsed.broadbandData = externals.broadbandData;
+    parsed.schoolsData = externals.schoolsData;
 
     const { error: updErr } = await supabase
       .from("analysis_jobs")
