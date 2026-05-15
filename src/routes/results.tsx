@@ -825,7 +825,10 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
       console.error("[upgradeToPass] checkout failed:", e);
     }
   };
-  const upgradeToSingle = async (lurl?: string) => {
+  const [upsellOpen, setUpsellOpen] = useState(false);
+  const [pendingSingleUrl, setPendingSingleUrl] = useState<string | null>(null);
+
+  const startSingleCheckout = async (lurl?: string) => {
     try {
       const targetUrl = lurl ?? listingUrl ?? "";
       const r = await checkoutFn({
@@ -841,6 +844,14 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
     } catch (e) {
       console.error("[upgradeToSingle] checkout failed:", e);
     }
+  };
+  const upgradeToSingle = async (lurl?: string) => {
+    if (shouldShowPassUpsell()) {
+      setPendingSingleUrl(lurl ?? listingUrl ?? "");
+      setUpsellOpen(true);
+      return;
+    }
+    await startSingleCheckout(lurl);
   };
 
   return (
