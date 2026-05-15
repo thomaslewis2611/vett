@@ -2407,7 +2407,7 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
           <p className="mt-4 text-sm" style={{ color: "#1A1108" }}>{ac.areaDescription}</p>
         )}
         {ac.comparableNote && (
-          <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>{ac.comparableNote}</p>
+          <p className="mt-2 text-sm" style={{ color: "#1A1108" }}>{ac.comparableNote}</p>
         )}
         <p className="mt-4 text-xs" style={{ color: "#888780" }}>
           Area estimates based on listing data and Claude's training knowledge.
