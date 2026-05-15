@@ -256,7 +256,7 @@ function DashboardPage() {
             placeholder={
               expired
                 ? "Renew your Buyer Pass to analyse new properties"
-                : "Paste a Rightmove or Zoopla listing URL"
+                : "Paste a Rightmove listing URL"
             }
             className="w-full bg-transparent px-4 py-3 outline-none sm:flex-1"
             style={{
