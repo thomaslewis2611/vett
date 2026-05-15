@@ -265,7 +265,8 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "sellerMotivation": { "score": number (1-10), "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
   "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] (8-15) },
   "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "High priority"|"Medium priority"|"Low priority", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
-  "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4)
+  "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ] (0-4),
+  "planningReference": { "found": boolean, "reference": string|null, "relatesTo": string|null, "applicationType": "Householder"|"Full Planning"|"Change of Use"|"Listed Building Consent"|"Unknown"|null, "commentary": string|null } | null
 }
 
 If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for (return empty array instead).`;
@@ -2166,6 +2167,34 @@ async function runAnalysis(
     }
   } else {
     full.transport = null;
+  }
+
+  // Planning reference auto red flag — only for Change of Use, retrospective, enforcement or breach
+  const pr = full.planningReference;
+  if (pr && pr.found) {
+    const relatesLower = (pr.relatesTo ?? "").toLowerCase();
+    const isChangeOfUse = pr.applicationType === "Change of Use";
+    const isRetro =
+      relatesLower.includes("retrospective") ||
+      relatesLower.includes("enforcement") ||
+      relatesLower.includes("breach");
+    if (isChangeOfUse || isRetro) {
+      const title = isRetro
+        ? "Retrospective or enforcement planning history"
+        : "Change of use planning permission on this property";
+      if (!full.redFlags.some((f) => f.title === title)) {
+        full.redFlags = [
+          ...full.redFlags,
+          {
+            severity: "medium",
+            title,
+            detail: isRetro
+              ? `Planning reference ${pr.reference ?? ""} is described as retrospective or relates to an enforcement/breach matter. Ask the seller's solicitor for the full planning history, decision notice and any enforcement correspondence before proceeding.`
+              : `Planning reference ${pr.reference ?? ""} is a Change of Use application. Confirm the lawful planning use class for the property and obtain the decision notice plus any conditions before exchange.`,
+          },
+        ];
+      }
+    }
   }
 
   return full;
