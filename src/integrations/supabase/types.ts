@@ -221,6 +221,7 @@ export type Database = {
           created_at: string
           id: string
           listing_url: string | null
+          pinned: boolean
           user_email: string
         }
         Insert: {
@@ -228,6 +229,7 @@ export type Database = {
           created_at?: string
           id?: string
           listing_url?: string | null
+          pinned?: boolean
           user_email: string
         }
         Update: {
@@ -235,6 +237,7 @@ export type Database = {
           created_at?: string
           id?: string
           listing_url?: string | null
+          pinned?: boolean
           user_email?: string
         }
         Relationships: []
