@@ -19,8 +19,21 @@ type SavedRow = {
   listing_url: string | null;
   analysis_json: any;
   created_at: string;
-  pinned: boolean;
+  is_pinned: boolean;
+  pinned_at: string | null;
 };
+
+function sortRows(rows: SavedRow[]): SavedRow[] {
+  return [...rows].sort((a, b) => {
+    if (!!b.is_pinned !== !!a.is_pinned) return b.is_pinned ? 1 : -1;
+    if (a.is_pinned && b.is_pinned) {
+      const ap = a.pinned_at ? new Date(a.pinned_at).getTime() : 0;
+      const bp = b.pinned_at ? new Date(b.pinned_at).getTime() : 0;
+      return bp - ap;
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+}
 
 type PassStatus = "active" | "expiring" | "expired";
 
@@ -102,25 +115,19 @@ function DashboardPage() {
       setEmail(userEmail);
       const { data: saved } = await supabase
         .from("saved_analyses")
-        .select("id, listing_url, analysis_json, created_at, pinned")
+        .select("id, listing_url, analysis_json, created_at, is_pinned, pinned_at")
         .order("created_at", { ascending: false })
         .limit(50);
-      // Deduplicate by listing_url, keeping the most recent entry per URL.
       const seen = new Set<string>();
       const deduped: SavedRow[] = [];
-      for (const r of (saved as SavedRow[]) ?? []) {
+      for (const r of (saved as unknown as SavedRow[]) ?? []) {
         const key = r.listing_url ?? `__no_url__${r.id}`;
         if (seen.has(key)) continue;
         seen.add(key);
         deduped.push(r);
         if (deduped.length >= 10) break;
       }
-      // Sort: pinned first (by date desc), then unpinned (by date desc).
-      deduped.sort((a, b) => {
-        if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-      setRows(deduped);
+      setRows(sortRows(deduped));
       setLoading(false);
     })();
     return () => {
