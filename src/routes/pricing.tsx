@@ -74,9 +74,7 @@ function PricingPage() {
             features={[
               "Unlimited analyses for 90 days",
               "AI chat on every property",
-              "Capital growth data (1yr/3yr/5yr)",
-              "Area demographics",
-              "Compare properties side by side",
+              "Compare your property scores",
               "All reports saved to dashboard",
             ]}
             footnote="One-off payment. Access ends 90 days after purchase."
