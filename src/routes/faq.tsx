@@ -50,7 +50,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "What happens to my reports after I buy them?",
-    a: "Your reports are saved to your account and accessible from your dashboard. Single Reports are saved indefinitely. Buyer Pass reports remain accessible for 90 days from purchase.",
+    a: "Your reports are saved to your account and accessible from your dashboard for 365 days from the date of purchase — this applies to both Single Reports and Buyer Pass reports. After 365 days, reports are automatically removed from your account. You can email any report to yourself at any time using the 'Email me my report' button on the report page, so you always have a permanent copy if you need one.",
   },
   {
     q: "Is my payment information secure?",

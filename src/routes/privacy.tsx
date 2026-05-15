@@ -50,8 +50,7 @@ function PrivacyPage() {
         </Section>
         <Section n={3} title="How long we retain your data">
           <ul className="list-disc pl-5 space-y-1.5">
-            <li>Single Report data is retained indefinitely while your account is active</li>
-            <li>Buyer Pass report data is retained for 90 days from purchase</li>
+            <li>All reports (Single Report and Buyer Pass) are retained for 365 days from the date of purchase, then automatically deleted from your account</li>
             <li>
               You can request deletion of your data at any time by emailing{" "}
               <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">support@roovr.co</a>
