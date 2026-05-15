@@ -216,7 +216,7 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
             style={{ fontSize: 13, color: "#1A1108" }}
           >
             <LayoutDashboard className="h-4 w-4" style={{ color: "#5F5E5A" }} />{" "}
-            {hasPass ? "My reports" : "My report"}
+            Dashboard
           </Link>
           <button
             type="button"
@@ -279,7 +279,7 @@ export function SiteHeader() {
                   padding: "10px 20px",
                 }}
               >
-                {hasPass ? "My reports" : "My report"}
+                Dashboard
               </Link>
               <UserMenu email={email!} hasPass={hasPass} />
             </>
