@@ -267,13 +267,16 @@ function ResultsPage() {
   const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
 
   const POLL_INTERVAL_MS = 2000;
-  const POLL_TIMEOUT_MS = 90_000;
+  // Long timeout to tolerate mobile screen-locks suspending JS for minutes.
+  const POLL_TIMEOUT_MS = 10 * 60_000;
+  const [wasHidden, setWasHidden] = useState(false);
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
 
   type QueryResult = { analysis: AnalysisResult; savedOwnerEmail?: string | null; savedListingUrl?: string | null };
 
   const query = useQuery<QueryResult>({
     queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
-    queryFn: async (): Promise<QueryResult> => {
+    queryFn: async ({ signal }): Promise<QueryResult> => {
       if (saved_id) {
         // Wait for auth session to hydrate so the bearer token is attached.
         const { data: sess } = await supabase.auth.getSession();
