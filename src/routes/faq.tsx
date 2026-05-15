@@ -38,7 +38,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "Is this a subscription?",
-    a: "No. Both options are one-off payments with no auto-renewal and no hidden fees. The Buyer Pass gives you 90 days of access from the date of purchase, after which it simply expires.",
+    a: "No. Both the Single Report and Buyer Pass are one-off payments with no auto-renewal and no hidden fees.\n\nThe Buyer Pass gives you 90 days of unlimited access from the date of purchase. We'll send you a reminder email 7 days before your pass expires, and again the day before, giving you the option to purchase a new 90-day Buyer Pass or move to a monthly subscription at £7.99 per month — whichever suits you best. Nothing renews automatically.",
   },
   {
     q: "How accurate is the data?",
@@ -109,7 +109,7 @@ function FaqPage() {
                 {item.q}
               </AccordionTrigger>
               <AccordionContent
-                className="pb-5"
+                className="pb-5 whitespace-pre-line"
                 style={{ fontSize: 15, color: "#5F5E5A", lineHeight: 1.7 }}
               >
                 {item.a}
