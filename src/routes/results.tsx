@@ -318,6 +318,9 @@ function ResultsPage() {
 
       let jobId = recallJobId(url);
       // Verify any existing jobId is still known to the server before reusing.
+      // Only discard the jobId on an explicit "not found" — transient
+      // network errors (mobile screen-lock, flaky connection) must NOT
+      // start a brand-new job; the poll loop below will retry the fetch.
       if (jobId) {
         try {
           const probe = await getJobFn({ data: { jobId, sessionJwt } });
@@ -328,8 +331,11 @@ function ResultsPage() {
           if (probe.status === "error" && /not found/i.test(probe.error ?? "")) {
             jobId = undefined;
           }
-        } catch {
-          jobId = undefined;
+        } catch (err) {
+          console.warn("[results] probe transient error, keeping jobId", {
+            jobId,
+            error: (err as Error)?.message,
+          });
         }
       }
       if (!jobId) {
@@ -341,17 +347,35 @@ function ResultsPage() {
       }
 
       const startedAt = Date.now();
+      let consecutiveTransientErrors = 0;
       while (true) {
         if (signal?.aborted) throw new Error("ABORTED");
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
         if (signal?.aborted) throw new Error("ABORTED");
-        const status = await getJobFn({ data: { jobId, sessionJwt } });
-        if (status.status === "complete" && status.analysis) {
-          writeCachedAnalysis(status.analysis, url, text, token);
-          return { analysis: status.analysis };
+        // Treat ANY thrown error from the status fetch as transient
+        // (mobile screen-lock kills in-flight fetches with "Load failed",
+        // network blips, gateway timeouts, etc.). Only an explicit
+        // status === "error" from the server should fail the analysis.
+        let status: Awaited<ReturnType<typeof getJobFn>> | null = null;
+        try {
+          status = await getJobFn({ data: { jobId, sessionJwt } });
+          consecutiveTransientErrors = 0;
+        } catch (err) {
+          consecutiveTransientErrors += 1;
+          console.warn("[results] poll transient error, retrying", {
+            jobId,
+            attempt: consecutiveTransientErrors,
+            error: (err as Error)?.message,
+          });
         }
-        if (status.status === "error") {
-          throw new Error(status.error || "Analysis failed");
+        if (status) {
+          if (status.status === "complete" && status.analysis) {
+            writeCachedAnalysis(status.analysis, url, text, token);
+            return { analysis: status.analysis };
+          }
+          if (status.status === "error") {
+            throw new Error(status.error || "Analysis failed");
+          }
         }
         if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
           throw new Error("ANALYSIS_TIMEOUT");
@@ -366,19 +390,21 @@ function ResultsPage() {
   });
 
   // Page Visibility: when the tab is hidden (mobile screen lock, tab switch),
-  // browser timers may pause. On return, immediately re-poll so we don't
-  // wait out the throttled interval; show a banner if the report is still
-  // generating so the user knows to tap to refresh.
+  // browser timers and in-flight fetches may be killed. On return, cancel
+  // any zombie poll and start a fresh one against the same jobId so we
+  // recover transparently instead of showing "Analysis failed".
   useEffect(() => {
     if (typeof document === "undefined") return;
     const onVis = () => {
       if (document.hidden) {
-        if (query.isFetching || query.isPending) setWasHidden(true);
+        if (query.isFetching || query.isPending || query.isError) setWasHidden(true);
       } else {
-        if (wasHidden && (query.isFetching || query.isPending)) {
+        const stillRunning = query.isFetching || query.isPending || query.isError;
+        if (wasHidden && stillRunning) {
           setShowResumeBanner(true);
         }
-        if (query.isPending || query.isError) {
+        if (stillRunning) {
+          // Cancel any in-flight (possibly dead) request and refetch fresh.
           query.refetch();
         }
       }
@@ -421,18 +447,20 @@ function ResultsPage() {
     );
   }
 
-  if (query.isPending) {
+  // While recovering from a screen-lock / background tab, prefer the
+  // loading view over any stale error state — the poll has been restarted.
+  if (query.isPending || (showResumeBanner && (query.isFetching || query.isError))) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
         {showResumeBanner && (
-          <button
-            type="button"
-            onClick={() => { setShowResumeBanner(false); query.refetch(); }}
-            className="mx-auto mt-4 block max-w-xl rounded-xl border border-border bg-accent px-4 py-3 text-sm text-accent-foreground hover:opacity-90"
+          <div
+            role="status"
+            aria-live="polite"
+            className="mx-auto mt-4 block max-w-xl rounded-xl border border-border bg-accent px-4 py-3 text-sm text-accent-foreground"
           >
-            Your analysis is still running — tap to check results
-          </button>
+            Still analysing your property…
+          </div>
         )}
         <LoadingState url={url} />
         <DisclaimerBar />
