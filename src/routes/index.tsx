@@ -242,7 +242,7 @@ function Index() {
             Ready to <span style={{ color: "#D85A30" }}>rove</span> your next listing?
           </h2>
           <p style={{ color: "#5F5E5A", fontSize: 15, maxWidth: 520 }}>
-            Paste any Rightmove or Zoopla link and get your full analysis in 30 seconds.
+            Paste a property listing URL and let Roovr do the research for you
           </p>
           <button
             type="button"
