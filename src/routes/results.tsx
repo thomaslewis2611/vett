@@ -870,11 +870,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                 metrics: { ...prev.metrics, pricePerSqFt: patch.pricePerSqFt },
               }))}
             />
-            <MetricCard
-              label="Days on market"
-              value={a.metrics.daysOnMarket > 0 ? `${a.metrics.daysOnMarket}` : "—"}
-              icon={Calendar}
-            />
+            <DaysOnMarketCard days={a.metrics.daysOnMarket} />
             <CouncilTaxBandCard
               band={a.metrics.councilTaxBand}
               onSave={(b) => setA((prev) => ({
