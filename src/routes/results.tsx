@@ -4824,7 +4824,12 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
     setLoading(true);
     try {
       const r = await checkoutFn({
-        data: { priceId: PRICE_PASS, listingUrl: listingUrl ?? "", tier: "pass" },
+        data: {
+          priceId: "price_1TXLgzCfTT0mXB2cJMfAE4DW",
+          listingUrl: listingUrl ?? "",
+          tier: "pass",
+          source: "single_upgrade_discount",
+        },
       });
       if (r?.url) window.location.href = r.url;
     } catch (e) {
@@ -4852,7 +4857,7 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
           letterSpacing: "-0.01em",
         }}
       >
-        Want unlimited reports for 90 days?
+        Upgrade to Buyer Pass — we'll deduct what you've already paid
       </h3>
       <p
         style={{
@@ -4863,7 +4868,7 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
           maxWidth: 560,
         }}
       >
-        Upgrade to Buyers Pass — analyse as many properties as you like for £24.99. Includes AI chat, seller motivation scoring, renovation estimates, property comparison and more.
+        You've already spent £4.99 on this report. Upgrade to Buyer Pass today for just £20 more and get unlimited analyses for 90 days, AI chat on every property, and property comparison.
       </p>
       <button
         type="button"
@@ -4883,8 +4888,11 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
           opacity: loading ? 0.7 : 1,
         }}
       >
-        {loading ? "Redirecting to checkout…" : "Upgrade to Buyers Pass — £24.99 →"}
+        {loading ? "Redirecting to checkout…" : "Upgrade for £20 today →"}
       </button>
+      <p style={{ fontSize: 12, color: "#888780", margin: "10px 0 0" }}>
+        One-off payment · 90 days access
+      </p>
       {err && (
         <p style={{ fontSize: 12, color: "#A32D2D", margin: "10px 0 0" }}>{err}</p>
       )}
