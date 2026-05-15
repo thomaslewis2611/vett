@@ -920,7 +920,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 
       <main className="mx-auto w-full max-w-5xl overflow-x-hidden px-4 py-10 sm:px-6">
 
-        <div className="flex items-center justify-between gap-4 no-print">
+        <div className="flex flex-wrap items-center justify-start gap-4 no-print">
           <Link
             to="/"
             className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
