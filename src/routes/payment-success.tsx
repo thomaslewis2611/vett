@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Loader2, CheckCircle2, MailOpen } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { verifyCheckoutSession, sendBuyerPassMagicLink } from "@/lib/checkout.functions";
+import { markSinglePurchased } from "@/components/upsell-pass-modal";
 
 export const Route = createFileRoute("/payment-success")({
   validateSearch: z.object({
@@ -45,6 +46,7 @@ function PaymentSuccessPage() {
         const effectiveTier = res.tier ?? tier;
         const emailFallback = res.email ?? "your email";
         if (effectiveTier === "single") {
+          markSinglePurchased();
           setState({ status: "single", email: emailFallback, hadAnalysisJob: res.hadAnalysisJob });
         } else if (effectiveTier === "pass") {
           setState({ status: "pass", email: emailFallback, hadAnalysisJob: res.hadAnalysisJob });

@@ -26,6 +26,7 @@ import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser, get
 import { sendReportEmail } from "@/lib/email-report.functions";
 import { validateSingleReportToken, checkBuyerPassByEmail, getSingleReportByEmail } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
+import { UpsellPassModal, shouldShowPassUpsell } from "@/components/upsell-pass-modal";
 
 const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
 const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
@@ -824,7 +825,10 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
       console.error("[upgradeToPass] checkout failed:", e);
     }
   };
-  const upgradeToSingle = async (lurl?: string) => {
+  const [upsellOpen, setUpsellOpen] = useState(false);
+  const [pendingSingleUrl, setPendingSingleUrl] = useState<string | null>(null);
+
+  const startSingleCheckout = async (lurl?: string) => {
     try {
       const targetUrl = lurl ?? listingUrl ?? "";
       const r = await checkoutFn({
@@ -841,10 +845,30 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
       console.error("[upgradeToSingle] checkout failed:", e);
     }
   };
+  const upgradeToSingle = async (lurl?: string) => {
+    if (shouldShowPassUpsell()) {
+      setPendingSingleUrl(lurl ?? listingUrl ?? "");
+      setUpsellOpen(true);
+      return;
+    }
+    await startSingleCheckout(lurl);
+  };
 
   return (
     <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-hidden bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
       <SiteHeader />
+      <UpsellPassModal
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        onChoosePass={() => {
+          setUpsellOpen(false);
+          upgradeToPass(pendingSingleUrl ?? undefined);
+        }}
+        onChooseSingle={() => {
+          setUpsellOpen(false);
+          startSingleCheckout(pendingSingleUrl ?? undefined);
+        }}
+      />
 
       {access.level === "pass" && (
         <div
@@ -2287,8 +2311,9 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
   const [showRestore, setShowRestore] = useState(false);
   const [restoreEmail, setRestoreEmail] = useState("");
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
-  const handleBuy = async (tier: "single" | "pass") => {
+  const startCheckout = async (tier: "single" | "pass") => {
     setErr(null);
     setLoadingTier(tier);
     try {
@@ -2320,6 +2345,14 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
     }
   };
 
+  const handleBuy = async (tier: "single" | "pass") => {
+    if (tier === "single" && shouldShowPassUpsell()) {
+      setUpsellOpen(true);
+      return;
+    }
+    await startCheckout(tier);
+  };
+
   const handleRestore = async (e: React.FormEvent) => {
     e.preventDefault();
     setRestoreMsg(null);
@@ -2334,6 +2367,12 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
 
   return (
     <div className="p-6 sm:p-8" style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)" }}>
+      <UpsellPassModal
+        open={upsellOpen}
+        onClose={() => { setUpsellOpen(false); setLoadingTier(null); }}
+        onChoosePass={() => { setUpsellOpen(false); startCheckout("pass"); }}
+        onChooseSingle={() => { setUpsellOpen(false); startCheckout("single"); }}
+      />
       <div className="inline-flex items-center gap-2" style={{ background: "#FAECE7", color: "#993C1D", borderRadius: 100, padding: "4px 10px", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em" }}>
         <Sparkles className="h-3 w-3" /> UNLOCK THE FULL REPORT
       </div>
