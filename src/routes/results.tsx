@@ -4252,80 +4252,49 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
     }
   };
 
-  const features = [
-    "Unlimited analyses for 90 days",
-    "AI chat on every property",
-    "Capital growth (1yr/3yr/5yr breakdown)",
-    "Area demographics",
-    "Compare properties side by side",
-    "All reports saved to dashboard",
-  ];
-
   return (
     <section
       className="mt-10"
       style={{
         background: "#FAECE7",
         borderRadius: 12,
-        padding: "28px 24px",
-        marginTop: 16,
+        padding: "32px 24px",
+        textAlign: "center",
       }}
     >
-      <p
-        style={{
-          fontSize: 11,
-          color: "#D85A30",
-          textTransform: "uppercase",
-          letterSpacing: "0.08em",
-          fontWeight: 600,
-          margin: 0,
-        }}
-      >
-        Buyer Pass
-      </p>
       <h3
         style={{
-          fontSize: 20,
+          fontSize: 22,
           color: "#1A1108",
           fontWeight: 500,
-          margin: "8px 0 8px",
+          margin: 0,
           letterSpacing: "-0.01em",
         }}
       >
-        Unlock the full picture
+        Want unlimited reports for 90 days?
       </h3>
-      <p style={{ fontSize: 14, color: "#5F5E5A", margin: 0, lineHeight: 1.5 }}>
-        Get AI chat, seller motivation score, renovation cost estimator, property comparison and unlimited analyses for 90 days.
+      <p
+        style={{
+          fontSize: 14,
+          color: "#5F5E5A",
+          margin: "10px auto 0",
+          lineHeight: 1.55,
+          maxWidth: 560,
+        }}
+      >
+        Upgrade to Buyers Pass — analyse as many properties as you like for £24.99. Includes AI chat, seller motivation scoring, renovation estimates, property comparison and more.
       </p>
-      <ul style={{ listStyle: "none", padding: 0, margin: "16px 0 0" }}>
-        {features.map((f) => (
-          <li
-            key={f}
-            style={{ fontSize: 13, color: "#1A1108", padding: "4px 0", display: "flex", gap: 8, alignItems: "flex-start" }}
-          >
-            <span style={{ color: "#D85A30", fontWeight: 700 }}>✓</span>
-            <span>{f}</span>
-          </li>
-        ))}
-      </ul>
-      <div style={{ marginTop: 20 }}>
-        <div style={{ fontSize: 24, color: "#1A1108", fontWeight: 500, lineHeight: 1.1 }}>£24.99</div>
-        <div style={{ fontSize: 12, color: "#888780", marginTop: 4 }}>
-          90-day pass · one-off payment
-        </div>
-      </div>
       <button
         type="button"
         onClick={handleClick}
         disabled={loading}
         style={{
-          display: "block",
-          width: "100%",
-          marginTop: 16,
+          display: "inline-block",
+          marginTop: 20,
           background: "#D85A30",
           color: "#FFFDF9",
           borderRadius: 100,
-          padding: 14,
+          padding: "14px 28px",
           fontSize: 15,
           fontWeight: 500,
           border: 0,
@@ -4333,13 +4302,10 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
           opacity: loading ? 0.7 : 1,
         }}
       >
-        {loading ? "Redirecting to checkout…" : "Get Buyer Pass →"}
+        {loading ? "Redirecting to checkout…" : "Upgrade to Buyers Pass — £24.99 →"}
       </button>
-      <p style={{ fontSize: 12, color: "#888780", margin: "10px 0 0", textAlign: "center" }}>
-        One-off payment. No subscription. Access ends 90 days after purchase.
-      </p>
       {err && (
-        <p style={{ fontSize: 12, color: "#A32D2D", margin: "8px 0 0", textAlign: "center" }}>{err}</p>
+        <p style={{ fontSize: 12, color: "#A32D2D", margin: "10px 0 0" }}>{err}</p>
       )}
     </section>
   );
