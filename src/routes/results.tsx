@@ -809,16 +809,18 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
   // prompts on locked sections. Uses the existing checkout flow — does NOT
   // change any payment / Stripe logic.
   const checkoutFn = useServerFn(createCheckoutSession);
-  const upgradeToPass = async (lurl?: string) => {
+  const passDiscount = usePassDiscount();
+  const upgradeToPass = async (lurl?: string, opts?: { forceDiscount?: boolean }) => {
     try {
       const targetUrl = lurl ?? listingUrl ?? "";
+      const useDiscount = opts?.forceDiscount || passDiscount.eligible;
       const r = await checkoutFn({
         data: {
-          priceId: PRICE_PASS,
+          priceId: useDiscount ? passDiscount.priceId : PRICE_PASS,
           listingUrl: targetUrl,
           tier: "pass",
           analysisJobId: recallJobId(targetUrl),
-          source: "results_page_upgrade",
+          source: useDiscount ? "single_upgrade_discount" : "results_page_upgrade",
         },
       });
       if (r?.url) window.location.href = r.url;
@@ -863,7 +865,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         onClose={() => setUpsellOpen(false)}
         onChoosePass={() => {
           setUpsellOpen(false);
-          upgradeToPass(pendingSingleUrl ?? undefined);
+          upgradeToPass(pendingSingleUrl ?? undefined, { forceDiscount: true });
         }}
         onChooseSingle={() => {
           setUpsellOpen(false);
