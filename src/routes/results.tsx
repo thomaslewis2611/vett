@@ -1800,17 +1800,21 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           loading={loadingTier === "single"}
           onClick={() => handleBuy("single")}
           features={[
-            "Full analysis for one property",
-            "All red flags spotted in the listing",
-            "True cost breakdown (stamp duty, legal fees, mortgage estimate)",
-            "Viewing questions to ask the agent",
-            "Negotiation strategy and recommended offer range",
-            "Seller motivation score",
+            "Full analysis with all red flags",
+            "True cost breakdown and stamp duty",
+            "Negotiation strategy and recommended offer",
             "Viewing checklist — specific to this property",
             "Renovation cost estimator",
-            "Access anywhere — report saved to your account",
+            "Seller motivation score",
+            "Flood risk assessment",
+            "Nearby schools with Ofsted ratings",
+            "Crime statistics",
+            "Broadband and internet speed",
+            "Transport links",
+            "Full sold price history",
+            "Report saved to your account",
           ]}
-          upsell={{ text: "Upgrade to Buyer Pass for AI chat, flood risk and nearby schools →", targetId: "buyer-pass-card" }}
+          upsell={{ text: "Upgrade to Buyer Pass for AI chat, capital growth and unlimited analyses →", targetId: "buyer-pass-card" }}
         />
         <PlanCard
           id="buyer-pass-card"
@@ -1825,11 +1829,11 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           features={[
             "Unlimited analyses for 90 days",
             "AI chat on every property",
-            "Flood risk assessment",
-            "Nearby schools with Ofsted ratings",
-            "Save and compare reports",
+            "Capital growth data (1yr/3yr/5yr)",
+            "Area demographics",
+            "Compare properties side by side",
+            "All reports saved to dashboard",
             "Report emailed to you",
-            "Access anywhere — all reports saved to your account",
           ]}
           footnote="One-off payment. Access ends 90 days after purchase."
         />
