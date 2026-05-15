@@ -5,6 +5,7 @@ import { z } from "zod";
 import { Loader2, CheckCircle2, MailOpen } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { verifyCheckoutSession, sendBuyerPassMagicLink } from "@/lib/checkout.functions";
+import { markSinglePurchased } from "@/components/upsell-pass-modal";
 
 export const Route = createFileRoute("/payment-success")({
   validateSearch: z.object({
