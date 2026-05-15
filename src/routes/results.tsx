@@ -27,6 +27,7 @@ import { sendReportEmail } from "@/lib/email-report.functions";
 import { validateSingleReportToken, checkBuyerPassByEmail, getSingleReportByEmail } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { UpsellPassModal, shouldShowPassUpsell } from "@/components/upsell-pass-modal";
+import { usePassDiscount } from "@/hooks/use-pass-discount";
 
 const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
 const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
