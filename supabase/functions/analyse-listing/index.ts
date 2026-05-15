@@ -319,10 +319,15 @@ async function fetchPropertyDataAll(postcode: string): Promise<PdResults> {
     return {};
   }
   const pc = encodeURIComponent(postcode);
+  const london = isLondonPostcode(postcode);
   const settled = await Promise.allSettled(
-    PD_ENDPOINTS.map((ep) =>
-      fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`).then((r) => r.json()),
-    ),
+    PD_ENDPOINTS.map((ep) => {
+      // Skip /ptal entirely outside London — it only returns data for London postcodes.
+      if (ep === "ptal" && !london) {
+        return Promise.resolve(null);
+      }
+      return fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`).then((r) => r.json());
+    }),
   );
   const out: PdResults = {};
   PD_ENDPOINTS.forEach((ep, i) => {
