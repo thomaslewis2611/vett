@@ -4824,7 +4824,12 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
     setLoading(true);
     try {
       const r = await checkoutFn({
-        data: { priceId: PRICE_PASS, listingUrl: listingUrl ?? "", tier: "pass" },
+        data: {
+          priceId: "price_1TXLgzCfTT0mXB2cJMfAE4DW",
+          listingUrl: listingUrl ?? "",
+          tier: "pass",
+          source: "single_upgrade_discount",
+        },
       });
       if (r?.url) window.location.href = r.url;
     } catch (e) {
