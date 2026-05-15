@@ -452,6 +452,7 @@ function mapPdSchools(raw: any) {
         schoolType: indep ? "Independent" : (s.type ?? null),
         phase,
         distanceMiles: Number(s.distance ?? 0) || 0,
+        urn: s.urn ?? s.URN ?? s.school_urn ?? s.id ?? null,
       };
     });
   const all = [
