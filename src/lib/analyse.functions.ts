@@ -115,6 +115,13 @@ const analysisSchema = z.object({
     unavailable: z.boolean().nullable().optional(),
     autoRedFlag: z.boolean().nullable().optional(),
   }).nullable().optional(),
+  ptal: z.object({
+    grade: z.string(),
+    band: z.number().nullable(),
+    label: z.string(),
+    explanation: z.string(),
+    source: z.string().nullable().optional(),
+  }).nullable().optional(),
   areaContext: z.object({
     avgPricePerSqFtArea: z.number().nullable(),
     avgSoldPriceArea: z.number().nullable(),

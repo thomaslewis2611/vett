@@ -298,7 +298,17 @@ const PD_ENDPOINTS = [
   "planning-applications",
   "listed-buildings",
   "conservation-area",
+  "ptal",
 ] as const;
+
+const LONDON_POSTCODE_AREAS = new Set([
+  "E", "EC", "W", "WC", "N", "NW", "SE", "SW",
+  "WD", "BR", "CR", "DA", "EN", "HA", "IG", "KT", "RM", "SM", "TW", "UB",
+]);
+function isLondonPostcode(pc: string): boolean {
+  const m = pc.toUpperCase().trim().match(/^[A-Z]{1,2}/);
+  return m ? LONDON_POSTCODE_AREAS.has(m[0]) : false;
+}
 
 type PdKey = typeof PD_ENDPOINTS[number];
 type PdResults = Partial<Record<PdKey, unknown>>;
@@ -309,10 +319,15 @@ async function fetchPropertyDataAll(postcode: string): Promise<PdResults> {
     return {};
   }
   const pc = encodeURIComponent(postcode);
+  const london = isLondonPostcode(postcode);
   const settled = await Promise.allSettled(
-    PD_ENDPOINTS.map((ep) =>
-      fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`).then((r) => r.json()),
-    ),
+    PD_ENDPOINTS.map((ep) => {
+      // Skip /ptal entirely outside London — it only returns data for London postcodes.
+      if (ep === "ptal" && !london) {
+        return Promise.resolve(null);
+      }
+      return fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`).then((r) => r.json());
+    }),
   );
   const out: PdResults = {};
   PD_ENDPOINTS.forEach((ep, i) => {
@@ -486,6 +501,37 @@ function mapPdBroadband(raw: any) {
   };
 }
 
+// PropertyData /ptal → PTAL (Public Transport Accessibility Level) for London postcodes.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPdPtal(raw: any) {
+  if (!raw || raw.status !== "success") return null;
+  const data = raw.data ?? raw;
+  if (!data) return null;
+  const grade = String(
+    data.ptal ?? data.PTAL ?? data.ptal_grade ?? data.grade ?? data.rating ?? "",
+  ).trim();
+  if (!grade) return null;
+  const bandMatch = grade.match(/^(\d)/);
+  const band = bandMatch ? Number(bandMatch[1]) : null;
+  const descriptions: Record<number, { label: string; explanation: string }> = {
+    0: { label: "Very poor", explanation: "Very limited access to public transport — expect to rely on a car." },
+    1: { label: "Poor", explanation: "Limited bus or tube access within walking distance." },
+    2: { label: "Poor", explanation: "Some bus routes nearby but infrequent service and few rail options." },
+    3: { label: "Moderate", explanation: "Reasonable bus access and a tube or rail station within walking distance." },
+    4: { label: "Good", explanation: "Good mix of frequent buses and rail/tube connections within walking distance." },
+    5: { label: "Very good", explanation: "Excellent bus and tube/rail access — most journeys easy without a car." },
+    6: { label: "Excellent", explanation: "Multiple frequent bus and tube/rail connections within walking distance — among the best in London." },
+  };
+  const meta = band != null ? descriptions[band] : null;
+  return {
+    grade,
+    band,
+    label: meta?.label ?? (data.description ? String(data.description) : "Unknown"),
+    explanation: meta?.explanation ?? "Public transport accessibility score from Transport for London.",
+    source: "PropertyData / TfL PTAL",
+  };
+}
+
 
 function buildPropertyDataContext(pd: PdResults): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -640,10 +686,11 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       planningApplications: pdData(pd["planning-applications"]),
       listedBuildings: pdData(pd["listed-buildings"]),
       conservationArea: pdData(pd["conservation-area"]),
+      ptal: pdData(pd["ptal"]),
     };
 
     // Map PropertyData payloads into the shapes the frontend renders for
-    // nearbySchools / crime / broadband. Only set when we have real data so
+    // nearbySchools / crime / broadband / ptal. Only set when we have real data so
     // the UI can fall back to its "data unavailable" state otherwise.
     const mappedSchools = mapPdSchools(pd["schools"]);
     if (mappedSchools) parsed.nearbySchools = mappedSchools;
@@ -651,6 +698,8 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
     if (mappedBroadband) parsed.broadband = mappedBroadband;
+    const mappedPtal = mapPdPtal(pd["ptal"]);
+    if (mappedPtal) parsed.ptal = mappedPtal;
 
     const { error: updErr } = await supabase
       .from("analysis_jobs")
