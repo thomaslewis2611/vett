@@ -45,6 +45,8 @@ function PricingPage() {
             cta="Buy a report"
             features={[
               "Full analysis with all red flags",
+              "EPC analysis",
+              "Area pricing analysis",
               "True cost breakdown and stamp duty",
               "Negotiation strategy and recommended offer",
               "Viewing checklist — specific to this property",
@@ -55,10 +57,10 @@ function PricingPage() {
               "Crime statistics",
               "Broadband and internet speed",
               "Transport links",
-              "Full sold price history",
               "Report saved to your account",
+              "Email your report to you",
             ]}
-            upsell={{ text: "Upgrade to Buyer Pass for AI chat, capital growth and unlimited analyses →", targetId: "buyer-pass-card" }}
+            upsell={{ text: "Upgrade to Buyer Pass for AI chat, comparisons and unlimited analyses →", targetId: "buyer-pass-card" }}
           />
           <Plan
             id="buyer-pass-card"
