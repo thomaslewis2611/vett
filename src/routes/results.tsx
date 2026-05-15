@@ -2373,6 +2373,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         onChoosePass={() => { setUpsellOpen(false); startCheckout("pass"); }}
         onChooseSingle={() => { setUpsellOpen(false); startCheckout("single"); }}
       />
+      <div className="inline-flex items-center gap-2" style={{ background: "#FAECE7", color: "#993C1D", borderRadius: 100, padding: "4px 10px", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em" }}>
         <Sparkles className="h-3 w-3" /> UNLOCK THE FULL REPORT
       </div>
       <h3 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
