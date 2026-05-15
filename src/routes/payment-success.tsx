@@ -150,7 +150,7 @@ function PaymentSuccessPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Something went wrong</h1>
             <p className="mt-3 text-sm" style={{ color: "#5F5E5A" }}>{state.message}</p>
             <p className="mt-4 text-sm" style={{ color: "#5F5E5A" }}>
-              Need help? Email <a href="mailto:help@roovr.co" style={{ color: "#D85A30" }}>help@roovr.co</a>
+              Need help? Email <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }}>support@roovr.co</a>
             </p>
             <Link to="/" className="mt-6 inline-block" style={{ fontSize: 13, color: "#D85A30" }}>← Back to home</Link>
           </div>
