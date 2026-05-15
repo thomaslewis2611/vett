@@ -870,11 +870,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                 metrics: { ...prev.metrics, pricePerSqFt: patch.pricePerSqFt },
               }))}
             />
-            <MetricCard
-              label="Days on market"
-              value={a.metrics.daysOnMarket > 0 ? `${a.metrics.daysOnMarket}` : "—"}
-              icon={Calendar}
-            />
+            <DaysOnMarketCard days={a.metrics.daysOnMarket} />
             <CouncilTaxBandCard
               band={a.metrics.councilTaxBand}
               onSave={(b) => setA((prev) => ({
@@ -882,13 +878,13 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                 metrics: { ...prev.metrics, councilTaxBand: b },
               }))}
             />
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
               <div className="flex items-center justify-between">
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">Stamp duty est.</span>
                 <TrendingDown className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="mt-3 text-2xl font-semibold tracking-tight">{formatGBP(stampDuty)}</div>
-              <div className="mt-4 border-t border-border pt-3">
+              <div className="mt-2 text-2xl font-semibold tracking-tight">{formatGBP(stampDuty)}</div>
+              <div className="mt-3 border-t border-border pt-3">
                 <div className="text-[11px]" style={{ color: "#888780" }}>I am buying as a:</div>
                 <div className="mt-2 flex flex-wrap gap-1.5" role="tablist" aria-label="Stamp duty rate">
                   {(["main", "additional", "ftb"] as StampDutyMode[]).map((m) => {
@@ -1307,14 +1303,14 @@ function PricePerSqftCard({
     manual?.vsAreaAvgLabel === "below" ? "#3B6D11" : "#A32D2D";
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
           Price / sq ft
         </span>
         <PoundSterling className="h-4 w-4 text-muted-foreground" />
       </div>
-      <div className="mt-3 text-2xl font-semibold tracking-tight">
+      <div className="mt-2 text-2xl font-semibold tracking-tight">
         {hasValue && !editing
           ? `£${(manual?.pricePerSqFt ?? ppsf ?? 0).toLocaleString()}`
           : "—"}
@@ -1633,13 +1629,43 @@ function MetricCard({
   icon: React.ComponentType<{ className?: string }>;
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">{label}</span>
         <Icon className="h-4 w-4 text-muted-foreground" />
       </div>
-      <div className="mt-3 text-2xl font-semibold tracking-tight">{value}</div>
+      <div className="mt-2 text-2xl font-semibold tracking-tight">{value}</div>
       {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
+    </div>
+  );
+}
+
+function DaysOnMarketCard({ days }: { days: number }) {
+  const known = days > 0;
+  let interpretation: string | null = null;
+  if (known) {
+    if (days < 30) interpretation = "Fast sale — limited negotiation leverage";
+    else if (days <= 60) interpretation = "Normal market time — standard negotiation position";
+    else if (days <= 90) interpretation = "Above average — some negotiation leverage";
+    else interpretation = "Significantly above average — strong negotiation leverage";
+  }
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">Days on market</span>
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="mt-2 text-2xl font-semibold tracking-tight">{known ? `${days}` : "—"}</div>
+      {known && (
+        <>
+          <div className="mt-1 text-[11px]" style={{ color: "#888780" }}>
+            UK average is ~45 days
+          </div>
+          <div className="mt-1 text-[11px]" style={{ color: "#888780", lineHeight: 1.4 }}>
+            {interpretation}
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -1690,14 +1716,14 @@ function CouncilTaxBandCard({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
           Council tax band
         </span>
         <PoundSterling className="h-4 w-4 text-muted-foreground" />
       </div>
-      <div className="mt-3 text-2xl font-semibold tracking-tight">
+      <div className="mt-2 text-2xl font-semibold tracking-tight">
         {known ? String(band).trim().toUpperCase() : "Unknown"}
       </div>
       {known && annual != null && !editing && (
