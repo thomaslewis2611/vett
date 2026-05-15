@@ -4091,7 +4091,7 @@ function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisRes
             {vc.items.length > 2 && (
               <div className="relative mt-5 overflow-hidden">
                 <div style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none" }}>
-                  {renderCategoryGroups(vc.items.slice(2))}
+                  {renderCategoryGroups(vc.items.slice(2, 6))}
                 </div>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
                   <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
