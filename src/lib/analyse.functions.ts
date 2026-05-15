@@ -2712,7 +2712,158 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
     }
   });
 
-// ---------------- Manual EPC analysis ----------------
+// ---------------- Manual postcode refetch ----------------
+// When a listing only yields a partial postcode (e.g. "BA1"), the user can
+// supply the full postcode from the results page. We re-run the four
+// postcode-driven datasets (flood, schools, crime, broadband) with the
+// supplied postcode and patch the saved_analyses row so the values persist
+// across reloads. Works for any paying user (single or buyer pass) — gating
+// on the section UI itself prevents free users from triggering this.
+export const refetchLocalDataForPostcode = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      email: z.string().email().max(320),
+      listingUrl: z.string().max(2000),
+      postcode: z
+        .string()
+        .min(5)
+        .max(10)
+        .regex(/^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/i, "Enter a full UK postcode"),
+    }),
+  )
+  .handler(async ({ data }): Promise<{
+    ok: boolean;
+    floodRisk: AnalysisResult["floodRisk"] | null;
+    nearbySchools: AnalysisResult["nearbySchools"] | null;
+    crime: AnalysisResult["crime"] | null;
+    broadband: AnalysisResult["broadband"] | null;
+    error?: string;
+  }> => {
+    const fail = (error: string) => ({
+      ok: false,
+      floodRisk: null,
+      nearbySchools: null,
+      crime: null,
+      broadband: null,
+      error,
+    });
+    try {
+      const raw = data.postcode.replace(/\s+/g, "").toUpperCase();
+      const postcode = `${raw.slice(0, -3)} ${raw.slice(-3)}`;
+
+      const { data: rows } = await supabaseAdmin
+        .from("saved_analyses")
+        .select("id, analysis_json, created_at")
+        .ilike("user_email", data.email)
+        .eq("listing_url", data.listingUrl)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      const row = rows?.[0];
+      if (!row) return fail("No saved analysis");
+      const existing = (row.analysis_json as AnalysisResult) ?? null;
+      if (!existing) return fail("Empty analysis");
+
+      const apiKey = process.env.ANTHROPIC_API_KEY;
+      const [floodRaw, schoolsRaw, crimeRawResult, broadbandRawResult] = await Promise.all([
+        fetchFloodRisk(postcode).catch((err) => {
+          console.error("[refetchLocalDataForPostcode] flood failed:", err);
+          return null;
+        }),
+        fetchNearbySchools(postcode, existing.property?.address ?? "", apiKey).catch((err) => {
+          console.error("[refetchLocalDataForPostcode] schools failed:", err);
+          return null;
+        }),
+        fetchCrimeStats(postcode, existing.property?.address ?? "", apiKey).catch((err) => {
+          console.error("[refetchLocalDataForPostcode] crime failed:", err);
+          return null;
+        }),
+        fetchBroadband(postcode, apiKey).catch((err) => {
+          console.error("[refetchLocalDataForPostcode] broadband failed:", err);
+          return null;
+        }),
+      ]);
+
+      const floodRisk: AnalysisResult["floodRisk"] = floodRaw
+        ? {
+            riversAndSea: floodRaw.riversAndSea,
+            surfaceWater: floodRaw.surfaceWater,
+            reservoir: floodRaw.reservoir,
+            groundwater: floodRaw.groundwater,
+            overallRisk: floodRaw.overallRisk,
+            commentary: floodRaw.unavailable
+              ? "Flood risk data is currently unavailable for this postcode."
+              : floodRaw.scotland
+                ? "Environment Agency flood data covers England only. For Scotland use SEPA's flood maps."
+                : floodRaw.overallRisk === "High"
+                  ? "Overall flood risk is High. Some insurers refuse cover or charge 3-5x standard premiums."
+                  : floodRaw.overallRisk === "Medium"
+                    ? "Overall flood risk is Medium. Insurance is normally available but premiums may be higher than average."
+                    : "Overall flood risk is low. Standard buildings insurance should be readily available.",
+            autoRedFlag: floodRaw.overallRisk === "High",
+            scotland: floodRaw.scotland ?? null,
+            unavailable: floodRaw.unavailable ?? null,
+          }
+        : null;
+
+      const nearbySchools: AnalysisResult["nearbySchools"] = schoolsRaw
+        ? {
+            schools: schoolsRaw.schools ?? [],
+            unavailable: schoolsRaw.unavailable ?? null,
+            aiSourced: schoolsRaw.aiSourced ?? null,
+          }
+        : null;
+
+      const crime: AnalysisResult["crime"] = crimeRawResult
+        ? {
+            totalCrimes: crimeRawResult.totalCrimes,
+            month: crimeRawResult.month,
+            topCategories: crimeRawResult.topCategories,
+            riskLevel: crimeRawResult.riskLevel,
+            commentary: crimeRawResult.commentary,
+            autoRedFlag: crimeRawResult.autoRedFlag,
+            coordinates: crimeRawResult.coordinates,
+            unavailable: crimeRawResult.unavailable ?? null,
+          }
+        : null;
+
+      const broadband: AnalysisResult["broadband"] = broadbandRawResult
+        ? {
+            downloadSpeed: broadbandRawResult.downloadSpeed,
+            uploadSpeed: broadbandRawResult.uploadSpeed,
+            connectionType: broadbandRawResult.connectionType,
+            suitableForRemoteWork: broadbandRawResult.suitableForRemoteWork,
+            mobileSignal: broadbandRawResult.mobileSignal,
+            commentary: broadbandRawResult.commentary,
+            speedRating: broadbandRawResult.speedRating,
+            source: broadbandRawResult.source,
+            unavailable: broadbandRawResult.unavailable ?? null,
+            autoRedFlag: broadbandRawResult.autoRedFlag ?? null,
+          }
+        : null;
+
+      const merged: AnalysisResult = {
+        ...existing,
+        floodRisk: floodRisk ?? existing.floodRisk,
+        nearbySchools: nearbySchools ?? existing.nearbySchools,
+        crime: crime ?? existing.crime,
+        broadband: broadband ?? existing.broadband,
+        partialPostcode: null,
+      };
+      try {
+        await supabaseAdmin
+          .from("saved_analyses")
+          .update({ analysis_json: merged as unknown as Record<string, unknown> })
+          .eq("id", row.id as string);
+      } catch (err) {
+        console.error("[refetchLocalDataForPostcode] update failed:", err);
+      }
+
+      return { ok: true, floodRisk, nearbySchools, crime, broadband };
+    } catch (err) {
+      console.error("[refetchLocalDataForPostcode] failed:", err);
+      return fail((err as Error).message ?? "Unknown error");
+    }
+  });
 // Generates an EPC commentary for a user-entered band when the listing
 // didn't show one. Optionally patches the saved_analyses row so the EPC
 // data persists for paying users without re-running the main analysis.
