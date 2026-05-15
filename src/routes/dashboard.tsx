@@ -382,14 +382,30 @@ function DashboardPage() {
                 return (
                   <li
                     key={r.id}
-                    className="flex w-full flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                    className="group flex w-full flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                     style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)", boxSizing: "border-box" }}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
-                        {price > 0 && <span>{formatGBP(price)}</span>}
-                        <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <button
+                        type="button"
+                        onClick={() => togglePin(r.id, r.pinned)}
+                        aria-label={r.pinned ? "Unpin report" : "Pin report"}
+                        title={r.pinned ? "Unpin from top" : "Pin to top"}
+                        className={`shrink-0 rounded-full p-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 ${r.pinned ? "sm:opacity-100" : ""}`}
+                        style={{ color: r.pinned ? "#D85A30" : "#B8B6AE" }}
+                      >
+                        <Pin
+                          className="h-4 w-4"
+                          fill={r.pinned ? "#D85A30" : "none"}
+                          strokeWidth={2}
+                        />
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
+                          {price > 0 && <span>{formatGBP(price)}</span>}
+                          <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-3 sm:justify-end">
