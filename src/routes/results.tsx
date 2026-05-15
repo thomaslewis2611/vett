@@ -2098,7 +2098,14 @@ function PlanCard({
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
             <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#D85A30" }} />
-            {f}
+            <span>
+              {f}
+              {/^transport links/i.test(f) && (
+                <span className="block text-[11px]" style={{ color: "#888780", marginTop: 2 }}>
+                  London properties only
+                </span>
+              )}
+            </span>
           </li>
         ))}
       </ul>
