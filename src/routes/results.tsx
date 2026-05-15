@@ -2810,8 +2810,18 @@ function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade: _onUpgra
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
             <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
-              Unlock with Buyer Pass to see transport links and commute times
+              Unlock with a Single Report — £4.99 to see transport links and commute times
             </p>
+            {onUpgrade && (
+              <button
+                type="button"
+                onClick={onUpgrade}
+                className="mt-3 hover:underline"
+                style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
+              >
+                Get Single Report — £4.99 →
+              </button>
+            )}
           </div>
         </div>
       </section>
