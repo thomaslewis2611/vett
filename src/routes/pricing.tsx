@@ -76,7 +76,6 @@ function PricingPage() {
               "Area demographics",
               "Compare properties side by side",
               "All reports saved to dashboard",
-              "Report emailed to you",
             ]}
             footnote="One-off payment. Access ends 90 days after purchase."
           />
