@@ -1403,7 +1403,7 @@ function PostcodePromptBanner({
 }: {
   partial: string | null;
   email: string | null;
-  listingUrl: string;
+  listingUrl?: string;
   onSaved: (patch: PostcodePromptPatch) => void;
 }) {
   const refetchFn = useServerFn(refetchLocalDataForPostcode);
