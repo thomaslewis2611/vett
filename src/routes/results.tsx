@@ -1020,6 +1020,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
           listingUrl={listingUrl}
           userEmail={access.email}
           onFloodRiskUpdate={(fr) => setA((prev) => ({ ...prev, floodRisk: fr }))}
@@ -1031,6 +1032,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.nearbySchools == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
         />
 
         {/* Crime statistics — Single Report + Buyer Pass; free sees locked teaser */}
@@ -1039,6 +1041,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.crime == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
         />
 
         {/* Broadband & connectivity — Single Report + Buyer Pass; free sees locked teaser */}
@@ -1047,6 +1050,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.broadband == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
         />
 
         {/* Transport links — Single Report + Buyer Pass; free sees locked teaser */}
@@ -1055,6 +1059,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.transport == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
         />
 
         {/* Sold price history (PropertyData / Land Registry) */}
