@@ -128,9 +128,9 @@ function DashboardPage() {
       // may not yet have a matching saved_analyses row (e.g. the user
       // bought but never opened the report) — surface them so previously
       // purchased reports never disappear after upgrading to Buyer Pass.
-      const { data: tokens } = await supabase
+      const { data: tokens, error: tokensError } = await supabase
         .from("single_report_tokens")
-        .select("id, token, listing_url, analysis_json, created_at")
+        .select("id, token, listing_url, analysis_json, created_at, expires_at, user_email")
         .ilike("user_email", userEmail)
         .order("created_at", { ascending: false });
 
@@ -141,7 +141,26 @@ function DashboardPage() {
         listing_url: string | null;
         analysis_json: any;
         created_at: string;
+        expires_at: string;
+        user_email: string | null;
       }>) ?? [];
+
+      console.log("[dashboard] single_report_tokens lookup", {
+        authUserId,
+        lookupEmail: userEmail,
+        tokenCount: tokenRows.length,
+        error: tokensError?.message ?? null,
+        tokens: tokenRows.map((t) => ({
+          id: t.id,
+          token: t.token,
+          userEmailMatchesAuthEmail: (t.user_email ?? "").toLowerCase() === userEmail.toLowerCase(),
+          hasListingUrl: Boolean(t.listing_url),
+          listingUrl: t.listing_url,
+          hasAnalysisJson: Boolean(t.analysis_json),
+          createdAt: t.created_at,
+          expiresAt: t.expires_at,
+        })),
+      });
 
       // Merge: saved_analyses rows are authoritative (they carry pin state
       // and the freshest analysis_json). For any single_report_token whose
@@ -158,18 +177,31 @@ function DashboardPage() {
       for (const t of tokenRows) {
         const key = t.listing_url ?? `__no_url__token_${t.id}`;
         if (seen.has(key)) continue;
-        if (!t.analysis_json) continue; // skip empty/unused tokens
         seen.add(key);
         merged.push({
           id: `token:${t.token}`,
           listing_url: t.listing_url,
-          analysis_json: t.analysis_json,
+          analysis_json: t.analysis_json ?? {},
           created_at: t.created_at,
           is_pinned: false,
           pinned_at: null,
         });
       }
-      setRows(sortRows(merged));
+      const sortedRows = sortRows(merged);
+      console.log("[dashboard] merged report rows", {
+        passStatus: nextPassStatus,
+        savedCount: savedRows.length,
+        tokenCount: tokenRows.length,
+        mergedCount: sortedRows.length,
+        rows: sortedRows.map((r) => ({
+          id: r.id,
+          source: r.id.startsWith("token:") ? "single_report_token" : "saved_analyses",
+          listingUrl: r.listing_url,
+          hasAnalysisJson: Boolean(r.analysis_json && Object.keys(r.analysis_json).length > 0),
+          createdAt: r.created_at,
+        })),
+      });
+      setRows(sortedRows);
       setLoading(false);
     })();
     return () => {
