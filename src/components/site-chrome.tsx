@@ -242,7 +242,7 @@ export function SiteHeader() {
       className="bg-background sticky top-0 z-40"
       style={{ borderBottom: "0.5px solid rgba(26,17,8,0.12)" }}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-8" style={{ height: 56 }}>
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-8" style={{ height: 56 }}>
         <Link to="/" className="flex items-center gap-2">
           <span
             aria-hidden
