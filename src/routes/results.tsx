@@ -341,17 +341,35 @@ function ResultsPage() {
       }
 
       const startedAt = Date.now();
+      let consecutiveTransientErrors = 0;
       while (true) {
         if (signal?.aborted) throw new Error("ABORTED");
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
         if (signal?.aborted) throw new Error("ABORTED");
-        const status = await getJobFn({ data: { jobId, sessionJwt } });
-        if (status.status === "complete" && status.analysis) {
-          writeCachedAnalysis(status.analysis, url, text, token);
-          return { analysis: status.analysis };
+        // Treat ANY thrown error from the status fetch as transient
+        // (mobile screen-lock kills in-flight fetches with "Load failed",
+        // network blips, gateway timeouts, etc.). Only an explicit
+        // status === "error" from the server should fail the analysis.
+        let status: Awaited<ReturnType<typeof getJobFn>> | null = null;
+        try {
+          status = await getJobFn({ data: { jobId, sessionJwt } });
+          consecutiveTransientErrors = 0;
+        } catch (err) {
+          consecutiveTransientErrors += 1;
+          console.warn("[results] poll transient error, retrying", {
+            jobId,
+            attempt: consecutiveTransientErrors,
+            error: (err as Error)?.message,
+          });
         }
-        if (status.status === "error") {
-          throw new Error(status.error || "Analysis failed");
+        if (status) {
+          if (status.status === "complete" && status.analysis) {
+            writeCachedAnalysis(status.analysis, url, text, token);
+            return { analysis: status.analysis };
+          }
+          if (status.status === "error") {
+            throw new Error(status.error || "Analysis failed");
+          }
         }
         if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
           throw new Error("ANALYSIS_TIMEOUT");
