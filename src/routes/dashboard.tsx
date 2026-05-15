@@ -320,7 +320,7 @@ function DashboardPage() {
                 const a = r.analysis_json ?? {};
                 const address = a?.property?.address ?? r.listing_url ?? "Untitled";
                 const price = a?.property?.price ?? 0;
-                const score = typeof a?.score === "number" ? a.score : null;
+                const score = computeOverallScore(a);
                 return (
                   <li
                     key={r.id}
