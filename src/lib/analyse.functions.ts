@@ -296,14 +296,14 @@ function validateListingUrl(rawUrl: string): URL {
   try {
     parsed = new URL(rawUrl);
   } catch {
-    throw new Error("INVALID_URL: Please provide a valid Rightmove or Zoopla URL.");
+    throw new Error("INVALID_URL: Works best with Rightmove listings · More sites coming soon");
   }
   if (parsed.protocol !== "https:") {
-    throw new Error("INVALID_URL: Only https Rightmove or Zoopla URLs are supported.");
+    throw new Error("INVALID_URL: Works best with Rightmove listings · More sites coming soon");
   }
   if (!ALLOWED_HOSTS.has(parsed.hostname.toLowerCase())) {
     throw new Error(
-      "INVALID_URL: We only support Rightmove and Zoopla listing URLs."
+      "INVALID_URL: Works best with Rightmove listings · More sites coming soon"
     );
   }
   return parsed;
