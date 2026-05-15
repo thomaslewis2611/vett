@@ -25,10 +25,15 @@ export const Route = createFileRoute("/")({
 
 const HEADLINES = [
   { main: "The red flags", highlight: "estate agents won't show you" },
-  { main: "Know exactly what", highlight: "you're buying before you offer" },
-  { main: "What your surveyor", highlight: "finds out too late" },
-  { main: "Don't offer", highlight: "blind" },
-  { main: "The property check estate agents", highlight: "wish didn't exist" },
+  { main: "Know what", highlight: "you're really buying" },
+  { main: "Stop guessing.", highlight: "Start knowing." },
+  { main: "See through the listing.", highlight: "Before you fall in love." },
+  { main: "Buy smarter.", highlight: "Offer better." },
+  { main: "Your unfair advantage", highlight: "in a competitive market." },
+  { main: "The truth behind", highlight: "every listing." },
+  { main: "Spot the red flags", highlight: "before the viewing." },
+  { main: "The second opinion", highlight: "every buyer needs." },
+  { main: "Property analysis for buyers", highlight: "who do their homework." },
 ];
 
 function Index() {
