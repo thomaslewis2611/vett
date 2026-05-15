@@ -878,13 +878,13 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                 metrics: { ...prev.metrics, councilTaxBand: b },
               }))}
             />
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
               <div className="flex items-center justify-between">
                 <span className="text-xs uppercase tracking-wider text-muted-foreground">Stamp duty est.</span>
                 <TrendingDown className="h-4 w-4 text-muted-foreground" />
               </div>
-              <div className="mt-3 text-2xl font-semibold tracking-tight">{formatGBP(stampDuty)}</div>
-              <div className="mt-4 border-t border-border pt-3">
+              <div className="mt-2 text-2xl font-semibold tracking-tight">{formatGBP(stampDuty)}</div>
+              <div className="mt-3 border-t border-border pt-3">
                 <div className="text-[11px]" style={{ color: "#888780" }}>I am buying as a:</div>
                 <div className="mt-2 flex flex-wrap gap-1.5" role="tablist" aria-label="Stamp duty rate">
                   {(["main", "additional", "ftb"] as StampDutyMode[]).map((m) => {
