@@ -755,6 +755,23 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
       console.error("[upgradeToPass] checkout failed:", e);
     }
   };
+  const upgradeToSingle = async (lurl?: string) => {
+    try {
+      const targetUrl = lurl ?? listingUrl ?? "";
+      const r = await checkoutFn({
+        data: {
+          priceId: PRICE_SINGLE,
+          listingUrl: targetUrl,
+          tier: "single",
+          analysisJobId: recallJobId(targetUrl),
+          source: "results_page_upgrade",
+        },
+      });
+      if (r?.url) window.location.href = r.url;
+    } catch (e) {
+      console.error("[upgradeToSingle] checkout failed:", e);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
