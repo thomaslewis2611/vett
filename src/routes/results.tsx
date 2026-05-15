@@ -2242,33 +2242,37 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
       : ppsfPct > 10
       ? "#A32D2D"
       : "#A36A1F";
-  const avgSqFt =
-    typeof areaPpsf === "number" && areaPpsf > 0
-      ? `£${Math.round(areaPpsf)}`
-      : "—";
+  const hasAreaPpsf = typeof areaPpsf === "number" && areaPpsf > 0;
+  const avgSqFt = hasAreaPpsf ? `£${Math.round(areaPpsf)}` : null;
   return (
     <section className="mt-10">
       <h2 className="text-xl font-semibold tracking-tight">Area context</h2>
       <div className="mt-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
-            <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-              Area avg price / sq ft
-            </div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
-              {avgSqFt}
-            </div>
+        {(hasAreaPpsf || ppsfPct !== null) && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            {hasAreaPpsf && (
+              <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
+                <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+                  Area avg price / sq ft
+                </div>
+                <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+                  {avgSqFt}
+                </div>
+              </div>
+            )}
+            {ppsfPct !== null && (
+              <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
+                <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+                  <span>Price per sq ft vs area avg</span>
+                  <ScoreInfoTooltip text="Compares this property's price per sq ft against typical prices per sq ft for similar properties in the area. A negative % means better value per sq ft than average." />
+                </div>
+                <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: ppsfColor }}>
+                  {ppsfText}
+                </div>
+              </div>
+            )}
           </div>
-          <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
-            <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-              <span>Price per sq ft vs area avg</span>
-              <ScoreInfoTooltip text="Compares this property's price per sq ft against typical prices per sq ft for similar properties in the area. A negative % means better value per sq ft than average." />
-            </div>
-            <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: ppsfColor }}>
-              {ppsfText}
-            </div>
-          </div>
-        </div>
+        )}
         {ac.areaDescription && (
           <p className="mt-4 text-sm" style={{ color: "#1A1108" }}>{ac.areaDescription}</p>
         )}
