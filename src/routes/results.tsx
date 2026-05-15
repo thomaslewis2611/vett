@@ -2785,7 +2785,7 @@ function shortMoney(n: number): string {
   }).format(n);
 }
 
-function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
