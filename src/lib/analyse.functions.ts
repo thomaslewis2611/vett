@@ -217,6 +217,7 @@ const analysisSchema = z.object({
     })
     .nullable()
     .optional(),
+  partialPostcode: z.string().nullable().optional(),
 });
 
 export { analysisSchema };
