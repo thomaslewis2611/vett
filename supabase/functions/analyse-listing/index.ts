@@ -487,11 +487,49 @@ function giasRatingToNumber(val: unknown): number | null {
 
 const giasCache = new Map<string, number | null>();
 
+// Normalise a school name for fuzzy matching: lowercase, expand common
+// abbreviations, strip punctuation, and drop generic stopwords.
+const GIAS_STOPWORDS = new Set([
+  "school", "schools", "academy", "the", "of", "and", "a", "for",
+  "community", "foundation", "voluntary", "aided", "controlled",
+]);
+function normaliseSchoolName(raw: string): string {
+  let s = " " + raw.toLowerCase() + " ";
+  s = s.replace(/[\u2018\u2019']/g, "");
+  // Expand common abbreviations (word-boundaries on both sides).
+  const subs: [RegExp, string][] = [
+    [/\bst\.?\b/g, "saint"],
+    [/\bsts\.?\b/g, "saints"],
+    [/\bc\.?\s*of\s*e\.?\b/g, "church of england"],
+    [/\bcofe\b/g, "church of england"],
+    [/\bce\b/g, "church of england"],
+    [/\brc\b/g, "roman catholic"],
+    [/\bjnr\b|\bjr\b/g, "junior"],
+    [/\bpri\b/g, "primary"],
+    [/\bsec\b/g, "secondary"],
+    [/\binf\b/g, "infant"],
+    [/\bnurs\b/g, "nursery"],
+  ];
+  for (const [re, to] of subs) s = s.replace(re, to);
+  s = s.replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+  return s;
+}
+function significantWords(name: string): string[] {
+  return normaliseSchoolName(name).split(" ").filter((w) => w && !GIAS_STOPWORDS.has(w));
+}
+// True if all significant words from `query` appear in `candidate`.
+function fuzzyNameMatch(query: string, candidate: string): boolean {
+  const q = significantWords(query);
+  if (!q.length) return false;
+  const cSet = new Set(significantWords(candidate));
+  return q.every((w) => cSet.has(w));
+}
+
 // Scrapes the Ofsted reports site (reports.ofsted.gov.uk) — the official
 // public source of Ofsted ratings. The DfE GIAS JSON APIs do not expose
 // inspection outcomes publicly, but the reports site does and is stable.
 async function lookupGiasOfsted(name: string, urn: string | null, postcode: string | null): Promise<number | null> {
-  const cacheKey = urn ? `urn:${urn}` : `name:${name.toLowerCase()}|${(postcode ?? "").toLowerCase()}`;
+  const cacheKey = urn ? `urn:${urn}` : `name:${normaliseSchoolName(name)}|${(postcode ?? "").toLowerCase()}`;
   if (giasCache.has(cacheKey)) return giasCache.get(cacheKey) ?? null;
 
   const ua = "Mozilla/5.0 (compatible; RoovrBot/1.0)";
@@ -509,43 +547,74 @@ async function lookupGiasOfsted(name: string, urn: string | null, postcode: stri
     }
   };
 
-  let rating: number | null = null;
-  try {
-    // 1. Resolve to an Ofsted provider URL. Prefer URN, fallback to name+postcode search.
-    let providerPath: string | null = null;
-    const searchTerms: string[] = [];
-    if (urn) searchTerms.push(urn);
-    if (name) searchTerms.push(postcode ? `${name} ${postcode}` : name);
+  // Parse search-result HTML into { providerPath, name } entries so we can
+  // fuzzy-match candidate names rather than blindly taking the first hit.
+  const parseSearchResults = (html: string): { providerPath: string; name: string; urn: string }[] => {
+    const out: { providerPath: string; name: string; urn: string }[] = [];
+    const re = /<a[^>]+href="(\/provider\/(\d+)\/(\d+))"[^>]*>([\s\S]*?)<\/a>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html)) !== null) {
+      const text = m[4].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      if (!text) continue;
+      out.push({ providerPath: m[1], urn: m[3], name: text });
+    }
+    return out;
+  };
 
-    for (const term of searchTerms) {
-      const searchUrl = `https://reports.ofsted.gov.uk/search?q=${encodeURIComponent(term)}&start=0&rows=10`;
-      const html = await fetchText(searchUrl);
-      if (!html) continue;
-      const matches = [...html.matchAll(/\/provider\/(\d+)\/(\d+)/g)];
-      if (!matches.length) continue;
-      // If we have a URN, prefer the result whose URN segment matches.
-      const preferred = urn ? matches.find((m) => m[2] === String(urn)) : null;
-      const m = preferred ?? matches[0];
-      providerPath = `/provider/${m[1]}/${m[2]}`;
-      break;
+  let rating: number | null = null;
+  let providerPath: string | null = null;
+  try {
+    // 1. URN-first lookup — most reliable, no name matching needed.
+    if (urn) {
+      const html = await fetchText(`https://reports.ofsted.gov.uk/search?q=${encodeURIComponent(urn)}&start=0&rows=10`);
+      if (html) {
+        const results = parseSearchResults(html);
+        const hit = results.find((r) => r.urn === String(urn));
+        if (hit) providerPath = hit.providerPath;
+      }
+    }
+
+    // 2. Fall back to name search with fuzzy matching against result titles.
+    if (!providerPath && name) {
+      const term = postcode ? `${name} ${postcode}` : name;
+      const html = await fetchText(`https://reports.ofsted.gov.uk/search?q=${encodeURIComponent(term)}&start=0&rows=10`);
+      if (html) {
+        const results = parseSearchResults(html);
+        // Prefer a result whose name contains all significant words from the query.
+        const hit = results.find((r) => fuzzyNameMatch(name, r.name))
+          // Or vice versa (PropertyData name is a longer variant of GIAS name).
+          ?? results.find((r) => fuzzyNameMatch(r.name, name));
+        if (hit) providerPath = hit.providerPath;
+        else if (results.length) {
+          console.log(`[gias] no fuzzy match for "${name}" (${postcode ?? "no pc"}); top results:`,
+            results.slice(0, 3).map((r) => r.name));
+        } else {
+          console.log(`[gias] no search results for "${name}" (${postcode ?? "no pc"})`);
+        }
+      }
     }
 
     if (providerPath) {
       const html = await fetchText(`https://reports.ofsted.gov.uk${providerPath}`);
       if (html) {
-        // Current rating is marked with class "rating--selected" containing
-        // a <span>Outstanding|Good|Satisfactory|Inadequate</span>.
         const sel = html.match(/rating--selected[^>]*>\s*<span>([^<]+)<\/span>/i);
         if (sel) rating = giasRatingToNumber(sel[1]);
-        // Some pages use "Requires improvement" instead of "Satisfactory".
         if (rating == null) {
           const alt = html.match(/aria-current="true"[^>]*>\s*<span>([^<]+)<\/span>/i);
           if (alt) rating = giasRatingToNumber(alt[1]);
         }
+        if (rating == null) {
+          console.log(`[gias] provider page found but no rating parsed: ${providerPath} (school "${name}")`);
+        }
       }
     }
-  } catch {
+  } catch (e) {
+    console.log(`[gias] lookup error for "${name}":`, (e as Error).message);
     rating = null;
+  }
+
+  if (rating == null) {
+    console.log(`[gias] unmatched: name="${name}" urn=${urn ?? "n/a"} postcode=${postcode ?? "n/a"}`);
   }
 
   giasCache.set(cacheKey, rating);
