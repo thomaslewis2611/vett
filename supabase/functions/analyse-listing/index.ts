@@ -569,27 +569,30 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       );
     }
 
-    // Fetch PropertyData (with 24h postcode cache) BEFORE Claude so we can prepend context.
+    // Run PropertyData fetch and Claude analysis in PARALLEL to minimise total latency.
+    // Claude reasons over the listing text; PropertyData enriches the saved payload
+    // (and is mapped into nearbySchools/crime/broadband below) — they don't depend on
+    // each other, so firing them simultaneously roughly halves wall time.
     const postcode = extractPostcode(listingContent);
-    let pd: PdResults = {};
-    if (postcode) {
+
+    const pdPromise: Promise<PdResults> = (async () => {
+      if (!postcode) return {};
       const cached = await getCachedPropertyData(supabase, postcode);
       if (cached) {
         console.log(`[analyse-listing] propertydata cache hit ${postcode}`);
-        pd = cached;
-      } else {
-        try {
-          pd = await fetchPropertyDataAll(postcode);
-          await setCachedPropertyData(supabase, postcode, pd);
-        } catch (e) {
-          console.warn("[analyse-listing] propertydata fetch failed", e);
-          pd = {};
-        }
+        return cached;
       }
-    }
+      try {
+        const fresh = await fetchPropertyDataAll(postcode);
+        await setCachedPropertyData(supabase, postcode, fresh);
+        return fresh;
+      } catch (e) {
+        console.warn("[analyse-listing] propertydata fetch failed", e);
+        return {};
+      }
+    })();
 
-    const propertyDataContext = postcode ? buildPropertyDataContext(pd) : "";
-    const userContent = `${propertyDataContext}\nListing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
+    const userContent = `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
 
     const todayStr = new Date().toLocaleDateString("en-GB", {
       day: "numeric",
@@ -600,21 +603,26 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     const dateLine = `Today's date is ${todayStr}. Use this as your reference for all date-related reasoning. Do not flag dates in the current year as errors or typos unless they are logically impossible.\n\n`;
     const systemPrompt = dateLine + SYSTEM_PROMPT;
 
-    let parsed: Record<string, unknown>;
-    try {
-      console.log("[analyse-listing] calling Claude (primary)");
-      const text = await callClaude(systemPrompt, userContent, 6000);
-      console.log(`[analyse-listing] Claude response length: ${text.length}`);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
-    } catch (primaryErr) {
-      console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
-      const simplified =
-        systemPrompt +
-        "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
-      const text = await callClaude(simplified, userContent, 6000);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
-      parsed.renovationCosts = null;
-    }
+    const claudePromise: Promise<Record<string, unknown>> = (async () => {
+      try {
+        console.log("[analyse-listing] calling Claude (primary)");
+        const text = await callClaude(systemPrompt, userContent, 6000);
+        console.log(`[analyse-listing] Claude response length: ${text.length}`);
+        return parseWithRepair(text) as Record<string, unknown>;
+      } catch (primaryErr) {
+        console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
+        const simplified =
+          systemPrompt +
+          "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+        const text = await callClaude(simplified, userContent, 6000);
+        const out = parseWithRepair(text) as Record<string, unknown>;
+        out.renovationCosts = null;
+        return out;
+      }
+    })();
+
+    const [pd, parsedResult] = await Promise.all([pdPromise, claudePromise]);
+    const parsed: Record<string, unknown> = parsedResult;
 
     // Make sure listingUrl is set on the property block.
     const property = (parsed.property ?? {}) as Record<string, unknown>;
