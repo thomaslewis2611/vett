@@ -2485,6 +2485,7 @@ function PlanCard({
   id,
   title,
   price,
+  originalPrice,
   cadence,
   features,
   highlight,
@@ -2499,6 +2500,7 @@ function PlanCard({
   id?: string;
   title: string;
   price: string;
+  originalPrice?: string;
   cadence: string;
   features: string[];
   highlight?: boolean;
@@ -2529,7 +2531,10 @@ function PlanCard({
         </span>
       )}
       <h4 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>{title}</h4>
-      <div className="mt-3 flex items-baseline gap-1">
+      <div className="mt-3 flex items-baseline gap-2">
+        {originalPrice && (
+          <span style={{ fontSize: 18, color: "#888780", textDecoration: "line-through" }}>{originalPrice}</span>
+        )}
         <span style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>{price}</span>
       </div>
       <p className="mt-1" style={{ fontSize: 12, color: "#888780" }}>{cadence}</p>
