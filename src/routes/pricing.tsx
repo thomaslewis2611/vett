@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
+import { usePassDiscount } from "@/hooks/use-pass-discount";
+import { createCheckoutSession } from "@/lib/checkout.functions";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
@@ -62,23 +66,7 @@ function PricingPage() {
             ]}
             upsell={{ text: "Upgrade to Buyer Pass for AI chat, comparisons and unlimited analyses →", targetId: "buyer-pass-card" }}
           />
-          <Plan
-            id="buyer-pass-card"
-            title="Buyer Pass"
-            price="£24.99"
-            cadence="90-day pass · one-off payment"
-            cta="Get Buyer Pass"
-            highlight
-            headline="Your entire property search, covered"
-            plusIntro="Everything in Single Report, plus:"
-            features={[
-              "Unlimited analyses for 90 days",
-              "AI chat on every property",
-              "Compare your property scores",
-              "All reports saved to dashboard",
-            ]}
-            footnote="One-off payment. Access ends 90 days after purchase."
-          />
+          <BuyerPassPlan />
         </div>
       </main>
 
@@ -87,10 +75,79 @@ function PricingPage() {
   );
 }
 
+function BuyerPassPlan() {
+  const discount = usePassDiscount();
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const [loading, setLoading] = useState(false);
+
+  const startDiscountCheckout = async () => {
+    setLoading(true);
+    try {
+      const r = await checkoutFn({
+        data: {
+          priceId: discount.priceId,
+          listingUrl: "",
+          tier: "pass",
+          source: "pricing_page_discount",
+        },
+      });
+      if (r?.url) window.location.href = r.url;
+    } catch {
+      setLoading(false);
+    }
+  };
+
+  if (discount.eligible) {
+    return (
+      <Plan
+        id="buyer-pass-card"
+        title="Buyer Pass"
+        price="£20.00"
+        originalPrice="£24.99"
+        cadence="90-day pass · one-off payment"
+        cta={loading ? "Redirecting…" : "Upgrade for £20 →"}
+        highlight
+        headline="Your entire property search, covered"
+        subnote="You've already spent £4.99 on a Single Report — we'll deduct it from your Buyer Pass"
+        plusIntro="Everything in Single Report, plus:"
+        features={[
+          "Unlimited analyses for 90 days",
+          "AI chat on every property",
+          "Compare your property scores",
+          "All reports saved to dashboard",
+        ]}
+        footnote="One-off payment. Access ends 90 days after purchase."
+        onClick={startDiscountCheckout}
+      />
+    );
+  }
+
+  return (
+    <Plan
+      id="buyer-pass-card"
+      title="Buyer Pass"
+      price="£24.99"
+      cadence="90-day pass · one-off payment"
+      cta="Get Buyer Pass"
+      highlight
+      headline="Your entire property search, covered"
+      plusIntro="Everything in Single Report, plus:"
+      features={[
+        "Unlimited analyses for 90 days",
+        "AI chat on every property",
+        "Compare your property scores",
+        "All reports saved to dashboard",
+      ]}
+      footnote="One-off payment. Access ends 90 days after purchase."
+    />
+  );
+}
+
 function Plan({
   id,
   title,
   price,
+  originalPrice,
   cadence,
   features,
   cta,
@@ -100,10 +157,12 @@ function Plan({
   subnote,
   plusIntro,
   upsell,
+  onClick,
 }: {
   id?: string;
   title: string;
   price: string;
+  originalPrice?: string;
   cadence: string;
   features: string[];
   cta: string;
@@ -113,6 +172,7 @@ function Plan({
   subnote?: string;
   plusIntro?: string;
   upsell?: { text: string; targetId: string };
+  onClick?: () => void;
 }) {
   return (
     <div
@@ -141,7 +201,12 @@ function Plan({
         </span>
       )}
       <h3 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>{title}</h3>
-      <div className="mt-3 flex items-baseline gap-1">
+      <div className="mt-3 flex items-baseline gap-2">
+        {originalPrice && (
+          <span style={{ fontSize: 18, color: "#888780", textDecoration: "line-through" }}>
+            {originalPrice}
+          </span>
+        )}
         <span style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>
           {price}
         </span>
@@ -195,20 +260,39 @@ function Plan({
           {footnote}
         </p>
       )}
-      <Link
-        to="/"
-        className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
-        style={{
-          background: highlight ? "#D85A30" : "#1A1108",
-          color: "#FFFDF9",
-          fontSize: 13,
-          fontWeight: 500,
-          borderRadius: 100,
-          padding: "12px 24px",
-        }}
-      >
-        {cta}
-      </Link>
+      {onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
+          style={{
+            background: highlight ? "#D85A30" : "#1A1108",
+            color: "#FFFDF9",
+            fontSize: 13,
+            fontWeight: 500,
+            borderRadius: 100,
+            padding: "12px 24px",
+            border: 0,
+          }}
+        >
+          {cta}
+        </button>
+      ) : (
+        <Link
+          to="/"
+          className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
+          style={{
+            background: highlight ? "#D85A30" : "#1A1108",
+            color: "#FFFDF9",
+            fontSize: 13,
+            fontWeight: 500,
+            borderRadius: 100,
+            padding: "12px 24px",
+          }}
+        >
+          {cta}
+        </Link>
+      )}
     </div>
   );
 }

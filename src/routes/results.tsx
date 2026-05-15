@@ -27,6 +27,7 @@ import { sendReportEmail } from "@/lib/email-report.functions";
 import { validateSingleReportToken, checkBuyerPassByEmail, getSingleReportByEmail } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { UpsellPassModal, shouldShowPassUpsell } from "@/components/upsell-pass-modal";
+import { usePassDiscount } from "@/hooks/use-pass-discount";
 
 const PRICE_SINGLE = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
 const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
@@ -2312,12 +2313,18 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
   const [restoreEmail, setRestoreEmail] = useState("");
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
   const [upsellOpen, setUpsellOpen] = useState(false);
+  const passDiscount = usePassDiscount();
 
   const startCheckout = async (tier: "single" | "pass") => {
     setErr(null);
     setLoadingTier(tier);
     try {
-      const priceId = tier === "single" ? PRICE_SINGLE : PRICE_PASS;
+      const priceId =
+        tier === "single"
+          ? PRICE_SINGLE
+          : passDiscount.eligible
+            ? passDiscount.priceId
+            : PRICE_PASS;
       const res = await checkoutFn({
         data: {
           priceId,
@@ -2411,12 +2418,18 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         <PlanCard
           id="buyer-pass-card"
           title="Buyer Pass"
-          price="£24.99"
+          price={passDiscount.eligible ? "£20.00" : "£24.99"}
+          originalPrice={passDiscount.eligible ? "£24.99" : undefined}
           cadence="90-day pass · one-off payment"
-          cta="Get Buyer Pass"
+          cta={passDiscount.eligible ? "Upgrade for £20 →" : "Get Buyer Pass"}
           highlight
           loading={loadingTier === "pass"}
           onClick={() => handleBuy("pass")}
+          subnote={
+            passDiscount.eligible
+              ? "You've already spent £4.99 on a Single Report — we'll deduct it from your Buyer Pass"
+              : undefined
+          }
           plusIntro="Everything in Single Report, plus:"
           features={[
             "Unlimited analyses for 90 days",
@@ -2472,6 +2485,7 @@ function PlanCard({
   id,
   title,
   price,
+  originalPrice,
   cadence,
   features,
   highlight,
@@ -2486,6 +2500,7 @@ function PlanCard({
   id?: string;
   title: string;
   price: string;
+  originalPrice?: string;
   cadence: string;
   features: string[];
   highlight?: boolean;
@@ -2516,7 +2531,10 @@ function PlanCard({
         </span>
       )}
       <h4 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>{title}</h4>
-      <div className="mt-3 flex items-baseline gap-1">
+      <div className="mt-3 flex items-baseline gap-2">
+        {originalPrice && (
+          <span style={{ fontSize: 18, color: "#888780", textDecoration: "line-through" }}>{originalPrice}</span>
+        )}
         <span style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>{price}</span>
       </div>
       <p className="mt-1" style={{ fontSize: 12, color: "#888780" }}>{cadence}</p>
