@@ -86,11 +86,13 @@ function DashboardPage() {
     (async () => {
       const { data } = await supabase.auth.getUser();
       if (cancelled) return;
+      const authUserId = data.user?.id ?? null;
       const userEmail = data.user?.email ?? null;
       if (!userEmail) {
         navigate({ to: "/" });
         return;
       }
+      console.log("[dashboard] authenticated user", { userId: authUserId, email: userEmail });
       // Confirm Buyer Pass row exists (active OR expired)
       const { data: bp } = await supabase
         .from("buyer_pass_users")
