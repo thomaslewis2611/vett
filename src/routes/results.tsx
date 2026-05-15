@@ -2697,7 +2697,7 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
   const ppsfPct = haveBoth ? ((propPpsf - areaPpsf) / areaPpsf) * 100 : null;
   const ppsfText =
     ppsfPct === null
-      ? "Insufficient data"
+      ? null
       : `${ppsfPct > 0 ? "+" : ""}${ppsfPct.toFixed(1)}%`;
   const ppsfColor =
     ppsfPct === null
@@ -2709,30 +2709,48 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
       : "#A36A1F";
   const hasAreaPpsf = typeof areaPpsf === "number" && areaPpsf > 0;
   const avgSqFt = hasAreaPpsf ? `£${Math.round(areaPpsf)}` : null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pd = (analysis as any).propertyData ?? null;
+  const askingAvg =
+    pd?.pricesPerSqf?.average && pd.pricesPerSqf.average > 0
+      ? Math.round(pd.pricesPerSqf.average)
+      : null;
+  const soldAvg =
+    pd?.soldPricesPerSqf?.average && pd.soldPricesPerSqf.average > 0
+      ? Math.round(pd.soldPricesPerSqf.average)
+      : null;
   return (
     <section className="mt-10">
       <h2 className="text-xl font-semibold tracking-tight">Area context</h2>
       <div className="mt-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-        {(hasAreaPpsf || ppsfPct !== null) && (
+        {(hasAreaPpsf || ppsfText) && (
           <div className="grid gap-4 sm:grid-cols-2">
             {hasAreaPpsf && (
               <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
                 <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-                  Area avg price / sq ft
+                  Area avg price / sq ft (sold)
                 </div>
                 <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
                   {avgSqFt}
                 </div>
+                {askingAvg && soldAvg && (
+                  <div className="mt-2 text-[11px]" style={{ color: "#5F5E5A", lineHeight: 1.5 }}>
+                    Current asking £{askingAvg.toLocaleString()}/sqft vs sold £{soldAvg.toLocaleString()}/sqft
+                  </div>
+                )}
               </div>
             )}
-            {ppsfPct !== null && (
+            {ppsfText && (
               <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
                 <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
                   <span>Price per sq ft vs area avg</span>
-                  <ScoreInfoTooltip text="Compares this property's price per sq ft against typical prices per sq ft for similar properties in the area. A negative % means better value per sq ft than average." />
+                  <ScoreInfoTooltip text="Compares this property's price per sq ft against the local sold £/sqft average from Land Registry data. A negative % means better value per sq ft than typical sold prices." />
                 </div>
                 <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: ppsfColor }}>
                   {ppsfText}
+                </div>
+                <div className="mt-1 text-[11px]" style={{ color: "#5F5E5A" }}>
+                  {ppsfPct !== null && ppsfPct > 0 ? "above" : "below"} area avg
                 </div>
               </div>
             )}
@@ -2745,7 +2763,9 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
           <p className="mt-2 text-sm" style={{ color: "#1A1108" }}>{ac.comparableNote}</p>
         )}
         <p className="mt-4 text-xs" style={{ color: "#888780" }}>
-          Area estimates based on listing data and Claude's training knowledge.
+          {soldAvg
+            ? "Area £/sqft from PropertyData (Land Registry sold transactions)."
+            : "Area estimates based on listing data and Claude's training knowledge."}
         </p>
       </div>
     </section>
