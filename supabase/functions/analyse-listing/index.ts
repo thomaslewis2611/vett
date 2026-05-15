@@ -339,6 +339,8 @@ const PD_ENDPOINTS = [
   "listed-buildings",
   "conservation-area",
   "ptal",
+  "prices-per-sqf",
+  "sold-prices-per-sqf",
 ] as const;
 
 const LONDON_POSTCODE_AREAS = new Set([
