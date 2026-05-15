@@ -2369,16 +2369,17 @@ function PlanningReferenceSection({ analysis }: { analysis: AnalysisResult }) {
 }
 
 function isAuctionAnalysis(a: AnalysisResult): boolean {
-  if (a.negotiation?.isAuction) return true;
-  const hay = [
-    ...(a.redFlags ?? []).map((f) => `${f.title} ${f.detail}`),
-    a.negotiation?.rationale ?? "",
-    a.scoreLabel ?? "",
-    a.property?.type ?? "",
-  ]
-    .join(" ")
-    .toLowerCase();
-  return /\bauction\b/.test(hay);
+  // Trust only the explicit auction flag from analysis, or unambiguous
+  // auction language in the property type itself. Do NOT scan red-flag
+  // text or rationale — those routinely mention "auction" in passing
+  // (e.g. "not an auction property", "guide price ≠ auction") and were
+  // causing false positives on standard residential listings.
+  if (a.negotiation?.isAuction === true) return true;
+  const type = (a.property?.type ?? "").toLowerCase();
+  if (/\bauction\b|\bauctioneer\b|\blot\s*number\b|modern method of auction/.test(type)) {
+    return true;
+  }
+  return false;
 }
 
 function AuctionWarning({ analysis }: { analysis: AnalysisResult }) {
