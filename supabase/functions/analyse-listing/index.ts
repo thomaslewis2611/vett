@@ -386,26 +386,57 @@ async function runJob(jobId: string, url: string, pastedText: string) {
 
     const userContent = `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
 
-    let parsed: Record<string, unknown>;
-    try {
-      console.log("[analyse-listing] calling Claude (primary)");
-      const text = await callClaude(SYSTEM_PROMPT, userContent, 6000);
-      console.log(`[analyse-listing] Claude response length: ${text.length}`);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
-    } catch (primaryErr) {
-      console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
-      const simplified =
-        SYSTEM_PROMPT +
-        "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
-      const text = await callClaude(simplified, userContent, 6000);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
-      parsed.renovationCosts = null;
-    }
+    // Kick off external API enrichment in parallel with Claude.
+    const postcode = extractPostcode(listingContent);
+    const externalsPromise = (async () => {
+      let crimeStats: unknown = null;
+      let broadbandData: unknown = null;
+      let schoolsData: unknown = null;
+      if (!postcode) return { crimeStats, broadbandData, schoolsData };
+      const geo = await fetchGeo(postcode);
+      const [crime, bb, schools] = await Promise.all([
+        geo ? fetchCrimeStats(geo.lat, geo.lng) : Promise.resolve(null),
+        fetchBroadband(postcode),
+        fetchSchools(postcode),
+      ]);
+      crimeStats = crime;
+      broadbandData = bb;
+      schoolsData = schools;
+      return { crimeStats, broadbandData, schoolsData };
+    })().catch((e) => {
+      console.warn("[analyse-listing] external enrichment failed", e);
+      return { crimeStats: null, broadbandData: null, schoolsData: null };
+    });
+
+    const claudePromise = (async () => {
+      try {
+        console.log("[analyse-listing] calling Claude (primary)");
+        const text = await callClaude(SYSTEM_PROMPT, userContent, 6000);
+        console.log(`[analyse-listing] Claude response length: ${text.length}`);
+        return parseWithRepair(text) as Record<string, unknown>;
+      } catch (primaryErr) {
+        console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
+        const simplified =
+          SYSTEM_PROMPT +
+          "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+        const text = await callClaude(simplified, userContent, 6000);
+        const p = parseWithRepair(text) as Record<string, unknown>;
+        p.renovationCosts = null;
+        return p;
+      }
+    })();
+
+    const [parsed, externals] = await Promise.all([claudePromise, externalsPromise]);
 
     // Make sure listingUrl is set on the property block.
     const property = (parsed.property ?? {}) as Record<string, unknown>;
     if (!property.listingUrl) property.listingUrl = url || "";
     parsed.property = property;
+
+    // Merge external enrichment (planningReference comes from Claude directly).
+    parsed.crimeStats = externals.crimeStats;
+    parsed.broadbandData = externals.broadbandData;
+    parsed.schoolsData = externals.schoolsData;
 
     const { error: updErr } = await supabase
       .from("analysis_jobs")
