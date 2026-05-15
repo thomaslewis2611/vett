@@ -875,10 +875,12 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
               value={a.metrics.daysOnMarket > 0 ? `${a.metrics.daysOnMarket}` : "—"}
               icon={Calendar}
             />
-            <MetricCard
-              label="Council tax band"
-              value={a.metrics.councilTaxBand}
-              icon={PoundSterling}
+            <CouncilTaxBandCard
+              band={a.metrics.councilTaxBand}
+              onSave={(b) => setA((prev) => ({
+                ...prev,
+                metrics: { ...prev.metrics, councilTaxBand: b },
+              }))}
             />
             <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
               <div className="flex items-center justify-between">
