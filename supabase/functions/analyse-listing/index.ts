@@ -709,6 +709,15 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     const mappedPtal = mapPdPtal(pd["ptal"]);
     if (mappedPtal) parsed.ptal = mappedPtal;
 
+    // Track whether the listing only yielded a partial (outward) postcode so the
+    // UI can prompt the user to enter the full postcode for local data.
+    if (!postcode) {
+      const partial = extractPartialPostcode(listingContent);
+      parsed.partialPostcode = partial ?? null;
+    } else {
+      parsed.partialPostcode = null;
+    }
+
     const { error: updErr } = await supabase
       .from("analysis_jobs")
       .update({
