@@ -162,28 +162,26 @@ function DashboardPage() {
 
   const togglePin = async (id: string, current: boolean) => {
     const next = !current;
-    setRows((prev) => {
-      const updated = prev.map((r) => (r.id === id ? { ...r, pinned: next } : r));
-      updated.sort((a, b) => {
-        if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-      return updated;
-    });
+    const nextPinnedAt = next ? new Date().toISOString() : null;
+    setRows((prev) =>
+      sortRows(
+        prev.map((r) =>
+          r.id === id ? { ...r, is_pinned: next, pinned_at: nextPinnedAt } : r,
+        ),
+      ),
+    );
     const { error } = await supabase
       .from("saved_analyses")
-      .update({ pinned: next })
+      .update({ is_pinned: next, pinned_at: nextPinnedAt })
       .eq("id", id);
     if (error) {
-      // Revert on failure
-      setRows((prev) => {
-        const reverted = prev.map((r) => (r.id === id ? { ...r, pinned: current } : r));
-        reverted.sort((a, b) => {
-          if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-        return reverted;
-      });
+      setRows((prev) =>
+        sortRows(
+          prev.map((r) =>
+            r.id === id ? { ...r, is_pinned: current, pinned_at: current ? r.pinned_at : null } : r,
+          ),
+        ),
+      );
     }
   };
 
