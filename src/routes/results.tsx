@@ -3224,7 +3224,7 @@ function EmailReportButton({
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className="flex w-full min-w-0 max-w-full flex-col items-end gap-2">
       {showInput && !userEmail ? (
         <form
           onSubmit={(e) => {
@@ -3232,7 +3232,7 @@ function EmailReportButton({
             const v = emailInput.trim();
             if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) void send(v);
           }}
-          className="flex items-center gap-2"
+          className="flex w-full min-w-0 items-center gap-2"
         >
           <input
             type="email"
