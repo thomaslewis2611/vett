@@ -625,6 +625,12 @@ ${JSON.stringify(pdData(pd["internet-speed"]) || null)}
 
 SCHOOLS (closest 5: 3 primary + 2 secondary):
 ${JSON.stringify(pdData(pd["schools"]) || [])}
+
+LIVE LOCAL ASKING £/SQFT (current market — use as secondary reference):
+${JSON.stringify(mapPdPpsf(pd["prices-per-sqf"]) || null)}
+
+LOCAL SOLD £/SQFT (most recent sold transactions — USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this):
+${JSON.stringify(mapPdPpsf(pd["sold-prices-per-sqf"]) || null)}
 `;
 }
 
