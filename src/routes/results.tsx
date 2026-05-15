@@ -3241,6 +3241,7 @@ function EmailReportButton({
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder="your@email.com"
             disabled={status === "sending"}
+            className="w-full min-w-0 sm:min-w-[200px]"
             style={{
               border: "1px solid rgba(26,17,8,0.2)",
               background: "#FFFDF9",
@@ -3248,7 +3249,6 @@ function EmailReportButton({
               fontSize: 13,
               padding: "7px 12px",
               color: "#1A1108",
-              minWidth: 200,
             }}
           />
           <button
