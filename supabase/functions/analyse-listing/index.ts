@@ -754,13 +754,14 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     const mappedPtal = mapPdPtal(pd["ptal"]);
     if (mappedPtal) parsed.ptal = mappedPtal;
 
-    // Track whether the listing only yielded a partial (outward) postcode so the
-    // UI can prompt the user to enter the full postcode for local data.
-    if (!postcode) {
-      const partial = extractPartialPostcode(listingContent);
-      parsed.partialPostcode = partial ?? null;
+    // Track partial / inferred postcode state so the UI can prompt the user
+    // (partial → no usable postcode at all; inferred → we used Claude's guess).
+    parsed.partialPostcode = postcode ? null : partialPostcode;
+    parsed.inferredPostcode = inferredPostcode || null;
+    if (inferredPostcode) {
+      parsed.inferredPostcodeValue = postcode;
     } else {
-      parsed.partialPostcode = null;
+      parsed.inferredPostcodeValue = null;
     }
 
     const { error: updErr } = await supabase
