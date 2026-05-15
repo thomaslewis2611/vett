@@ -1,6 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { Check } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
+import { usePassDiscount } from "@/hooks/use-pass-discount";
+import { createCheckoutSession } from "@/lib/checkout.functions";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
