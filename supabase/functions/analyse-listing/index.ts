@@ -183,13 +183,13 @@ PLANNING REFERENCE: Detect any UK planning reference numbers in the listing text
 PROPERTYDATA CONTEXT: At the top of the listing content you will find official PropertyData API results. Use these as ground truth facts — they override any estimates you would otherwise make:
 - SOLD PRICES: Use these for price history section and comparable analysis. These are real Land Registry transactions.
 - FLOOR AREAS: If the listing says "Ask agent" for sq ft but floor areas data is available, use the most recent floor area for this property type in the postcode.
-- CAPITAL GROWTH: Use for area context commentary — quote the actual growth percentage.
+- CAPITAL GROWTH: Use for area pricing analysis commentary — quote the actual growth percentage.
 - FLOOD RISK: Use PropertyData flood risk data instead of estimating. Quote the actual risk level.
 - LISTED BUILDINGS: If this property appears in listed buildings data, flag it and set listingTransparency lower if the listing does not mention it.
 - CONSERVATION AREA: If in a conservation area, mention implications for extensions and alterations.
 - PLANNING APPLICATIONS: Use recent planning applications for context. If there are nearby large developments, flag as a consideration.
-- CRIME: Use actual crime data for area context. If crime is notably high, flag it.
-- INTERNET SPEED: Quote actual speeds in area context.
+- CRIME: Use actual crime data for area pricing analysis. If crime is notably high, flag it.
+- INTERNET SPEED: Quote actual speeds in area pricing analysis.
 - SCHOOLS: Use actual school data with Ofsted ratings.
 - ENERGY EFFICIENCY: If EPC data is available from PropertyData, use it instead of extracting from listing text.
 
@@ -706,7 +706,7 @@ function buildPropertyDataContext(pd: PdResults): string {
 SOLD PRICES (last 10 sales in this postcode):
 ${JSON.stringify(slice(pdData(pd["sold-prices"]), 10) || [])}
 
-CAPITAL GROWTH (area — use for area context commentary and resale potential scoring):
+CAPITAL GROWTH (area — use for area pricing analysis commentary and resale potential scoring):
 ${JSON.stringify(pdData(pd["growth"]) || null)}
 
 FLOOD RISK:
