@@ -4223,11 +4223,12 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
 
   const features = [
     "Unlimited analyses for 90 days",
-    "AI chat — ask anything about this property",
-    "Seller motivation score",
-    "Renovation cost estimator",
+    "AI chat on every property",
+    "Capital growth (1yr/3yr/5yr breakdown)",
+    "Area demographics",
     "Compare properties side by side",
-    "All reports saved to your account",
+    "All reports saved to dashboard",
+    "Report emailed to you",
   ];
 
   return (
