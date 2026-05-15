@@ -119,7 +119,7 @@ function DashboardPage() {
       // Pull every saved analysis for this user (RLS-scoped to the
       // current email). We deliberately do NOT cap by limit here so a Buyer
       // Pass upgrade never appears to "hide" earlier Single Report rows.
-      const { data: saved } = await supabase
+      const { data: saved, error: savedError } = await supabase
         .from("saved_analyses")
         .select("id, listing_url, analysis_json, created_at, is_pinned, pinned_at")
         .order("created_at", { ascending: false });
@@ -191,6 +191,7 @@ function DashboardPage() {
       console.log("[dashboard] merged report rows", {
         passStatus: nextPassStatus,
         savedCount: savedRows.length,
+        savedError: savedError?.message ?? null,
         tokenCount: tokenRows.length,
         mergedCount: sortedRows.length,
         rows: sortedRows.map((r) => ({
