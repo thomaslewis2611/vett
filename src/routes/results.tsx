@@ -1421,54 +1421,49 @@ function LockedFeatureCard({
   );
 }
 
+const FULL_REPORT_FEATURES: { title: string; sub: string }[] = [
+  { title: "All red flags", sub: "See every issue we found" },
+  { title: "True cost breakdown", sub: "Total upfront + monthly costs" },
+  { title: "Negotiation strategy", sub: "Recommended offer and your leverage" },
+  { title: "Flood risk", sub: "Environment Agency data — insurance and mortgage implications" },
+  { title: "Nearby schools", sub: "Ofsted ratings within 5 miles" },
+  { title: "Crime statistics", sub: "Local crime data by category" },
+  { title: "Broadband & connectivity", sub: "Real download speeds for this postcode" },
+  { title: "Transport links", sub: "Nearest stations, buses and commute times" },
+  { title: "EPC analysis", sub: "Energy rating and improvement costs" },
+  { title: "Stamp duty calculator", sub: "First-time buyer, main residence and additional property" },
+  { title: "Viewing checklist", sub: "What to check on the day" },
+  { title: "Renovation cost estimate", sub: "What it would cost" },
+];
+
 function LockedFeaturesGrid() {
   return (
     <div>
       <div className="mb-4">
         <h2 className="text-xl font-semibold tracking-tight">What's included in the full report</h2>
-        <p className="text-sm text-muted-foreground">A preview of everything you unlock below.</p>
+        <p className="text-sm text-muted-foreground">Everything you unlock below.</p>
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <LockedFeatureCard title="All red flags" sub="See every issue we found">
-          <div>• Lease has 89 years remaining — below mortgage threshold</div>
-          <div>• EPC rating not disclosed — possible E/F/G</div>
-          <div>• Photos taken in poor light — north-facing rooms?</div>
-        </LockedFeatureCard>
-        <LockedFeatureCard title="True cost breakdown" sub="Total upfront + monthly costs">
-          <div>Total upfront: £710,600</div>
-          <div>Monthly mortgage: £3,120</div>
-          <div>Stamp duty: £21,750</div>
-        </LockedFeatureCard>
-        <LockedFeatureCard title="Negotiation strategy" sub="Recommended offer and your leverage">
-          <div>Recommended offer: £635,000 – £655,000</div>
-          <div>4–7% below asking — 47 days on market</div>
-        </LockedFeatureCard>
-        <LockedFeatureCard
-          title="Flood risk"
-          sub="Environment Agency data — insurance and mortgage implications"
-        >
-          <span
-            className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold"
-            style={{ background: "#FCE5DD", color: "#D85A30" }}
-          >
-            Medium risk
-          </span>
-        </LockedFeatureCard>
-        <LockedFeatureCard
-          title="Nearby schools"
-          sub="Ofsted ratings within 5 miles — coming soon"
-          comingSoon
-        >
-          <div>Coming soon</div>
-        </LockedFeatureCard>
-        <LockedFeatureCard title="AI chat" sub="Ask anything about this property — Buyer Pass only">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        {FULL_REPORT_FEATURES.map((f) => (
           <div
-            className="inline-block rounded-2xl px-3 py-2"
-            style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)" }}
+            key={f.title}
+            style={{
+              background: "#F1EFE8",
+              borderRadius: 12,
+              padding: 14,
+            }}
           >
-            Is this a good price for the area?
+            <div className="flex items-center gap-1.5">
+              <Lock className="h-3.5 w-3.5 shrink-0" style={{ color: "#D85A30" }} />
+              <h4 className="text-sm font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+                {f.title}
+              </h4>
+            </div>
+            <p className="mt-1 text-[12px]" style={{ color: "#5F5E5A", lineHeight: 1.45 }}>
+              {f.sub}
+            </p>
           </div>
-        </LockedFeatureCard>
+        ))}
       </div>
     </div>
   );
