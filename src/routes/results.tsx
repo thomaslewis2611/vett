@@ -267,13 +267,16 @@ function ResultsPage() {
   const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
 
   const POLL_INTERVAL_MS = 2000;
-  const POLL_TIMEOUT_MS = 90_000;
+  // Long timeout to tolerate mobile screen-locks suspending JS for minutes.
+  const POLL_TIMEOUT_MS = 10 * 60_000;
+  const [wasHidden, setWasHidden] = useState(false);
+  const [showResumeBanner, setShowResumeBanner] = useState(false);
 
   type QueryResult = { analysis: AnalysisResult; savedOwnerEmail?: string | null; savedListingUrl?: string | null };
 
   const query = useQuery<QueryResult>({
     queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
-    queryFn: async (): Promise<QueryResult> => {
+    queryFn: async ({ signal }): Promise<QueryResult> => {
       if (saved_id) {
         // Wait for auth session to hydrate so the bearer token is attached.
         const { data: sess } = await supabase.auth.getSession();
@@ -304,19 +307,42 @@ function ResultsPage() {
         };
       }
 
-      // Async job pipeline: start a job, then poll until it completes.
+      // Async job pipeline: start a job (or resume an in-flight one stored in
+      // sessionStorage), then poll until it completes. Resuming is what makes
+      // mobile screen-lock recovery work — the server keeps running, and on
+      // return we just re-attach to the same jobId.
       const { data: sess } = await supabase.auth.getSession();
       const sessionJwt = sess.session?.access_token ?? null;
 
-      const { jobId } = await startJobFn({
-        data: { url, text, accessToken: token ?? null, sessionJwt },
-      });
-      rememberJobId(url, jobId);
+      let jobId = recallJobId(url);
+      // Verify any existing jobId is still known to the server before reusing.
+      if (jobId) {
+        try {
+          const probe = await getJobFn({ data: { jobId, sessionJwt } });
+          if (probe.status === "complete" && probe.analysis) {
+            writeCachedAnalysis(probe.analysis, url, text, token);
+            return { analysis: probe.analysis };
+          }
+          if (probe.status === "error" && /not found/i.test(probe.error ?? "")) {
+            jobId = undefined;
+          }
+        } catch {
+          jobId = undefined;
+        }
+      }
+      if (!jobId) {
+        const started = await startJobFn({
+          data: { url, text, accessToken: token ?? null, sessionJwt },
+        });
+        jobId = started.jobId;
+        rememberJobId(url, jobId);
+      }
 
       const startedAt = Date.now();
-      // First poll after a short delay to give the worker a head start.
       while (true) {
+        if (signal?.aborted) throw new Error("ABORTED");
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+        if (signal?.aborted) throw new Error("ABORTED");
         const status = await getJobFn({ data: { jobId, sessionJwt } });
         if (status.status === "complete" && status.analysis) {
           writeCachedAnalysis(status.analysis, url, text, token);
@@ -336,6 +362,40 @@ function ResultsPage() {
     refetchOnWindowFocus: false,
     initialData: cached ? { analysis: cached } : undefined,
   });
+
+  // Page Visibility: when the tab is hidden (mobile screen lock, tab switch),
+  // browser timers may pause. On return, immediately re-poll so we don't
+  // wait out the throttled interval; show a banner if the report is still
+  // generating so the user knows to tap to refresh.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onVis = () => {
+      if (document.hidden) {
+        if (query.isFetching || query.isPending) setWasHidden(true);
+      } else {
+        if (wasHidden && (query.isFetching || query.isPending)) {
+          setShowResumeBanner(true);
+        }
+        if (query.isPending || query.isError) {
+          query.refetch();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [query, wasHidden]);
+
+  // Clear stored jobId once we have a successful result.
+  useEffect(() => {
+    if (query.isSuccess && url) {
+      try {
+        const key = jobIdKey(url);
+        if (key) sessionStorage.removeItem(key);
+      } catch { /* ignore */ }
+      setShowResumeBanner(false);
+      setWasHidden(false);
+    }
+  }, [query.isSuccess, url]);
 
   if (!hasInput) {
     return (
@@ -363,6 +423,15 @@ function ResultsPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
+        {showResumeBanner && (
+          <button
+            type="button"
+            onClick={() => { setShowResumeBanner(false); query.refetch(); }}
+            className="mx-auto mt-4 block max-w-xl rounded-xl border border-border bg-accent px-4 py-3 text-sm text-accent-foreground hover:opacity-90"
+          >
+            Your analysis is still running — tap to check results
+          </button>
+        )}
         <LoadingState url={url} />
         <DisclaimerBar />
         <SiteFooter />
