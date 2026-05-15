@@ -363,6 +363,40 @@ function ResultsPage() {
     initialData: cached ? { analysis: cached } : undefined,
   });
 
+  // Page Visibility: when the tab is hidden (mobile screen lock, tab switch),
+  // browser timers may pause. On return, immediately re-poll so we don't
+  // wait out the throttled interval; show a banner if the report is still
+  // generating so the user knows to tap to refresh.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    const onVis = () => {
+      if (document.hidden) {
+        if (query.isFetching || query.isPending) setWasHidden(true);
+      } else {
+        if (wasHidden && (query.isFetching || query.isPending)) {
+          setShowResumeBanner(true);
+        }
+        if (query.isPending || query.isError) {
+          query.refetch();
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
+    return () => document.removeEventListener("visibilitychange", onVis);
+  }, [query, wasHidden]);
+
+  // Clear stored jobId once we have a successful result.
+  useEffect(() => {
+    if (query.isSuccess && url) {
+      try {
+        const key = jobIdKey(url);
+        if (key) sessionStorage.removeItem(key);
+      } catch { /* ignore */ }
+      setShowResumeBanner(false);
+      setWasHidden(false);
+    }
+  }, [query.isSuccess, url]);
+
   if (!hasInput) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
