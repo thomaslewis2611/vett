@@ -164,9 +164,9 @@ function Index() {
       >
         <div className="mx-auto grid max-w-5xl grid-cols-1 sm:grid-cols-3">
           {[
+            { value: "From £4.99", unit: "", label: "" },
             { value: "100", unit: "+", label: "Data points checked" },
             { value: "In minutes, not days", unit: "", label: "" },
-            { value: "From £4.99", unit: "", label: "" },
           ].map((s, i) => (
             <div
               key={i}
