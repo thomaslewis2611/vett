@@ -179,6 +179,7 @@ export type AnalysisResult = {
       why: string;
     }[];
   } | null;
+  partialPostcode?: string | null;
   renovationCosts?: {
     items: {
       issue: string;
