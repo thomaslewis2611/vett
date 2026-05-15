@@ -307,19 +307,42 @@ function ResultsPage() {
         };
       }
 
-      // Async job pipeline: start a job, then poll until it completes.
+      // Async job pipeline: start a job (or resume an in-flight one stored in
+      // sessionStorage), then poll until it completes. Resuming is what makes
+      // mobile screen-lock recovery work — the server keeps running, and on
+      // return we just re-attach to the same jobId.
       const { data: sess } = await supabase.auth.getSession();
       const sessionJwt = sess.session?.access_token ?? null;
 
-      const { jobId } = await startJobFn({
-        data: { url, text, accessToken: token ?? null, sessionJwt },
-      });
-      rememberJobId(url, jobId);
+      let jobId = recallJobId(url);
+      // Verify any existing jobId is still known to the server before reusing.
+      if (jobId) {
+        try {
+          const probe = await getJobFn({ data: { jobId, sessionJwt } });
+          if (probe.status === "complete" && probe.analysis) {
+            writeCachedAnalysis(probe.analysis, url, text, token);
+            return { analysis: probe.analysis };
+          }
+          if (probe.status === "error" && /not found/i.test(probe.error ?? "")) {
+            jobId = undefined;
+          }
+        } catch {
+          jobId = undefined;
+        }
+      }
+      if (!jobId) {
+        const started = await startJobFn({
+          data: { url, text, accessToken: token ?? null, sessionJwt },
+        });
+        jobId = started.jobId;
+        rememberJobId(url, jobId);
+      }
 
       const startedAt = Date.now();
-      // First poll after a short delay to give the worker a head start.
       while (true) {
+        if (signal?.aborted) throw new Error("ABORTED");
         await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS));
+        if (signal?.aborted) throw new Error("ABORTED");
         const status = await getJobFn({ data: { jobId, sessionJwt } });
         if (status.status === "complete" && status.analysis) {
           writeCachedAnalysis(status.analysis, url, text, token);
