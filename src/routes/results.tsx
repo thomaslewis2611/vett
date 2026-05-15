@@ -4180,7 +4180,7 @@ function AIChatLockedTeaser({ onUpgrade }: { onUpgrade?: () => void }) {
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6" style={{ background: "rgba(255,253,249,0.85)" }}>
           <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
           <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
-            Ask anything about this property — Buyer Pass only
+            Unlock with Buyer Pass — £24.99 to ask anything about this property
           </p>
           {onUpgrade && (
             <button
@@ -4189,7 +4189,7 @@ function AIChatLockedTeaser({ onUpgrade }: { onUpgrade?: () => void }) {
               className="mt-3 hover:underline"
               style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
             >
-              Unlock with Buyer Pass →
+              Unlock with Buyer Pass — £24.99 →
             </button>
           )}
         </div>
