@@ -204,7 +204,7 @@ function Index() {
 
         <div className="mt-12 grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-[2px]">
           {[
-            { icon: Link2, title: "Paste the URL", body: "Drop any Rightmove or Zoopla listing link, or paste the full text." },
+            { icon: Link2, title: "Paste the URL", body: "Drop any Rightmove listing link, or paste the full text. More sites coming soon." },
             { icon: Sparkles, title: "AI reads it all", body: "Claude analyses description, metrics and local comparables." },
             { icon: FileText, title: "Get your report", body: "Score, red flags, true cost and viewing questions in seconds." },
             { icon: Check, title: "Negotiate well", body: "A clear recommended offer range, backed by the listing data." },
