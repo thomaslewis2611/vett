@@ -204,17 +204,28 @@ export type AnalysisResult = {
     distance: string;
   }[];
   propertyData?: {
-    soldPrices?: unknown;
-    floodRisk?: unknown;
-    schools?: unknown;
-    crime?: unknown;
-    internetSpeed?: unknown;
-    energyEfficiency?: unknown;
-    floorAreas?: unknown;
-    growth?: unknown;
-    planningApplications?: unknown;
-    listedBuildings?: unknown;
-    conservationArea?: unknown;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    soldPrices?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    floodRisk?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    schools?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    crime?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    internetSpeed?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    energyEfficiency?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    floorAreas?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    growth?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    planningApplications?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    listedBuildings?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    conservationArea?: any;
   } | null;
 };
 
