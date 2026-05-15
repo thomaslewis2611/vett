@@ -3387,7 +3387,7 @@ function EmailReportButton({
   }
 
   return (
-    <div className="flex w-full min-w-0 max-w-full flex-col items-end gap-2">
+    <div className="inline-flex min-w-0 max-w-full flex-col items-start gap-2">
       {showInput && !userEmail ? (
         <form
           onSubmit={(e) => {
@@ -3428,8 +3428,7 @@ function EmailReportButton({
           type="button"
           onClick={onClick}
           disabled={status === "sending"}
-          className="inline-flex items-center gap-1.5 transition-colors hover:bg-[#1A1108] hover:text-[#FFFDF9]"
-          style={buttonStyle}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors bg-transparent border-0 p-0"
         >
           {status === "sending" ? (
             <>
