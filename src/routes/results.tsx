@@ -923,6 +923,9 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         {/* Area context */}
         <AreaContextSection analysis={a} />
 
+        {/* Planning reference (factual, all tiers) */}
+        <PlanningReferenceSection analysis={a} />
+
         {/* Auction warning (free + paid) */}
         <AuctionWarning analysis={a} />
 
@@ -2212,6 +2215,91 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
         )}
         <p className="mt-4 text-xs" style={{ color: "#888780" }}>
           Area estimates based on listing data and Claude's training knowledge.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+function PlanningReferenceSection({ analysis }: { analysis: AnalysisResult }) {
+  const pr = analysis.planningReference;
+  if (!pr || !pr.found || !pr.reference) return null;
+  return (
+    <section className="mt-10">
+      <div
+        style={{
+          background: "#FFFDF9",
+          border: "0.5px solid rgba(26,17,8,0.12)",
+          borderRadius: 12,
+          padding: 20,
+        }}
+      >
+        <div
+          style={{
+            fontSize: 10,
+            color: "#D85A30",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            fontWeight: 600,
+          }}
+        >
+          Planning reference found
+        </div>
+        <h3
+          className="mt-1"
+          style={{ fontSize: 16, fontWeight: 600, color: "#1A1108" }}
+        >
+          Planning application reference: {pr.reference}
+        </h3>
+        {pr.relatesTo && (
+          <p className="mt-1" style={{ fontSize: 13, color: "#5F5E5A" }}>
+            Relates to: {pr.relatesTo}
+          </p>
+        )}
+        {pr.applicationType && (
+          <span
+            className="mt-3 inline-block"
+            style={{
+              background: "#F1EFE8",
+              color: "#1A1108",
+              fontSize: 12,
+              fontWeight: 500,
+              borderRadius: 100,
+              padding: "4px 10px",
+            }}
+          >
+            {pr.applicationType}
+          </span>
+        )}
+        {pr.commentary && (
+          <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.55 }}>
+            {pr.commentary}
+          </p>
+        )}
+        <div
+          className="mt-4"
+          style={{
+            background: "#F1EFE8",
+            borderRadius: 8,
+            padding: "10px 12px",
+            fontSize: 12,
+            color: "#1A1108",
+          }}
+        >
+          Request the planning decision notice and building regs completion certificate from the seller's solicitors during conveyancing.
+        </div>
+        <div className="mt-3">
+          <a
+            href="https://www.planningportal.co.uk"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 13, color: "#D85A30", fontWeight: 500 }}
+          >
+            Search this reference at planningportal.co.uk →
+          </a>
+        </div>
+        <p className="mt-3" style={{ fontSize: 11, color: "#888780" }}>
+          Reference extracted from listing text — verify with local authority.
         </p>
       </div>
     </section>
