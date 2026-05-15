@@ -279,10 +279,18 @@ async function callClaude(
 
 // ---------- External APIs (postcode-driven) ----------
 const POSTCODE_RE = /[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}/i;
+// Outward-only (e.g. "BA1", "SW1A", "EC1"): a postcode area + district with NO inward part.
+const PARTIAL_POSTCODE_RE = /\b([A-Z]{1,2}[0-9][0-9A-Z]?)\b(?!\s?[0-9][A-Z]{2})/i;
 
 function extractPostcode(text: string): string | null {
   const m = text.match(POSTCODE_RE);
   return m ? m[0].toUpperCase().trim() : null;
+}
+
+function extractPartialPostcode(text: string): string | null {
+  if (!text) return null;
+  const m = text.match(PARTIAL_POSTCODE_RE);
+  return m ? m[1].toUpperCase().trim() : null;
 }
 
 // ---------- PropertyData API ----------
@@ -700,6 +708,15 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     if (mappedBroadband) parsed.broadband = mappedBroadband;
     const mappedPtal = mapPdPtal(pd["ptal"]);
     if (mappedPtal) parsed.ptal = mappedPtal;
+
+    // Track whether the listing only yielded a partial (outward) postcode so the
+    // UI can prompt the user to enter the full postcode for local data.
+    if (!postcode) {
+      const partial = extractPartialPostcode(listingContent);
+      parsed.partialPostcode = partial ?? null;
+    } else {
+      parsed.partialPostcode = null;
+    }
 
     const { error: updErr } = await supabase
       .from("analysis_jobs")

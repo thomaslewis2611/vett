@@ -20,7 +20,7 @@ import {
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { DisclaimerBar } from "@/components/disclaimer-bar";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
-import { startAnalysisJob, getAnalysisJob, fetchBuyerPassExtras, analyseEpcRating, analyseFloodZone, analyseManualSqft } from "@/lib/analyse.functions";
+import { startAnalysisJob, getAnalysisJob, fetchBuyerPassExtras, analyseEpcRating, analyseFloodZone, analyseManualSqft, refetchLocalDataForPostcode } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
 import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser, getSavedAnalysis } from "@/lib/checkout.functions";
 import { sendReportEmail } from "@/lib/email-report.functions";
@@ -1034,44 +1034,108 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           </SafeSection>
         )}
 
-        {/* Flood risk — Single Report + Buyer Pass; free sees locked teaser */}
-        <FloodRiskSection
-          analysis={a}
-          isBuyerPass={access.level === "single" || access.level === "pass"}
-          fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
-          onUpgrade={() => upgradeToSingle(listingUrl)}
-          onUpgradePass={() => upgradeToPass(listingUrl)}
-          listingUrl={listingUrl}
-          userEmail={access.email}
-          onFloodRiskUpdate={(fr) => setA((prev) => ({ ...prev, floodRisk: fr }))}
-        />
+        {/* Postcode-driven local data sections.
+            - Full postcode in address: render normally.
+            - Partial postcode only ("BA1"): show inline prompt above sections so
+              user can supply the full postcode and trigger a refetch.
+            - No postcode at all: hide entirely when the section has no data. */}
+        {(() => {
+          const isPaid = access.level === "single" || access.level === "pass";
+          const fullPcRe = /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i;
+          const hasFullPostcode = fullPcRe.test(a.property?.address ?? "");
+          const hasPartialPostcode = !hasFullPostcode && Boolean(a.partialPostcode);
+          const noPostcode = !hasFullPostcode && !hasPartialPostcode;
 
-        {/* Nearby schools — Single Report + Buyer Pass; free sees locked teaser */}
-        <NearbySchoolsSection
-          analysis={a}
-          isBuyerPass={access.level === "single" || access.level === "pass"}
-          fetching={access.level === "pass" && fetchingExtras && a.nearbySchools == null}
-          onUpgrade={() => upgradeToSingle(listingUrl)}
-          onUpgradePass={() => upgradeToPass(listingUrl)}
-        />
+          const floodMissing = !a.floodRisk || a.floodRisk.unavailable === true;
+          const schoolsMissing =
+            !a.nearbySchools ||
+            a.nearbySchools.unavailable === true ||
+            (a.nearbySchools.schools?.length ?? 0) === 0;
+          const crimeMissing = !a.crime || a.crime.unavailable === true;
+          const broadbandMissing = !a.broadband || a.broadband.unavailable === true;
 
-        {/* Crime statistics — Single Report + Buyer Pass; free sees locked teaser */}
-        <CrimeSection
-          analysis={a}
-          isBuyerPass={access.level === "single" || access.level === "pass"}
-          fetching={access.level === "pass" && fetchingExtras && a.crime == null}
-          onUpgrade={() => upgradeToSingle(listingUrl)}
-          onUpgradePass={() => upgradeToPass(listingUrl)}
-        />
+          const sectionFetching =
+            access.level === "pass" && fetchingExtras;
 
-        {/* Broadband & connectivity — Single Report + Buyer Pass; free sees locked teaser */}
-        <BroadbandSection
-          analysis={a}
-          isBuyerPass={access.level === "single" || access.level === "pass"}
-          fetching={access.level === "pass" && fetchingExtras && a.broadband == null}
-          onUpgrade={() => upgradeToSingle(listingUrl)}
-          onUpgradePass={() => upgradeToPass(listingUrl)}
-        />
+          // Hide a section entirely when there's no postcode at all and we have
+          // no data to show. Otherwise render as before (which will show its
+          // own "unavailable" state for the partial-postcode case).
+          const showFlood = !(noPostcode && floodMissing);
+          const showSchools = !(noPostcode && schoolsMissing);
+          const showCrime = !(noPostcode && crimeMissing);
+          const showBroadband = !(noPostcode && broadbandMissing);
+
+          const showBanner =
+            isPaid &&
+            hasPartialPostcode &&
+            (floodMissing || schoolsMissing || crimeMissing || broadbandMissing) &&
+            (showFlood || showSchools || showCrime || showBroadband);
+
+          return (
+            <>
+              {showBanner && (
+                <PostcodePromptBanner
+                  partial={a.partialPostcode ?? null}
+                  email={access.email}
+                  listingUrl={listingUrl}
+                  onSaved={(patch) =>
+                    setA((prev) => ({
+                      ...prev,
+                      floodRisk: patch.floodRisk ?? prev.floodRisk,
+                      nearbySchools: patch.nearbySchools ?? prev.nearbySchools,
+                      crime: patch.crime ?? prev.crime,
+                      broadband: patch.broadband ?? prev.broadband,
+                      partialPostcode: null,
+                    }))
+                  }
+                />
+              )}
+
+              {showFlood && (
+                <FloodRiskSection
+                  analysis={a}
+                  isBuyerPass={isPaid}
+                  fetching={sectionFetching && a.floodRisk == null}
+                  onUpgrade={() => upgradeToSingle(listingUrl)}
+                  onUpgradePass={() => upgradeToPass(listingUrl)}
+                  listingUrl={listingUrl}
+                  userEmail={access.email}
+                  onFloodRiskUpdate={(fr) => setA((prev) => ({ ...prev, floodRisk: fr }))}
+                />
+              )}
+
+              {showSchools && (
+                <NearbySchoolsSection
+                  analysis={a}
+                  isBuyerPass={isPaid}
+                  fetching={sectionFetching && a.nearbySchools == null}
+                  onUpgrade={() => upgradeToSingle(listingUrl)}
+                  onUpgradePass={() => upgradeToPass(listingUrl)}
+                />
+              )}
+
+              {showCrime && (
+                <CrimeSection
+                  analysis={a}
+                  isBuyerPass={isPaid}
+                  fetching={sectionFetching && a.crime == null}
+                  onUpgrade={() => upgradeToSingle(listingUrl)}
+                  onUpgradePass={() => upgradeToPass(listingUrl)}
+                />
+              )}
+
+              {showBroadband && (
+                <BroadbandSection
+                  analysis={a}
+                  isBuyerPass={isPaid}
+                  fetching={sectionFetching && a.broadband == null}
+                  onUpgrade={() => upgradeToSingle(listingUrl)}
+                  onUpgradePass={() => upgradeToPass(listingUrl)}
+                />
+              )}
+            </>
+          );
+        })()}
 
         {/* Transport links — Single Report + Buyer Pass; free sees locked teaser */}
         <TransportSection
@@ -1318,6 +1382,115 @@ function PricePerSqftCard({
               {error}
             </div>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+type PostcodePromptPatch = {
+  floodRisk: AnalysisResult["floodRisk"] | null;
+  nearbySchools: AnalysisResult["nearbySchools"] | null;
+  crime: AnalysisResult["crime"] | null;
+  broadband: AnalysisResult["broadband"] | null;
+};
+
+function PostcodePromptBanner({
+  partial,
+  email,
+  listingUrl,
+  onSaved,
+}: {
+  partial: string | null;
+  email: string | null;
+  listingUrl?: string;
+  onSaved: (patch: PostcodePromptPatch) => void;
+}) {
+  const refetchFn = useServerFn(refetchLocalDataForPostcode);
+  const [input, setInput] = useState<string>(partial ? `${partial} ` : "");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    setError(null);
+    const cleaned = input.trim().toUpperCase();
+    if (!/^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/.test(cleaned)) {
+      setError("Enter a full UK postcode, e.g. BA1 5NW");
+      return;
+    }
+    if (!email) {
+      setError("You must be signed in to refresh local data");
+      return;
+    }
+    if (!listingUrl) {
+      setError("Missing listing URL");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const r = await refetchFn({ data: { email, listingUrl, postcode: cleaned } });
+      if (!r?.ok) {
+        setError(r?.error ?? "Could not load data for that postcode");
+        return;
+      }
+      onSaved({
+        floodRisk: r.floodRisk,
+        nearbySchools: r.nearbySchools,
+        crime: r.crime,
+        broadband: r.broadband,
+      });
+    } catch (err) {
+      console.error("[PostcodePromptBanner] failed", err);
+      setError("Could not load data for that postcode. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      className="mt-10 rounded-2xl border border-border p-4"
+      style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)" }}
+    >
+      <div className="flex flex-col gap-1">
+        <span
+          className="text-xs uppercase tracking-wider"
+          style={{ color: "#888780" }}
+        >
+          Enter full postcode for local data
+        </span>
+        <span style={{ fontSize: 12, color: "#5F5E5A", lineHeight: 1.5 }}>
+          The listing only included a partial postcode
+          {partial ? ` (${partial})` : ""}. Add the full postcode to unlock flood
+          risk, schools, crime and broadband data for this address.
+        </span>
+      </div>
+      <div className="mt-3 flex items-center gap-1.5">
+        <input
+          type="text"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="e.g. BA1 5NW"
+          autoCapitalize="characters"
+          className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs"
+          disabled={submitting}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submit();
+          }}
+        />
+        <button
+          type="button"
+          onClick={submit}
+          disabled={submitting}
+          className="shrink-0 rounded-md px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60"
+          style={{ background: "#D85A30" }}
+        >
+          {submitting ? "Loading…" : "Save →"}
+        </button>
+      </div>
+      {error && (
+        <div className="mt-1.5 text-[11px]" style={{ color: "#A32D2D" }}>
+          {error}
         </div>
       )}
     </div>
