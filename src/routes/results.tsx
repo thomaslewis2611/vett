@@ -4314,3 +4314,180 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
     </section>
   );
 }
+
+// ---------- Sold price history (PropertyData / Land Registry) ----------
+function PriceHistorySection({
+  analysis,
+  unlocked,
+  onUpgrade,
+}: {
+  analysis: AnalysisResult;
+  unlocked: boolean;
+  onUpgrade?: () => void;
+}) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = (analysis.propertyData?.soldPrices as any) ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const list: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : Array.isArray(raw?.transactions) ? raw.transactions : [];
+  if (!list.length) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const norm = list.map((s: any) => ({
+    date: String(s?.date ?? s?.sold_date ?? s?.transaction_date ?? "").slice(0, 10),
+    price: Number(s?.price ?? s?.sold_price ?? s?.amount ?? 0),
+    type: String(s?.property_type ?? s?.type ?? "—"),
+    address: String(s?.address ?? s?.paon ?? "").trim(),
+  })).filter((r) => r.price > 0);
+
+  const visible = unlocked ? norm.slice(0, 10) : norm.slice(0, 3);
+
+  const card: CSSProperties = { background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)", borderRadius: 12, padding: 20 };
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        Sold price history
+      </h2>
+      <div className="mt-4 relative overflow-hidden" style={card}>
+        <div className="overflow-x-auto">
+          <table style={{ width: "100%", fontSize: 13, color: "#1A1108", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "#888780", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <th style={{ padding: "8px 8px 8px 0" }}>Date</th>
+                <th style={{ padding: "8px" }}>Price</th>
+                <th style={{ padding: "8px" }}>Type</th>
+                <th style={{ padding: "8px 0 8px 8px" }}>Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((r, i) => (
+                <tr key={i} style={{ borderTop: "0.5px solid rgba(26,17,8,0.08)" }}>
+                  <td style={{ padding: "10px 8px 10px 0" }}>{r.date || "—"}</td>
+                  <td style={{ padding: "10px 8px", fontWeight: 500 }}>{formatGBP(r.price)}</td>
+                  <td style={{ padding: "10px 8px", color: "#5F5E5A" }}>{r.type}</td>
+                  <td style={{ padding: "10px 0 10px 8px", color: "#5F5E5A" }}>{r.address || "—"}</td>
+                </tr>
+              ))}
+              {!unlocked && norm.length > 3 && (
+                <tr>
+                  <td colSpan={4} style={{ padding: 0 }}>
+                    <div style={{ position: "relative", height: 120 }}>
+                      <div style={{ position: "absolute", inset: 0, filter: "blur(5px)", userSelect: "none", pointerEvents: "none", padding: "10px 0" }}>
+                        <div style={{ height: 18, background: "rgba(26,17,8,0.06)", borderRadius: 4, marginBottom: 10 }} />
+                        <div style={{ height: 18, background: "rgba(26,17,8,0.06)", borderRadius: 4, marginBottom: 10 }} />
+                        <div style={{ height: 18, background: "rgba(26,17,8,0.06)", borderRadius: 4 }} />
+                      </div>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 16 }}>
+                        <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+                        <p style={{ fontSize: 13, color: "#1A1108", margin: 0 }}>
+                          Unlock with a Single Report — £4.99 to see the full sold price history
+                        </p>
+                        {onUpgrade && (
+                          <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                            Get Single Report — £4.99 →
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <p style={{ marginTop: 12, fontSize: 11, color: "#888780" }}>
+          Source: HM Land Registry via PropertyData. Verify at landregistry.gov.uk.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ---------- Capital growth (PropertyData) ----------
+function CapitalGrowthSection({
+  analysis,
+  tier,
+  onUpgradeSingle,
+  onUpgradePass,
+}: {
+  analysis: AnalysisResult;
+  tier: "free" | "single" | "pass";
+  onUpgradeSingle?: () => void;
+  onUpgradePass?: () => void;
+}) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = (analysis.propertyData?.growth as any) ?? null;
+  if (!raw) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: any = raw?.data ?? raw;
+  const num = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN);
+
+  const g1 = num(data?.["1yr"] ?? data?.year_1 ?? data?.oneYear);
+  const g3 = num(data?.["3yr"] ?? data?.year_3 ?? data?.threeYear);
+  const g5 = num(data?.["5yr"] ?? data?.year_5 ?? data?.fiveYear);
+  const headlineNum = !isNaN(g5) ? g5 : !isNaN(g3) ? g3 : !isNaN(g1) ? g1 : NaN;
+  const headlineWindow = !isNaN(g5) ? "5 years" : !isNaN(g3) ? "3 years" : "1 year";
+  if (isNaN(headlineNum)) return null;
+
+  const fmt = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
+  const card: CSSProperties = { background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)", borderRadius: 12, padding: 20 };
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        Capital growth
+      </h2>
+      <div className="mt-4" style={card}>
+        <div style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", lineHeight: 1.1 }}>
+          {fmt(headlineNum)} <span style={{ fontSize: 14, color: "#5F5E5A", fontWeight: 400 }}>over {headlineWindow}</span>
+        </div>
+        {tier === "pass" ? (
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            {[
+              { label: "1 year", v: g1 },
+              { label: "3 years", v: g3 },
+              { label: "5 years", v: g5 },
+            ].map((row) => (
+              <div key={row.label} style={{ background: "#FAF8F4", borderRadius: 8, padding: 12 }}>
+                <div style={{ fontSize: 11, color: "#888780", textTransform: "uppercase", letterSpacing: "0.06em" }}>{row.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 500, color: "#1A1108", marginTop: 4 }}>
+                  {isNaN(row.v) ? "—" : fmt(row.v)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 relative overflow-hidden" style={{ background: "#FAF8F4", borderRadius: 8, padding: 16 }}>
+            <div style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none" }}>
+              <div className="grid grid-cols-3 gap-3">
+                <div style={{ fontSize: 18, fontWeight: 500 }}>+3.2%</div>
+                <div style={{ fontSize: 18, fontWeight: 500 }}>+8.5%</div>
+                <div style={{ fontSize: 18, fontWeight: 500 }}>+12.3%</div>
+              </div>
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+              <p style={{ fontSize: 13, color: "#1A1108", margin: 0 }}>
+                {tier === "single"
+                  ? "Upgrade to Buyer Pass for the full 1yr / 3yr / 5yr breakdown"
+                  : "Buyer Pass unlocks the full 1yr / 3yr / 5yr breakdown"}
+              </p>
+              {tier === "single" && onUpgradePass && (
+                <button type="button" onClick={onUpgradePass} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Upgrade to Buyer Pass — £24.99 →
+                </button>
+              )}
+              {tier === "free" && onUpgradeSingle && (
+                <button type="button" onClick={onUpgradeSingle} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Get Single Report — £4.99 →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        <p style={{ marginTop: 12, fontSize: 11, color: "#888780" }}>
+          Source: PropertyData area capital growth. Past performance is not a guarantee of future returns.
+        </p>
+      </div>
+    </section>
+  );
+}
