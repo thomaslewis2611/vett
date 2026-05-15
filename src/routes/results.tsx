@@ -2313,12 +2313,18 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
   const [restoreEmail, setRestoreEmail] = useState("");
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
   const [upsellOpen, setUpsellOpen] = useState(false);
+  const passDiscount = usePassDiscount();
 
   const startCheckout = async (tier: "single" | "pass") => {
     setErr(null);
     setLoadingTier(tier);
     try {
-      const priceId = tier === "single" ? PRICE_SINGLE : PRICE_PASS;
+      const priceId =
+        tier === "single"
+          ? PRICE_SINGLE
+          : passDiscount.eligible
+            ? passDiscount.priceId
+            : PRICE_PASS;
       const res = await checkoutFn({
         data: {
           priceId,
