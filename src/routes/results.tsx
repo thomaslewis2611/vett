@@ -1575,6 +1575,11 @@ function LockedFeaturesGrid() {
             <p className="mt-1 text-[12px]" style={{ color: "#5F5E5A", lineHeight: 1.45 }}>
               {f.sub}
             </p>
+            {f.note && (
+              <p className="mt-1 text-[10px]" style={{ color: "#888780", lineHeight: 1.4 }}>
+                {f.note}
+              </p>
+            )}
           </div>
         ))}
       </div>
