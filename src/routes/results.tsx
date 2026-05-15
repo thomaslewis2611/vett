@@ -3482,11 +3482,18 @@ function FloodRiskSection({
               <p className="mt-1" style={{ fontSize: 12, color: "#5F5E5A" }}>
                 Unlock with a Single Report — £4.99 to see flood zone, insurance implications and mortgage risks
               </p>
-              {onUpgrade && (
-                <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
-                  Get Single Report — £4.99 →
-                </button>
-              )}
+              <div className="mt-3 flex flex-col items-center gap-1">
+                {onUpgrade && (
+                  <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                    Get Single Report — £4.99 →
+                  </button>
+                )}
+                {onUpgradePass && (
+                  <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                    Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </section>
