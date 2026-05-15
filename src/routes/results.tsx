@@ -385,17 +385,17 @@ function ResultsPage() {
     return () => document.removeEventListener("visibilitychange", onVis);
   }, [query, wasHidden]);
 
-  // Clear stored jobId once we have a successful result.
+  // NOTE: Do NOT clear the stored jobId on success. The Single Report
+  // checkout flow needs to pass it through Stripe metadata so the webhook
+  // can copy the existing analysis into saved_analyses for the buyer's
+  // email — otherwise clicking the magic link from the receipt email
+  // would land on /my-reports and the user would have to re-analyse.
   useEffect(() => {
-    if (query.isSuccess && url) {
-      try {
-        const key = jobIdKey(url);
-        if (key) sessionStorage.removeItem(key);
-      } catch { /* ignore */ }
+    if (query.isSuccess) {
       setShowResumeBanner(false);
       setWasHidden(false);
     }
-  }, [query.isSuccess, url]);
+  }, [query.isSuccess]);
 
   if (!hasInput) {
     return (
