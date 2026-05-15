@@ -857,6 +857,18 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
   return (
     <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-hidden bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
       <SiteHeader />
+      <UpsellPassModal
+        open={upsellOpen}
+        onClose={() => setUpsellOpen(false)}
+        onChoosePass={() => {
+          setUpsellOpen(false);
+          upgradeToPass(pendingSingleUrl ?? undefined);
+        }}
+        onChooseSingle={() => {
+          setUpsellOpen(false);
+          startSingleCheckout(pendingSingleUrl ?? undefined);
+        }}
+      />
 
       {access.level === "pass" && (
         <div
