@@ -130,6 +130,19 @@ export type AnalysisResult = {
     areaDescription: string;
     comparableNote: string;
   };
+  planningReference?: {
+    found: boolean;
+    reference: string | null;
+    relatesTo: string | null;
+    applicationType:
+      | "Householder"
+      | "Full Planning"
+      | "Change of Use"
+      | "Listed Building Consent"
+      | "Unknown"
+      | null;
+    commentary: string | null;
+  } | null;
   redFlags: {
     severity: "high" | "medium" | "low";
     title: string;
