@@ -298,7 +298,17 @@ const PD_ENDPOINTS = [
   "planning-applications",
   "listed-buildings",
   "conservation-area",
+  "ptal",
 ] as const;
+
+const LONDON_POSTCODE_AREAS = new Set([
+  "E", "EC", "W", "WC", "N", "NW", "SE", "SW",
+  "WD", "BR", "CR", "DA", "EN", "HA", "IG", "KT", "RM", "SM", "TW", "UB",
+]);
+function isLondonPostcode(pc: string): boolean {
+  const m = pc.toUpperCase().trim().match(/^[A-Z]{1,2}/);
+  return m ? LONDON_POSTCODE_AREAS.has(m[0]) : false;
+}
 
 type PdKey = typeof PD_ENDPOINTS[number];
 type PdResults = Partial<Record<PdKey, unknown>>;
