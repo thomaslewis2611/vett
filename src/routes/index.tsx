@@ -147,6 +147,10 @@ function Index() {
               </li>
             ))}
           </ul>
+
+          <p className="mx-auto mt-6 text-center" style={{ fontSize: 11, color: "#888780" }}>
+            Currently available for UK properties only — US, Australia and more coming soon
+          </p>
         </div>
       </section>
 
