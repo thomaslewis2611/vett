@@ -42,7 +42,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "How accurate is the data?",
-    a: "Roovr uses a combination of AI analysis and real data from trusted sources including PropertyData, Environment Agency, Ofcom, and DfE/Ofsted. AI-generated content (red flags, negotiation strategy, area analysis) is based on Claude's reasoning and should be treated as advisory. Always verify key information independently and seek professional advice from a solicitor, surveyor, and mortgage broker before making any offer.",
+    a: "Roovr uses a combination of AI analysis and real data from trusted sources including PropertyData, Environment Agency, Ofcom, and DfE/Ofsted. AI-generated content (red flags, negotiation strategy, area analysis) is based on Claude's reasoning and should be treated as advisory. Roovr cannot be held liable for any decisions made based on report content. Always verify key information independently and seek professional advice from a solicitor, surveyor, and mortgage broker before making any offer.",
   },
   {
     q: "Can I use Roovr on my phone?",
