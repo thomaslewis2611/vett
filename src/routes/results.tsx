@@ -2708,32 +2708,38 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
         <h3 className="mb-4 text-sm font-medium uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
           Score breakdown
         </h3>
-        <div className="space-y-3">
-          {SUB_SCORE_LABELS.map(({ key, label, fallback }) => {
+        <div className="space-y-4">
+          {SUB_SCORE_LABELS.map(({ key, label, how }) => {
             const v = Number(sub[key] ?? 0);
             const pct = Math.max(0, Math.min(100, (v / 10) * 100));
             const color = scoreColor(v);
             const reason = reasons[key];
-            const tooltipText =
-              reason && reason.trim().length > 0 ? reason : fallback;
+            const summary = reason && reason.trim().length > 0 ? reason.trim() : null;
             return (
-              <div key={key} className="grid grid-cols-[140px_1fr_36px] items-center gap-4">
-                <span className="inline-flex items-center gap-1.5" style={{ fontSize: 13, color: "#5F5E5A" }}>
-                  {label}
-                  <ScoreInfoTooltip text={tooltipText} />
-                </span>
-                <div
-                  className="relative w-full overflow-hidden rounded-full"
-                  style={{ height: 6, background: "#F1EFE8" }}
-                >
+              <div key={key}>
+                <div className="grid grid-cols-[minmax(140px,160px)_1fr_36px] items-center gap-4">
+                  <span className="inline-flex items-center gap-1.5" style={{ fontSize: 13, color: "#5F5E5A" }}>
+                    {label}
+                    <ScoreInfoTooltip text={how} />
+                  </span>
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full"
-                    style={{ width: `${pct}%`, background: color }}
-                  />
+                    className="relative w-full overflow-hidden rounded-full"
+                    style={{ height: 6, background: "#F1EFE8" }}
+                  >
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full"
+                      style={{ width: `${pct}%`, background: color }}
+                    />
+                  </div>
+                  <span className="text-right" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>
+                    {v.toFixed(1)}
+                  </span>
                 </div>
-                <span className="text-right" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>
-                  {v.toFixed(1)}
-                </span>
+                {summary && (
+                  <p className="mt-1.5" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
+                    {summary}
+                  </p>
+                )}
               </div>
             );
           })}
