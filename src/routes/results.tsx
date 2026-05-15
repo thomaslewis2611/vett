@@ -2990,8 +2990,18 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
           <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: "rgba(255,253,249,0.85)" }}>
             <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
             <p className="text-center" style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
-              Unlock with Buyer Pass to see nearby schools and Ofsted ratings
+              Unlock with a Single Report — £4.99 to see nearby schools and Ofsted ratings
             </p>
+            {onUpgrade && (
+              <button
+                type="button"
+                onClick={onUpgrade}
+                className="mt-3 hover:underline"
+                style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
+              >
+                Get Single Report — £4.99 →
+              </button>
+            )}
           </div>
         </div>
       </section>
