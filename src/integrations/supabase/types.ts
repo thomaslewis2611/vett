@@ -255,6 +255,7 @@ export type Database = {
           stripe_session_id: string | null
           token: string
           user_email: string | null
+          user_id: string | null
         }
         Insert: {
           analysis_json?: Json | null
@@ -265,6 +266,7 @@ export type Database = {
           stripe_session_id?: string | null
           token: string
           user_email?: string | null
+          user_id?: string | null
         }
         Update: {
           analysis_json?: Json | null
@@ -275,6 +277,7 @@ export type Database = {
           stripe_session_id?: string | null
           token?: string
           user_email?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
