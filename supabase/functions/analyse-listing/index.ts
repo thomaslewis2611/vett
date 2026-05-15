@@ -263,6 +263,106 @@ async function callClaude(
   return block?.type === "text" ? block.text : "";
 }
 
+// ---------- External APIs (postcode-driven) ----------
+const POSTCODE_RE = /[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}/i;
+
+function extractPostcode(text: string): string | null {
+  const m = text.match(POSTCODE_RE);
+  return m ? m[0].toUpperCase().trim() : null;
+}
+
+async function fetchGeo(postcode: string): Promise<{ lat: number; lng: number } | null> {
+  try {
+    const r = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`);
+    if (!r.ok) return null;
+    const j = await r.json();
+    const lat = j?.result?.latitude;
+    const lng = j?.result?.longitude;
+    if (typeof lat !== "number" || typeof lng !== "number") return null;
+    return { lat, lng };
+  } catch (e) {
+    console.warn("[analyse-listing] geo failed", e);
+    return null;
+  }
+}
+
+async function fetchCrimeStats(lat: number, lng: number) {
+  try {
+    const r = await fetch(`https://data.police.uk/api/crimes-street/all-crime?lat=${lat}&lng=${lng}`);
+    if (!r.ok) return null;
+    const arr = (await r.json()) as Array<{ category?: string }>;
+    if (!Array.isArray(arr)) return null;
+    const byCat: Record<string, number> = {};
+    for (const c of arr) {
+      const k = String(c.category ?? "other");
+      byCat[k] = (byCat[k] ?? 0) + 1;
+    }
+    const topCategories = Object.entries(byCat)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([category, count]) => ({ category, count }));
+    return { totalCrimes: arr.length, topCategories };
+  } catch (e) {
+    console.warn("[analyse-listing] crime failed", e);
+    return null;
+  }
+}
+
+async function fetchBroadband(postcode: string) {
+  try {
+    const r = await fetch(
+      `https://api.ofcom.org.uk/connected-nations/broadband-coverage?postcode=${encodeURIComponent(postcode)}`,
+    );
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j || (typeof j === "object" && Object.keys(j).length === 0)) return null;
+    return j;
+  } catch (e) {
+    console.warn("[analyse-listing] broadband failed", e);
+    return null;
+  }
+}
+
+async function fetchSchools(postcode: string) {
+  const tryParse = (raw: unknown): Array<{ name: string; ofstedRating: string | null; type: string | null; distance: string | null }> | null => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const list = Array.isArray((raw as any)?.results) ? (raw as any).results : Array.isArray(raw) ? (raw as any[]) : null;
+    if (!list) return null;
+    return list
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((s: any) => ({
+        name: String(s?.name ?? s?.establishmentName ?? "").trim(),
+        ofstedRating: s?.ofstedRating ?? s?.ofsted_rating ?? null,
+        type: s?.type ?? s?.establishmentType ?? null,
+        distance: s?.distance != null ? String(s.distance) : null,
+      }))
+      .filter((s) => s.name);
+  };
+  try {
+    const r = await fetch(
+      `https://get-information-schools.service.gov.uk/api/v1/schools?location=${encodeURIComponent(postcode)}&radiusInMiles=5`,
+    );
+    if (r.ok) {
+      const parsed = tryParse(await r.json());
+      if (parsed && parsed.length) return parsed;
+    }
+  } catch (e) {
+    console.warn("[analyse-listing] schools tier1 failed", e);
+  }
+  try {
+    const r = await fetch(
+      `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${encodeURIComponent(postcode)}&radius=8`,
+    );
+    if (r.ok) {
+      const parsed = tryParse(await r.json());
+      if (parsed && parsed.length) return parsed;
+    }
+  } catch (e) {
+    console.warn("[analyse-listing] schools tier2 failed", e);
+  }
+  return null;
+}
+
 // ---------- Main job runner ----------
 async function runJob(jobId: string, url: string, pastedText: string) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
