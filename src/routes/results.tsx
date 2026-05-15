@@ -1937,7 +1937,9 @@ const FULL_REPORT_FEATURES: { title: string; sub: string; note?: string }[] = [
   { title: "EPC analysis", sub: "Energy rating and improvement costs" },
   { title: "Stamp duty calculator", sub: "First-time buyer, main residence and additional property" },
   { title: "Viewing checklist", sub: "What to check on the day" },
-  { title: "Renovation cost estimate", sub: "What it would cost" },
+  { title: "Renovation cost estimate", sub: "What it would cost to improve" },
+  { title: "Seller motivation score", sub: "How motivated is the vendor to sell?" },
+  { title: "Area pricing analysis", sub: "Local comparables and price per sq ft" },
 ];
 
 function LockedFeaturesGrid() {
