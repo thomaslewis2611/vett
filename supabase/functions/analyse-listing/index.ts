@@ -881,7 +881,8 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     // nearbySchools / crime / broadband / ptal. Only set when we have real data so
     // the UI can fall back to its "data unavailable" state otherwise.
     const mappedSchools = mapPdSchools(pd["schools"]);
-    if (mappedSchools) parsed.nearbySchools = mappedSchools;
+    const enrichedSchools = await enrichSchoolsWithGias(mappedSchools, postcode);
+    if (enrichedSchools) parsed.nearbySchools = enrichedSchools;
     const mappedCrime = mapPdCrime(pd["crime"]);
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
