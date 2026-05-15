@@ -2418,12 +2418,18 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         <PlanCard
           id="buyer-pass-card"
           title="Buyer Pass"
-          price="£24.99"
+          price={passDiscount.eligible ? "£20.00" : "£24.99"}
+          originalPrice={passDiscount.eligible ? "£24.99" : undefined}
           cadence="90-day pass · one-off payment"
-          cta="Get Buyer Pass"
+          cta={passDiscount.eligible ? "Upgrade for £20 →" : "Get Buyer Pass"}
           highlight
           loading={loadingTier === "pass"}
           onClick={() => handleBuy("pass")}
+          subnote={
+            passDiscount.eligible
+              ? "You've already spent £4.99 on a Single Report — we'll deduct it from your Buyer Pass"
+              : undefined
+          }
           plusIntro="Everything in Single Report, plus:"
           features={[
             "Unlimited analyses for 90 days",
