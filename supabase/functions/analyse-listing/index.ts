@@ -553,16 +553,25 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     const propertyDataContext = postcode ? buildPropertyDataContext(pd) : "";
     const userContent = `${propertyDataContext}\nListing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
 
+    const todayStr = new Date().toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      timeZone: "Europe/London",
+    });
+    const dateLine = `Today's date is ${todayStr}. Use this as your reference for all date-related reasoning. Do not flag dates in the current year as errors or typos unless they are logically impossible.\n\n`;
+    const systemPrompt = dateLine + SYSTEM_PROMPT;
+
     let parsed: Record<string, unknown>;
     try {
       console.log("[analyse-listing] calling Claude (primary)");
-      const text = await callClaude(SYSTEM_PROMPT, userContent, 6000);
+      const text = await callClaude(systemPrompt, userContent, 6000);
       console.log(`[analyse-listing] Claude response length: ${text.length}`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
     } catch (primaryErr) {
       console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
       const simplified =
-        SYSTEM_PROMPT +
+        systemPrompt +
         "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
       const text = await callClaude(simplified, userContent, 6000);
       parsed = parseWithRepair(text) as Record<string, unknown>;
