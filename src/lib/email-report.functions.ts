@@ -524,7 +524,7 @@ function buildReportHtml(opts: {
       </table>
 
       ${ac ? `
-        <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Area context</h2>
+        <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Area Pricing Analysis</h2>
         ${ac.areaDescription ? `<p style="font-size:13px;color:#1A1108;line-height:1.6;margin:0 0 8px;">${escapeHtml(ac.areaDescription)}</p>` : ""}
         ${ac.comparableNote ? `<p style="font-size:13px;color:#5F5E5A;line-height:1.6;margin:0;">${escapeHtml(ac.comparableNote)}</p>` : ""}
       ` : ""}

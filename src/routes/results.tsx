@@ -935,7 +935,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         />
 
 
-        {/* Area context */}
+        {/* Area Pricing Analysis */}
         <AreaContextSection analysis={a} />
 
         {/* Planning reference (factual, all tiers) */}
@@ -2681,7 +2681,7 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
 function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
   const ac = analysis.areaContext;
   if (!ac) return null;
-  // Prefer manual sqft analysis when present so the Area context card
+  // Prefer manual sqft analysis when present so the Area Pricing Analysis card
   // updates reactively the moment the user saves a sq ft value via the
   // "Edit sq ft" field on the Price / sq ft card.
   const manualPpsf = analysis.manualSqftAnalysis?.pricePerSqFt;
@@ -2720,7 +2720,7 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
       : null;
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-semibold tracking-tight">Area context</h2>
+      <h2 className="text-xl font-semibold tracking-tight">Area Pricing Analysis</h2>
       <div className="mt-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
         {(hasAreaPpsf || ppsfText) && (
           <div className="grid gap-4 sm:grid-cols-2">
