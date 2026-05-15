@@ -484,6 +484,16 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       conservationArea: pdData(pd["conservation-area"]),
     };
 
+    // Map PropertyData payloads into the shapes the frontend renders for
+    // nearbySchools / crime / broadband. Only set when we have real data so
+    // the UI can fall back to its "data unavailable" state otherwise.
+    const mappedSchools = mapPdSchools(pd["schools"]);
+    if (mappedSchools) parsed.nearbySchools = mappedSchools;
+    const mappedCrime = mapPdCrime(pd["crime"]);
+    if (mappedCrime) parsed.crime = mappedCrime;
+    const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
+    if (mappedBroadband) parsed.broadband = mappedBroadband;
+
     const { error: updErr } = await supabase
       .from("analysis_jobs")
       .update({
