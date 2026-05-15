@@ -334,6 +334,111 @@ function pdData(raw: any): any {
   return raw && typeof raw === "object" ? raw.data ?? null : null;
 }
 
+// ---------- PropertyData → frontend shape mappers ----------
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPdSchools(raw: any) {
+  if (!raw || raw.status !== "success" || !raw.data) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const collect = (arr: any[], indep: boolean) =>
+    (Array.isArray(arr) ? arr : []).map((s) => {
+      const phaseRaw = String(s.phase ?? "").toLowerCase();
+      const phase: "primary" | "secondary" | "other" =
+        phaseRaw.includes("primary") || /^\d+\s*-\s*1[01]$/.test(phaseRaw)
+          ? "primary"
+          : phaseRaw.includes("secondary") || /1[12]\s*-\s*1[6-9]/.test(phaseRaw)
+            ? "secondary"
+            : "other";
+      return {
+        name: String(s.name ?? "Unknown"),
+        ofstedRating: null,
+        schoolType: indep ? "Independent" : (s.type ?? null),
+        phase,
+        distanceMiles: Number(s.distance ?? 0) || 0,
+      };
+    });
+  const state = collect(raw.data?.state?.nearest, false);
+  const independent = collect(raw.data?.independent?.nearest, true);
+  const schools = [...state, ...independent]
+    .sort((a, b) => a.distanceMiles - b.distanceMiles)
+    .slice(0, 10);
+  if (!schools.length) return null;
+  return { schools, unavailable: false, aiSourced: false };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPdCrime(raw: any) {
+  if (!raw || raw.status !== "success") return null;
+  const total = Number(raw.crimes_last_12m ?? 0) || 0;
+  const types = (raw.types && typeof raw.types === "object") ? raw.types : {};
+  const topCategories = Object.entries(types)
+    .map(([category, count]) => ({
+      category,
+      count: Number(count) || 0,
+      label: category,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+  const ratingRaw = String(raw.crime_rating ?? "").toLowerCase();
+  const riskLevel: "Low" | "Moderate" | "High" | "Very High" =
+    ratingRaw.includes("very high") ? "Very High"
+    : ratingRaw.includes("high") ? "High"
+    : ratingRaw.includes("average") || ratingRaw.includes("moderate") ? "Moderate"
+    : "Low";
+  const perThousand = Number(raw.crimes_per_thousand ?? 0) || 0;
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  return {
+    totalCrimes: total,
+    month,
+    topCategories,
+    riskLevel,
+    commentary: `${total.toLocaleString("en-GB")} crimes recorded in the last 12 months around this postcode (${perThousand} per 1,000 residents). PropertyData rates this area as "${raw.crime_rating ?? "Unknown"}".`,
+    autoRedFlag: riskLevel === "High" || riskLevel === "Very High",
+    coordinates: null,
+    unavailable: false,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPdBroadband(raw: any) {
+  if (!raw || raw.status !== "success" || !raw.internet) return null;
+  const i = raw.internet;
+  const gigabit = Number(i.gigabit_availability ?? 0) || 0;
+  const ufbb = Number(i.UFBB_availability ?? 0) || 0;
+  const sfbb = Number(i.SFBB_availability ?? 0) || 0;
+  const belowUso = Number(i.premises_below_uso ?? 0) || 0;
+  const connectionType: "Full fibre" | "Fibre to cabinet" | "ADSL" | "Limited" =
+    gigabit >= 50 ? "Full fibre"
+    : ufbb >= 50 ? "Full fibre"
+    : sfbb >= 50 ? "Fibre to cabinet"
+    : belowUso > 50 ? "Limited"
+    : "ADSL";
+  const speedRating: "Excellent" | "Good" | "Average" | "Poor" =
+    gigabit >= 50 ? "Excellent"
+    : ufbb >= 80 ? "Excellent"
+    : sfbb >= 80 ? "Good"
+    : sfbb >= 30 ? "Average"
+    : "Poor";
+  const downloadSpeed =
+    gigabit >= 50 ? "1 Gbps+ available"
+    : ufbb >= 50 ? "300+ Mbps (ultrafast)"
+    : sfbb >= 50 ? "30–80 Mbps (superfast)"
+    : "Under 30 Mbps typical";
+  return {
+    downloadSpeed,
+    uploadSpeed: connectionType === "Full fibre" ? "100+ Mbps" : connectionType === "Fibre to cabinet" ? "10–20 Mbps" : "Under 10 Mbps",
+    connectionType,
+    suitableForRemoteWork: speedRating === "Excellent" || speedRating === "Good",
+    mobileSignal: "Good" as const,
+    commentary: `Ultrafast (>300 Mbps) available to ${ufbb.toFixed(0)}% of premises in this postcode, superfast to ${sfbb.toFixed(0)}%, gigabit to ${gigabit.toFixed(0)}%. Source: PropertyData / Ofcom.`,
+    speedRating,
+    source: "PropertyData / Ofcom",
+    unavailable: false,
+    autoRedFlag: connectionType === "Limited" || speedRating === "Poor",
+  };
+}
+
+
 function buildPropertyDataContext(pd: PdResults): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const slice = (v: any, n: number) => (Array.isArray(v) ? v.slice(0, n) : v ?? null);
@@ -483,6 +588,16 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       listedBuildings: pdData(pd["listed-buildings"]),
       conservationArea: pdData(pd["conservation-area"]),
     };
+
+    // Map PropertyData payloads into the shapes the frontend renders for
+    // nearbySchools / crime / broadband. Only set when we have real data so
+    // the UI can fall back to its "data unavailable" state otherwise.
+    const mappedSchools = mapPdSchools(pd["schools"]);
+    if (mappedSchools) parsed.nearbySchools = mappedSchools;
+    const mappedCrime = mapPdCrime(pd["crime"]);
+    if (mappedCrime) parsed.crime = mappedCrime;
+    const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
+    if (mappedBroadband) parsed.broadband = mappedBroadband;
 
     const { error: updErr } = await supabase
       .from("analysis_jobs")
