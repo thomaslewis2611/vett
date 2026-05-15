@@ -153,6 +153,33 @@ function DashboardPage() {
     }
   };
 
+  const togglePin = async (id: string, current: boolean) => {
+    const next = !current;
+    setRows((prev) => {
+      const updated = prev.map((r) => (r.id === id ? { ...r, pinned: next } : r));
+      updated.sort((a, b) => {
+        if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      return updated;
+    });
+    const { error } = await supabase
+      .from("saved_analyses")
+      .update({ pinned: next })
+      .eq("id", id);
+    if (error) {
+      // Revert on failure
+      setRows((prev) => {
+        const reverted = prev.map((r) => (r.id === id ? { ...r, pinned: current } : r));
+        reverted.sort((a, b) => {
+          if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        return reverted;
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
