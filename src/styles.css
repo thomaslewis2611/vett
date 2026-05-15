@@ -96,8 +96,12 @@
 }
 
 @layer base {
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
   * {
     border-color: var(--color-border);
+    min-width: 0;
   }
   html, body {
     background-color: var(--color-background);
@@ -107,21 +111,30 @@
     line-height: 1.65;
     -webkit-font-smoothing: antialiased;
     overflow-x: hidden;
-    max-width: 100%;
+    width: 100%;
+    max-width: 100vw;
   }
   body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    overflow-x: hidden;
   }
   body > * {
     display: flex;
     flex-direction: column;
     flex: 1 1 auto;
     min-height: 100vh;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
   }
   body > * > footer {
     margin-top: auto;
+  }
+  img, video, svg, canvas {
+    max-width: 100%;
+    height: auto;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-sans);

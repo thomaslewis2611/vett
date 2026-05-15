@@ -242,7 +242,7 @@ export function SiteHeader() {
       className="bg-background sticky top-0 z-40"
       style={{ borderBottom: "0.5px solid rgba(26,17,8,0.12)" }}
     >
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-8" style={{ height: 56 }}>
+      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-8" style={{ height: 56 }}>
         <Link to="/" className="flex items-center gap-2">
           <span
             aria-hidden
@@ -335,7 +335,7 @@ export function SiteFooter() {
         Roovr reports are AI-generated and advisory only. Always verify information independently and seek professional advice from a solicitor, surveyor, and mortgage broker before making any offer.
       </div>
       <footer style={{ background: "#1A1108", margin: 0, padding: 0, display: "block", width: "100%" }}>
-        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-8 py-10 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div className="flex items-center gap-2">
             <span
               aria-hidden

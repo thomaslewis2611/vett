@@ -774,27 +774,27 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
+    <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-hidden bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
       <SiteHeader />
 
       {access.level === "pass" && (
         <div
-          className="no-print"
+          className="no-print w-full max-w-full overflow-x-hidden"
           style={{
             background: "#FAECE7",
             borderBottom: "0.5px solid rgba(153,60,29,0.15)",
           }}
         >
-          <div className="mx-auto flex max-w-6xl items-center justify-between px-8 py-2" style={{ fontSize: 12, color: "#993C1D" }}>
-            <span>Buyer Pass active</span>
-            <Link to="/dashboard" style={{ color: "#993C1D", fontWeight: 500 }} className="hover:underline">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2 sm:px-8" style={{ fontSize: 12, color: "#993C1D" }}>
+            <span className="truncate">Buyer Pass active</span>
+            <Link to="/dashboard" style={{ color: "#993C1D", fontWeight: 500 }} className="shrink-0 hover:underline">
               View all your analyses →
             </Link>
           </div>
         </div>
       )}
 
-      <main className="mx-auto max-w-5xl px-6 py-10">
+      <main className="mx-auto w-full max-w-5xl overflow-x-hidden px-4 py-10 sm:px-6">
 
         <div className="flex items-center justify-between gap-4 no-print">
           <Link
@@ -3224,7 +3224,7 @@ function EmailReportButton({
   }
 
   return (
-    <div className="flex flex-col items-end gap-2">
+    <div className="flex w-full min-w-0 max-w-full flex-col items-end gap-2">
       {showInput && !userEmail ? (
         <form
           onSubmit={(e) => {
@@ -3232,7 +3232,7 @@ function EmailReportButton({
             const v = emailInput.trim();
             if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) void send(v);
           }}
-          className="flex items-center gap-2"
+          className="flex w-full min-w-0 items-center gap-2"
         >
           <input
             type="email"
@@ -3241,6 +3241,7 @@ function EmailReportButton({
             onChange={(e) => setEmailInput(e.target.value)}
             placeholder="your@email.com"
             disabled={status === "sending"}
+            className="w-full min-w-0 sm:min-w-[200px]"
             style={{
               border: "1px solid rgba(26,17,8,0.2)",
               background: "#FFFDF9",
@@ -3248,7 +3249,6 @@ function EmailReportButton({
               fontSize: 13,
               padding: "7px 12px",
               color: "#1A1108",
-              minWidth: 200,
             }}
           />
           <button
