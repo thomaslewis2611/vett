@@ -390,19 +390,21 @@ function ResultsPage() {
   });
 
   // Page Visibility: when the tab is hidden (mobile screen lock, tab switch),
-  // browser timers may pause. On return, immediately re-poll so we don't
-  // wait out the throttled interval; show a banner if the report is still
-  // generating so the user knows to tap to refresh.
+  // browser timers and in-flight fetches may be killed. On return, cancel
+  // any zombie poll and start a fresh one against the same jobId so we
+  // recover transparently instead of showing "Analysis failed".
   useEffect(() => {
     if (typeof document === "undefined") return;
     const onVis = () => {
       if (document.hidden) {
-        if (query.isFetching || query.isPending) setWasHidden(true);
+        if (query.isFetching || query.isPending || query.isError) setWasHidden(true);
       } else {
-        if (wasHidden && (query.isFetching || query.isPending)) {
+        const stillRunning = query.isFetching || query.isPending || query.isError;
+        if (wasHidden && stillRunning) {
           setShowResumeBanner(true);
         }
-        if (query.isPending || query.isError) {
+        if (stillRunning) {
+          // Cancel any in-flight (possibly dead) request and refetch fresh.
           query.refetch();
         }
       }
