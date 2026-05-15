@@ -1133,6 +1133,27 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                   onUpgradePass={() => upgradeToPass(listingUrl)}
                 />
               )}
+
+              {/* If we used Claude to guess the postcode, surface that fact and
+                  let the user override it with the true postcode. */}
+              {isPaid && a.inferredPostcode === true && (
+                <InferredPostcodeNotice
+                  inferred={a.inferredPostcodeValue ?? null}
+                  email={access.email}
+                  listingUrl={listingUrl}
+                  onSaved={(patch) =>
+                    setA((prev) => ({
+                      ...prev,
+                      floodRisk: patch.floodRisk ?? prev.floodRisk,
+                      nearbySchools: patch.nearbySchools ?? prev.nearbySchools,
+                      crime: patch.crime ?? prev.crime,
+                      broadband: patch.broadband ?? prev.broadband,
+                      inferredPostcode: false,
+                      inferredPostcodeValue: null,
+                    }))
+                  }
+                />
+              )}
             </>
           );
         })()}
