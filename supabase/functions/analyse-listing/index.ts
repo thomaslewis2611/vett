@@ -294,8 +294,6 @@ const PD_ENDPOINTS = [
   "schools",
   "crime",
   "internet-speed",
-  "energy-efficiency",
-  "floor-areas",
   "growth",
   "planning-applications",
   "listed-buildings",
@@ -485,10 +483,7 @@ function buildPropertyDataContext(pd: PdResults): string {
 SOLD PRICES (last 10 sales in this postcode):
 ${JSON.stringify(slice(pdData(pd["sold-prices"]), 10) || [])}
 
-FLOOR AREAS (known internal areas in this postcode):
-${JSON.stringify(pdData(pd["floor-areas"]) || [])}
-
-CAPITAL GROWTH (area):
+CAPITAL GROWTH (area — use for area context commentary and resale potential scoring):
 ${JSON.stringify(pdData(pd["growth"]) || null)}
 
 FLOOD RISK:
@@ -497,10 +492,10 @@ ${JSON.stringify(pdData(pd["flood-risk"]) || null)}
 LISTED BUILDINGS:
 ${JSON.stringify(pdData(pd["listed-buildings"]) || null)}
 
-CONSERVATION AREA:
+CONSERVATION AREA (if true, add a red flag noting renovation/extension restrictions):
 ${JSON.stringify(pdData(pd["conservation-area"]) || null)}
 
-PLANNING APPLICATIONS (recent nearby):
+PLANNING APPLICATIONS (recent nearby — flag any large/relevant ones as a consideration):
 ${JSON.stringify(slice(pdData(pd["planning-applications"]), 5) || [])}
 
 CRIME DATA:
@@ -511,9 +506,6 @@ ${JSON.stringify(pdData(pd["internet-speed"]) || null)}
 
 SCHOOLS (closest 5: 3 primary + 2 secondary):
 ${JSON.stringify(pdData(pd["schools"]) || [])}
-
-ENERGY EFFICIENCY (EPC data for postcode):
-${JSON.stringify(slice(pdData(pd["energy-efficiency"]), 5) || [])}
 `;
 }
 
@@ -569,30 +561,31 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       );
     }
 
-    // Run PropertyData fetch and Claude analysis in PARALLEL to minimise total latency.
-    // Claude reasons over the listing text; PropertyData enriches the saved payload
-    // (and is mapped into nearbySchools/crime/broadband below) — they don't depend on
-    // each other, so firing them simultaneously roughly halves wall time.
+    // PropertyData fetches in parallel (Promise.allSettled inside fetchPropertyDataAll)
+    // typically resolve in a few seconds, so we await them before calling Claude in
+    // order to feed conservation-area / planning-applications / growth context into
+    // the prompt. Claude is by far the slowest step (~30–60s) so total wall time is
+    // dominated by it and stays well under the 90s target.
     const postcode = extractPostcode(listingContent);
-
-    const pdPromise: Promise<PdResults> = (async () => {
-      if (!postcode) return {};
+    let pd: PdResults = {};
+    if (postcode) {
       const cached = await getCachedPropertyData(supabase, postcode);
       if (cached) {
         console.log(`[analyse-listing] propertydata cache hit ${postcode}`);
-        return cached;
+        pd = cached;
+      } else {
+        try {
+          pd = await fetchPropertyDataAll(postcode);
+          await setCachedPropertyData(supabase, postcode, pd);
+        } catch (e) {
+          console.warn("[analyse-listing] propertydata fetch failed", e);
+          pd = {};
+        }
       }
-      try {
-        const fresh = await fetchPropertyDataAll(postcode);
-        await setCachedPropertyData(supabase, postcode, fresh);
-        return fresh;
-      } catch (e) {
-        console.warn("[analyse-listing] propertydata fetch failed", e);
-        return {};
-      }
-    })();
+    }
 
-    const userContent = `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
+    const propertyDataContext = postcode ? buildPropertyDataContext(pd) : "";
+    const userContent = `${propertyDataContext}\nListing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
 
     const todayStr = new Date().toLocaleDateString("en-GB", {
       day: "numeric",
@@ -603,26 +596,21 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     const dateLine = `Today's date is ${todayStr}. Use this as your reference for all date-related reasoning. Do not flag dates in the current year as errors or typos unless they are logically impossible.\n\n`;
     const systemPrompt = dateLine + SYSTEM_PROMPT;
 
-    const claudePromise: Promise<Record<string, unknown>> = (async () => {
-      try {
-        console.log("[analyse-listing] calling Claude (primary)");
-        const text = await callClaude(systemPrompt, userContent, 6000);
-        console.log(`[analyse-listing] Claude response length: ${text.length}`);
-        return parseWithRepair(text) as Record<string, unknown>;
-      } catch (primaryErr) {
-        console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
-        const simplified =
-          systemPrompt +
-          "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
-        const text = await callClaude(simplified, userContent, 6000);
-        const out = parseWithRepair(text) as Record<string, unknown>;
-        out.renovationCosts = null;
-        return out;
-      }
-    })();
-
-    const [pd, parsedResult] = await Promise.all([pdPromise, claudePromise]);
-    const parsed: Record<string, unknown> = parsedResult;
+    let parsed: Record<string, unknown>;
+    try {
+      console.log("[analyse-listing] calling Claude (primary)");
+      const text = await callClaude(systemPrompt, userContent, 6000);
+      console.log(`[analyse-listing] Claude response length: ${text.length}`);
+      parsed = parseWithRepair(text) as Record<string, unknown>;
+    } catch (primaryErr) {
+      console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
+      const simplified =
+        systemPrompt +
+        "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+      const text = await callClaude(simplified, userContent, 6000);
+      parsed = parseWithRepair(text) as Record<string, unknown>;
+      parsed.renovationCosts = null;
+    }
 
     // Make sure listingUrl is set on the property block.
     const property = (parsed.property ?? {}) as Record<string, unknown>;
@@ -636,8 +624,6 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       schools: pdData(pd["schools"]),
       crime: pdData(pd["crime"]),
       internetSpeed: pdData(pd["internet-speed"]),
-      energyEfficiency: pdData(pd["energy-efficiency"]),
-      floorAreas: pdData(pd["floor-areas"]),
       growth: pdData(pd["growth"]),
       planningApplications: pdData(pd["planning-applications"]),
       listedBuildings: pdData(pd["listed-buildings"]),
