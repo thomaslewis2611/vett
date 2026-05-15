@@ -164,26 +164,25 @@ function Index() {
       >
         <div className="mx-auto grid max-w-5xl grid-cols-1 sm:grid-cols-3">
           {[
-            { value: "From £4.99", unit: "", label: "" },
+            { value: "From £4.99", unit: "", label: "Per report, one-off payment" },
             { value: "100", unit: "+", label: "Data points checked" },
-            { value: "In minutes, not days", unit: "", label: "" },
+            { value: "In minutes, not days", unit: "", label: "No waiting, no surveys" },
           ].map((s, i) => (
             <div
               key={i}
-              className="px-8 py-10 text-center"
+              className="flex flex-col items-center justify-center px-8 py-10 text-center"
               style={{
+                minHeight: 140,
                 borderLeft: i === 0 ? "none" : "0.5px solid rgba(26,17,8,0.12)",
               }}
             >
-              <div style={{ fontSize: i === 1 ? 24 : 32, fontWeight: 500, color: "#1A1108", letterSpacing: "-1px" }}>
+              <div style={{ fontSize: 24, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px", lineHeight: 1.2 }}>
                 {s.value}
                 {s.unit && <span style={{ color: "#D85A30" }}>{s.unit}</span>}
               </div>
-              {s.label && (
-                <div className="mt-2" style={{ fontSize: 13, color: "#888780" }}>
-                  {s.label}
-                </div>
-              )}
+              <div className="mt-2" style={{ fontSize: 13, color: "#888780" }}>
+                {s.label}
+              </div>
             </div>
           ))}
         </div>
