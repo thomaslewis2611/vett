@@ -19,6 +19,7 @@ type SavedRow = {
   listing_url: string | null;
   analysis_json: any;
   created_at: string;
+  pinned: boolean;
 };
 
 type PassStatus = "active" | "expiring" | "expired";
