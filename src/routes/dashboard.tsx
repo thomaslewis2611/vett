@@ -113,21 +113,60 @@ function DashboardPage() {
         else setPassStatus("active");
       }
       setEmail(userEmail);
+      // Pull every saved analysis for this user (RLS-scoped to the
+      // current email). We deliberately do NOT cap by limit here so a Buyer
+      // Pass upgrade never appears to "hide" earlier Single Report rows.
       const { data: saved } = await supabase
         .from("saved_analyses")
         .select("id, listing_url, analysis_json, created_at, is_pinned, pinned_at")
-        .order("created_at", { ascending: false })
-        .limit(50);
+        .order("created_at", { ascending: false });
+
+      // Also pull any Single Report tokens the user has purchased. These
+      // may not yet have a matching saved_analyses row (e.g. the user
+      // bought but never opened the report) — surface them so previously
+      // purchased reports never disappear after upgrading to Buyer Pass.
+      const { data: tokens } = await supabase
+        .from("single_report_tokens")
+        .select("id, token, listing_url, analysis_json, created_at")
+        .ilike("user_email", userEmail)
+        .order("created_at", { ascending: false });
+
+      const savedRows = (saved as unknown as SavedRow[]) ?? [];
+      const tokenRows = (tokens as unknown as Array<{
+        id: string;
+        token: string;
+        listing_url: string | null;
+        analysis_json: any;
+        created_at: string;
+      }>) ?? [];
+
+      // Merge: saved_analyses rows are authoritative (they carry pin state
+      // and the freshest analysis_json). For any single_report_token whose
+      // listing_url is not already represented in saved_analyses, add a
+      // synthetic row so the user still sees that purchase in the list.
       const seen = new Set<string>();
-      const deduped: SavedRow[] = [];
-      for (const r of (saved as unknown as SavedRow[]) ?? []) {
+      const merged: SavedRow[] = [];
+      for (const r of savedRows) {
         const key = r.listing_url ?? `__no_url__${r.id}`;
         if (seen.has(key)) continue;
         seen.add(key);
-        deduped.push(r);
-        if (deduped.length >= 10) break;
+        merged.push(r);
       }
-      setRows(sortRows(deduped));
+      for (const t of tokenRows) {
+        const key = t.listing_url ?? `__no_url__token_${t.id}`;
+        if (seen.has(key)) continue;
+        if (!t.analysis_json) continue; // skip empty/unused tokens
+        seen.add(key);
+        merged.push({
+          id: `token:${t.token}`,
+          listing_url: t.listing_url,
+          analysis_json: t.analysis_json,
+          created_at: t.created_at,
+          is_pinned: false,
+          pinned_at: null,
+        });
+      }
+      setRows(sortRows(merged));
       setLoading(false);
     })();
     return () => {
