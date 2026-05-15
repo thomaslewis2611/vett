@@ -318,6 +318,9 @@ function ResultsPage() {
 
       let jobId = recallJobId(url);
       // Verify any existing jobId is still known to the server before reusing.
+      // Only discard the jobId on an explicit "not found" — transient
+      // network errors (mobile screen-lock, flaky connection) must NOT
+      // start a brand-new job; the poll loop below will retry the fetch.
       if (jobId) {
         try {
           const probe = await getJobFn({ data: { jobId, sessionJwt } });
@@ -328,8 +331,11 @@ function ResultsPage() {
           if (probe.status === "error" && /not found/i.test(probe.error ?? "")) {
             jobId = undefined;
           }
-        } catch {
-          jobId = undefined;
+        } catch (err) {
+          console.warn("[results] probe transient error, keeping jobId", {
+            jobId,
+            error: (err as Error)?.message,
+          });
         }
       }
       if (!jobId) {
