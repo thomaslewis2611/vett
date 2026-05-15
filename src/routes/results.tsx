@@ -964,9 +964,27 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
             )}
           </div>
           <div className="mt-4 space-y-3">
-            {(unlocked ? a.redFlags : a.redFlags.slice(0, 2)).map((f, i) => (
-              <RedFlagItem key={i} flag={f} />
-            ))}
+            {(() => {
+              const hasSqft = Boolean(a.manualSqftAnalysis?.sqft) || (a.property?.sqft ?? 0) > 0;
+              const hasEpc = Boolean(a.epc?.rating);
+              const hasFlood = Boolean(a.floodRisk?.manualZone) || Boolean(a.floodRisk?.riskLevel) || Boolean(a.floodRisk?.overallRisk);
+              const filtered = (a.redFlags ?? []).filter((f) => {
+                const t = `${f.title} ${f.detail}`.toLowerCase();
+                const missingPhrase = /(no\s|missing|not\s+(disclosed|listed|provided|stated|recorded|shown|checked|given)|undisclosed|unknown|absent|without|hidden|not\s+available)/;
+                if (hasSqft && /(sq\.?\s?ft|square\s?(foot|feet|footage)|floor\s?area)/.test(t) && missingPhrase.test(t)) {
+                  return false;
+                }
+                if (hasEpc && /\bepc\b|energy\s+performance/.test(t) && missingPhrase.test(t)) {
+                  return false;
+                }
+                if (hasFlood && /flood/.test(t) && missingPhrase.test(t)) {
+                  return false;
+                }
+                return true;
+              });
+              const list = unlocked ? filtered : filtered.slice(0, 2);
+              return list.map((f, i) => <RedFlagItem key={i} flag={f} />);
+            })()}
           </div>
         </section>
 
