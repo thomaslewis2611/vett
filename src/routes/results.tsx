@@ -447,18 +447,20 @@ function ResultsPage() {
     );
   }
 
-  if (query.isPending) {
+  // While recovering from a screen-lock / background tab, prefer the
+  // loading view over any stale error state — the poll has been restarted.
+  if (query.isPending || (showResumeBanner && (query.isFetching || query.isError))) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
         {showResumeBanner && (
-          <button
-            type="button"
-            onClick={() => { setShowResumeBanner(false); query.refetch(); }}
-            className="mx-auto mt-4 block max-w-xl rounded-xl border border-border bg-accent px-4 py-3 text-sm text-accent-foreground hover:opacity-90"
+          <div
+            role="status"
+            aria-live="polite"
+            className="mx-auto mt-4 block max-w-xl rounded-xl border border-border bg-accent px-4 py-3 text-sm text-accent-foreground"
           >
-            Your analysis is still running — tap to check results
-          </button>
+            Still analysing your property…
+          </div>
         )}
         <LoadingState url={url} />
         <DisclaimerBar />
