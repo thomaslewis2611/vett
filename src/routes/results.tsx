@@ -1235,7 +1235,9 @@ function PricePerSqftCard({
       {hasValue && !editing && manual && (
         <>
           {manual.vsAreaAvg &&
-            !/n\/?a/i.test(manual.vsAreaAvg) &&
+            !/n\/?a/i.test(String(manual.vsAreaAvg)) &&
+            manual.vsAreaAvgLabel &&
+            !/n\/?a/i.test(String(manual.vsAreaAvgLabel)) &&
             typeof areaAvg === "number" &&
             areaAvg > 0 && (
               <div
