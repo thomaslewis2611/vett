@@ -197,6 +197,7 @@ const analysisSchema = z.object({
       })
     )
     .max(4)
+    .describe("Plausible comparable sales nearby; empty array if you cannot reasonably estimate"),
   planningReference: z
     .object({
       found: z.boolean(),
