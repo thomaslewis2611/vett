@@ -3452,7 +3452,7 @@ function FloodRiskSection({
                 Flood risk assessment
               </div>
               <p className="mt-1" style={{ fontSize: 12, color: "#5F5E5A" }}>
-                Unlock with Buyer Pass to see flood zone, insurance implications and mortgage risks
+                Unlock with a Single Report — £4.99 to see flood zone, insurance implications and mortgage risks
               </p>
             </div>
           </div>
