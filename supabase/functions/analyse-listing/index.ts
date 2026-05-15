@@ -179,6 +179,19 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
 
 PLANNING REFERENCE: Detect any UK planning reference numbers in the listing text (format: XX/XXXXX/XXX e.g. 24/01893/FUL, also older XXXX/XXXX). Look near the words: planning, permission, reference, application, consent, approval. If found, populate planningReference with the reference, what it relates to (e.g. "rear kitchen extension"), the applicationType (Householder | Full Planning | Change of Use | Listed Building Consent | Unknown), whether it is for this property or a neighbouring property (isNeighbouring: true if the listing context indicates the application is on a next-door / adjacent property rather than the subject property), and 2-3 sentences of commentary on what this means for the buyer including what documents to request from the seller's solicitors (planning decision notice, approved drawings, building regs completion certificate). If no planning reference is present, return planningReference: null. Do NOT invent a reference number.
 
+PROPERTYDATA CONTEXT: At the top of the listing content you will find official PropertyData API results. Use these as ground truth facts — they override any estimates you would otherwise make:
+- SOLD PRICES: Use these for price history section and comparable analysis. These are real Land Registry transactions.
+- FLOOR AREAS: If the listing says "Ask agent" for sq ft but floor areas data is available, use the most recent floor area for this property type in the postcode.
+- CAPITAL GROWTH: Use for area context commentary — quote the actual growth percentage.
+- FLOOD RISK: Use PropertyData flood risk data instead of estimating. Quote the actual risk level.
+- LISTED BUILDINGS: If this property appears in listed buildings data, flag it and set listingTransparency lower if the listing does not mention it.
+- CONSERVATION AREA: If in a conservation area, mention implications for extensions and alterations.
+- PLANNING APPLICATIONS: Use recent planning applications for context. If there are nearby large developments, flag as a consideration.
+- CRIME: Use actual crime data for area context. If crime is notably high, flag it.
+- INTERNET SPEED: Quote actual speeds in area context.
+- SCHOOLS: Use actual school data with Ofsted ratings.
+- ENERGY EFFICIENCY: If EPC data is available from PropertyData, use it instead of extracting from listing text.
+
 If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for.`;
 
 // ---------- JSON repair ----------
@@ -271,96 +284,124 @@ function extractPostcode(text: string): string | null {
   return m ? m[0].toUpperCase().trim() : null;
 }
 
-async function fetchGeo(postcode: string): Promise<{ lat: number; lng: number } | null> {
+// ---------- PropertyData API ----------
+const PROPERTYDATA_API_KEY = Deno.env.get("PROPERTYDATA_API_KEY") ?? "";
+const PD_BASE = "https://api.propertydata.co.uk";
+const PD_ENDPOINTS = [
+  "sold-prices",
+  "flood-risk",
+  "schools",
+  "crime",
+  "internet-speed",
+  "energy-efficiency",
+  "floor-areas",
+  "growth",
+  "planning-applications",
+  "listed-buildings",
+  "conservation-area",
+] as const;
+
+type PdKey = typeof PD_ENDPOINTS[number];
+type PdResults = Partial<Record<PdKey, unknown>>;
+
+async function fetchPropertyDataAll(postcode: string): Promise<PdResults> {
+  if (!PROPERTYDATA_API_KEY) {
+    console.warn("[analyse-listing] PROPERTYDATA_API_KEY missing");
+    return {};
+  }
+  const pc = encodeURIComponent(postcode);
+  const settled = await Promise.allSettled(
+    PD_ENDPOINTS.map((ep) =>
+      fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`).then((r) => r.json()),
+    ),
+  );
+  const out: PdResults = {};
+  PD_ENDPOINTS.forEach((ep, i) => {
+    const s = settled[i];
+    if (s.status === "fulfilled") {
+      out[ep] = s.value;
+    } else {
+      console.warn(`[analyse-listing] propertydata ${ep} failed`, s.reason);
+      out[ep] = null;
+    }
+  });
+  return out;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function pdData(raw: any): any {
+  return raw && typeof raw === "object" ? raw.data ?? null : null;
+}
+
+function buildPropertyDataContext(pd: PdResults): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const slice = (v: any, n: number) => (Array.isArray(v) ? v.slice(0, n) : v ?? null);
+  return `PROPERTYDATA API RESULTS (official data — use these facts in your analysis):
+
+SOLD PRICES (last 10 sales in this postcode):
+${JSON.stringify(slice(pdData(pd["sold-prices"]), 10) || [])}
+
+FLOOR AREAS (known internal areas in this postcode):
+${JSON.stringify(pdData(pd["floor-areas"]) || [])}
+
+CAPITAL GROWTH (area):
+${JSON.stringify(pdData(pd["growth"]) || null)}
+
+FLOOD RISK:
+${JSON.stringify(pdData(pd["flood-risk"]) || null)}
+
+LISTED BUILDINGS:
+${JSON.stringify(pdData(pd["listed-buildings"]) || null)}
+
+CONSERVATION AREA:
+${JSON.stringify(pdData(pd["conservation-area"]) || null)}
+
+PLANNING APPLICATIONS (recent nearby):
+${JSON.stringify(slice(pdData(pd["planning-applications"]), 5) || [])}
+
+CRIME DATA:
+${JSON.stringify(pdData(pd["crime"]) || null)}
+
+INTERNET SPEED:
+${JSON.stringify(pdData(pd["internet-speed"]) || null)}
+
+SCHOOLS (within 1 mile):
+${JSON.stringify(slice(pdData(pd["schools"]), 10) || [])}
+
+ENERGY EFFICIENCY (EPC data for postcode):
+${JSON.stringify(slice(pdData(pd["energy-efficiency"]), 5) || [])}
+`;
+}
+
+const PD_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getCachedPropertyData(supabase: any, postcode: string): Promise<PdResults | null> {
   try {
-    const r = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(postcode)}`);
-    if (!r.ok) return null;
-    const j = await r.json();
-    const lat = j?.result?.latitude;
-    const lng = j?.result?.longitude;
-    if (typeof lat !== "number" || typeof lng !== "number") return null;
-    return { lat, lng };
+    const { data, error } = await supabase
+      .from("property_data_cache")
+      .select("data, fetched_at")
+      .eq("postcode", postcode)
+      .maybeSingle();
+    if (error || !data) return null;
+    const age = Date.now() - new Date(data.fetched_at).getTime();
+    if (age > PD_CACHE_TTL_MS) return null;
+    return data.data as PdResults;
   } catch (e) {
-    console.warn("[analyse-listing] geo failed", e);
+    console.warn("[analyse-listing] pd cache read failed", e);
     return null;
   }
 }
 
-async function fetchCrimeStats(lat: number, lng: number) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function setCachedPropertyData(supabase: any, postcode: string, pd: PdResults) {
   try {
-    const r = await fetch(`https://data.police.uk/api/crimes-street/all-crime?lat=${lat}&lng=${lng}`);
-    if (!r.ok) return null;
-    const arr = (await r.json()) as Array<{ category?: string }>;
-    if (!Array.isArray(arr)) return null;
-    const byCat: Record<string, number> = {};
-    for (const c of arr) {
-      const k = String(c.category ?? "other");
-      byCat[k] = (byCat[k] ?? 0) + 1;
-    }
-    const topCategories = Object.entries(byCat)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([category, count]) => ({ category, count }));
-    return { totalCrimes: arr.length, topCategories };
+    await supabase
+      .from("property_data_cache")
+      .upsert({ postcode, data: pd, fetched_at: new Date().toISOString() }, { onConflict: "postcode" });
   } catch (e) {
-    console.warn("[analyse-listing] crime failed", e);
-    return null;
+    console.warn("[analyse-listing] pd cache write failed", e);
   }
-}
-
-async function fetchBroadband(postcode: string) {
-  try {
-    const r = await fetch(
-      `https://api.ofcom.org.uk/connected-nations/broadband-coverage?postcode=${encodeURIComponent(postcode)}`,
-    );
-    if (!r.ok) return null;
-    const j = await r.json();
-    if (!j || (typeof j === "object" && Object.keys(j).length === 0)) return null;
-    return j;
-  } catch (e) {
-    console.warn("[analyse-listing] broadband failed", e);
-    return null;
-  }
-}
-
-async function fetchSchools(postcode: string) {
-  const tryParse = (raw: unknown): Array<{ name: string; ofstedRating: string | null; type: string | null; distance: string | null }> | null => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const list = Array.isArray((raw as any)?.results) ? (raw as any).results : Array.isArray(raw) ? (raw as any[]) : null;
-    if (!list) return null;
-    return list
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .map((s: any) => ({
-        name: String(s?.name ?? s?.establishmentName ?? "").trim(),
-        ofstedRating: s?.ofstedRating ?? s?.ofsted_rating ?? null,
-        type: s?.type ?? s?.establishmentType ?? null,
-        distance: s?.distance != null ? String(s.distance) : null,
-      }))
-      .filter((s) => s.name);
-  };
-  try {
-    const r = await fetch(
-      `https://get-information-schools.service.gov.uk/api/v1/schools?location=${encodeURIComponent(postcode)}&radiusInMiles=5`,
-    );
-    if (r.ok) {
-      const parsed = tryParse(await r.json());
-      if (parsed && parsed.length) return parsed;
-    }
-  } catch (e) {
-    console.warn("[analyse-listing] schools tier1 failed", e);
-  }
-  try {
-    const r = await fetch(
-      `https://educationdata.service.gov.uk/api/v1/schools/information/?postcode=${encodeURIComponent(postcode)}&radius=8`,
-    );
-    if (r.ok) {
-      const parsed = tryParse(await r.json());
-      if (parsed && parsed.length) return parsed;
-    }
-  } catch (e) {
-    console.warn("[analyse-listing] schools tier2 failed", e);
-  }
-  return null;
 }
 
 // ---------- Main job runner ----------
@@ -384,59 +425,63 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       );
     }
 
-    const userContent = `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
-
-    // Kick off external API enrichment in parallel with Claude.
+    // Fetch PropertyData (with 24h postcode cache) BEFORE Claude so we can prepend context.
     const postcode = extractPostcode(listingContent);
-    const externalsPromise = (async () => {
-      let crimeStats: unknown = null;
-      let broadbandData: unknown = null;
-      let schoolsData: unknown = null;
-      if (!postcode) return { crimeStats, broadbandData, schoolsData };
-      const geo = await fetchGeo(postcode);
-      const [crime, bb, schools] = await Promise.all([
-        geo ? fetchCrimeStats(geo.lat, geo.lng) : Promise.resolve(null),
-        fetchBroadband(postcode),
-        fetchSchools(postcode),
-      ]);
-      crimeStats = crime;
-      broadbandData = bb;
-      schoolsData = schools;
-      return { crimeStats, broadbandData, schoolsData };
-    })().catch((e) => {
-      console.warn("[analyse-listing] external enrichment failed", e);
-      return { crimeStats: null, broadbandData: null, schoolsData: null };
-    });
-
-    const claudePromise = (async () => {
-      try {
-        console.log("[analyse-listing] calling Claude (primary)");
-        const text = await callClaude(SYSTEM_PROMPT, userContent, 6000);
-        console.log(`[analyse-listing] Claude response length: ${text.length}`);
-        return parseWithRepair(text) as Record<string, unknown>;
-      } catch (primaryErr) {
-        console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
-        const simplified =
-          SYSTEM_PROMPT +
-          "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
-        const text = await callClaude(simplified, userContent, 6000);
-        const p = parseWithRepair(text) as Record<string, unknown>;
-        p.renovationCosts = null;
-        return p;
+    let pd: PdResults = {};
+    if (postcode) {
+      const cached = await getCachedPropertyData(supabase, postcode);
+      if (cached) {
+        console.log(`[analyse-listing] propertydata cache hit ${postcode}`);
+        pd = cached;
+      } else {
+        try {
+          pd = await fetchPropertyDataAll(postcode);
+          await setCachedPropertyData(supabase, postcode, pd);
+        } catch (e) {
+          console.warn("[analyse-listing] propertydata fetch failed", e);
+          pd = {};
+        }
       }
-    })();
+    }
 
-    const [parsed, externals] = await Promise.all([claudePromise, externalsPromise]);
+    const propertyDataContext = postcode ? buildPropertyDataContext(pd) : "";
+    const userContent = `${propertyDataContext}\nListing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
+
+    let parsed: Record<string, unknown>;
+    try {
+      console.log("[analyse-listing] calling Claude (primary)");
+      const text = await callClaude(SYSTEM_PROMPT, userContent, 6000);
+      console.log(`[analyse-listing] Claude response length: ${text.length}`);
+      parsed = parseWithRepair(text) as Record<string, unknown>;
+    } catch (primaryErr) {
+      console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
+      const simplified =
+        SYSTEM_PROMPT +
+        "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+      const text = await callClaude(simplified, userContent, 6000);
+      parsed = parseWithRepair(text) as Record<string, unknown>;
+      parsed.renovationCosts = null;
+    }
 
     // Make sure listingUrl is set on the property block.
     const property = (parsed.property ?? {}) as Record<string, unknown>;
     if (!property.listingUrl) property.listingUrl = url || "";
     parsed.property = property;
 
-    // Merge external enrichment (planningReference comes from Claude directly).
-    parsed.crimeStats = externals.crimeStats;
-    parsed.broadbandData = externals.broadbandData;
-    parsed.schoolsData = externals.schoolsData;
+    // Merge PropertyData results into the saved analysis JSON.
+    parsed.propertyData = {
+      soldPrices: pdData(pd["sold-prices"]),
+      floodRisk: pdData(pd["flood-risk"]),
+      schools: pdData(pd["schools"]),
+      crime: pdData(pd["crime"]),
+      internetSpeed: pdData(pd["internet-speed"]),
+      energyEfficiency: pdData(pd["energy-efficiency"]),
+      floorAreas: pdData(pd["floor-areas"]),
+      growth: pdData(pd["growth"]),
+      planningApplications: pdData(pd["planning-applications"]),
+      listedBuildings: pdData(pd["listed-buildings"]),
+      conservationArea: pdData(pd["conservation-area"]),
+    };
 
     const { error: updErr } = await supabase
       .from("analysis_jobs")
