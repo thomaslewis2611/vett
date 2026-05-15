@@ -109,7 +109,7 @@ function Index() {
                 id="url-input"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="Paste a property listing URL"
+                placeholder="Paste a Rightmove listing URL"
                 className="w-full bg-transparent py-2.5 outline-none"
                 style={{ fontSize: 14, color: "#1A1108" }}
                 aria-label="Property listing URL"
@@ -133,7 +133,7 @@ function Index() {
           </form>
 
           <p className="mx-auto mt-3" style={{ fontSize: 11, color: "#888780" }}>
-            Works best with Rightmove listings · More sites coming soon · Currently UK properties only
+            Works best with Rightmove listings · More sites coming soon · UK properties only
           </p>
 
           <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
@@ -148,9 +148,6 @@ function Index() {
             ))}
           </ul>
 
-          <p className="mx-auto mt-6 text-center" style={{ fontSize: 11, color: "#888780" }}>
-            Currently available for UK properties only — US, Australia and more coming soon
-          </p>
         </div>
       </section>
 
