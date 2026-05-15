@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowRight, LogOut, AlertTriangle } from "lucide-react";
+import { ArrowRight, LogOut, AlertTriangle, Pin } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGBP } from "@/lib/mock-analysis";
@@ -19,6 +19,7 @@ type SavedRow = {
   listing_url: string | null;
   analysis_json: any;
   created_at: string;
+  pinned: boolean;
 };
 
 type PassStatus = "active" | "expiring" | "expired";
@@ -101,7 +102,7 @@ function DashboardPage() {
       setEmail(userEmail);
       const { data: saved } = await supabase
         .from("saved_analyses")
-        .select("id, listing_url, analysis_json, created_at")
+        .select("id, listing_url, analysis_json, created_at, pinned")
         .order("created_at", { ascending: false })
         .limit(50);
       // Deduplicate by listing_url, keeping the most recent entry per URL.
@@ -114,6 +115,11 @@ function DashboardPage() {
         deduped.push(r);
         if (deduped.length >= 10) break;
       }
+      // Sort: pinned first (by date desc), then unpinned (by date desc).
+      deduped.sort((a, b) => {
+        if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
       setRows(deduped);
       setLoading(false);
     })();
@@ -144,6 +150,33 @@ function DashboardPage() {
       window.location.href = res.url;
     } catch {
       setRenewing(false);
+    }
+  };
+
+  const togglePin = async (id: string, current: boolean) => {
+    const next = !current;
+    setRows((prev) => {
+      const updated = prev.map((r) => (r.id === id ? { ...r, pinned: next } : r));
+      updated.sort((a, b) => {
+        if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      return updated;
+    });
+    const { error } = await supabase
+      .from("saved_analyses")
+      .update({ pinned: next })
+      .eq("id", id);
+    if (error) {
+      // Revert on failure
+      setRows((prev) => {
+        const reverted = prev.map((r) => (r.id === id ? { ...r, pinned: current } : r));
+        reverted.sort((a, b) => {
+          if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
+        return reverted;
+      });
     }
   };
 
@@ -349,14 +382,30 @@ function DashboardPage() {
                 return (
                   <li
                     key={r.id}
-                    className="flex w-full flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                    className="group flex w-full flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                     style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)", boxSizing: "border-box" }}
                   >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
-                        {price > 0 && <span>{formatGBP(price)}</span>}
-                        <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
+                      <button
+                        type="button"
+                        onClick={() => togglePin(r.id, r.pinned)}
+                        aria-label={r.pinned ? "Unpin report" : "Pin report"}
+                        title={r.pinned ? "Unpin from top" : "Pin to top"}
+                        className={`shrink-0 rounded-full p-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 ${r.pinned ? "sm:opacity-100" : ""}`}
+                        style={{ color: r.pinned ? "#D85A30" : "#B8B6AE" }}
+                      >
+                        <Pin
+                          className="h-4 w-4"
+                          fill={r.pinned ? "#D85A30" : "none"}
+                          strokeWidth={2}
+                        />
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
+                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
+                          {price > 0 && <span>{formatGBP(price)}</span>}
+                          <span>{new Date(r.created_at).toLocaleDateString()}</span>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-3 sm:justify-end">
