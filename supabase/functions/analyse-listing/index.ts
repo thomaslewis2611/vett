@@ -501,6 +501,37 @@ function mapPdBroadband(raw: any) {
   };
 }
 
+// PropertyData /ptal → PTAL (Public Transport Accessibility Level) for London postcodes.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPdPtal(raw: any) {
+  if (!raw || raw.status !== "success") return null;
+  const data = raw.data ?? raw;
+  if (!data) return null;
+  const grade = String(
+    data.ptal ?? data.PTAL ?? data.ptal_grade ?? data.grade ?? data.rating ?? "",
+  ).trim();
+  if (!grade) return null;
+  const bandMatch = grade.match(/^(\d)/);
+  const band = bandMatch ? Number(bandMatch[1]) : null;
+  const descriptions: Record<number, { label: string; explanation: string }> = {
+    0: { label: "Very poor", explanation: "Very limited access to public transport — expect to rely on a car." },
+    1: { label: "Poor", explanation: "Limited bus or tube access within walking distance." },
+    2: { label: "Poor", explanation: "Some bus routes nearby but infrequent service and few rail options." },
+    3: { label: "Moderate", explanation: "Reasonable bus access and a tube or rail station within walking distance." },
+    4: { label: "Good", explanation: "Good mix of frequent buses and rail/tube connections within walking distance." },
+    5: { label: "Very good", explanation: "Excellent bus and tube/rail access — most journeys easy without a car." },
+    6: { label: "Excellent", explanation: "Multiple frequent bus and tube/rail connections within walking distance — among the best in London." },
+  };
+  const meta = band != null ? descriptions[band] : null;
+  return {
+    grade,
+    band,
+    label: meta?.label ?? (data.description ? String(data.description) : "Unknown"),
+    explanation: meta?.explanation ?? "Public transport accessibility score from Transport for London.",
+    source: "PropertyData / TfL PTAL",
+  };
+}
+
 
 function buildPropertyDataContext(pd: PdResults): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
