@@ -2539,36 +2539,36 @@ function PlanCard({
 
 type SubScoreKey = keyof AnalysisResult["subScores"];
 
-const SUB_SCORE_LABELS: { key: SubScoreKey; label: string; fallback: string }[] = [
+const SUB_SCORE_LABELS: { key: SubScoreKey; label: string; how: string }[] = [
   {
     key: "valueForMoney",
     label: "Value for money",
-    fallback: "How the asking price compares to the local area average and to the property's size in sq ft.",
+    how: "Based on price per sq ft vs local comparables, days on market, and recent sold prices in the area.",
   },
   {
     key: "locationQuality",
     label: "Location quality",
-    fallback: "Transport links, schools, amenities and overall postcode desirability.",
+    how: "Based on local schools, crime rates, transport links, broadband, and area growth data.",
   },
   {
     key: "listingTransparency",
     label: "Listing transparency",
-    fallback: "How honest, complete and detailed the agent's listing description is.",
+    how: "Based on information disclosed in the listing — sq ft, EPC, council tax, floor plans, photos.",
   },
   {
     key: "marketTiming",
     label: "Market timing",
-    fallback: "Days on market, price reductions and demand signals for this property.",
+    how: "Based on days on market, price reductions, seasonal trends, and local demand signals.",
   },
   {
     key: "riskLevel",
     label: "Risk level",
-    fallback: "Higher score means lower risk — covers structural, legal and tenure red flags.",
+    how: "Based on red flags identified, property type, age, and legal/structural considerations.",
   },
   {
     key: "resalePotential",
     label: "Resale potential",
-    fallback: "Property type, tenure, size and the area's longer-term resale outlook.",
+    how: "Based on location quality, property type, local growth trends, and market demand.",
   },
 ];
 
