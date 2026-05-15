@@ -33,7 +33,7 @@ export function usePassDiscount(): PassDiscount {
           if (!cancelled) setState((s) => ({ ...s, loading: false, eligible: false }));
           return;
         }
-        const r = await checkFn({ data: undefined as never });
+        const r = await checkFn();
         if (cancelled) return;
         setState({ eligible: r.eligible, loading: false, priceId: r.priceId });
       } catch {
