@@ -1020,6 +1020,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
           listingUrl={listingUrl}
           userEmail={access.email}
           onFloodRiskUpdate={(fr) => setA((prev) => ({ ...prev, floodRisk: fr }))}
@@ -1031,6 +1032,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.nearbySchools == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
         />
 
         {/* Crime statistics — Single Report + Buyer Pass; free sees locked teaser */}
@@ -1039,6 +1041,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.crime == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
         />
 
         {/* Broadband & connectivity — Single Report + Buyer Pass; free sees locked teaser */}
@@ -1047,6 +1050,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.broadband == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
         />
 
         {/* Transport links — Single Report + Buyer Pass; free sees locked teaser */}
@@ -1055,6 +1059,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.transport == null}
           onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
         />
 
         {/* Sold price history (PropertyData / Land Registry) */}
@@ -2780,7 +2785,7 @@ function shortMoney(n: number): string {
   }).format(n);
 }
 
-function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -2815,16 +2820,18 @@ function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade }: { anal
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
               Unlock with a Single Report — £4.99 to see transport links and commute times
             </p>
-            {onUpgrade && (
-              <button
-                type="button"
-                onClick={onUpgrade}
-                className="mt-3 hover:underline"
-                style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
-              >
-                Get Single Report — £4.99 →
-              </button>
-            )}
+            <div className="mt-3 flex flex-col items-center gap-1">
+              {onUpgrade && (
+                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Get Single Report — £4.99 →
+                </button>
+              )}
+              {onUpgradePass && (
+                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -2965,7 +2972,7 @@ function SchoolRow({ s }: { s: NonNullable<AnalysisResult["nearbySchools"]>["sch
   );
 }
 
-function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -2995,16 +3002,18 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
             <p className="text-center" style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
               Unlock with a Single Report — £4.99 to see nearby schools and Ofsted ratings
             </p>
-            {onUpgrade && (
-              <button
-                type="button"
-                onClick={onUpgrade}
-                className="mt-3 hover:underline"
-                style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
-              >
-                Get Single Report — £4.99 →
-              </button>
-            )}
+            <div className="mt-3 flex flex-col items-center gap-1">
+              {onUpgrade && (
+                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Get Single Report — £4.99 →
+                </button>
+              )}
+              {onUpgradePass && (
+                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -3079,7 +3088,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
   );
 }
 
-function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -3114,11 +3123,18 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
               Unlock with a Single Report — £4.99 to see local crime statistics
             </p>
-            {onUpgrade && (
-              <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
-                Get Single Report — £4.99 →
-              </button>
-            )}
+            <div className="mt-3 flex flex-col items-center gap-1">
+              {onUpgrade && (
+                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Get Single Report — £4.99 →
+                </button>
+              )}
+              {onUpgradePass && (
+                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -3229,7 +3245,7 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis
   );
 }
 
-function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -3264,11 +3280,18 @@ function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade }: { anal
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
               Unlock with a Single Report — £4.99 to see broadband speeds and connectivity
             </p>
-            {onUpgrade && (
-              <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
-                Get Single Report — £4.99 →
-              </button>
-            )}
+            <div className="mt-3 flex flex-col items-center gap-1">
+              {onUpgrade && (
+                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Get Single Report — £4.99 →
+                </button>
+              )}
+              {onUpgradePass && (
+                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -3393,6 +3416,7 @@ function FloodRiskSection({
   isBuyerPass,
   fetching,
   onUpgrade,
+  onUpgradePass,
   listingUrl,
   userEmail,
   onFloodRiskUpdate,
@@ -3401,6 +3425,7 @@ function FloodRiskSection({
   isBuyerPass: boolean;
   fetching?: boolean;
   onUpgrade?: () => void;
+  onUpgradePass?: () => void;
   listingUrl?: string;
   userEmail?: string | null;
   onFloodRiskUpdate?: (fr: NonNullable<AnalysisResult["floodRisk"]>) => void;
@@ -3457,11 +3482,18 @@ function FloodRiskSection({
               <p className="mt-1" style={{ fontSize: 12, color: "#5F5E5A" }}>
                 Unlock with a Single Report — £4.99 to see flood zone, insurance implications and mortgage risks
               </p>
-              {onUpgrade && (
-                <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
-                  Get Single Report — £4.99 →
-                </button>
-              )}
+              <div className="mt-3 flex flex-col items-center gap-1">
+                {onUpgrade && (
+                  <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                    Get Single Report — £4.99 →
+                  </button>
+                )}
+                {onUpgradePass && (
+                  <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                    Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </section>
