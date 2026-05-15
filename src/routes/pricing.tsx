@@ -80,14 +80,6 @@ function PricingPage() {
             footnote="One-off payment. Access ends 90 days after purchase."
           />
         </div>
-
-        <div className="mt-12 text-center text-sm text-muted-foreground">
-          Need it for your team or agency?{" "}
-          <a href="mailto:hello@roovr.co.uk" className="text-primary hover:underline">
-            Get in touch
-          </a>
-          .
-        </div>
       </main>
 
       <SiteFooter />
