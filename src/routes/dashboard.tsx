@@ -124,15 +124,32 @@ function DashboardPage() {
         .select("id, listing_url, analysis_json, created_at, is_pinned, pinned_at")
         .order("created_at", { ascending: false });
 
-      // Also pull any Single Report tokens the user has purchased. These
-      // may not yet have a matching saved_analyses row (e.g. the user
-      // bought but never opened the report) — surface them so previously
-      // purchased reports never disappear after upgrading to Buyer Pass.
-      const { data: tokens, error: tokensError } = await supabase
-        .from("single_report_tokens")
-        .select("id, token, listing_url, analysis_json, created_at, expires_at, user_email")
-        .ilike("user_email", userEmail)
-        .order("created_at", { ascending: false });
+      // Also pull any Single Report tokens the user has purchased. Match on
+      // BOTH user_id (auth account) and user_email (Stripe receipt email),
+      // because the email Stripe captures at checkout may differ from the
+      // email on the user's account (different casing, OAuth alias, etc.).
+      const tokenQueries = await Promise.all([
+        supabase
+          .from("single_report_tokens")
+          .select("id, token, listing_url, analysis_json, created_at, expires_at, user_email, user_id")
+          .or(`user_email.ilike.${userEmail},user_email.eq.${userEmail.toLowerCase()}`)
+          .order("created_at", { ascending: false }),
+        authUserId
+          ? supabase
+              .from("single_report_tokens")
+              .select("id, token, listing_url, analysis_json, created_at, expires_at, user_email, user_id")
+              .eq("user_id", authUserId)
+              .order("created_at", { ascending: false })
+          : Promise.resolve({ data: [], error: null }),
+      ]);
+      const tokensByEmail = (tokenQueries[0].data as any[]) ?? [];
+      const tokensById = (tokenQueries[1].data as any[]) ?? [];
+      const tokensError = tokenQueries[0].error || tokenQueries[1].error;
+
+      // Merge + dedupe by token id.
+      const tokenMap = new Map<string, any>();
+      for (const t of [...tokensByEmail, ...tokensById]) tokenMap.set(t.id, t);
+      const tokens = Array.from(tokenMap.values());
 
       const savedRows = (saved as unknown as SavedRow[]) ?? [];
       const tokenRows = (tokens as unknown as Array<{
@@ -143,17 +160,23 @@ function DashboardPage() {
         created_at: string;
         expires_at: string;
         user_email: string | null;
+        user_id: string | null;
       }>) ?? [];
 
       console.log("[dashboard] single_report_tokens lookup", {
         authUserId,
         lookupEmail: userEmail,
-        tokenCount: tokenRows.length,
+        tokenCountByEmail: tokensByEmail.length,
+        tokenCountByUserId: tokensById.length,
+        mergedTokenCount: tokenRows.length,
         error: tokensError?.message ?? null,
         tokens: tokenRows.map((t) => ({
           id: t.id,
           token: t.token,
+          storedUserEmail: t.user_email,
+          storedUserId: t.user_id,
           userEmailMatchesAuthEmail: (t.user_email ?? "").toLowerCase() === userEmail.toLowerCase(),
+          userIdMatchesAuth: t.user_id === authUserId,
           hasListingUrl: Boolean(t.listing_url),
           listingUrl: t.listing_url,
           hasAnalysisJson: Boolean(t.analysis_json),
