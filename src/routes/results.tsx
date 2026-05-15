@@ -1234,12 +1234,17 @@ function PricePerSqftCard({
       </div>
       {hasValue && !editing && manual && (
         <>
-          <div
-            className="mt-1 text-xs"
-            style={{ color: deltaColor, fontWeight: 500 }}
-          >
-            {manual.vsAreaAvg} {manual.vsAreaAvgLabel} area avg
-          </div>
+          {manual.vsAreaAvg &&
+            !/n\/?a/i.test(manual.vsAreaAvg) &&
+            typeof areaAvg === "number" &&
+            areaAvg > 0 && (
+              <div
+                className="mt-1 text-xs"
+                style={{ color: deltaColor, fontWeight: 500 }}
+              >
+                {manual.vsAreaAvg} {manual.vsAreaAvgLabel} area avg
+              </div>
+            )}
           <div
             className="mt-2 text-[11px]"
             style={{ color: "#5F5E5A", lineHeight: 1.5 }}
