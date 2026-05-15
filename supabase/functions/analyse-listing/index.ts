@@ -574,6 +574,25 @@ function mapPdPtal(raw: any) {
   };
 }
 
+// PropertyData /prices-per-sqf or /sold-prices-per-sqf → { average, low, high } in £/sqft.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPdPpsf(raw: any): { average: number; low: number | null; high: number | null; points: number | null } | null {
+  if (!raw || raw.status !== "success") return null;
+  const d = raw.data ?? raw;
+  if (!d) return null;
+  const num = (v: unknown) => {
+    const n = typeof v === "string" ? Number(v) : (v as number);
+    return typeof n === "number" && isFinite(n) && n > 0 ? n : null;
+  };
+  const average = num(d.average ?? d.avg ?? d.mean ?? d.average_price_per_sqf ?? d.ppsf_average);
+  if (average == null) return null;
+  return {
+    average,
+    low: num(d.low ?? d.min ?? d.ppsf_low),
+    high: num(d.high ?? d.max ?? d.ppsf_high),
+    points: num(d.points_analysed ?? d.points ?? d.transactions),
+  };
+}
 
 function buildPropertyDataContext(pd: PdResults): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
