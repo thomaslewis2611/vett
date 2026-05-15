@@ -624,8 +624,6 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       schools: pdData(pd["schools"]),
       crime: pdData(pd["crime"]),
       internetSpeed: pdData(pd["internet-speed"]),
-      energyEfficiency: pdData(pd["energy-efficiency"]),
-      floorAreas: pdData(pd["floor-areas"]),
       growth: pdData(pd["growth"]),
       planningApplications: pdData(pd["planning-applications"]),
       listedBuildings: pdData(pd["listed-buildings"]),
