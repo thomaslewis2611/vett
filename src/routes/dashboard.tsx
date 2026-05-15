@@ -108,12 +108,13 @@ function DashboardPage() {
         (bp as { activated_at: string }).activated_at;
       const exp = expiresRaw ? new Date(expiresRaw) : null;
       setExpiresAt(exp);
+      let nextPassStatus: PassStatus = "active";
       if (exp) {
         const msLeft = exp.getTime() - Date.now();
-        if (msLeft <= 0) setPassStatus("expired");
-        else if (msLeft <= 14 * 24 * 60 * 60 * 1000) setPassStatus("expiring");
-        else setPassStatus("active");
+        if (msLeft <= 0) nextPassStatus = "expired";
+        else if (msLeft <= 14 * 24 * 60 * 60 * 1000) nextPassStatus = "expiring";
       }
+      setPassStatus(nextPassStatus);
       setEmail(userEmail);
       // Pull every saved analysis for this user (RLS-scoped to the
       // current email). We deliberately do NOT cap by limit here so a Buyer
