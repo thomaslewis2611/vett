@@ -1422,6 +1422,10 @@ function PostcodePromptBanner({
       setError("You must be signed in to refresh local data");
       return;
     }
+    if (!listingUrl) {
+      setError("Missing listing URL");
+      return;
+    }
     setSubmitting(true);
     try {
       const r = await refetchFn({ data: { email, listingUrl, postcode: cleaned } });
