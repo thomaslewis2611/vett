@@ -3398,6 +3398,7 @@ function FloodRiskSection({
   isBuyerPass,
   fetching,
   onUpgrade,
+  onUpgradePass,
   listingUrl,
   userEmail,
   onFloodRiskUpdate,
@@ -3406,6 +3407,7 @@ function FloodRiskSection({
   isBuyerPass: boolean;
   fetching?: boolean;
   onUpgrade?: () => void;
+  onUpgradePass?: () => void;
   listingUrl?: string;
   userEmail?: string | null;
   onFloodRiskUpdate?: (fr: NonNullable<AnalysisResult["floodRisk"]>) => void;
