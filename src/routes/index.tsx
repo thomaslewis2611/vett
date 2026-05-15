@@ -200,7 +200,7 @@ function Index() {
           <h2 className="mt-3">Three steps to a better offer</h2>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 md:grid-cols-4" style={{ gap: 2 }}>
+        <div className="mt-12 grid grid-cols-1 gap-2 md:grid-cols-4 md:gap-[2px]">
           {[
             { icon: Link2, title: "Paste the URL", body: "Drop any Rightmove or Zoopla listing link, or paste the full text." },
             { icon: Sparkles, title: "AI reads it all", body: "Claude analyses description, metrics and local comparables." },
@@ -209,13 +209,10 @@ function Index() {
           ].map((s, i, arr) => (
             <div
               key={s.title}
+              className="rounded-xl md:rounded-none md:first:rounded-l-xl md:last:rounded-r-xl"
               style={{
                 background: "#F1EFE8",
                 padding: 24,
-                borderTopLeftRadius: i === 0 ? 12 : 0,
-                borderBottomLeftRadius: i === 0 ? 12 : 0,
-                borderTopRightRadius: i === arr.length - 1 ? 12 : 0,
-                borderBottomRightRadius: i === arr.length - 1 ? 12 : 0,
               }}
             >
               <div
