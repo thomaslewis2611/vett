@@ -129,7 +129,7 @@ export function UpsellPassModal({
         </h2>
 
         <p className="mt-3" style={{ fontSize: 14, color: "#5F5E5A", lineHeight: 1.6 }}>
-          Upgrade to Buyer Pass for £24.99 and analyse as many properties as you like for 90 days,
+          Upgrade to Buyer Pass and analyse as many properties as you like for 90 days,
           plus AI chat on every property. You've already spent £4.99 — it's just £20 more for unlimited access.
         </p>
 
@@ -147,7 +147,7 @@ export function UpsellPassModal({
             padding: "12px 20px",
           }}
         >
-          {submitting === "pass" ? "Starting checkout…" : "Upgrade to Buyer Pass — £24.99 →"}
+          {submitting === "pass" ? "Starting checkout…" : "Upgrade to Buyer Pass — £20 →"}
         </button>
 
         <button
@@ -163,7 +163,7 @@ export function UpsellPassModal({
             textDecoration: "underline",
           }}
         >
-          {submitting === "single" ? "Starting checkout…" : "No thanks, just get this report — £4.99"}
+          {submitting === "single" ? "Starting checkout…" : "Continue with a Single Report — £4.99 →"}
         </button>
       </div>
     </div>
