@@ -2670,9 +2670,9 @@ function ScoreInfoTooltip({ text }: { text: string }) {
         aria-label="More info"
         aria-expanded={open}
         className="inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40"
-        style={{ color: "#888780", lineHeight: 0 }}
+        style={{ color: "#D85A30", lineHeight: 0 }}
       >
-        <Info size={14} aria-hidden="true" />
+        <Info size={18} aria-hidden="true" strokeWidth={2.25} />
       </button>
       <span role="tooltip" aria-hidden={!open} style={tooltipStyle}>
         {text}
