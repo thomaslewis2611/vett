@@ -236,12 +236,12 @@ function Index() {
       </section>
 
       {/* Bottom CTA strip */}
-      <section style={{ background: "#1A1108", padding: "48px 32px" }}>
+      <section style={{ background: "#FFFDF9", padding: "48px 32px" }}>
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
-          <h2 style={{ color: "#FFFDF9", fontSize: 32, fontWeight: 500, letterSpacing: "-1px" }}>
+          <h2 style={{ color: "#1A1108", fontSize: 32, fontWeight: 500, letterSpacing: "-1px" }}>
             Ready to <span style={{ color: "#D85A30" }}>rove</span> your next listing?
           </h2>
-          <p style={{ color: "#888780", fontSize: 15, maxWidth: 520 }}>
+          <p style={{ color: "#5F5E5A", fontSize: 15, maxWidth: 520 }}>
             Paste any Rightmove or Zoopla link and get your full analysis in 30 seconds.
           </p>
           <button
