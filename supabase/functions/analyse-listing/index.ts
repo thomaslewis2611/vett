@@ -294,8 +294,6 @@ const PD_ENDPOINTS = [
   "schools",
   "crime",
   "internet-speed",
-  "energy-efficiency",
-  "floor-areas",
   "growth",
   "planning-applications",
   "listed-buildings",
