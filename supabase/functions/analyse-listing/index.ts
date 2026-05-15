@@ -293,6 +293,38 @@ function extractPartialPostcode(text: string): string | null {
   return m ? m[1].toUpperCase().trim() : null;
 }
 
+// Ask Claude to infer the most likely full postcode from the listing's address.
+// Used when the listing only exposes a partial postcode (e.g. "BA1") so we can
+// still run the postcode-driven PropertyData calls. Returns a normalised
+// "OUTWARD INWARD" postcode or null if Claude cannot make a confident guess.
+async function inferPostcodeFromAddress(
+  listingContent: string,
+  partialHint: string | null,
+): Promise<string | null> {
+  if (!ANTHROPIC_API_KEY) return null;
+  // Keep the prompt small — first 1500 chars typically contains the title /
+  // address block. Claude only needs the location signal, not the full advert.
+  const snippet = listingContent.slice(0, 1500);
+  const hint = partialHint ? `\n\nPartial postcode found in the listing: ${partialHint}` : "";
+  const prompt = `Based on this UK property listing, what is the most likely FULL postcode for the property?${hint}\n\nListing excerpt:\n${snippet}\n\nReturn ONLY the postcode in standard UK format (e.g. "BA1 5NW"), nothing else. If you cannot make a confident guess, return "UNKNOWN".`;
+  try {
+    const text = await callClaude(
+      "You are a UK postcode lookup. Return only a postcode in standard UK format, or UNKNOWN.",
+      prompt,
+      40,
+    );
+    const trimmed = (text ?? "").trim().toUpperCase();
+    if (!trimmed || trimmed.startsWith("UNKNOWN")) return null;
+    const m = trimmed.match(POSTCODE_RE);
+    if (!m) return null;
+    const raw = m[0].replace(/\s+/g, "");
+    return `${raw.slice(0, -3)} ${raw.slice(-3)}`;
+  } catch (err) {
+    console.warn("[analyse-listing] inferPostcodeFromAddress failed", err);
+    return null;
+  }
+}
+
 // ---------- PropertyData API ----------
 const PROPERTYDATA_API_KEY = Deno.env.get("PROPERTYDATA_API_KEY") ?? "";
 const PD_BASE = "https://api.propertydata.co.uk";
@@ -632,7 +664,20 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     // order to feed conservation-area / planning-applications / growth context into
     // the prompt. Claude is by far the slowest step (~30–60s) so total wall time is
     // dominated by it and stays well under the 90s target.
-    const postcode = extractPostcode(listingContent);
+    let postcode = extractPostcode(listingContent);
+    let inferredPostcode = false;
+    let partialPostcode: string | null = null;
+    if (!postcode) {
+      partialPostcode = extractPartialPostcode(listingContent);
+      // Ask Claude to guess the full postcode from the address before falling
+      // back to the manual input prompt in the UI.
+      const guess = await inferPostcodeFromAddress(listingContent, partialPostcode);
+      if (guess) {
+        console.log(`[analyse-listing] inferred postcode ${guess} (partial hint: ${partialPostcode ?? "none"})`);
+        postcode = guess;
+        inferredPostcode = true;
+      }
+    }
     let pd: PdResults = {};
     if (postcode) {
       const cached = await getCachedPropertyData(supabase, postcode);
@@ -709,13 +754,14 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     const mappedPtal = mapPdPtal(pd["ptal"]);
     if (mappedPtal) parsed.ptal = mappedPtal;
 
-    // Track whether the listing only yielded a partial (outward) postcode so the
-    // UI can prompt the user to enter the full postcode for local data.
-    if (!postcode) {
-      const partial = extractPartialPostcode(listingContent);
-      parsed.partialPostcode = partial ?? null;
+    // Track partial / inferred postcode state so the UI can prompt the user
+    // (partial → no usable postcode at all; inferred → we used Claude's guess).
+    parsed.partialPostcode = postcode ? null : partialPostcode;
+    parsed.inferredPostcode = inferredPostcode || null;
+    if (inferredPostcode) {
+      parsed.inferredPostcodeValue = postcode;
     } else {
-      parsed.partialPostcode = null;
+      parsed.inferredPostcodeValue = null;
     }
 
     const { error: updErr } = await supabase

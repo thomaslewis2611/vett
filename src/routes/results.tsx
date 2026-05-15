@@ -1133,6 +1133,27 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                   onUpgradePass={() => upgradeToPass(listingUrl)}
                 />
               )}
+
+              {/* If we used Claude to guess the postcode, surface that fact and
+                  let the user override it with the true postcode. */}
+              {isPaid && a.inferredPostcode === true && (
+                <InferredPostcodeNotice
+                  inferred={a.inferredPostcodeValue ?? null}
+                  email={access.email}
+                  listingUrl={listingUrl}
+                  onSaved={(patch) =>
+                    setA((prev) => ({
+                      ...prev,
+                      floodRisk: patch.floodRisk ?? prev.floodRisk,
+                      nearbySchools: patch.nearbySchools ?? prev.nearbySchools,
+                      crime: patch.crime ?? prev.crime,
+                      broadband: patch.broadband ?? prev.broadband,
+                      inferredPostcode: false,
+                      inferredPostcodeValue: null,
+                    }))
+                  }
+                />
+              )}
             </>
           );
         })()}
@@ -1488,6 +1509,109 @@ function PostcodePromptBanner({
           {submitting ? "Loading…" : "Save →"}
         </button>
       </div>
+      {error && (
+        <div className="mt-1.5 text-[11px]" style={{ color: "#A32D2D" }}>
+          {error}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function InferredPostcodeNotice({
+  inferred,
+  email,
+  listingUrl,
+  onSaved,
+}: {
+  inferred: string | null;
+  email: string | null;
+  listingUrl?: string;
+  onSaved: (patch: PostcodePromptPatch) => void;
+}) {
+  const refetchFn = useServerFn(refetchLocalDataForPostcode);
+  const [editing, setEditing] = useState(false);
+  const [input, setInput] = useState<string>("");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const submit = async () => {
+    setError(null);
+    const cleaned = input.trim().toUpperCase();
+    if (!/^[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}$/.test(cleaned)) {
+      setError("Enter a full UK postcode, e.g. BA1 5NW");
+      return;
+    }
+    if (!email) {
+      setError("You must be signed in to update");
+      return;
+    }
+    if (!listingUrl) {
+      setError("Missing listing URL");
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const r = await refetchFn({ data: { email, listingUrl, postcode: cleaned } });
+      if (!r?.ok) {
+        setError(r?.error ?? "Could not load data for that postcode");
+        return;
+      }
+      onSaved({
+        floodRisk: r.floodRisk,
+        nearbySchools: r.nearbySchools,
+        crime: r.crime,
+        broadband: r.broadband,
+      });
+    } catch (err) {
+      console.error("[InferredPostcodeNotice] failed", err);
+      setError("Could not load data for that postcode. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div className="mt-3">
+      <p style={{ fontSize: 11, color: "#888780", lineHeight: 1.5 }}>
+        Postcode estimated from address
+        {inferred ? ` (${inferred})` : ""} — data may vary.{" "}
+        {!editing && (
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="hover:underline"
+            style={{ color: "#D85A30", background: "transparent", border: 0, cursor: "pointer" }}
+          >
+            Enter the correct postcode →
+          </button>
+        )}
+      </p>
+      {editing && (
+        <div className="mt-2 flex items-center gap-1.5" style={{ maxWidth: 360 }}>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="e.g. BA1 5NW"
+            autoCapitalize="characters"
+            disabled={submitting}
+            className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs"
+            onKeyDown={(e) => {
+              if (e.key === "Enter") submit();
+            }}
+          />
+          <button
+            type="button"
+            onClick={submit}
+            disabled={submitting}
+            className="shrink-0 rounded-md px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60"
+            style={{ background: "#D85A30" }}
+          >
+            {submitting ? "Loading…" : "Save →"}
+          </button>
+        </div>
+      )}
       {error && (
         <div className="mt-1.5 text-[11px]" style={{ color: "#A32D2D" }}>
           {error}

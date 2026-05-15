@@ -180,6 +180,8 @@ export type AnalysisResult = {
     }[];
   } | null;
   partialPostcode?: string | null;
+  inferredPostcode?: boolean | null;
+  inferredPostcodeValue?: string | null;
   renovationCosts?: {
     items: {
       issue: string;
