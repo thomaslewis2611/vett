@@ -1534,7 +1534,7 @@ function LockedFeatureCard({
   );
 }
 
-const FULL_REPORT_FEATURES: { title: string; sub: string }[] = [
+const FULL_REPORT_FEATURES: { title: string; sub: string; note?: string }[] = [
   { title: "All red flags", sub: "See every issue we found" },
   { title: "True cost breakdown", sub: "Total upfront + monthly costs" },
   { title: "Negotiation strategy", sub: "Recommended offer and your leverage" },
@@ -1542,7 +1542,7 @@ const FULL_REPORT_FEATURES: { title: string; sub: string }[] = [
   { title: "Nearby schools", sub: "Ofsted ratings within 5 miles" },
   { title: "Crime statistics", sub: "Local crime data by category" },
   { title: "Broadband & connectivity", sub: "Real download speeds for this postcode" },
-  { title: "Transport links", sub: "Nearest stations, buses and commute times" },
+  { title: "Transport links", sub: "Nearest stations, buses and commute times", note: "London properties only" },
   { title: "EPC analysis", sub: "Energy rating and improvement costs" },
   { title: "Stamp duty calculator", sub: "First-time buyer, main residence and additional property" },
   { title: "Viewing checklist", sub: "What to check on the day" },
