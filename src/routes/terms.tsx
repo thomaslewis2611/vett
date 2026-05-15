@@ -51,7 +51,7 @@ function TermsPage() {
           and we will resolve it.
         </Section>
         <Section n={5} title="Buyer Pass expiry">
-          Buyer Pass access expires 90 days after purchase. There are no automatic renewals. You can renew at any time for £24.99.
+          Buyer Pass access expires 90 days after purchase. There are no automatic renewals. We will send you a reminder email 7 days before your pass expires, and again the day before, giving you the option to purchase a new 90-day Buyer Pass for £24.99 or move to a monthly subscription at £7.99 per month. Nothing renews without your explicit action.
         </Section>
         <Section n={6} title="Service availability">
           We aim to maintain high availability but cannot guarantee uninterrupted service. We are not liable for losses arising from service downtime or analysis failures.
