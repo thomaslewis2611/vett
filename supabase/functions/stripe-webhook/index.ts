@@ -273,11 +273,35 @@ Deno.serve(async (req) => {
   try {
     if (tier === "single") {
       const token = crypto.randomUUID();
+      const normalizedEmail = customerEmail ? customerEmail.toLowerCase() : null;
+
+      // Resolve the auth user id from the email so the dashboard can match
+      // this purchase to the user's account even if they later sign in with
+      // a slightly different email casing or via OAuth.
+      let resolvedUserId: string | null = null;
+      if (normalizedEmail) {
+        try {
+          const { data: usersList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
+          const match = usersList?.users?.find(
+            (u) => (u.email ?? "").toLowerCase() === normalizedEmail,
+          );
+          resolvedUserId = match?.id ?? null;
+        } catch (e) {
+          console.error("[stripe-webhook] auth user lookup failed:", (e as Error).message);
+        }
+      }
+      console.log("[stripe-webhook] inserting single_report_token", {
+        stripe_session_id: session.id,
+        user_email: normalizedEmail,
+        resolved_user_id: resolvedUserId,
+      });
+
       const { error } = await supabase.from("single_report_tokens").insert({
         token,
         listing_url: listingUrl,
         stripe_session_id: session.id,
-        user_email: customerEmail ? customerEmail.toLowerCase() : null,
+        user_email: normalizedEmail,
+        user_id: resolvedUserId,
       });
       if (error) throw error;
 
