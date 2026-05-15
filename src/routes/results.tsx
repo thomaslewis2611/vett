@@ -423,6 +423,15 @@ function ResultsPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
+        {showResumeBanner && (
+          <button
+            type="button"
+            onClick={() => { setShowResumeBanner(false); query.refetch(); }}
+            className="mx-auto mt-4 block max-w-xl rounded-xl border border-border bg-accent px-4 py-3 text-sm text-accent-foreground hover:opacity-90"
+          >
+            Your analysis is still running — tap to check results
+          </button>
+        )}
         <LoadingState url={url} />
         <DisclaimerBar />
         <SiteFooter />
