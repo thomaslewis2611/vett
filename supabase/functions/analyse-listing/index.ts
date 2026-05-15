@@ -471,7 +471,7 @@ function mapPdSchools(raw: any) {
   return { schools, unavailable: false, aiSourced: false };
 }
 
-// ---------- GIAS (Get Information About Schools) Ofsted lookup ----------
+// ---------- Ofsted rating lookup ----------
 // Maps an Ofsted "overall effectiveness" string/number to our 1-4 scale.
 function giasRatingToNumber(val: unknown): number | null {
   if (val == null) return null;
@@ -487,23 +487,23 @@ function giasRatingToNumber(val: unknown): number | null {
 
 const giasCache = new Map<string, number | null>();
 
+// Scrapes the Ofsted reports site (reports.ofsted.gov.uk) — the official
+// public source of Ofsted ratings. The DfE GIAS JSON APIs do not expose
+// inspection outcomes publicly, but the reports site does and is stable.
 async function lookupGiasOfsted(name: string, urn: string | null, postcode: string | null): Promise<number | null> {
-  const cacheKey = (urn ? `urn:${urn}` : `name:${name.toLowerCase()}|${(postcode ?? "").toLowerCase()}`);
+  const cacheKey = urn ? `urn:${urn}` : `name:${name.toLowerCase()}|${(postcode ?? "").toLowerCase()}`;
   if (giasCache.has(cacheKey)) return giasCache.get(cacheKey) ?? null;
 
-  // Strategy: try GIAS suggestions endpoint by name (or URN), then fetch
-  // establishment details and read the Ofsted overall effectiveness field.
-  // Wrapped in try/catch — a failure means "not yet rated", never a hard error.
-  const tryFetch = async (url: string, init?: RequestInit) => {
+  const ua = "Mozilla/5.0 (compatible; RoovrBot/1.0)";
+  const fetchText = async (url: string): Promise<string | null> => {
     try {
       const r = await fetch(url, {
-        ...init,
-        headers: { Accept: "application/json", ...(init?.headers ?? {}) },
-        signal: AbortSignal.timeout(6000),
+        headers: { "User-Agent": ua, "Accept": "text/html,application/xhtml+xml" },
+        redirect: "follow",
+        signal: AbortSignal.timeout(7000),
       });
       if (!r.ok) return null;
-      const ct = r.headers.get("content-type") ?? "";
-      return ct.includes("json") ? await r.json() : null;
+      return await r.text();
     } catch {
       return null;
     }
@@ -511,44 +511,37 @@ async function lookupGiasOfsted(name: string, urn: string | null, postcode: stri
 
   let rating: number | null = null;
   try {
-    let resolvedUrn = urn;
+    // 1. Resolve to an Ofsted provider URL. Prefer URN, fallback to name+postcode search.
+    let providerPath: string | null = null;
+    const searchTerms: string[] = [];
+    if (urn) searchTerms.push(urn);
+    if (name) searchTerms.push(postcode ? `${name} ${postcode}` : name);
 
-    if (!resolvedUrn) {
-      // Suggestion search by name (best-effort).
-      const sugUrl = `https://get-information-schools.service.gov.uk/api/Establishments/Suggestions?text=${encodeURIComponent(name)}&take=5`;
-      const sug = await tryFetch(sugUrl) as any;
-      const matches = Array.isArray(sug?.matches) ? sug.matches : Array.isArray(sug) ? sug : [];
-      // Prefer a postcode match if we have one.
-      const pick = (postcode
-        ? matches.find((m: any) =>
-            String(m?.address ?? m?.postcode ?? "").toUpperCase().includes(postcode.toUpperCase()))
-        : null) ?? matches[0];
-      resolvedUrn = pick?.urn ? String(pick.urn) : pick?.id ? String(pick.id) : null;
+    for (const term of searchTerms) {
+      const searchUrl = `https://reports.ofsted.gov.uk/search?q=${encodeURIComponent(term)}&start=0&rows=10`;
+      const html = await fetchText(searchUrl);
+      if (!html) continue;
+      const matches = [...html.matchAll(/\/provider\/(\d+)\/(\d+)/g)];
+      if (!matches.length) continue;
+      // If we have a URN, prefer the result whose URN segment matches.
+      const preferred = urn ? matches.find((m) => m[2] === String(urn)) : null;
+      const m = preferred ?? matches[0];
+      providerPath = `/provider/${m[1]}/${m[2]}`;
+      break;
     }
 
-    if (resolvedUrn) {
-      // Try the user-specified DfE endpoint first; fall back to compare-school-performance JSON.
-      const candidates = [
-        `https://educationandskills.api.gov.uk/schools/${encodeURIComponent(resolvedUrn)}`,
-        `https://www.compare-school-performance.service.gov.uk/api/school/details?urn=${encodeURIComponent(resolvedUrn)}`,
-      ];
-      for (const url of candidates) {
-        const data = await tryFetch(url) as any;
-        if (!data) continue;
-        const candidates2 = [
-          data?.ofstedRating,
-          data?.ofsted?.rating,
-          data?.ofsted?.overallEffectiveness,
-          data?.OfstedRating,
-          data?.overallEffectiveness,
-          data?.lastInspection?.overallEffectiveness,
-          data?.school?.ofstedRating,
-        ];
-        for (const c of candidates2) {
-          const n = giasRatingToNumber(c);
-          if (n != null) { rating = n; break; }
+    if (providerPath) {
+      const html = await fetchText(`https://reports.ofsted.gov.uk${providerPath}`);
+      if (html) {
+        // Current rating is marked with class "rating--selected" containing
+        // a <span>Outstanding|Good|Satisfactory|Inadequate</span>.
+        const sel = html.match(/rating--selected[^>]*>\s*<span>([^<]+)<\/span>/i);
+        if (sel) rating = giasRatingToNumber(sel[1]);
+        // Some pages use "Requires improvement" instead of "Satisfactory".
+        if (rating == null) {
+          const alt = html.match(/aria-current="true"[^>]*>\s*<span>([^<]+)<\/span>/i);
+          if (alt) rating = giasRatingToNumber(alt[1]);
         }
-        if (rating != null) break;
       }
     }
   } catch {
