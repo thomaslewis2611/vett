@@ -1707,6 +1707,7 @@ function CostBreakdown({
   const sd = typeof stampDuty === "number" ? stampDuty : c.stampDuty;
   const totalUpfront = c.purchasePrice + sd + c.legalFees + c.surveyFees + c.mortgageFees;
   const sdLabel = stampDutyMode ? `Stamp duty (${STAMP_DUTY_LABELS[stampDutyMode]})` : "Stamp duty";
+  const annualCouncilTax = annualCouncilTaxFor(analysis.metrics?.councilTaxBand);
   const rows = [
     ["Purchase price", c.purchasePrice],
     [sdLabel, sd],
@@ -1731,6 +1732,22 @@ function CostBreakdown({
             </li>
           ))}
         </ul>
+        {annualCouncilTax != null && (
+          <div className="mt-4 rounded-xl p-4" style={{ background: "#F1EFE8" }}>
+            <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+              Annual council tax (Band {String(analysis.metrics.councilTaxBand).trim().toUpperCase()})
+            </div>
+            <div className="mt-1 text-lg font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+              {formatGBP(annualCouncilTax)}/yr
+              <span className="ml-2 text-xs font-normal" style={{ color: "#5F5E5A" }}>
+                ≈ {formatGBP(Math.round(annualCouncilTax / 12))}/mo
+              </span>
+            </div>
+            <div className="mt-1 text-[11px]" style={{ color: "#888780" }}>
+              England average — actual rate varies by local authority.
+            </div>
+          </div>
+        )}
       </div>
       <div className="rounded-xl bg-primary-soft p-5">
         <MortgageCalculator purchasePrice={c.purchasePrice} />
