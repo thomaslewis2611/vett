@@ -2281,6 +2281,8 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           onClick={() => handleBuy("single")}
           features={[
             "Full analysis with all red flags",
+            "EPC analysis",
+            "Area pricing analysis",
             "True cost breakdown and stamp duty",
             "Negotiation strategy and recommended offer",
             "Viewing checklist — specific to this property",
@@ -2291,10 +2293,10 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
             "Crime statistics",
             "Broadband and internet speed",
             "Transport links",
-            "Full sold price history",
             "Report saved to your account",
+            "Email your report to you",
           ]}
-          upsell={{ text: "Upgrade to Buyer Pass for AI chat, capital growth and unlimited analyses →", targetId: "buyer-pass-card" }}
+          upsell={{ text: "Upgrade to Buyer Pass for AI chat, comparisons and unlimited analyses →", targetId: "buyer-pass-card" }}
         />
         <PlanCard
           id="buyer-pass-card"
@@ -2309,9 +2311,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           features={[
             "Unlimited analyses for 90 days",
             "AI chat on every property",
-            "Capital growth data (1yr/3yr/5yr)",
-            "Area demographics",
-            "Compare properties side by side",
+            "Compare your property scores",
             "All reports saved to dashboard",
           ]}
           footnote="One-off payment. Access ends 90 days after purchase."
