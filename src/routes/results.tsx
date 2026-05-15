@@ -2199,7 +2199,14 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
 function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
   const ac = analysis.areaContext;
   if (!ac) return null;
-  const propPpsf = analysis.metrics?.pricePerSqFt;
+  // Prefer manual sqft analysis when present so the Area context card
+  // updates reactively the moment the user saves a sq ft value via the
+  // "Edit sq ft" field on the Price / sq ft card.
+  const manualPpsf = analysis.manualSqftAnalysis?.pricePerSqFt;
+  const propPpsf =
+    typeof manualPpsf === "number" && manualPpsf > 0
+      ? manualPpsf
+      : analysis.metrics?.pricePerSqFt;
   const areaPpsf = ac.avgPricePerSqFtArea;
   const haveBoth =
     typeof propPpsf === "number" && propPpsf > 0 &&
