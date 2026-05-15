@@ -173,8 +173,11 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "sellerMotivation": { "score": number, "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
   "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] },
   "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "High priority"|"Medium priority"|"Low priority", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
+  "planningReference": { "found": boolean, "reference": string|null, "relatesTo": string|null, "applicationType": string|null, "isNeighbouring": boolean, "commentary": string|null } | null,
   "comparables": []
 }
+
+PLANNING REFERENCE: Detect any UK planning reference numbers in the listing text (format: XX/XXXXX/XXX e.g. 24/01893/FUL, also older XXXX/XXXX). Look near the words: planning, permission, reference, application, consent, approval. If found, populate planningReference with the reference, what it relates to (e.g. "rear kitchen extension"), the applicationType (Householder | Full Planning | Change of Use | Listed Building Consent | Unknown), whether it is for this property or a neighbouring property (isNeighbouring: true if the listing context indicates the application is on a next-door / adjacent property rather than the subject property), and 2-3 sentences of commentary on what this means for the buyer including what documents to request from the seller's solicitors (planning decision notice, approved drawings, building regs completion certificate). If no planning reference is present, return planningReference: null. Do NOT invent a reference number.
 
 If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for.`;
 
