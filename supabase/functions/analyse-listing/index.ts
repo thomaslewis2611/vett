@@ -664,7 +664,20 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     // order to feed conservation-area / planning-applications / growth context into
     // the prompt. Claude is by far the slowest step (~30–60s) so total wall time is
     // dominated by it and stays well under the 90s target.
-    const postcode = extractPostcode(listingContent);
+    let postcode = extractPostcode(listingContent);
+    let inferredPostcode = false;
+    let partialPostcode: string | null = null;
+    if (!postcode) {
+      partialPostcode = extractPartialPostcode(listingContent);
+      // Ask Claude to guess the full postcode from the address before falling
+      // back to the manual input prompt in the UI.
+      const guess = await inferPostcodeFromAddress(listingContent, partialPostcode);
+      if (guess) {
+        console.log(`[analyse-listing] inferred postcode ${guess} (partial hint: ${partialPostcode ?? "none"})`);
+        postcode = guess;
+        inferredPostcode = true;
+      }
+    }
     let pd: PdResults = {};
     if (postcode) {
       const cached = await getCachedPropertyData(supabase, postcode);
