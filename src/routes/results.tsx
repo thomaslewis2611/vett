@@ -3410,7 +3410,7 @@ function OfstedBadge({ rating }: { rating: number | null }) {
   if (!m) {
     return (
       <span style={{ background: "#F1EFE8", color: "#5F5E5A", borderRadius: 999, padding: "3px 8px", fontSize: 11, fontWeight: 500 }}>
-        Not rated
+        Not yet rated
       </span>
     );
   }
