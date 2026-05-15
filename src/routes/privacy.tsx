@@ -36,33 +36,61 @@ function PrivacyPage() {
         </h1>
         <p className="mt-3" style={{ fontSize: 13, color: "#888780" }}>Last updated: 14 May 2026</p>
 
-        <Section n={1} title="Data we collect">
-          Email address (provided at checkout), property listing URLs you analyse, analysis results stored against your account.
+        <Section n={1} title="What data we collect">
+          <ul className="list-disc pl-5 space-y-1.5">
+            <li>Email address (for magic link authentication and report delivery)</li>
+            <li>Payment reference number (via Stripe — we never store card details)</li>
+            <li>Property URLs you submit for analysis</li>
+            <li>Manual inputs you provide (sq ft, EPC rating, flood zone, council tax band)</li>
+            <li>Basic usage data (pages visited, reports generated)</li>
+          </ul>
         </Section>
         <Section n={2} title="How we use your data">
           To deliver your report, send magic link login emails, and save your analyses to your dashboard. We do not use your data for advertising.
         </Section>
-        <Section n={3} title="Data storage">
-          Data is stored securely via Supabase. Emails are sent via Resend. Payment processing is handled by Stripe. None of these providers sell your data.
+        <Section n={3} title="How long we retain your data">
+          <ul className="list-disc pl-5 space-y-1.5">
+            <li>Single Report data is retained indefinitely while your account is active</li>
+            <li>Buyer Pass report data is retained for 90 days from purchase</li>
+            <li>
+              You can request deletion of your data at any time by emailing{" "}
+              <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">support@roovr.co</a>
+            </li>
+          </ul>
         </Section>
-        <Section n={4} title="Third parties">
-          Stripe (payments), Resend (email delivery), Anthropic (AI analysis generation), Supabase (database). No data is sold to third parties.
+        <Section n={4} title="Third-party processors we use">
+          <ul className="list-disc pl-5 space-y-1.5">
+            <li>
+              Stripe — payment processing (
+              <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "#D85A30" }} className="hover:underline">stripe.com/privacy</a>
+              )
+            </li>
+            <li>Resend — transactional email delivery</li>
+            <li>Anthropic — AI analysis engine powering report generation</li>
+            <li>PropertyData — UK property data provider</li>
+            <li>Lovable — application hosting and infrastructure</li>
+          </ul>
         </Section>
-        <Section n={5} title="Data retention">
-          Account data is retained for 12 months after your last login. To delete your data at any time, email{" "}
-          <a href="mailto:hello@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">hello@roovr.co</a>{" "}
-          and we will remove it within 7 days.
+        <Section n={5} title="Cookies">
+          <ul className="list-disc pl-5 space-y-1.5">
+            <li>We use essential cookies only to maintain your session and authentication state</li>
+            <li>We do not use advertising or tracking cookies</li>
+            <li>By using Roovr you consent to essential cookies</li>
+          </ul>
         </Section>
         <Section n={6} title="Your rights">
-          Under UK GDPR you have the right to access, correct, or delete your personal data. Contact{" "}
-          <a href="mailto:hello@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">hello@roovr.co</a>{" "}
-          to exercise these rights.
+          <ul className="list-disc pl-5 space-y-1.5">
+            <li>You have the right to access, correct, or delete your personal data</li>
+            <li>We will never sell your data to third parties</li>
+            <li>
+              Contact{" "}
+              <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">support@roovr.co</a>{" "}
+              to exercise your rights
+            </li>
+          </ul>
         </Section>
-        <Section n={7} title="Cookies">
-          We use essential cookies only for authentication. No tracking, advertising, or third-party analytics cookies.
-        </Section>
-        <Section n={8} title="Contact">
-          <a href="mailto:hello@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">hello@roovr.co</a>
+        <Section n={7} title="Contact">
+          <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">support@roovr.co</a>
         </Section>
       </main>
       <SiteFooter />
