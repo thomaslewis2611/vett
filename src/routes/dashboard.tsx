@@ -468,13 +468,26 @@ function DashboardPage() {
                           {score.toFixed(1)} / 10
                         </span>
                       )}
-                      <Link
-                        to="/results"
-                        search={{ saved_id: r.id }}
-                        style={{ fontSize: 13, color: "#D85A30" }}
-                      >
-                        View →
-                      </Link>
+                      {r.id.startsWith("token:") ? (
+                        <Link
+                          to="/results"
+                          search={{
+                            token: r.id.slice("token:".length),
+                            url: r.listing_url ?? undefined,
+                          }}
+                          style={{ fontSize: 13, color: "#D85A30" }}
+                        >
+                          View →
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/results"
+                          search={{ saved_id: r.id }}
+                          style={{ fontSize: 13, color: "#D85A30" }}
+                        >
+                          View →
+                        </Link>
+                      )}
                     </div>
                   </li>
                 );
