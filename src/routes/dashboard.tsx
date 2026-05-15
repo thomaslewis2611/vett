@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowRight, LogOut, AlertTriangle } from "lucide-react";
+import { ArrowRight, LogOut, AlertTriangle, Pin } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGBP } from "@/lib/mock-analysis";
