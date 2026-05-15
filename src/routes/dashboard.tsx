@@ -200,6 +200,9 @@ function DashboardPage() {
   };
 
   const togglePin = async (id: string, current: boolean) => {
+    // Synthetic rows backed by single_report_tokens (no saved_analyses row
+    // yet) cannot be pinned — they have no DB row to update.
+    if (id.startsWith("token:")) return;
     const next = !current;
     const nextPinnedAt = next ? new Date().toISOString() : null;
     setRows((prev) =>
