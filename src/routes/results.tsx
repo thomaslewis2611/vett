@@ -1014,60 +1014,71 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           </SafeSection>
         )}
 
-        {/* Flood risk — Buyer Pass renders data; Single Report sees locked teaser */}
-        {(unlocked || access.level === "single") && (access.level === "single" || access.level === "pass") && (
-          <FloodRiskSection
-            analysis={a}
-            isBuyerPass={access.level === "pass"}
-            fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
-            onUpgrade={() => upgradeToPass(listingUrl)}
-            listingUrl={listingUrl}
-            userEmail={access.email}
-            onFloodRiskUpdate={(fr) => setA((prev) => ({ ...prev, floodRisk: fr }))}
-          />
-        )}
+        {/* Flood risk — Single Report + Buyer Pass; free sees locked teaser */}
+        <FloodRiskSection
+          analysis={a}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
+          fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
+          listingUrl={listingUrl}
+          userEmail={access.email}
+          onFloodRiskUpdate={(fr) => setA((prev) => ({ ...prev, floodRisk: fr }))}
+        />
 
-        {/* Nearby schools — Buyer Pass renders data; Single Report sees locked teaser */}
-        {(unlocked || access.level === "single") && (access.level === "single" || access.level === "pass") && (
-          <NearbySchoolsSection
-            analysis={a}
-            isBuyerPass={access.level === "pass"}
-            fetching={access.level === "pass" && fetchingExtras && a.nearbySchools == null}
-            onUpgrade={() => upgradeToPass(listingUrl)}
-          />
-        )}
+        {/* Nearby schools — Single Report + Buyer Pass; free sees locked teaser */}
+        <NearbySchoolsSection
+          analysis={a}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
+          fetching={access.level === "pass" && fetchingExtras && a.nearbySchools == null}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
+        />
 
-        {/* Crime statistics — Buyer Pass renders data; free + Single Report see locked teaser */}
+        {/* Crime statistics — Single Report + Buyer Pass; free sees locked teaser */}
         <CrimeSection
           analysis={a}
-          isBuyerPass={access.level === "pass"}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.crime == null}
-          onUpgrade={() => upgradeToPass(listingUrl)}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
         />
 
-        {/* Broadband & connectivity — Buyer Pass only; locked teaser otherwise */}
+        {/* Broadband & connectivity — Single Report + Buyer Pass; free sees locked teaser */}
         <BroadbandSection
           analysis={a}
-          isBuyerPass={access.level === "pass"}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.broadband == null}
-          onUpgrade={() => upgradeToPass(listingUrl)}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
         />
 
-        {/* Transport links — Buyer Pass only; locked teaser otherwise */}
+        {/* Transport links — Single Report + Buyer Pass; free sees locked teaser */}
         <TransportSection
           analysis={a}
-          isBuyerPass={access.level === "pass"}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.transport == null}
-          onUpgrade={() => upgradeToPass(listingUrl)}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
         />
 
-        {/* AI chat — Buyer Pass renders chat; Single Report sees locked teaser */}
-        {unlocked && showChat && (
+        {/* Sold price history (PropertyData / Land Registry) */}
+        <PriceHistorySection
+          analysis={a}
+          unlocked={access.level === "single" || access.level === "pass"}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
+        />
+
+        {/* Capital growth (PropertyData) — headline for free/single, full breakdown for pass */}
+        <CapitalGrowthSection
+          analysis={a}
+          tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
+          onUpgradeSingle={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
+        />
+
+        {/* AI chat — Buyer Pass renders chat; everyone else sees locked teaser */}
+        {access.level === "pass" && (
           <section className="mt-10">
             <PropertyChat analysis={a} />
           </section>
         )}
-        {access.level === "single" && (
+        {access.level !== "pass" && (
           <AIChatLockedTeaser onUpgrade={() => upgradeToPass(listingUrl)} />
         )}
 
@@ -1075,6 +1086,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         {access.level === "single" && (
           <InlineBuyerPassUpgrade listingUrl={listingUrl} />
         )}
+
 
         {unlocked && access.level === "pass" && (
           <div className="mt-10 text-center">
