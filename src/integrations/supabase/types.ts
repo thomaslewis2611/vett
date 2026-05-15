@@ -197,6 +197,24 @@ export type Database = {
         }
         Relationships: []
       }
+      property_data_cache: {
+        Row: {
+          data: Json
+          fetched_at: string
+          postcode: string
+        }
+        Insert: {
+          data: Json
+          fetched_at?: string
+          postcode: string
+        }
+        Update: {
+          data?: Json
+          fetched_at?: string
+          postcode?: string
+        }
+        Relationships: []
+      }
       saved_analyses: {
         Row: {
           analysis_json: Json | null
