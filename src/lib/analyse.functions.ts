@@ -197,7 +197,18 @@ const analysisSchema = z.object({
       })
     )
     .max(4)
-    .describe("Plausible comparable sales nearby; empty array if you cannot reasonably estimate"),
+  planningReference: z
+    .object({
+      found: z.boolean(),
+      reference: z.string().nullable(),
+      relatesTo: z.string().nullable(),
+      applicationType: z
+        .enum(["Householder", "Full Planning", "Change of Use", "Listed Building Consent", "Unknown"])
+        .nullable(),
+      commentary: z.string().nullable(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export { analysisSchema };
@@ -232,6 +243,7 @@ You must:
 - Populate sellerMotivation based on: days on market, number of price reductions, chain status, reason for sale if mentioned, listing language urgency, and time of year. Score 1-3 = low motivation (recently listed, no reductions, strong market), 4-6 = moderate, 7-8 = high (30+ days, reduced, or chain free with emphasis), 9-10 = very high (multiple reductions, long time on market, vacant, urgent language). Signals must be short concrete strings drawn from the listing (e.g. "35 days on market", "Price reduced twice", "No onward chain", "Vacant possession"). Commentary is 2-3 sentences explaining what the motivation level means for the buyer's negotiating position.
 - Populate viewingChecklist with 8-15 specific actionable items derived from the red flags and property characteristics identified. Every item must be specific to THIS property — not generic advice. Reference specific details from the listing. Each item belongs to one of: "Structure", "Legal", "Running costs", "Negotiation", "Practical". The "why" is one sentence explaining why this matters for THIS specific property.
 - Populate renovationCosts only for issues identified in the red flags or listing. Do not invent issues not mentioned. Use realistic UK contractor pricing for 2026. estimatedCost should be a string range like "£15,000 – £25,000". priority is one of "High priority", "Medium priority", "Low priority". For renovation priority: use "High priority" for items that affect safety, mortgageability, or immediate habitability; "Medium priority" for items that affect comfort, energy efficiency, or resale value within 5 years; "Low priority" for cosmetic or lifestyle improvements the buyer may choose to defer or skip entirely. Never use "Essential" as this implies no choice — buyers may choose to accept any condition. Set totalEstimatedMin and totalEstimatedMax as the sum of min/max integers across items. Commentary is 2-3 sentences on overall renovation picture and whether costs are factored into asking price. If no renovation is needed, return { items: [], totalEstimatedMin: 0, totalEstimatedMax: 0, commentary: "..." }.
+- PLANNING REFERENCE: Scan the listing text for a UK planning application reference. Common formats: "XX/XXXXX/XXX" (e.g. "21/03456/FUL", "22/01234/HOUSE") or older "XXXX/XXXX". Look for these especially near the words: planning, permission, reference, application, consent, approval. If found, set planningReference.found = true and populate: reference (the exact reference number as written), relatesTo (a brief description of the works derived from listing context — e.g. "rear kitchen extension", "loft conversion", "side dormer"; null if not inferable), applicationType (one of "Householder" | "Full Planning" | "Change of Use" | "Listed Building Consent" | "Unknown" — infer from the suffix and context: /FUL = Full Planning, /HOUSE or /HH = Householder, /COU = Change of Use, /LBC = Listed Building Consent), and commentary (2-3 sentences explaining what this reference means for the buyer, what documents to request from the seller's solicitors — typically the planning decision notice, approved drawings, and building regs completion certificate — and any typical conditions that attach to this type of permission). If no planning reference is present in the listing, return planningReference: { "found": false, "reference": null, "relatesTo": null, "applicationType": null, "commentary": null } (or omit the field). Do NOT invent a reference number.
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
