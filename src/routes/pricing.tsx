@@ -37,7 +37,7 @@ function PricingPage() {
             Simple, honest pricing
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            One-time payments. No subscriptions, no auto-renewals, no hidden fees.
+            One-time payments. No auto-renewals, no hidden fees.
           </p>
         </div>
 
