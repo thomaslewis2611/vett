@@ -102,7 +102,7 @@ function DashboardPage() {
       setEmail(userEmail);
       const { data: saved } = await supabase
         .from("saved_analyses")
-        .select("id, listing_url, analysis_json, created_at")
+        .select("id, listing_url, analysis_json, created_at, pinned")
         .order("created_at", { ascending: false })
         .limit(50);
       // Deduplicate by listing_url, keeping the most recent entry per URL.
@@ -115,6 +115,11 @@ function DashboardPage() {
         deduped.push(r);
         if (deduped.length >= 10) break;
       }
+      // Sort: pinned first (by date desc), then unpinned (by date desc).
+      deduped.sort((a, b) => {
+        if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
       setRows(deduped);
       setLoading(false);
     })();
