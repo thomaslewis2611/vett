@@ -166,7 +166,7 @@ function Index() {
           {[
             { value: "100", unit: "+", label: "Data points checked" },
             { value: "In minutes, not days", unit: "", label: "" },
-            { value: "£4.99", unit: "", label: "From per report" },
+            { value: "From £4.99", unit: "", label: "" },
           ].map((s, i) => (
             <div
               key={i}
