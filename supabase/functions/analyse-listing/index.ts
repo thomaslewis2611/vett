@@ -509,8 +509,8 @@ ${JSON.stringify(pdData(pd["crime"]) || null)}
 INTERNET SPEED:
 ${JSON.stringify(pdData(pd["internet-speed"]) || null)}
 
-SCHOOLS (within 1 mile):
-${JSON.stringify(slice(pdData(pd["schools"]), 10) || [])}
+SCHOOLS (closest 5: 3 primary + 2 secondary):
+${JSON.stringify(pdData(pd["schools"]) || [])}
 
 ENERGY EFFICIENCY (EPC data for postcode):
 ${JSON.stringify(slice(pdData(pd["energy-efficiency"]), 5) || [])}
