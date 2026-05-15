@@ -279,10 +279,18 @@ async function callClaude(
 
 // ---------- External APIs (postcode-driven) ----------
 const POSTCODE_RE = /[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}/i;
+// Outward-only (e.g. "BA1", "SW1A", "EC1"): a postcode area + district with NO inward part.
+const PARTIAL_POSTCODE_RE = /\b([A-Z]{1,2}[0-9][0-9A-Z]?)\b(?!\s?[0-9][A-Z]{2})/i;
 
 function extractPostcode(text: string): string | null {
   const m = text.match(POSTCODE_RE);
   return m ? m[0].toUpperCase().trim() : null;
+}
+
+function extractPartialPostcode(text: string): string | null {
+  if (!text) return null;
+  const m = text.match(PARTIAL_POSTCODE_RE);
+  return m ? m[1].toUpperCase().trim() : null;
 }
 
 // ---------- PropertyData API ----------
