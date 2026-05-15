@@ -317,9 +317,9 @@ function buildReportHtml(opts: {
       <p style="font-size:12px;color:#888780;margin:8px 0 0;">Estimates based on typical UK contractor rates 2026. Always obtain quotes before proceeding.</p>`;
   }
 
-  // Flood risk (pass only)
+  // Flood risk (single+)
   let floodHtml = "";
-  if (isPass && flood && !flood.unavailable) {
+  if (isSingle && flood && !flood.unavailable) {
     floodHtml = `
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Flood risk</h2>
       <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
@@ -332,9 +332,9 @@ function buildReportHtml(opts: {
       ${flood.commentary ? `<p style="font-size:13px;color:#1A1108;line-height:1.6;margin:8px 0 0;">${escapeHtml(flood.commentary)}</p>` : ""}`;
   }
 
-  // Schools (pass only)
+  // Schools (single+)
   let schoolsHtml = "";
-  if (isPass && schools && !schools.unavailable && schools.schools?.length) {
+  if (isSingle && schools && !schools.unavailable && schools.schools?.length) {
     const rows = schools.schools
       .map(
         (s) => `
@@ -351,6 +351,102 @@ function buildReportHtml(opts: {
     schoolsHtml = `
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Nearby schools</h2>
       <table class="stack3" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>`;
+  }
+
+  // Crime (single+)
+  const crime = a.crime;
+  let crimeHtml = "";
+  if (isSingle && crime && !crime.unavailable) {
+    const cats = Array.isArray(crime.topCategories) ? crime.topCategories.slice(0, 5) : [];
+    crimeHtml = `
+      <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Crime</h2>
+      <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr><td ${rowStyle}>Risk level</td><td ${valStyle}>${txt(crime.riskLevel)}</td></tr>
+        <tr><td ${rowStyle}>Total incidents (${txt(crime.month)})</td><td ${valStyle}>${num(crime.totalCrimes)}</td></tr>
+        ${cats.map((c) => `<tr><td ${rowStyle}>${escapeHtml(c.label || c.category)}</td><td ${valStyle}>${num(c.count)}</td></tr>`).join("")}
+      </table>
+      ${crime.commentary ? `<p style="font-size:13px;color:#1A1108;line-height:1.6;margin:8px 0 0;">${escapeHtml(crime.commentary)}</p>` : ""}`;
+  }
+
+  // Broadband (single+)
+  const broadband = a.broadband;
+  let broadbandHtml = "";
+  if (isSingle && broadband && !broadband.unavailable) {
+    broadbandHtml = `
+      <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Broadband &amp; mobile</h2>
+      <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr><td ${rowStyle}>Download speed</td><td ${valStyle}>${txt(broadband.downloadSpeed)}</td></tr>
+        <tr><td ${rowStyle}>Upload speed</td><td ${valStyle}>${txt(broadband.uploadSpeed)}</td></tr>
+        <tr><td ${rowStyle}>Connection type</td><td ${valStyle}>${txt(broadband.connectionType)}</td></tr>
+        <tr><td ${rowStyle}>Mobile signal</td><td ${valStyle}>${txt(broadband.mobileSignal)}</td></tr>
+        <tr><td ${rowStyle}>Suitable for remote work</td><td ${valStyle}>${broadband.suitableForRemoteWork ? "Yes" : "No"}</td></tr>
+      </table>
+      ${broadband.commentary ? `<p style="font-size:13px;color:#1A1108;line-height:1.6;margin:8px 0 0;">${escapeHtml(broadband.commentary)}</p>` : ""}`;
+  }
+
+  // Transport (single+)
+  const transport = a.transport;
+  let transportHtml = "";
+  if (isSingle && transport && !transport.unavailable) {
+    transportHtml = `
+      <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Transport</h2>
+      <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr><td ${rowStyle}>Nearest station</td><td ${valStyle}>${txt(transport.nearestStation)}${transport.distanceToStation ? ` · ${escapeHtml(transport.distanceToStation)}` : ""}</td></tr>
+        <tr><td ${rowStyle}>Journey to ${txt(transport.nearestCity)}</td><td ${valStyle}>${txt(transport.journeyToNearestCity)}</td></tr>
+        <tr><td ${rowStyle}>Bus links</td><td ${valStyle}>${txt(transport.busLinks)}</td></tr>
+        <tr><td ${rowStyle}>Motorway access</td><td ${valStyle}>${txt(transport.motorwayAccess)}</td></tr>
+        <tr><td ${rowStyle}>Airport access</td><td ${valStyle}>${txt(transport.airportAccess)}</td></tr>
+        <tr><td ${rowStyle}>Overall rating</td><td ${valStyle}>${txt(transport.transportRating)}</td></tr>
+      </table>
+      ${transport.commentary ? `<p style="font-size:13px;color:#1A1108;line-height:1.6;margin:8px 0 0;">${escapeHtml(transport.commentary)}</p>` : ""}`;
+  }
+
+  // Sold price history (single+)
+  let soldHistoryHtml = "";
+  const soldRaw = (a.propertyData as any)?.soldPrices;
+  const soldList: any[] = Array.isArray(soldRaw)
+    ? soldRaw
+    : Array.isArray(soldRaw?.data)
+      ? soldRaw.data
+      : Array.isArray(soldRaw?.prices)
+        ? soldRaw.prices
+        : Array.isArray(soldRaw?.results)
+          ? soldRaw.results
+          : [];
+  if (isSingle && soldList.length) {
+    const rows = soldList.slice(0, 10)
+      .map((s: any) => {
+        const date = s.date || s.sold_date || s.transaction_date || "";
+        const price = Number(s.price ?? s.sold_price ?? s.amount ?? 0);
+        const type = s.type || s.property_type || "";
+        const addr = s.address || s.paon || "";
+        return `<tr>
+          <td style="padding:8px 8px;font-size:13px;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);">${escapeHtml(date)}</td>
+          <td style="padding:8px 8px;font-size:13px;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);">${escapeHtml(addr)}${type ? ` <span style="color:#5F5E5A;">· ${escapeHtml(type)}</span>` : ""}</td>
+          <td style="padding:8px 8px;font-size:13px;font-weight:600;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);text-align:right;white-space:nowrap;">${gbp(price)}</td>
+        </tr>`;
+      }).join("");
+    soldHistoryHtml = `
+      <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Sold price history</h2>
+      <table class="stack3" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
+      <p style="font-size:12px;color:#888780;margin:8px 0 0;">Source: Land Registry via PropertyData.</p>`;
+  }
+
+  // Capital growth (pass only)
+  let growthHtml = "";
+  const growth = (a.propertyData as any)?.growth;
+  if (isPass && growth && typeof growth === "object") {
+    const g1 = growth["1yr"] ?? growth.oneYear ?? growth.year_1 ?? null;
+    const g3 = growth["3yr"] ?? growth.threeYear ?? growth.year_3 ?? null;
+    const g5 = growth["5yr"] ?? growth.fiveYear ?? growth.year_5 ?? null;
+    const fmt = (v: any) => v == null || v === "" ? "—" : (typeof v === "number" ? `${v > 0 ? "+" : ""}${v.toFixed(1)}%` : String(v));
+    growthHtml = `
+      <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Capital growth</h2>
+      <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+        <tr><td ${rowStyle}>1 year</td><td ${valStyle}>${fmt(g1)}</td></tr>
+        <tr><td ${rowStyle}>3 years</td><td ${valStyle}>${fmt(g3)}</td></tr>
+        <tr><td ${rowStyle}>5 years</td><td ${valStyle}>${fmt(g5)}</td></tr>
+      </table>`;
   }
 
   return `<!doctype html><html lang="en"><head>
@@ -445,6 +541,11 @@ function buildReportHtml(opts: {
       ${renovationHtml}
       ${floodHtml}
       ${schoolsHtml}
+      ${crimeHtml}
+      ${broadbandHtml}
+      ${transportHtml}
+      ${soldHistoryHtml}
+      ${growthHtml}
 
       <div style="margin:36px 0 8px;text-align:center;">
         <a href="${escapeHtml(resultsUrl)}" class="cta-btn" style="background:#D85A30;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 24px;text-decoration:none;display:inline-block;min-height:44px;line-height:1.2;">View full report online →</a>
