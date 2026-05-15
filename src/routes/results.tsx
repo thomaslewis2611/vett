@@ -1154,14 +1154,16 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           );
         })()}
 
-        {/* Transport links — Single Report + Buyer Pass; free sees locked teaser */}
-        <TransportSection
-          analysis={a}
-          isBuyerPass={access.level === "single" || access.level === "pass"}
-          fetching={access.level === "pass" && fetchingExtras && a.transport == null}
-          onUpgrade={() => upgradeToSingle(listingUrl)}
-          onUpgradePass={() => upgradeToPass(listingUrl)}
-        />
+        {/* Transport links — Single Report + Buyer Pass only; hidden entirely on free */}
+        {(access.level === "single" || access.level === "pass") && (
+          <TransportSection
+            analysis={a}
+            isBuyerPass={true}
+            fetching={access.level === "pass" && fetchingExtras && a.transport == null}
+            onUpgrade={() => upgradeToSingle(listingUrl)}
+            onUpgradePass={() => upgradeToPass(listingUrl)}
+          />
+        )}
 
         {/* Sold price history (PropertyData / Land Registry) */}
         <PriceHistorySection
@@ -1178,14 +1180,11 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           onUpgradePass={() => upgradeToPass(listingUrl)}
         />
 
-        {/* AI chat — Buyer Pass renders chat; everyone else sees locked teaser */}
+        {/* AI chat — Buyer Pass only; hidden entirely on free and single */}
         {access.level === "pass" && (
           <section className="mt-10">
             <PropertyChat analysis={a} />
           </section>
-        )}
-        {access.level !== "pass" && (
-          <AIChatLockedTeaser onUpgrade={() => upgradeToPass(listingUrl)} />
         )}
 
         {/* Inline Buyer Pass upgrade — Single Report users only */}
