@@ -109,7 +109,7 @@ function FaqPage() {
                 {item.q}
               </AccordionTrigger>
               <AccordionContent
-                className="pb-5"
+                className="pb-5 whitespace-pre-line"
                 style={{ fontSize: 15, color: "#5F5E5A", lineHeight: 1.7 }}
               >
                 {item.a}
