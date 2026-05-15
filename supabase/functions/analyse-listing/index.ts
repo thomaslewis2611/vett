@@ -686,10 +686,11 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       planningApplications: pdData(pd["planning-applications"]),
       listedBuildings: pdData(pd["listed-buildings"]),
       conservationArea: pdData(pd["conservation-area"]),
+      ptal: pdData(pd["ptal"]),
     };
 
     // Map PropertyData payloads into the shapes the frontend renders for
-    // nearbySchools / crime / broadband. Only set when we have real data so
+    // nearbySchools / crime / broadband / ptal. Only set when we have real data so
     // the UI can fall back to its "data unavailable" state otherwise.
     const mappedSchools = mapPdSchools(pd["schools"]);
     if (mappedSchools) parsed.nearbySchools = mappedSchools;
@@ -697,6 +698,8 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
     if (mappedBroadband) parsed.broadband = mappedBroadband;
+    const mappedPtal = mapPdPtal(pd["ptal"]);
+    if (mappedPtal) parsed.ptal = mappedPtal;
 
     const { error: updErr } = await supabase
       .from("analysis_jobs")
