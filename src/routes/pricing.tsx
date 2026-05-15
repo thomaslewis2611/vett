@@ -66,28 +66,80 @@ function PricingPage() {
             ]}
             upsell={{ text: "Upgrade to Buyer Pass for AI chat, comparisons and unlimited analyses →", targetId: "buyer-pass-card" }}
           />
-          <Plan
-            id="buyer-pass-card"
-            title="Buyer Pass"
-            price="£24.99"
-            cadence="90-day pass · one-off payment"
-            cta="Get Buyer Pass"
-            highlight
-            headline="Your entire property search, covered"
-            plusIntro="Everything in Single Report, plus:"
-            features={[
-              "Unlimited analyses for 90 days",
-              "AI chat on every property",
-              "Compare your property scores",
-              "All reports saved to dashboard",
-            ]}
-            footnote="One-off payment. Access ends 90 days after purchase."
-          />
+          <BuyerPassPlan />
         </div>
       </main>
 
       <SiteFooter />
     </div>
+  );
+}
+
+function BuyerPassPlan() {
+  const discount = usePassDiscount();
+  const checkoutFn = useServerFn(createCheckoutSession);
+  const [loading, setLoading] = useState(false);
+
+  const startDiscountCheckout = async () => {
+    setLoading(true);
+    try {
+      const r = await checkoutFn({
+        data: {
+          priceId: discount.priceId,
+          listingUrl: "",
+          tier: "pass",
+          source: "pricing_page_discount",
+        },
+      });
+      if (r?.url) window.location.href = r.url;
+    } catch {
+      setLoading(false);
+    }
+  };
+
+  if (discount.eligible) {
+    return (
+      <Plan
+        id="buyer-pass-card"
+        title="Buyer Pass"
+        price="£20.00"
+        originalPrice="£24.99"
+        cadence="90-day pass · one-off payment"
+        cta={loading ? "Redirecting…" : "Upgrade for £20 →"}
+        highlight
+        headline="Your entire property search, covered"
+        subnote="You've already spent £4.99 on a Single Report — we'll deduct it from your Buyer Pass"
+        plusIntro="Everything in Single Report, plus:"
+        features={[
+          "Unlimited analyses for 90 days",
+          "AI chat on every property",
+          "Compare your property scores",
+          "All reports saved to dashboard",
+        ]}
+        footnote="One-off payment. Access ends 90 days after purchase."
+        onClick={startDiscountCheckout}
+      />
+    );
+  }
+
+  return (
+    <Plan
+      id="buyer-pass-card"
+      title="Buyer Pass"
+      price="£24.99"
+      cadence="90-day pass · one-off payment"
+      cta="Get Buyer Pass"
+      highlight
+      headline="Your entire property search, covered"
+      plusIntro="Everything in Single Report, plus:"
+      features={[
+        "Unlimited analyses for 90 days",
+        "AI chat on every property",
+        "Compare your property scores",
+        "All reports saved to dashboard",
+      ]}
+      footnote="One-off payment. Access ends 90 days after purchase."
+    />
   );
 }
 
