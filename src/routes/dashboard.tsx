@@ -432,20 +432,22 @@ function DashboardPage() {
                     className="group relative flex w-full flex-col gap-2 p-4 pr-12 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:pr-12"
                     style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)", boxSizing: "border-box" }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => togglePin(r.id, r.is_pinned)}
-                      aria-label={r.is_pinned ? "Unpin report" : "Pin report"}
-                      title={r.is_pinned ? "Unpin from top" : "Pin to top"}
-                      className={`absolute right-3 top-3 rounded-full p-1.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 ${r.is_pinned ? "sm:opacity-100" : ""}`}
-                      style={{ color: r.is_pinned ? "#D85A30" : "#B8B6AE" }}
-                    >
-                      <Pin
-                        className="h-4 w-4"
-                        fill={r.is_pinned ? "#D85A30" : "none"}
-                        strokeWidth={2}
-                      />
-                    </button>
+                    {!r.id.startsWith("token:") && (
+                      <button
+                        type="button"
+                        onClick={() => togglePin(r.id, r.is_pinned)}
+                        aria-label={r.is_pinned ? "Unpin report" : "Pin report"}
+                        title={r.is_pinned ? "Unpin from top" : "Pin to top"}
+                        className={`absolute right-3 top-3 rounded-full p-1.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 ${r.is_pinned ? "sm:opacity-100" : ""}`}
+                        style={{ color: r.is_pinned ? "#D85A30" : "#B8B6AE" }}
+                      >
+                        <Pin
+                          className="h-4 w-4"
+                          fill={r.is_pinned ? "#D85A30" : "none"}
+                          strokeWidth={2}
+                        />
+                      </button>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
