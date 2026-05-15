@@ -483,10 +483,7 @@ function buildPropertyDataContext(pd: PdResults): string {
 SOLD PRICES (last 10 sales in this postcode):
 ${JSON.stringify(slice(pdData(pd["sold-prices"]), 10) || [])}
 
-FLOOR AREAS (known internal areas in this postcode):
-${JSON.stringify(pdData(pd["floor-areas"]) || [])}
-
-CAPITAL GROWTH (area):
+CAPITAL GROWTH (area — use for area context commentary and resale potential scoring):
 ${JSON.stringify(pdData(pd["growth"]) || null)}
 
 FLOOD RISK:
@@ -495,10 +492,10 @@ ${JSON.stringify(pdData(pd["flood-risk"]) || null)}
 LISTED BUILDINGS:
 ${JSON.stringify(pdData(pd["listed-buildings"]) || null)}
 
-CONSERVATION AREA:
+CONSERVATION AREA (if true, add a red flag noting renovation/extension restrictions):
 ${JSON.stringify(pdData(pd["conservation-area"]) || null)}
 
-PLANNING APPLICATIONS (recent nearby):
+PLANNING APPLICATIONS (recent nearby — flag any large/relevant ones as a consideration):
 ${JSON.stringify(slice(pdData(pd["planning-applications"]), 5) || [])}
 
 CRIME DATA:
@@ -509,9 +506,6 @@ ${JSON.stringify(pdData(pd["internet-speed"]) || null)}
 
 SCHOOLS (closest 5: 3 primary + 2 secondary):
 ${JSON.stringify(pdData(pd["schools"]) || [])}
-
-ENERGY EFFICIENCY (EPC data for postcode):
-${JSON.stringify(slice(pdData(pd["energy-efficiency"]), 5) || [])}
 `;
 }
 
