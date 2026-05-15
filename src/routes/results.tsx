@@ -3350,11 +3350,11 @@ function EmailReportButton({
         setShowInput(false);
       } else {
         setStatus("error");
-        setErrorMsg("Couldn't send the report — try again or contact hello@roovr.co");
+        setErrorMsg("Couldn't send the report — try again or contact support@roovr.co");
       }
     } catch {
       setStatus("error");
-      setErrorMsg("Couldn't send the report — try again or contact hello@roovr.co");
+      setErrorMsg("Couldn't send the report — try again or contact support@roovr.co");
     }
   };
 
