@@ -123,6 +123,13 @@ export type AnalysisResult = {
     unavailable?: boolean | null;
     autoRedFlag?: boolean | null;
   } | null;
+  ptal?: {
+    grade: string;
+    band: number | null;
+    label: string;
+    explanation: string;
+    source?: string | null;
+  } | null;
   areaContext: {
     avgPricePerSqFtArea: number | null;
     avgSoldPriceArea: number | null;
