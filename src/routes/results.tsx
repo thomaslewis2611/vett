@@ -875,10 +875,12 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
               value={a.metrics.daysOnMarket > 0 ? `${a.metrics.daysOnMarket}` : "—"}
               icon={Calendar}
             />
-            <MetricCard
-              label="Council tax band"
-              value={a.metrics.councilTaxBand}
-              icon={PoundSterling}
+            <CouncilTaxBandCard
+              band={a.metrics.councilTaxBand}
+              onSave={(b) => setA((prev) => ({
+                ...prev,
+                metrics: { ...prev.metrics, councilTaxBand: b },
+              }))}
             />
             <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
               <div className="flex items-center justify-between">
@@ -1345,6 +1347,115 @@ function MetricCard({
   );
 }
 
+// England average annual council tax by band (2024/25, rounded).
+// Used as a fallback when we don't know the property's local authority.
+const COUNCIL_TAX_ENGLAND_AVG: Record<string, number> = {
+  A: 1478,
+  B: 1724,
+  C: 1971,
+  D: 2217,
+  E: 2710,
+  F: 3202,
+  G: 3695,
+  H: 4434,
+};
+
+const COUNCIL_TAX_BANDS = ["A", "B", "C", "D", "E", "F", "G", "H"] as const;
+type CouncilTaxBand = (typeof COUNCIL_TAX_BANDS)[number];
+
+export function isKnownCouncilTaxBand(v: string | undefined | null): v is CouncilTaxBand {
+  if (!v) return false;
+  const t = String(v).trim().toUpperCase();
+  return (COUNCIL_TAX_BANDS as readonly string[]).includes(t);
+}
+
+export function annualCouncilTaxFor(band: string | undefined | null): number | null {
+  if (!isKnownCouncilTaxBand(band)) return null;
+  return COUNCIL_TAX_ENGLAND_AVG[String(band).trim().toUpperCase()] ?? null;
+}
+
+function CouncilTaxBandCard({
+  band,
+  onSave,
+}: {
+  band: string | undefined | null;
+  onSave: (b: CouncilTaxBand) => void;
+}) {
+  const known = isKnownCouncilTaxBand(band);
+  const [editing, setEditing] = useState(false);
+  const [selected, setSelected] = useState<string>(known ? String(band).trim().toUpperCase() : "");
+  const annual = known ? annualCouncilTaxFor(band) : null;
+
+  const submit = () => {
+    if (!isKnownCouncilTaxBand(selected)) return;
+    onSave(selected.toUpperCase() as CouncilTaxBand);
+    setEditing(false);
+  };
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+      <div className="flex items-center justify-between">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          Council tax band
+        </span>
+        <PoundSterling className="h-4 w-4 text-muted-foreground" />
+      </div>
+      <div className="mt-3 text-2xl font-semibold tracking-tight">
+        {known ? String(band).trim().toUpperCase() : "Unknown"}
+      </div>
+      {known && annual != null && !editing && (
+        <>
+          <div className="mt-1 text-xs" style={{ color: "#5F5E5A", fontWeight: 500 }}>
+            ≈ £{annual.toLocaleString()}/yr (England avg)
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              setSelected(String(band).trim().toUpperCase());
+              setEditing(true);
+            }}
+            className="mt-2 text-[11px]"
+            style={{ color: "#D85A30", fontWeight: 500 }}
+          >
+            Edit →
+          </button>
+        </>
+      )}
+      {(!known || editing) && (
+        <div className="mt-2">
+          <div className="text-[11px]" style={{ color: "#5F5E5A", lineHeight: 1.4 }}>
+            Know the band? Add it for cost analysis
+          </div>
+          <div className="mt-2 flex items-center gap-1.5">
+            <select
+              value={selected}
+              onChange={(e) => setSelected(e.target.value)}
+              className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs"
+              aria-label="Council tax band"
+            >
+              <option value="">Select…</option>
+              {COUNCIL_TAX_BANDS.map((b) => (
+                <option key={b} value={b}>
+                  Band {b}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              onClick={submit}
+              disabled={!isKnownCouncilTaxBand(selected)}
+              className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-medium text-white disabled:opacity-50"
+              style={{ background: "#D85A30" }}
+            >
+              Save →
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function RedFlagItem({
   flag,
 }: {
@@ -1596,6 +1707,7 @@ function CostBreakdown({
   const sd = typeof stampDuty === "number" ? stampDuty : c.stampDuty;
   const totalUpfront = c.purchasePrice + sd + c.legalFees + c.surveyFees + c.mortgageFees;
   const sdLabel = stampDutyMode ? `Stamp duty (${STAMP_DUTY_LABELS[stampDutyMode]})` : "Stamp duty";
+  const annualCouncilTax = annualCouncilTaxFor(analysis.metrics?.councilTaxBand);
   const rows = [
     ["Purchase price", c.purchasePrice],
     [sdLabel, sd],
@@ -1620,6 +1732,22 @@ function CostBreakdown({
             </li>
           ))}
         </ul>
+        {annualCouncilTax != null && (
+          <div className="mt-4 rounded-xl p-4" style={{ background: "#F1EFE8" }}>
+            <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+              Annual council tax (Band {String(analysis.metrics.councilTaxBand).trim().toUpperCase()})
+            </div>
+            <div className="mt-1 text-lg font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+              {formatGBP(annualCouncilTax)}/yr
+              <span className="ml-2 text-xs font-normal" style={{ color: "#5F5E5A" }}>
+                ≈ {formatGBP(Math.round(annualCouncilTax / 12))}/mo
+              </span>
+            </div>
+            <div className="mt-1 text-[11px]" style={{ color: "#888780" }}>
+              England average — actual rate varies by local authority.
+            </div>
+          </div>
+        )}
       </div>
       <div className="rounded-xl bg-primary-soft p-5">
         <MortgageCalculator purchasePrice={c.purchasePrice} />
