@@ -1534,7 +1534,7 @@ function LockedFeatureCard({
   );
 }
 
-const FULL_REPORT_FEATURES: { title: string; sub: string }[] = [
+const FULL_REPORT_FEATURES: { title: string; sub: string; note?: string }[] = [
   { title: "All red flags", sub: "See every issue we found" },
   { title: "True cost breakdown", sub: "Total upfront + monthly costs" },
   { title: "Negotiation strategy", sub: "Recommended offer and your leverage" },
@@ -1542,7 +1542,7 @@ const FULL_REPORT_FEATURES: { title: string; sub: string }[] = [
   { title: "Nearby schools", sub: "Ofsted ratings within 5 miles" },
   { title: "Crime statistics", sub: "Local crime data by category" },
   { title: "Broadband & connectivity", sub: "Real download speeds for this postcode" },
-  { title: "Transport links", sub: "Nearest stations, buses and commute times" },
+  { title: "Transport links", sub: "Nearest stations, buses and commute times", note: "London properties only" },
   { title: "EPC analysis", sub: "Energy rating and improvement costs" },
   { title: "Stamp duty calculator", sub: "First-time buyer, main residence and additional property" },
   { title: "Viewing checklist", sub: "What to check on the day" },
@@ -1575,6 +1575,11 @@ function LockedFeaturesGrid() {
             <p className="mt-1 text-[12px]" style={{ color: "#5F5E5A", lineHeight: 1.45 }}>
               {f.sub}
             </p>
+            {f.note && (
+              <p className="mt-1 text-[10px]" style={{ color: "#888780", lineHeight: 1.4 }}>
+                {f.note}
+              </p>
+            )}
           </div>
         ))}
       </div>
@@ -2093,7 +2098,14 @@ function PlanCard({
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
             <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#D85A30" }} />
-            {f}
+            <span>
+              {f}
+              {/^transport links/i.test(f) && (
+                <span className="block text-[11px]" style={{ color: "#888780", marginTop: 2 }}>
+                  London properties only
+                </span>
+              )}
+            </span>
           </li>
         ))}
       </ul>
