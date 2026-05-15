@@ -339,7 +339,7 @@ function mapPdSchools(raw: any) {
   // PropertyData /schools returns ofsted rating under a few possible keys
   // depending on the school type. Try them all and normalise to a label.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const readOfsted = (s: any): string | null => {
+  const readOfsted = (s: any): number | null => {
     const candidates = [
       s.ofsted_rating,
       s.ofstedRating,
@@ -349,21 +349,33 @@ function mapPdSchools(raw: any) {
       s.rating,
       s?.ofsted_report?.overall_effectiveness,
       s?.ofsted_report?.rating,
+      s?.ofsted_report?.outcome,
+      s.ofsted_outcome,
+      s.last_inspection?.overall_effectiveness,
     ];
+    const labelMap: Record<string, number> = {
+      "outstanding": 1,
+      "good": 2,
+      "requires improvement": 3,
+      "requires_improvement": 3,
+      "requiresimprovement": 3,
+      "satisfactory": 3,
+      "inadequate": 4,
+      "serious weaknesses": 4,
+      "special measures": 4,
+    };
     for (const c of candidates) {
       if (c == null) continue;
-      // PropertyData uses numeric 1–4 for overall_effectiveness
-      if (typeof c === "number" || /^[1-4]$/.test(String(c).trim())) {
-        const map: Record<string, string> = {
-          "1": "Outstanding",
-          "2": "Good",
-          "3": "Requires improvement",
-          "4": "Inadequate",
-        };
-        return map[String(c).trim()] ?? null;
-      }
       const str = String(c).trim();
-      if (str && str.toLowerCase() !== "null" && str.toLowerCase() !== "n/a") return str;
+      if (!str || /^(null|n\/?a|none|unknown)$/i.test(str)) continue;
+      // Numeric 1–4
+      if (/^[1-4]$/.test(str)) return Number(str);
+      const key = str.toLowerCase();
+      if (labelMap[key] != null) return labelMap[key];
+      // Try partial match
+      for (const [k, v] of Object.entries(labelMap)) {
+        if (key.includes(k)) return v;
+      }
     }
     return null;
   };
