@@ -16,6 +16,7 @@ import { Route as PricingRouteImport } from './routes/pricing'
 import { Route as PaymentSuccessRouteImport } from './routes/payment-success'
 import { Route as MyReportsRouteImport } from './routes/my-reports'
 import { Route as MyReportRouteImport } from './routes/my-report'
+import { Route as FaqRouteImport } from './routes/faq'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as BuyerLoginRouteImport } from './routes/buyer-login'
@@ -59,6 +60,11 @@ const MyReportsRoute = MyReportsRouteImport.update({
 const MyReportRoute = MyReportRouteImport.update({
   id: '/my-report',
   path: '/my-report',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FaqRoute = FaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -115,6 +121,7 @@ export interface FileRoutesByFullPath {
   '/buyer-login': typeof BuyerLoginRoute
   '/compare': typeof CompareRoute
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
   '/my-report': typeof MyReportRoute
   '/my-reports': typeof MyReportsRoute
   '/payment-success': typeof PaymentSuccessRoute
@@ -133,6 +140,7 @@ export interface FileRoutesByTo {
   '/buyer-login': typeof BuyerLoginRoute
   '/compare': typeof CompareRoute
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
   '/my-report': typeof MyReportRoute
   '/my-reports': typeof MyReportsRoute
   '/payment-success': typeof PaymentSuccessRoute
@@ -152,6 +160,7 @@ export interface FileRoutesById {
   '/buyer-login': typeof BuyerLoginRoute
   '/compare': typeof CompareRoute
   '/dashboard': typeof DashboardRoute
+  '/faq': typeof FaqRoute
   '/my-report': typeof MyReportRoute
   '/my-reports': typeof MyReportsRoute
   '/payment-success': typeof PaymentSuccessRoute
@@ -172,6 +181,7 @@ export interface FileRouteTypes {
     | '/buyer-login'
     | '/compare'
     | '/dashboard'
+    | '/faq'
     | '/my-report'
     | '/my-reports'
     | '/payment-success'
@@ -190,6 +200,7 @@ export interface FileRouteTypes {
     | '/buyer-login'
     | '/compare'
     | '/dashboard'
+    | '/faq'
     | '/my-report'
     | '/my-reports'
     | '/payment-success'
@@ -208,6 +219,7 @@ export interface FileRouteTypes {
     | '/buyer-login'
     | '/compare'
     | '/dashboard'
+    | '/faq'
     | '/my-report'
     | '/my-reports'
     | '/payment-success'
@@ -227,6 +239,7 @@ export interface RootRouteChildren {
   BuyerLoginRoute: typeof BuyerLoginRoute
   CompareRoute: typeof CompareRoute
   DashboardRoute: typeof DashboardRoute
+  FaqRoute: typeof FaqRoute
   MyReportRoute: typeof MyReportRoute
   MyReportsRoute: typeof MyReportsRoute
   PaymentSuccessRoute: typeof PaymentSuccessRoute
@@ -289,6 +302,13 @@ declare module '@tanstack/react-router' {
       path: '/my-report'
       fullPath: '/my-report'
       preLoaderRoute: typeof MyReportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/faq': {
+      id: '/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof FaqRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -363,6 +383,7 @@ const rootRouteChildren: RootRouteChildren = {
   BuyerLoginRoute: BuyerLoginRoute,
   CompareRoute: CompareRoute,
   DashboardRoute: DashboardRoute,
+  FaqRoute: FaqRoute,
   MyReportRoute: MyReportRoute,
   MyReportsRoute: MyReportsRoute,
   PaymentSuccessRoute: PaymentSuccessRoute,
