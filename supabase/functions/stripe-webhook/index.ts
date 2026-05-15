@@ -188,18 +188,39 @@ Deno.serve(async (req) => {
   // analysis_jobs into saved_analyses for their email so the magic link can
   // land them straight on the unlocked report.
   async function captureAnalysisForEmail(email: string): Promise<string | null> {
-    if (!analysisJobId) return null;
     try {
-      const { data: job, error: jobErr } = await supabase
-        .from("analysis_jobs")
-        .select("result_json, url")
-        .eq("id", analysisJobId)
-        .maybeSingle();
-      if (jobErr || !job?.result_json) {
-        console.error("captureAnalysisForEmail: job not found", { analysisJobId, jobErr });
+      // 1. Prefer the explicit analysis_job_id passed through Stripe metadata.
+      let job: { result_json: unknown; url: string | null } | null = null;
+      if (analysisJobId) {
+        const { data, error: jobErr } = await supabase
+          .from("analysis_jobs")
+          .select("result_json, url")
+          .eq("id", analysisJobId)
+          .maybeSingle();
+        if (jobErr) console.error("captureAnalysisForEmail: job lookup error", jobErr);
+        if (data?.result_json) job = data as typeof job;
+      }
+      // 2. Fallback: find the most recent completed analysis_jobs row for
+      // this listing URL. Covers the case where the buyer's browser cleared
+      // sessionStorage between viewing the sample and paying.
+      if (!job && listingUrl) {
+        const { data } = await supabase
+          .from("analysis_jobs")
+          .select("result_json, url")
+          .eq("url", listingUrl)
+          .eq("status", "complete")
+          .not("result_json", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (data?.result_json) job = data as typeof job;
+      }
+      if (!job) {
+        console.error("captureAnalysisForEmail: no analysis available", { analysisJobId, listingUrl });
         return null;
       }
       const lurl = listingUrl ?? job.url ?? null;
+
       // Reuse an existing saved_analyses row for the same (email, listing_url).
       let savedId: string | null = null;
       if (lurl) {
