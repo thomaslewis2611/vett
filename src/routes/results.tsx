@@ -1716,14 +1716,14 @@ function CouncilTaxBandCard({
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5 shadow-soft">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft">
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
           Council tax band
         </span>
         <PoundSterling className="h-4 w-4 text-muted-foreground" />
       </div>
-      <div className="mt-3 text-2xl font-semibold tracking-tight">
+      <div className="mt-2 text-2xl font-semibold tracking-tight">
         {known ? String(band).trim().toUpperCase() : "Unknown"}
       </div>
       {known && annual != null && !editing && (
