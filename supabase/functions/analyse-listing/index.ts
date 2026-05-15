@@ -470,6 +470,109 @@ function mapPdSchools(raw: any) {
   return { schools, unavailable: false, aiSourced: false };
 }
 
+// ---------- GIAS (Get Information About Schools) Ofsted lookup ----------
+// Maps an Ofsted "overall effectiveness" string/number to our 1-4 scale.
+function giasRatingToNumber(val: unknown): number | null {
+  if (val == null) return null;
+  const s = String(val).trim().toLowerCase();
+  if (!s || /^(null|n\/?a|none|unknown|not yet|no judgement)/i.test(s)) return null;
+  if (/^[1-4]$/.test(s)) return Number(s);
+  if (s.includes("outstanding")) return 1;
+  if (s.includes("good")) return 2;
+  if (s.includes("requires improvement") || s === "satisfactory") return 3;
+  if (s.includes("inadequate") || s.includes("serious weakness") || s.includes("special measures")) return 4;
+  return null;
+}
+
+const giasCache = new Map<string, number | null>();
+
+async function lookupGiasOfsted(name: string, urn: string | null, postcode: string | null): Promise<number | null> {
+  const cacheKey = (urn ? `urn:${urn}` : `name:${name.toLowerCase()}|${(postcode ?? "").toLowerCase()}`);
+  if (giasCache.has(cacheKey)) return giasCache.get(cacheKey) ?? null;
+
+  // Strategy: try GIAS suggestions endpoint by name (or URN), then fetch
+  // establishment details and read the Ofsted overall effectiveness field.
+  // Wrapped in try/catch — a failure means "not yet rated", never a hard error.
+  const tryFetch = async (url: string, init?: RequestInit) => {
+    try {
+      const r = await fetch(url, {
+        ...init,
+        headers: { Accept: "application/json", ...(init?.headers ?? {}) },
+        signal: AbortSignal.timeout(6000),
+      });
+      if (!r.ok) return null;
+      const ct = r.headers.get("content-type") ?? "";
+      return ct.includes("json") ? await r.json() : null;
+    } catch {
+      return null;
+    }
+  };
+
+  let rating: number | null = null;
+  try {
+    let resolvedUrn = urn;
+
+    if (!resolvedUrn) {
+      // Suggestion search by name (best-effort).
+      const sugUrl = `https://get-information-schools.service.gov.uk/api/Establishments/Suggestions?text=${encodeURIComponent(name)}&take=5`;
+      const sug = await tryFetch(sugUrl) as any;
+      const matches = Array.isArray(sug?.matches) ? sug.matches : Array.isArray(sug) ? sug : [];
+      // Prefer a postcode match if we have one.
+      const pick = (postcode
+        ? matches.find((m: any) =>
+            String(m?.address ?? m?.postcode ?? "").toUpperCase().includes(postcode.toUpperCase()))
+        : null) ?? matches[0];
+      resolvedUrn = pick?.urn ? String(pick.urn) : pick?.id ? String(pick.id) : null;
+    }
+
+    if (resolvedUrn) {
+      // Try the user-specified DfE endpoint first; fall back to compare-school-performance JSON.
+      const candidates = [
+        `https://educationandskills.api.gov.uk/schools/${encodeURIComponent(resolvedUrn)}`,
+        `https://www.compare-school-performance.service.gov.uk/api/school/details?urn=${encodeURIComponent(resolvedUrn)}`,
+      ];
+      for (const url of candidates) {
+        const data = await tryFetch(url) as any;
+        if (!data) continue;
+        const candidates2 = [
+          data?.ofstedRating,
+          data?.ofsted?.rating,
+          data?.ofsted?.overallEffectiveness,
+          data?.OfstedRating,
+          data?.overallEffectiveness,
+          data?.lastInspection?.overallEffectiveness,
+          data?.school?.ofstedRating,
+        ];
+        for (const c of candidates2) {
+          const n = giasRatingToNumber(c);
+          if (n != null) { rating = n; break; }
+        }
+        if (rating != null) break;
+      }
+    }
+  } catch {
+    rating = null;
+  }
+
+  giasCache.set(cacheKey, rating);
+  return rating;
+}
+
+// Enrich the mapped schools with Ofsted ratings from GIAS in parallel.
+// Only looks up schools that PropertyData didn't already supply a rating for.
+async function enrichSchoolsWithGias(
+  mapped: { schools: { name: string; ofstedRating: number | null; schoolType: string | null; phase: string; distanceMiles: number; urn?: string | null }[] } | null,
+  postcode: string | null,
+) {
+  if (!mapped?.schools?.length) return mapped;
+  const updated = await Promise.all(mapped.schools.map(async (s) => {
+    if (s.ofstedRating != null) return s;
+    const rating = await lookupGiasOfsted(s.name, s.urn ?? null, postcode);
+    return { ...s, ofstedRating: rating };
+  }));
+  return { ...mapped, schools: updated };
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapPdCrime(raw: any) {
   if (!raw || raw.status !== "success") return null;
