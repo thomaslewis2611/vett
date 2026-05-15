@@ -203,6 +203,30 @@ export type AnalysisResult = {
     soldDate: string;
     distance: string;
   }[];
+  propertyData?: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    soldPrices?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    floodRisk?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    schools?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    crime?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    internetSpeed?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    energyEfficiency?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    floorAreas?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    growth?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    planningApplications?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    listedBuildings?: any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    conservationArea?: any;
+  } | null;
 };
 
 export const mockAnalysis: AnalysisResult = {

@@ -755,6 +755,23 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
       console.error("[upgradeToPass] checkout failed:", e);
     }
   };
+  const upgradeToSingle = async (lurl?: string) => {
+    try {
+      const targetUrl = lurl ?? listingUrl ?? "";
+      const r = await checkoutFn({
+        data: {
+          priceId: PRICE_SINGLE,
+          listingUrl: targetUrl,
+          tier: "single",
+          analysisJobId: recallJobId(targetUrl),
+          source: "results_page_upgrade",
+        },
+      });
+      if (r?.url) window.location.href = r.url;
+    } catch (e) {
+      console.error("[upgradeToSingle] checkout failed:", e);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
@@ -997,60 +1014,71 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           </SafeSection>
         )}
 
-        {/* Flood risk — Buyer Pass renders data; Single Report sees locked teaser */}
-        {(unlocked || access.level === "single") && (access.level === "single" || access.level === "pass") && (
-          <FloodRiskSection
-            analysis={a}
-            isBuyerPass={access.level === "pass"}
-            fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
-            onUpgrade={() => upgradeToPass(listingUrl)}
-            listingUrl={listingUrl}
-            userEmail={access.email}
-            onFloodRiskUpdate={(fr) => setA((prev) => ({ ...prev, floodRisk: fr }))}
-          />
-        )}
+        {/* Flood risk — Single Report + Buyer Pass; free sees locked teaser */}
+        <FloodRiskSection
+          analysis={a}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
+          fetching={access.level === "pass" && fetchingExtras && a.floodRisk == null}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
+          listingUrl={listingUrl}
+          userEmail={access.email}
+          onFloodRiskUpdate={(fr) => setA((prev) => ({ ...prev, floodRisk: fr }))}
+        />
 
-        {/* Nearby schools — Buyer Pass renders data; Single Report sees locked teaser */}
-        {(unlocked || access.level === "single") && (access.level === "single" || access.level === "pass") && (
-          <NearbySchoolsSection
-            analysis={a}
-            isBuyerPass={access.level === "pass"}
-            fetching={access.level === "pass" && fetchingExtras && a.nearbySchools == null}
-            onUpgrade={() => upgradeToPass(listingUrl)}
-          />
-        )}
+        {/* Nearby schools — Single Report + Buyer Pass; free sees locked teaser */}
+        <NearbySchoolsSection
+          analysis={a}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
+          fetching={access.level === "pass" && fetchingExtras && a.nearbySchools == null}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
+        />
 
-        {/* Crime statistics — Buyer Pass renders data; free + Single Report see locked teaser */}
+        {/* Crime statistics — Single Report + Buyer Pass; free sees locked teaser */}
         <CrimeSection
           analysis={a}
-          isBuyerPass={access.level === "pass"}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.crime == null}
-          onUpgrade={() => upgradeToPass(listingUrl)}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
         />
 
-        {/* Broadband & connectivity — Buyer Pass only; locked teaser otherwise */}
+        {/* Broadband & connectivity — Single Report + Buyer Pass; free sees locked teaser */}
         <BroadbandSection
           analysis={a}
-          isBuyerPass={access.level === "pass"}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.broadband == null}
-          onUpgrade={() => upgradeToPass(listingUrl)}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
         />
 
-        {/* Transport links — Buyer Pass only; locked teaser otherwise */}
+        {/* Transport links — Single Report + Buyer Pass; free sees locked teaser */}
         <TransportSection
           analysis={a}
-          isBuyerPass={access.level === "pass"}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
           fetching={access.level === "pass" && fetchingExtras && a.transport == null}
-          onUpgrade={() => upgradeToPass(listingUrl)}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
         />
 
-        {/* AI chat — Buyer Pass renders chat; Single Report sees locked teaser */}
-        {unlocked && showChat && (
+        {/* Sold price history (PropertyData / Land Registry) */}
+        <PriceHistorySection
+          analysis={a}
+          unlocked={access.level === "single" || access.level === "pass"}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
+        />
+
+        {/* Capital growth (PropertyData) — headline for free/single, full breakdown for pass */}
+        <CapitalGrowthSection
+          analysis={a}
+          tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
+          onUpgradeSingle={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
+        />
+
+        {/* AI chat — Buyer Pass renders chat; everyone else sees locked teaser */}
+        {access.level === "pass" && (
           <section className="mt-10">
             <PropertyChat analysis={a} />
           </section>
         )}
-        {access.level === "single" && (
+        {access.level !== "pass" && (
           <AIChatLockedTeaser onUpgrade={() => upgradeToPass(listingUrl)} />
         )}
 
@@ -1058,6 +1086,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         {access.level === "single" && (
           <InlineBuyerPassUpgrade listingUrl={listingUrl} />
         )}
+
 
         {unlocked && access.level === "pass" && (
           <div className="mt-10 text-center">
@@ -1771,17 +1800,21 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           loading={loadingTier === "single"}
           onClick={() => handleBuy("single")}
           features={[
-            "Full analysis for one property",
-            "All red flags spotted in the listing",
-            "True cost breakdown (stamp duty, legal fees, mortgage estimate)",
-            "Viewing questions to ask the agent",
-            "Negotiation strategy and recommended offer range",
-            "Seller motivation score",
+            "Full analysis with all red flags",
+            "True cost breakdown and stamp duty",
+            "Negotiation strategy and recommended offer",
             "Viewing checklist — specific to this property",
             "Renovation cost estimator",
-            "Access anywhere — report saved to your account",
+            "Seller motivation score",
+            "Flood risk assessment",
+            "Nearby schools with Ofsted ratings",
+            "Crime statistics",
+            "Broadband and internet speed",
+            "Transport links",
+            "Full sold price history",
+            "Report saved to your account",
           ]}
-          upsell={{ text: "Upgrade to Buyer Pass for AI chat, flood risk and nearby schools →", targetId: "buyer-pass-card" }}
+          upsell={{ text: "Upgrade to Buyer Pass for AI chat, capital growth and unlimited analyses →", targetId: "buyer-pass-card" }}
         />
         <PlanCard
           id="buyer-pass-card"
@@ -1796,11 +1829,11 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           features={[
             "Unlimited analyses for 90 days",
             "AI chat on every property",
-            "Flood risk assessment",
-            "Nearby schools with Ofsted ratings",
-            "Save and compare reports",
+            "Capital growth data (1yr/3yr/5yr)",
+            "Area demographics",
+            "Compare properties side by side",
+            "All reports saved to dashboard",
             "Report emailed to you",
-            "Access anywhere — all reports saved to your account",
           ]}
           footnote="One-off payment. Access ends 90 days after purchase."
         />
@@ -2748,7 +2781,7 @@ function shortMoney(n: number): string {
   }).format(n);
 }
 
-function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade: _onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -2781,8 +2814,18 @@ function TransportSection({ analysis, isBuyerPass, fetching, onUpgrade: _onUpgra
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
             <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
-              Unlock with Buyer Pass to see transport links and commute times
+              Unlock with a Single Report — £4.99 to see transport links and commute times
             </p>
+            {onUpgrade && (
+              <button
+                type="button"
+                onClick={onUpgrade}
+                className="mt-3 hover:underline"
+                style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
+              >
+                Get Single Report — £4.99 →
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -2951,8 +2994,18 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade }: { 
           <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: "rgba(255,253,249,0.85)" }}>
             <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
             <p className="text-center" style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
-              Unlock with Buyer Pass to see nearby schools and Ofsted ratings
+              Unlock with a Single Report — £4.99 to see nearby schools and Ofsted ratings
             </p>
+            {onUpgrade && (
+              <button
+                type="button"
+                onClick={onUpgrade}
+                className="mt-3 hover:underline"
+                style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
+              >
+                Get Single Report — £4.99 →
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -3060,8 +3113,13 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
             <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
-              Unlock with Buyer Pass to see local crime statistics
+              Unlock with a Single Report — £4.99 to see local crime statistics
             </p>
+            {onUpgrade && (
+              <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                Get Single Report — £4.99 →
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -3172,7 +3230,7 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis
   );
 }
 
-function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade: _onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
+function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void }) {
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -3205,8 +3263,13 @@ function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade: _onUpgra
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
             <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
-              Unlock with Buyer Pass to see broadband speeds and connectivity
+              Unlock with a Single Report — £4.99 to see broadband speeds and connectivity
             </p>
+            {onUpgrade && (
+              <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                Get Single Report — £4.99 →
+              </button>
+            )}
           </div>
         </div>
       </section>
@@ -3393,8 +3456,13 @@ function FloodRiskSection({
                 Flood risk assessment
               </div>
               <p className="mt-1" style={{ fontSize: 12, color: "#5F5E5A" }}>
-                Unlock with Buyer Pass to see flood zone, insurance implications and mortgage risks
+                Unlock with a Single Report — £4.99 to see flood zone, insurance implications and mortgage risks
               </p>
+              {onUpgrade && (
+                <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Get Single Report — £4.99 →
+                </button>
+              )}
             </div>
           </div>
         </section>
@@ -4116,7 +4184,7 @@ function AIChatLockedTeaser({ onUpgrade }: { onUpgrade?: () => void }) {
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6" style={{ background: "rgba(255,253,249,0.85)" }}>
           <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
           <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
-            Ask anything about this property — Buyer Pass only
+            Unlock with Buyer Pass — £24.99 to ask anything about this property
           </p>
           {onUpgrade && (
             <button
@@ -4125,7 +4193,7 @@ function AIChatLockedTeaser({ onUpgrade }: { onUpgrade?: () => void }) {
               className="mt-3 hover:underline"
               style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
             >
-              Unlock with Buyer Pass →
+              Unlock with Buyer Pass — £24.99 →
             </button>
           )}
         </div>
@@ -4155,11 +4223,12 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
 
   const features = [
     "Unlimited analyses for 90 days",
-    "AI chat — ask anything about this property",
-    "Seller motivation score",
-    "Renovation cost estimator",
+    "AI chat on every property",
+    "Capital growth (1yr/3yr/5yr breakdown)",
+    "Area demographics",
     "Compare properties side by side",
-    "All reports saved to your account",
+    "All reports saved to dashboard",
+    "Report emailed to you",
   ];
 
   return (
@@ -4242,6 +4311,183 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
       {err && (
         <p style={{ fontSize: 12, color: "#A32D2D", margin: "8px 0 0", textAlign: "center" }}>{err}</p>
       )}
+    </section>
+  );
+}
+
+// ---------- Sold price history (PropertyData / Land Registry) ----------
+function PriceHistorySection({
+  analysis,
+  unlocked,
+  onUpgrade,
+}: {
+  analysis: AnalysisResult;
+  unlocked: boolean;
+  onUpgrade?: () => void;
+}) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = (analysis.propertyData?.soldPrices as any) ?? null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const list: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : Array.isArray(raw?.transactions) ? raw.transactions : [];
+  if (!list.length) return null;
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const norm = list.map((s: any) => ({
+    date: String(s?.date ?? s?.sold_date ?? s?.transaction_date ?? "").slice(0, 10),
+    price: Number(s?.price ?? s?.sold_price ?? s?.amount ?? 0),
+    type: String(s?.property_type ?? s?.type ?? "—"),
+    address: String(s?.address ?? s?.paon ?? "").trim(),
+  })).filter((r) => r.price > 0);
+
+  const visible = unlocked ? norm.slice(0, 10) : norm.slice(0, 3);
+
+  const card: CSSProperties = { background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)", borderRadius: 12, padding: 20 };
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        Sold price history
+      </h2>
+      <div className="mt-4 relative overflow-hidden" style={card}>
+        <div className="overflow-x-auto">
+          <table style={{ width: "100%", fontSize: 13, color: "#1A1108", borderCollapse: "collapse" }}>
+            <thead>
+              <tr style={{ textAlign: "left", color: "#888780", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                <th style={{ padding: "8px 8px 8px 0" }}>Date</th>
+                <th style={{ padding: "8px" }}>Price</th>
+                <th style={{ padding: "8px" }}>Type</th>
+                <th style={{ padding: "8px 0 8px 8px" }}>Address</th>
+              </tr>
+            </thead>
+            <tbody>
+              {visible.map((r, i) => (
+                <tr key={i} style={{ borderTop: "0.5px solid rgba(26,17,8,0.08)" }}>
+                  <td style={{ padding: "10px 8px 10px 0" }}>{r.date || "—"}</td>
+                  <td style={{ padding: "10px 8px", fontWeight: 500 }}>{formatGBP(r.price)}</td>
+                  <td style={{ padding: "10px 8px", color: "#5F5E5A" }}>{r.type}</td>
+                  <td style={{ padding: "10px 0 10px 8px", color: "#5F5E5A" }}>{r.address || "—"}</td>
+                </tr>
+              ))}
+              {!unlocked && norm.length > 3 && (
+                <tr>
+                  <td colSpan={4} style={{ padding: 0 }}>
+                    <div style={{ position: "relative", height: 120 }}>
+                      <div style={{ position: "absolute", inset: 0, filter: "blur(5px)", userSelect: "none", pointerEvents: "none", padding: "10px 0" }}>
+                        <div style={{ height: 18, background: "rgba(26,17,8,0.06)", borderRadius: 4, marginBottom: 10 }} />
+                        <div style={{ height: 18, background: "rgba(26,17,8,0.06)", borderRadius: 4, marginBottom: 10 }} />
+                        <div style={{ height: 18, background: "rgba(26,17,8,0.06)", borderRadius: 4 }} />
+                      </div>
+                      <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 16 }}>
+                        <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+                        <p style={{ fontSize: 13, color: "#1A1108", margin: 0 }}>
+                          Unlock with a Single Report — £4.99 to see the full sold price history
+                        </p>
+                        {onUpgrade && (
+                          <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                            Get Single Report — £4.99 →
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+        <p style={{ marginTop: 12, fontSize: 11, color: "#888780" }}>
+          Source: HM Land Registry via PropertyData. Verify at landregistry.gov.uk.
+        </p>
+      </div>
+    </section>
+  );
+}
+
+// ---------- Capital growth (PropertyData) ----------
+function CapitalGrowthSection({
+  analysis,
+  tier,
+  onUpgradeSingle,
+  onUpgradePass,
+}: {
+  analysis: AnalysisResult;
+  tier: "free" | "single" | "pass";
+  onUpgradeSingle?: () => void;
+  onUpgradePass?: () => void;
+}) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const raw = (analysis.propertyData?.growth as any) ?? null;
+  if (!raw) return null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const data: any = raw?.data ?? raw;
+  const num = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN);
+
+  const g1 = num(data?.["1yr"] ?? data?.year_1 ?? data?.oneYear);
+  const g3 = num(data?.["3yr"] ?? data?.year_3 ?? data?.threeYear);
+  const g5 = num(data?.["5yr"] ?? data?.year_5 ?? data?.fiveYear);
+  const headlineNum = !isNaN(g5) ? g5 : !isNaN(g3) ? g3 : !isNaN(g1) ? g1 : NaN;
+  const headlineWindow = !isNaN(g5) ? "5 years" : !isNaN(g3) ? "3 years" : "1 year";
+  if (isNaN(headlineNum)) return null;
+
+  const fmt = (n: number) => `${n >= 0 ? "+" : ""}${n.toFixed(1)}%`;
+  const card: CSSProperties = { background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)", borderRadius: 12, padding: 20 };
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        Capital growth
+      </h2>
+      <div className="mt-4" style={card}>
+        <div style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", lineHeight: 1.1 }}>
+          {fmt(headlineNum)} <span style={{ fontSize: 14, color: "#5F5E5A", fontWeight: 400 }}>over {headlineWindow}</span>
+        </div>
+        {tier === "pass" ? (
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            {[
+              { label: "1 year", v: g1 },
+              { label: "3 years", v: g3 },
+              { label: "5 years", v: g5 },
+            ].map((row) => (
+              <div key={row.label} style={{ background: "#FAF8F4", borderRadius: 8, padding: 12 }}>
+                <div style={{ fontSize: 11, color: "#888780", textTransform: "uppercase", letterSpacing: "0.06em" }}>{row.label}</div>
+                <div style={{ fontSize: 18, fontWeight: 500, color: "#1A1108", marginTop: 4 }}>
+                  {isNaN(row.v) ? "—" : fmt(row.v)}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-4 relative overflow-hidden" style={{ background: "#FAF8F4", borderRadius: 8, padding: 16 }}>
+            <div style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none" }}>
+              <div className="grid grid-cols-3 gap-3">
+                <div style={{ fontSize: 18, fontWeight: 500 }}>+3.2%</div>
+                <div style={{ fontSize: 18, fontWeight: 500 }}>+8.5%</div>
+                <div style={{ fontSize: 18, fontWeight: 500 }}>+12.3%</div>
+              </div>
+            </div>
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+              <p style={{ fontSize: 13, color: "#1A1108", margin: 0 }}>
+                {tier === "single"
+                  ? "Upgrade to Buyer Pass for the full 1yr / 3yr / 5yr breakdown"
+                  : "Buyer Pass unlocks the full 1yr / 3yr / 5yr breakdown"}
+              </p>
+              {tier === "single" && onUpgradePass && (
+                <button type="button" onClick={onUpgradePass} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Upgrade to Buyer Pass — £24.99 →
+                </button>
+              )}
+              {tier === "free" && onUpgradeSingle && (
+                <button type="button" onClick={onUpgradeSingle} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  Get Single Report — £4.99 →
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+        <p style={{ marginTop: 12, fontSize: 11, color: "#888780" }}>
+          Source: PropertyData area capital growth. Past performance is not a guarantee of future returns.
+        </p>
+      </div>
     </section>
   );
 }
