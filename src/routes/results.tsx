@@ -3387,7 +3387,7 @@ function EmailReportButton({
   }
 
   return (
-    <div className="flex w-full min-w-0 max-w-full flex-col items-end gap-2">
+    <div className="inline-flex min-w-0 max-w-full flex-col items-start gap-2">
       {showInput && !userEmail ? (
         <form
           onSubmit={(e) => {
