@@ -2311,8 +2311,9 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
   const [showRestore, setShowRestore] = useState(false);
   const [restoreEmail, setRestoreEmail] = useState("");
   const [restoreMsg, setRestoreMsg] = useState<string | null>(null);
+  const [upsellOpen, setUpsellOpen] = useState(false);
 
-  const handleBuy = async (tier: "single" | "pass") => {
+  const startCheckout = async (tier: "single" | "pass") => {
     setErr(null);
     setLoadingTier(tier);
     try {
@@ -2342,6 +2343,14 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
       setErr((e as Error).message || "Couldn't start checkout. Try again.");
       setLoadingTier(null);
     }
+  };
+
+  const handleBuy = async (tier: "single" | "pass") => {
+    if (tier === "single" && shouldShowPassUpsell()) {
+      setUpsellOpen(true);
+      return;
+    }
+    await startCheckout(tier);
   };
 
   const handleRestore = async (e: React.FormEvent) => {
