@@ -203,6 +203,19 @@ export type AnalysisResult = {
     soldDate: string;
     distance: string;
   }[];
+  propertyData?: {
+    soldPrices?: unknown;
+    floodRisk?: unknown;
+    schools?: unknown;
+    crime?: unknown;
+    internetSpeed?: unknown;
+    energyEfficiency?: unknown;
+    floorAreas?: unknown;
+    growth?: unknown;
+    planningApplications?: unknown;
+    listedBuildings?: unknown;
+    conservationArea?: unknown;
+  } | null;
 };
 
 export const mockAnalysis: AnalysisResult = {
