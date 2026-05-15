@@ -220,24 +220,27 @@ export type Database = {
           analysis_json: Json | null
           created_at: string
           id: string
+          is_pinned: boolean
           listing_url: string | null
-          pinned: boolean
+          pinned_at: string | null
           user_email: string
         }
         Insert: {
           analysis_json?: Json | null
           created_at?: string
           id?: string
+          is_pinned?: boolean
           listing_url?: string | null
-          pinned?: boolean
+          pinned_at?: string | null
           user_email: string
         }
         Update: {
           analysis_json?: Json | null
           created_at?: string
           id?: string
+          is_pinned?: boolean
           listing_url?: string | null
-          pinned?: boolean
+          pinned_at?: string | null
           user_email?: string
         }
         Relationships: []

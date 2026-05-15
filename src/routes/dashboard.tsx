@@ -19,8 +19,21 @@ type SavedRow = {
   listing_url: string | null;
   analysis_json: any;
   created_at: string;
-  pinned: boolean;
+  is_pinned: boolean;
+  pinned_at: string | null;
 };
+
+function sortRows(rows: SavedRow[]): SavedRow[] {
+  return [...rows].sort((a, b) => {
+    if (!!b.is_pinned !== !!a.is_pinned) return b.is_pinned ? 1 : -1;
+    if (a.is_pinned && b.is_pinned) {
+      const ap = a.pinned_at ? new Date(a.pinned_at).getTime() : 0;
+      const bp = b.pinned_at ? new Date(b.pinned_at).getTime() : 0;
+      return bp - ap;
+    }
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
+}
 
 type PassStatus = "active" | "expiring" | "expired";
 
@@ -102,25 +115,19 @@ function DashboardPage() {
       setEmail(userEmail);
       const { data: saved } = await supabase
         .from("saved_analyses")
-        .select("id, listing_url, analysis_json, created_at, pinned")
+        .select("id, listing_url, analysis_json, created_at, is_pinned, pinned_at")
         .order("created_at", { ascending: false })
         .limit(50);
-      // Deduplicate by listing_url, keeping the most recent entry per URL.
       const seen = new Set<string>();
       const deduped: SavedRow[] = [];
-      for (const r of (saved as SavedRow[]) ?? []) {
+      for (const r of (saved as unknown as SavedRow[]) ?? []) {
         const key = r.listing_url ?? `__no_url__${r.id}`;
         if (seen.has(key)) continue;
         seen.add(key);
         deduped.push(r);
         if (deduped.length >= 10) break;
       }
-      // Sort: pinned first (by date desc), then unpinned (by date desc).
-      deduped.sort((a, b) => {
-        if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-      setRows(deduped);
+      setRows(sortRows(deduped));
       setLoading(false);
     })();
     return () => {
@@ -155,28 +162,26 @@ function DashboardPage() {
 
   const togglePin = async (id: string, current: boolean) => {
     const next = !current;
-    setRows((prev) => {
-      const updated = prev.map((r) => (r.id === id ? { ...r, pinned: next } : r));
-      updated.sort((a, b) => {
-        if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
-      return updated;
-    });
+    const nextPinnedAt = next ? new Date().toISOString() : null;
+    setRows((prev) =>
+      sortRows(
+        prev.map((r) =>
+          r.id === id ? { ...r, is_pinned: next, pinned_at: nextPinnedAt } : r,
+        ),
+      ),
+    );
     const { error } = await supabase
       .from("saved_analyses")
-      .update({ pinned: next })
+      .update({ is_pinned: next, pinned_at: nextPinnedAt })
       .eq("id", id);
     if (error) {
-      // Revert on failure
-      setRows((prev) => {
-        const reverted = prev.map((r) => (r.id === id ? { ...r, pinned: current } : r));
-        reverted.sort((a, b) => {
-          if (!!b.pinned !== !!a.pinned) return b.pinned ? 1 : -1;
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-        return reverted;
-      });
+      setRows((prev) =>
+        sortRows(
+          prev.map((r) =>
+            r.id === id ? { ...r, is_pinned: current, pinned_at: current ? r.pinned_at : null } : r,
+          ),
+        ),
+      );
     }
   };
 
@@ -382,30 +387,28 @@ function DashboardPage() {
                 return (
                   <li
                     key={r.id}
-                    className="group flex w-full flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                    className="group relative flex w-full flex-col gap-2 p-4 pr-12 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:pr-12"
                     style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)", boxSizing: "border-box" }}
                   >
-                    <div className="flex min-w-0 flex-1 items-start gap-3">
-                      <button
-                        type="button"
-                        onClick={() => togglePin(r.id, r.pinned)}
-                        aria-label={r.pinned ? "Unpin report" : "Pin report"}
-                        title={r.pinned ? "Unpin from top" : "Pin to top"}
-                        className={`shrink-0 rounded-full p-1 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 ${r.pinned ? "sm:opacity-100" : ""}`}
-                        style={{ color: r.pinned ? "#D85A30" : "#B8B6AE" }}
-                      >
-                        <Pin
-                          className="h-4 w-4"
-                          fill={r.pinned ? "#D85A30" : "none"}
-                          strokeWidth={2}
-                        />
-                      </button>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
-                        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
-                          {price > 0 && <span>{formatGBP(price)}</span>}
-                          <span>{new Date(r.created_at).toLocaleDateString()}</span>
-                        </div>
+                    <button
+                      type="button"
+                      onClick={() => togglePin(r.id, r.is_pinned)}
+                      aria-label={r.is_pinned ? "Unpin report" : "Pin report"}
+                      title={r.is_pinned ? "Unpin from top" : "Pin to top"}
+                      className={`absolute right-3 top-3 rounded-full p-1.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 ${r.is_pinned ? "sm:opacity-100" : ""}`}
+                      style={{ color: r.is_pinned ? "#D85A30" : "#B8B6AE" }}
+                    >
+                      <Pin
+                        className="h-4 w-4"
+                        fill={r.is_pinned ? "#D85A30" : "none"}
+                        strokeWidth={2}
+                      />
+                    </button>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
+                        {price > 0 && <span>{formatGBP(price)}</span>}
+                        <span>{new Date(r.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-3 sm:justify-end">
