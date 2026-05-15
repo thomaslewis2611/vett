@@ -147,6 +147,7 @@ function Plan({
   id,
   title,
   price,
+  originalPrice,
   cadence,
   features,
   cta,
@@ -156,10 +157,12 @@ function Plan({
   subnote,
   plusIntro,
   upsell,
+  onClick,
 }: {
   id?: string;
   title: string;
   price: string;
+  originalPrice?: string;
   cadence: string;
   features: string[];
   cta: string;
@@ -169,6 +172,7 @@ function Plan({
   subnote?: string;
   plusIntro?: string;
   upsell?: { text: string; targetId: string };
+  onClick?: () => void;
 }) {
   return (
     <div
@@ -197,7 +201,12 @@ function Plan({
         </span>
       )}
       <h3 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>{title}</h3>
-      <div className="mt-3 flex items-baseline gap-1">
+      <div className="mt-3 flex items-baseline gap-2">
+        {originalPrice && (
+          <span style={{ fontSize: 18, color: "#888780", textDecoration: "line-through" }}>
+            {originalPrice}
+          </span>
+        )}
         <span style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>
           {price}
         </span>
@@ -251,20 +260,39 @@ function Plan({
           {footnote}
         </p>
       )}
-      <Link
-        to="/"
-        className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
-        style={{
-          background: highlight ? "#D85A30" : "#1A1108",
-          color: "#FFFDF9",
-          fontSize: 13,
-          fontWeight: 500,
-          borderRadius: 100,
-          padding: "12px 24px",
-        }}
-      >
-        {cta}
-      </Link>
+      {onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
+          style={{
+            background: highlight ? "#D85A30" : "#1A1108",
+            color: "#FFFDF9",
+            fontSize: 13,
+            fontWeight: 500,
+            borderRadius: 100,
+            padding: "12px 24px",
+            border: 0,
+          }}
+        >
+          {cta}
+        </button>
+      ) : (
+        <Link
+          to="/"
+          className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
+          style={{
+            background: highlight ? "#D85A30" : "#1A1108",
+            color: "#FFFDF9",
+            fontSize: 13,
+            fontWeight: 500,
+            borderRadius: 100,
+            padding: "12px 24px",
+          }}
+        >
+          {cta}
+        </Link>
+      )}
     </div>
   );
 }
