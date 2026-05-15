@@ -143,7 +143,7 @@ You must:
   - valueForMoney, locationQuality, listingTransparency, marketTiming, riskLevel (HIGHER = LOWER risk), resalePotential.
 - For EACH sub-score, also write a scoreReasons.<key> string of 2-3 sentences of SPECIFIC reasoning that references actual details from this listing.
 - Provide an areaContext object with avgPricePerSqFtArea, avgSoldPriceArea, priceVsAreaPercent, areaDescription and comparableNote. Use null for any number you cannot estimate.
-- avgPricePerSqFtArea must reflect typical price PER SQUARE FOOT for similar properties in this postcode. Return null if unsure.
+- avgPricePerSqFtArea must reflect typical price PER SQUARE FOOT for similar properties in this postcode. PREFER the LOCAL SOLD £/SQFT figure from the PropertyData context when present (use its 'average' value); only fall back to your own estimate if it is null. Compute priceVsAreaPercent as ((property pricePerSqFt - avgPricePerSqFtArea) / avgPricePerSqFtArea) * 100, rounded to 1dp. When the live asking £/sqft is also present, contrast the two in areaDescription / comparableNote (e.g. "current asking £X/sqft vs sold £Y/sqft").
 - For AUCTION listings, set negotiation.isAuction true, negotiation.maxBid as a single GBP number, recommendedOffer.low and high BOTH equal to maxBid. Otherwise normal recommended offer range (usually 2-8% under asking).
 - IMPORTANT: Only identify a property as an auction listing if the listing text explicitly contains one or more of these exact terms: auction, auctioneer, lot number, reserve price, unconditional exchange, sold prior to auction, online auction. Do NOT infer auction status from: guide price, offers over, offers in excess of, or any other pricing language. These are standard estate agent terms used on normal listings and must never be interpreted as auction indicators. If you incorrectly flag a non-auction property as an auction listing, this causes serious harm to users who may make incorrect financial decisions. When in doubt, do not flag as auction.
 - Tailor 8 viewing questions to specific things in this listing.
@@ -339,6 +339,8 @@ const PD_ENDPOINTS = [
   "listed-buildings",
   "conservation-area",
   "ptal",
+  "prices-per-sqf",
+  "sold-prices-per-sqf",
 ] as const;
 
 const LONDON_POSTCODE_AREAS = new Set([
@@ -572,6 +574,25 @@ function mapPdPtal(raw: any) {
   };
 }
 
+// PropertyData /prices-per-sqf or /sold-prices-per-sqf → { average, low, high } in £/sqft.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPdPpsf(raw: any): { average: number; low: number | null; high: number | null; points: number | null } | null {
+  if (!raw || raw.status !== "success") return null;
+  const d = raw.data ?? raw;
+  if (!d) return null;
+  const num = (v: unknown) => {
+    const n = typeof v === "string" ? Number(v) : (v as number);
+    return typeof n === "number" && isFinite(n) && n > 0 ? n : null;
+  };
+  const average = num(d.average ?? d.avg ?? d.mean ?? d.average_price_per_sqf ?? d.ppsf_average);
+  if (average == null) return null;
+  return {
+    average,
+    low: num(d.low ?? d.min ?? d.ppsf_low),
+    high: num(d.high ?? d.max ?? d.ppsf_high),
+    points: num(d.points_analysed ?? d.points ?? d.transactions),
+  };
+}
 
 function buildPropertyDataContext(pd: PdResults): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -604,6 +625,12 @@ ${JSON.stringify(pdData(pd["internet-speed"]) || null)}
 
 SCHOOLS (closest 5: 3 primary + 2 secondary):
 ${JSON.stringify(pdData(pd["schools"]) || [])}
+
+LIVE LOCAL ASKING £/SQFT (current market — use as secondary reference):
+${JSON.stringify(mapPdPpsf(pd["prices-per-sqf"]) || null)}
+
+LOCAL SOLD £/SQFT (most recent sold transactions — USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this):
+${JSON.stringify(mapPdPpsf(pd["sold-prices-per-sqf"]) || null)}
 `;
 }
 
@@ -729,6 +756,8 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     parsed.property = property;
 
     // Merge PropertyData results into the saved analysis JSON.
+    const mappedPricesPerSqf = mapPdPpsf(pd["prices-per-sqf"]);
+    const mappedSoldPricesPerSqf = mapPdPpsf(pd["sold-prices-per-sqf"]);
     parsed.propertyData = {
       soldPrices: pdData(pd["sold-prices"]),
       floodRisk: pdData(pd["flood-risk"]),
@@ -740,6 +769,8 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       listedBuildings: pdData(pd["listed-buildings"]),
       conservationArea: pdData(pd["conservation-area"]),
       ptal: pdData(pd["ptal"]),
+      pricesPerSqf: mappedPricesPerSqf,
+      soldPricesPerSqf: mappedSoldPricesPerSqf,
     };
 
     // Map PropertyData payloads into the shapes the frontend renders for
@@ -753,6 +784,22 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     if (mappedBroadband) parsed.broadband = mappedBroadband;
     const mappedPtal = mapPdPtal(pd["ptal"]);
     if (mappedPtal) parsed.ptal = mappedPtal;
+
+    // Override areaContext.avgPricePerSqFtArea with the PropertyData sold £/sqft
+    // figure when available — it's the most accurate area benchmark for buyers.
+    // Recompute priceVsAreaPercent against the property's own pricePerSqFt.
+    if (mappedSoldPricesPerSqf) {
+      const ac = (parsed.areaContext ?? {}) as Record<string, unknown>;
+      ac.avgPricePerSqFtArea = mappedSoldPricesPerSqf.average;
+      const metrics = (parsed.metrics ?? {}) as Record<string, unknown>;
+      const propPpsf = Number(metrics.pricePerSqFt);
+      if (isFinite(propPpsf) && propPpsf > 0) {
+        ac.priceVsAreaPercent = Math.round(
+          ((propPpsf - mappedSoldPricesPerSqf.average) / mappedSoldPricesPerSqf.average) * 1000,
+        ) / 10;
+      }
+      parsed.areaContext = ac;
+    }
 
     // Track partial / inferred postcode state so the UI can prompt the user
     // (partial → no usable postcode at all; inferred → we used Claude's guess).
