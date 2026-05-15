@@ -756,6 +756,8 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     parsed.property = property;
 
     // Merge PropertyData results into the saved analysis JSON.
+    const mappedPricesPerSqf = mapPdPpsf(pd["prices-per-sqf"]);
+    const mappedSoldPricesPerSqf = mapPdPpsf(pd["sold-prices-per-sqf"]);
     parsed.propertyData = {
       soldPrices: pdData(pd["sold-prices"]),
       floodRisk: pdData(pd["flood-risk"]),
@@ -767,6 +769,8 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       listedBuildings: pdData(pd["listed-buildings"]),
       conservationArea: pdData(pd["conservation-area"]),
       ptal: pdData(pd["ptal"]),
+      pricesPerSqf: mappedPricesPerSqf,
+      soldPricesPerSqf: mappedSoldPricesPerSqf,
     };
 
     // Map PropertyData payloads into the shapes the frontend renders for
@@ -780,6 +784,22 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     if (mappedBroadband) parsed.broadband = mappedBroadband;
     const mappedPtal = mapPdPtal(pd["ptal"]);
     if (mappedPtal) parsed.ptal = mappedPtal;
+
+    // Override areaContext.avgPricePerSqFtArea with the PropertyData sold £/sqft
+    // figure when available — it's the most accurate area benchmark for buyers.
+    // Recompute priceVsAreaPercent against the property's own pricePerSqFt.
+    if (mappedSoldPricesPerSqf) {
+      const ac = (parsed.areaContext ?? {}) as Record<string, unknown>;
+      ac.avgPricePerSqFtArea = mappedSoldPricesPerSqf.average;
+      const metrics = (parsed.metrics ?? {}) as Record<string, unknown>;
+      const propPpsf = Number(metrics.pricePerSqFt);
+      if (isFinite(propPpsf) && propPpsf > 0) {
+        ac.priceVsAreaPercent = Math.round(
+          ((propPpsf - mappedSoldPricesPerSqf.average) / mappedSoldPricesPerSqf.average) * 1000,
+        ) / 10;
+      }
+      parsed.areaContext = ac;
+    }
 
     // Track partial / inferred postcode state so the UI can prompt the user
     // (partial → no usable postcode at all; inferred → we used Claude's guess).
