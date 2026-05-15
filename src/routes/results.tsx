@@ -2539,36 +2539,36 @@ function PlanCard({
 
 type SubScoreKey = keyof AnalysisResult["subScores"];
 
-const SUB_SCORE_LABELS: { key: SubScoreKey; label: string; fallback: string }[] = [
+const SUB_SCORE_LABELS: { key: SubScoreKey; label: string; how: string }[] = [
   {
     key: "valueForMoney",
     label: "Value for money",
-    fallback: "How the asking price compares to the local area average and to the property's size in sq ft.",
+    how: "Based on price per sq ft vs local comparables, days on market, and recent sold prices in the area.",
   },
   {
     key: "locationQuality",
     label: "Location quality",
-    fallback: "Transport links, schools, amenities and overall postcode desirability.",
+    how: "Based on local schools, crime rates, transport links, broadband, and area growth data.",
   },
   {
     key: "listingTransparency",
     label: "Listing transparency",
-    fallback: "How honest, complete and detailed the agent's listing description is.",
+    how: "Based on information disclosed in the listing — sq ft, EPC, council tax, floor plans, photos.",
   },
   {
     key: "marketTiming",
     label: "Market timing",
-    fallback: "Days on market, price reductions and demand signals for this property.",
+    how: "Based on days on market, price reductions, seasonal trends, and local demand signals.",
   },
   {
     key: "riskLevel",
     label: "Risk level",
-    fallback: "Higher score means lower risk — covers structural, legal and tenure red flags.",
+    how: "Based on red flags identified, property type, age, and legal/structural considerations.",
   },
   {
     key: "resalePotential",
     label: "Resale potential",
-    fallback: "Property type, tenure, size and the area's longer-term resale outlook.",
+    how: "Based on location quality, property type, local growth trends, and market demand.",
   },
 ];
 
@@ -2670,9 +2670,9 @@ function ScoreInfoTooltip({ text }: { text: string }) {
         aria-label="More info"
         aria-expanded={open}
         className="inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40"
-        style={{ color: "#888780", lineHeight: 0 }}
+        style={{ color: "#D85A30", lineHeight: 0 }}
       >
-        <Info size={14} aria-hidden="true" />
+        <Info size={18} aria-hidden="true" strokeWidth={2.25} />
       </button>
       <span role="tooltip" aria-hidden={!open} style={tooltipStyle}>
         {text}
@@ -2708,32 +2708,38 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
         <h3 className="mb-4 text-sm font-medium uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
           Score breakdown
         </h3>
-        <div className="space-y-3">
-          {SUB_SCORE_LABELS.map(({ key, label, fallback }) => {
+        <div className="space-y-4">
+          {SUB_SCORE_LABELS.map(({ key, label, how }) => {
             const v = Number(sub[key] ?? 0);
             const pct = Math.max(0, Math.min(100, (v / 10) * 100));
             const color = scoreColor(v);
             const reason = reasons[key];
-            const tooltipText =
-              reason && reason.trim().length > 0 ? reason : fallback;
+            const summary = reason && reason.trim().length > 0 ? reason.trim() : null;
             return (
-              <div key={key} className="grid grid-cols-[140px_1fr_36px] items-center gap-4">
-                <span className="inline-flex items-center gap-1.5" style={{ fontSize: 13, color: "#5F5E5A" }}>
-                  {label}
-                  <ScoreInfoTooltip text={tooltipText} />
-                </span>
-                <div
-                  className="relative w-full overflow-hidden rounded-full"
-                  style={{ height: 6, background: "#F1EFE8" }}
-                >
+              <div key={key}>
+                <div className="grid grid-cols-[minmax(140px,160px)_1fr_36px] items-center gap-4">
+                  <span className="inline-flex items-center gap-1.5" style={{ fontSize: 13, color: "#5F5E5A" }}>
+                    {label}
+                    <ScoreInfoTooltip text={how} />
+                  </span>
                   <div
-                    className="absolute inset-y-0 left-0 rounded-full"
-                    style={{ width: `${pct}%`, background: color }}
-                  />
+                    className="relative w-full overflow-hidden rounded-full"
+                    style={{ height: 6, background: "#F1EFE8" }}
+                  >
+                    <div
+                      className="absolute inset-y-0 left-0 rounded-full"
+                      style={{ width: `${pct}%`, background: color }}
+                    />
+                  </div>
+                  <span className="text-right" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>
+                    {v.toFixed(1)}
+                  </span>
                 </div>
-                <span className="text-right" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>
-                  {v.toFixed(1)}
-                </span>
+                {summary && (
+                  <p className="mt-1.5" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
+                    {summary}
+                  </p>
+                )}
               </div>
             );
           })}
