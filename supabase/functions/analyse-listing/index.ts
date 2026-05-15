@@ -906,7 +906,31 @@ async function runJob(jobId: string, url: string, pastedText: string) {
     if (inferredPostcode) {
       parsed.inferredPostcodeValue = postcode;
     } else {
-      parsed.inferredPostcodeValue = null;
+    }
+
+    // Recompute the overall Roovr score as a weighted average of the six
+    // sub-scores. Claude tends to anchor the overall figure (commonly 6.8)
+    // even when sub-scores vary, so we always derive it deterministically.
+    const sub = (parsed.subScores ?? {}) as Record<string, unknown>;
+    const weights: Record<string, number> = {
+      valueForMoney: 0.25,
+      locationQuality: 0.20,
+      riskLevel: 0.20,
+      resalePotential: 0.15,
+      listingTransparency: 0.10,
+      marketTiming: 0.10,
+    };
+    let weightedSum = 0;
+    let totalWeight = 0;
+    for (const [k, w] of Object.entries(weights)) {
+      const v = Number(sub[k]);
+      if (isFinite(v) && v > 0) {
+        weightedSum += v * w;
+        totalWeight += w;
+      }
+    }
+    if (totalWeight > 0) {
+      parsed.score = Math.round((weightedSum / totalWeight) * 10) / 10;
     }
 
     const { error: updErr } = await supabase

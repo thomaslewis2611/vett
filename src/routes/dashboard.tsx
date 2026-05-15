@@ -23,6 +23,31 @@ type SavedRow = {
 
 type PassStatus = "active" | "expiring" | "expired";
 
+// Derive the overall Roovr score from sub-scores. Mirrors the server-side
+// weighting so dashboard matches the report page even for older saved rows
+// where the stored `score` field is stale (Claude often returned 6.8).
+const SCORE_WEIGHTS: Record<string, number> = {
+  valueForMoney: 0.25,
+  locationQuality: 0.20,
+  riskLevel: 0.20,
+  resalePotential: 0.15,
+  listingTransparency: 0.10,
+  marketTiming: 0.10,
+};
+function computeOverallScore(a: any): number | null {
+  const sub = a?.subScores;
+  if (sub && typeof sub === "object") {
+    let weightedSum = 0;
+    let totalWeight = 0;
+    for (const [k, w] of Object.entries(SCORE_WEIGHTS)) {
+      const v = Number(sub[k]);
+      if (isFinite(v) && v > 0) { weightedSum += v * w; totalWeight += w; }
+    }
+    if (totalWeight > 0) return Math.round((weightedSum / totalWeight) * 10) / 10;
+  }
+  return typeof a?.score === "number" ? a.score : null;
+}
+
 function formatDate(d: Date): string {
   return d.toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
 }
@@ -320,7 +345,7 @@ function DashboardPage() {
                 const a = r.analysis_json ?? {};
                 const address = a?.property?.address ?? r.listing_url ?? "Untitled";
                 const price = a?.property?.price ?? 0;
-                const score = typeof a?.score === "number" ? a.score : null;
+                const score = computeOverallScore(a);
                 return (
                   <li
                     key={r.id}
