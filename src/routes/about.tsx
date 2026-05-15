@@ -8,13 +8,13 @@ export const Route = createFileRoute("/about")({
       {
         name: "description",
         content:
-          "Why we built Roovr: an AI property analysis tool that gives UK home buyers honest red flags, true costs and viewing questions in 30 seconds.",
+          "Why we built Roovr: an AI property analysis tool that gives UK home buyers honest red flags, true costs and viewing questions in 60 to 90 seconds.",
       },
       { property: "og:title", content: "About Roovr — Honest AI property analysis for UK home buyers" },
       {
         property: "og:description",
         content:
-          "Why we built Roovr: an AI property analysis tool that gives UK home buyers honest red flags, true costs and viewing questions in 30 seconds.",
+          "Why we built Roovr: an AI property analysis tool that gives UK home buyers honest red flags, true costs and viewing questions in 60 to 90 seconds.",
       },
     ],
   }),
@@ -49,7 +49,7 @@ function AboutPage() {
           className="mt-6 max-w-2xl"
           style={{ fontSize: 16, color: "#5F5E5A", lineHeight: 1.7 }}
         >
-          Buying a home is the biggest financial decision most people will ever make. Yet buyers go into viewings armed with nothing more than a listing description written by the agent trying to sell it. We built Roovr to change that. Paste any Rightmove or Zoopla listing and get an honest, AI-powered analysis in 30 seconds — red flags, true costs, fair value, and exactly what to ask at the viewing. No estate agent spin. Just the facts.
+          Buying a home is the biggest financial decision most people will ever make. Yet buyers go into viewings armed with nothing more than a listing description written by the agent trying to sell it. We built Roovr to change that. Paste any Rightmove or Zoopla listing and get an honest, AI-powered analysis in 60 to 90 seconds — red flags, true costs, fair value, and exactly what to ask at the viewing. No estate agent spin. Just the facts.
         </p>
 
         <Section heading="What Roovr is">
