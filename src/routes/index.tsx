@@ -133,7 +133,7 @@ function Index() {
           </form>
 
           <p className="mx-auto mt-3" style={{ fontSize: 11, color: "#888780" }}>
-            Works best with Rightmove listings
+            Works best with Rightmove listings · More sites coming soon
           </p>
 
           <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
