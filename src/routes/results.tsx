@@ -378,7 +378,14 @@ function ResultsPage() {
       }
       if (!jobId) {
         const started = await startJobFn({
-          data: { url, text, accessToken: token ?? null, sessionJwt },
+          data: {
+            url,
+            text,
+            accessToken: token ?? null,
+            sessionJwt,
+            userEpc: overrides.userEpc,
+            userSqft: overrides.userSqft,
+          },
         });
         jobId = started.jobId;
         rememberJobId(url, jobId);
