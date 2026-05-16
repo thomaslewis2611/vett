@@ -21,6 +21,24 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+function scheduleEdgeBackground(promise: Promise<unknown>): void {
+  const runtime = (globalThis as unknown as {
+    EdgeRuntime?: { waitUntil?: (promise: Promise<unknown>) => void };
+  }).EdgeRuntime;
+
+  const guarded = promise.catch((err) => {
+    console.error("[analyse-listing] background job crashed", err);
+  });
+
+  if (typeof runtime?.waitUntil === "function") {
+    runtime.waitUntil(guarded);
+    return;
+  }
+
+  // Local/dev fallback: keep the promise alive and log any failure.
+  void guarded;
+}
+
 // ---------- Listing fetch ----------
 const ALLOWED_HOSTS = new Set([
   "www.rightmove.co.uk",
@@ -1125,8 +1143,8 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-    await runJob(jobId, url, pastedText, { userEpc, userSqft });
-    return new Response(JSON.stringify({ ok: true }), {
+    scheduleEdgeBackground(runJob(jobId, url, pastedText, { userEpc, userSqft }));
+    return new Response(JSON.stringify({ ok: true, accepted: true }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (err) {
