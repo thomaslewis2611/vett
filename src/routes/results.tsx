@@ -509,6 +509,44 @@ function ResultsPage() {
     );
   }
 
+  if (preAnalysis.status === "fetching" || preAnalysis.status === "needs-input") {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <SiteHeader />
+        <main className="mx-auto flex max-w-xl flex-1 items-center px-6 py-16 text-center">
+          <div className="w-full rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
+            <Loader2 className="mx-auto h-5 w-5 animate-spin" style={{ color: CORAL }} />
+            <h1 className="mt-4 text-xl font-semibold tracking-tight">Checking listing details</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We’re reading the listing first so any missing EPC or sq ft details can be added before analysis starts.
+            </p>
+          </div>
+        </main>
+        {preAnalysis.status === "needs-input" && (
+          <PrecheckModal
+            missing={preAnalysis.missing}
+            onSubmit={(vals: { epc: string | null; sqft: number | null }) => {
+              console.log("[pre-analysis] user confirmed missing details; starting analysis", vals);
+              setPreAnalysis({
+                status: "ready",
+                overrides: {
+                userEpc: vals.epc ? vals.epc.toUpperCase() : null,
+                userSqft: vals.sqft && vals.sqft > 0 ? vals.sqft : null,
+                },
+              });
+            }}
+            onSkip={() => {
+              console.log("[pre-analysis] user skipped missing details; starting analysis");
+              setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
+            }}
+          />
+        )}
+        <DisclaimerBar />
+        <SiteFooter />
+      </div>
+    );
+  }
+
   // While recovering from a screen-lock / background tab, prefer the
   // loading view over any stale error state — the poll has been restarted.
   if (query.isPending || (showResumeBanner && (query.isFetching || query.isError))) {
@@ -525,22 +563,6 @@ function ResultsPage() {
           </div>
         )}
         <LoadingState url={url} />
-        {precheckPhase === "needs-input" && (
-          <PrecheckModal
-            missing={precheckMissing}
-            onSubmit={(vals) => {
-              setOverrides({
-                userEpc: vals.epc ? vals.epc.toUpperCase() : null,
-                userSqft: vals.sqft && vals.sqft > 0 ? vals.sqft : null,
-              });
-              setPrecheckPhase("ready");
-            }}
-            onSkip={() => {
-              setOverrides({ userEpc: null, userSqft: null });
-              setPrecheckPhase("ready");
-            }}
-          />
-        )}
         <DisclaimerBar />
         <SiteFooter />
       </div>
