@@ -72,14 +72,14 @@
 
   --destructive: #993C1D;
   --destructive-foreground: #FFFDF9;
-  --success: #2F6F3F;
+  --success: #2D6A4F;
   --success-foreground: #FFFDF9;
   --warning: #B07306;
   --warning-foreground: #1A1108;
 
-  --border: rgba(26, 17, 8, 0.12);
-  --input: rgba(26, 17, 8, 0.12);
-  --ring: #1B4332;
+  --border: rgba(26, 17, 8, 0.1);
+  --input: rgba(26, 17, 8, 0.1);
+  --ring: #2D6A4F;
 
   /* Custom dark surface for CTA strip / footer */
   --surface-dark: #1A1108;
