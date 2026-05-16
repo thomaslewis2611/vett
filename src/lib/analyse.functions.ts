@@ -1881,17 +1881,45 @@ async function hasFullAccess(opts: {
 // content (extra red flags, viewing questions, comparables) that has no
 // "shape" to obscure visually.
 function toPreview(a: AnalysisResult): AnalysisResult {
-  return {
-    ...a,
-    redFlags: Array.isArray(a?.redFlags) ? a.redFlags.slice(0, 2) : [],
-    viewingQuestions: [],
-    comparables: [],
-    nearbySchools: null,
-    crime: null,
-    broadband: null,
-    transport: null,
-    renovationCosts: null,
-  };
+  try {
+    return {
+      ...a,
+      redFlags: Array.isArray(a?.redFlags) ? a.redFlags.slice(0, 2) : [],
+      viewingQuestions: [],
+      comparables: [],
+      nearbySchools: null,
+      crime: null,
+      broadband: null,
+      transport: null,
+      renovationCosts: null,
+    };
+  } catch {
+    return {
+      property: { address: "", price: 0, beds: 0, baths: 0, type: "", sqft: 0, listingUrl: "" },
+      score: 0,
+      scoreLabel: "",
+      subScores: { valueForMoney: 0, locationQuality: 0, listingTransparency: 0, marketTiming: 0, riskLevel: 0, resalePotential: 0 },
+      scoreReasons: { valueForMoney: "", locationQuality: "", listingTransparency: "", marketTiming: "", riskLevel: "", resalePotential: "" },
+      metrics: { pricePerSqFt: 0, daysOnMarket: 0, councilTaxBand: "Unknown", estimatedStampDuty: 0 },
+      epc: null,
+      priceHistory: null,
+      floodRisk: null,
+      nearbySchools: null,
+      crime: null,
+      broadband: null,
+      transport: null,
+      areaContext: { avgPricePerSqFtArea: null, avgSoldPriceArea: null, priceVsAreaPercent: null, areaDescription: "", comparableNote: "" },
+      redFlags: [],
+      costs: { purchasePrice: 0, stampDuty: 0, legalFees: 0, surveyFees: 0, mortgageFees: 0, totalUpfront: 0, monthlyMortgage: 0, mortgageAssumptions: "" },
+      viewingQuestions: [],
+      negotiation: { recommendedOffer: { low: 0, high: 0 }, rationale: "", leverage: [] },
+      comparables: [],
+      renovationCosts: null,
+      viewingChecklist: null,
+      sellerMotivation: null,
+      manualSqftAnalysis: null,
+    } as unknown as AnalysisResult;
+  }
 }
 
 // In-memory dedupe for concurrent analyses of the same URL.
