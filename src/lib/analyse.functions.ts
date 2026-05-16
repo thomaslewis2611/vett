@@ -1793,10 +1793,32 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
   return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband, transport };
 }
 
+// ---- Resolve a Supabase user email from a session JWT, server-side. ----
+// Returns null if the token is missing, invalid, expired, or env is missing.
+async function resolveEmailFromJwt(sessionJwt: string | null | undefined): Promise<string | null> {
+  if (!sessionJwt) return null;
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) return null;
+  try {
+    const c = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data } = await c.auth.getUser(sessionJwt);
+    return data.user?.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
+// Accepts either a sessionJwt (which will be resolved to an email) or a
+// pre-resolved userEmail. Pre-resolved emails skip the JWT round-trip and
+// are used by the async-job pipeline (email stored at job-creation time).
 async function hasFullAccess(opts: {
   accessToken?: string | null;
   sessionJwt?: string | null;
+  userEmail?: string | null;
   listingUrl?: string | null;
 }): Promise<boolean> {
   // 1. Single report token
