@@ -508,6 +508,22 @@ function ResultsPage() {
           </div>
         )}
         <LoadingState url={url} />
+        {precheckPhase === "needs-input" && (
+          <PrecheckModal
+            missing={precheckMissing}
+            onSubmit={(vals) => {
+              setOverrides({
+                userEpc: vals.epc ? vals.epc.toUpperCase() : null,
+                userSqft: vals.sqft && vals.sqft > 0 ? vals.sqft : null,
+              });
+              setPrecheckPhase("ready");
+            }}
+            onSkip={() => {
+              setOverrides({ userEpc: null, userSqft: null });
+              setPrecheckPhase("ready");
+            }}
+          />
+        )}
         <DisclaimerBar />
         <SiteFooter />
       </div>
