@@ -41,7 +41,7 @@
   --shadow-soft: none;
   --shadow-card: none;
   --shadow-glow: none;
-  --gradient-primary: #1B4332;
+  --gradient-primary: #2D6A4F;
   --gradient-soft: #FFFDF9;
 }
 
@@ -57,9 +57,9 @@
   --popover-foreground: #1A1108;
 
   /* Brand */
-  --primary: #1B4332;
+  --primary: #2D6A4F;
   --primary-foreground: #FFFDF9;
-  --primary-soft: #FAECE7;
+  --primary-soft: #EAF3DE;
 
   --secondary: #F1EFE8;
   --secondary-foreground: #1A1108;
@@ -67,19 +67,19 @@
   --muted: #F1EFE8;
   --muted-foreground: #888780;
 
-  --accent: #FAECE7;
-  --accent-foreground: #993C1D;
+  --accent: #EAF3DE;
+  --accent-foreground: #2D6A4F;
 
   --destructive: #993C1D;
   --destructive-foreground: #FFFDF9;
-  --success: #2F6F3F;
+  --success: #2D6A4F;
   --success-foreground: #FFFDF9;
   --warning: #B07306;
   --warning-foreground: #1A1108;
 
-  --border: rgba(26, 17, 8, 0.12);
-  --input: rgba(26, 17, 8, 0.12);
-  --ring: #1B4332;
+  --border: rgba(26, 17, 8, 0.1);
+  --input: rgba(26, 17, 8, 0.1);
+  --ring: #2D6A4F;
 
   /* Custom dark surface for CTA strip / footer */
   --surface-dark: #1A1108;
@@ -136,14 +136,14 @@
     max-width: 100%;
     height: auto;
   }
-  h1, h2, h3 {
+  h1, h2 {
     font-family: var(--font-display);
     color: var(--foreground);
     font-weight: 400;
     letter-spacing: -0.5px;
     line-height: 1.15;
   }
-  h4, h5, h6 {
+  h3, h4, h5, h6 {
     font-family: var(--font-sans);
     color: var(--foreground);
     font-weight: 500;
@@ -157,8 +157,8 @@
     font-weight: 400;
   }
   h2 { font-size: 32px; letter-spacing: -0.6px; }
-  h3 { font-size: 22px; letter-spacing: -0.3px; }
-  h4 { font-size: 18px; }
+  h3 { font-size: 18px; font-weight: 500; }
+  h4 { font-size: 16px; }
   a { color: inherit; }
 }
 

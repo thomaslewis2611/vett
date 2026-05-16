@@ -796,11 +796,8 @@ function Index() {
           padding: "80px 24px",
         }}
       >
-        <div
-          className="mx-auto grid grid-cols-1 md:grid-cols-2"
-          style={{ maxWidth: 960, gap: 64, alignItems: "center" }}
-        >
-          <div>
+        <div className="mx-auto" style={{ maxWidth: 1080 }}>
+          <div className="text-center" style={{ maxWidth: 720, marginInline: "auto" }}>
             <div
               className="uppercase"
               style={{
@@ -810,53 +807,55 @@ function Index() {
                 color: COLORS.green,
               }}
             >
-              Sample report
+              Example reports
             </div>
             <h2
               className="mt-3"
               style={{
                 fontFamily: HEADING_FONT,
-                fontSize: "clamp(26px, 4vw, 36px)",
+                fontSize: "clamp(28px, 4vw, 40px)",
                 fontWeight: 400,
                 color: COLORS.dark,
                 letterSpacing: "-0.5px",
                 lineHeight: 1.15,
               }}
             >
-              See exactly what you get before you pay
+              See exactly what you get
             </h2>
             <p
-              className="mt-5"
+              className="mt-4"
               style={{ fontSize: 14, fontWeight: 300, color: COLORS.muted, lineHeight: 1.7 }}
             >
-              Every report is tailored to the specific listing — not a generic checklist. We
-              read the agent copy, spot the euphemisms, and cross-reference real local data.
+              Every report is tailored to the specific listing — we read the agent copy, spot the
+              euphemisms, and cross-reference real local data.
             </p>
-            <p
-              className="mt-3"
-              style={{ fontSize: 14, fontWeight: 300, color: COLORS.muted, lineHeight: 1.7 }}
-            >
-              The price per square foot analysis alone can tell you whether you're paying a
-              fair price — or overpaying by tens of thousands.
-            </p>
+          </div>
+
+          <div
+            className="mt-12 grid grid-cols-1 md:grid-cols-2"
+            style={{ gap: 24, alignItems: "stretch" }}
+          >
+            <SampleReportCard data={SAMPLE_A} />
+            <SampleReportCard data={SAMPLE_B} />
+          </div>
+
+          <div className="mt-10 text-center">
             <button
               type="button"
               onClick={scrollToTop}
-              className="mt-6 inline-flex items-center gap-2 transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-2 transition-opacity hover:opacity-90"
               style={{
                 background: COLORS.green,
                 color: COLORS.card,
                 fontSize: 13,
                 fontWeight: 500,
                 borderRadius: 100,
-                padding: "12px 22px",
+                padding: "13px 26px",
               }}
             >
-              View full sample report →
+              Analyse your first property →
             </button>
           </div>
-
-          <SampleReportCard />
         </div>
       </section>
 
@@ -1207,61 +1206,103 @@ function Index() {
   );
 }
 
-function SampleReportCard() {
-  const score = 7.4;
-  const pct = (score / 10) * 100;
+type SampleData = {
+  meta: string;
+  address: string;
+  price: string;
+  score: number;
+  ppsfThis: string;
+  ppsfArea: string;
+  vsArea: string;
+  vsAreaPositive: boolean;
+  barFill: number; // 0-100
+  barCompare: number; // 0-100
+  pricingNote: string;
+  flags: { sev: "HIGH" | "MEDIUM" | "LOW"; text: string }[];
+  metrics: { label: string; val: string; positive?: boolean }[];
+  footnote: string;
+};
+
+function SampleReportCard({ data }: { data: SampleData }) {
   return (
     <div
       style={{
         background: COLORS.card,
         border: `0.5px solid ${COLORS.border}`,
-        borderRadius: 16,
+        borderRadius: 20,
         padding: 24,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
-        <div>
-          <div style={{ fontSize: 12, color: COLORS.veryMuted }}>
-            3 bed · Flat · Clapham SW11
+        <div className="min-w-0">
+          <div
+            className="uppercase"
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              color: COLORS.green,
+              marginBottom: 6,
+            }}
+          >
+            {data.meta}
+          </div>
+          <div
+            style={{
+              fontFamily: HEADING_FONT,
+              fontSize: 20,
+              fontWeight: 400,
+              color: COLORS.dark,
+              letterSpacing: "-0.3px",
+              lineHeight: 1.2,
+            }}
+          >
+            {data.address}
           </div>
           <div
             className="mt-1"
             style={{
               fontFamily: HEADING_FONT,
-              fontSize: 24,
+              fontSize: 26,
               fontWeight: 400,
               color: COLORS.dark,
               letterSpacing: "-0.5px",
             }}
           >
-            £625,000
+            {data.price}
           </div>
         </div>
         <div
-          className="flex items-center justify-center shrink-0"
+          className="shrink-0 text-center"
           style={{
-            width: 56,
-            height: 56,
-            borderRadius: 999,
-            background: `conic-gradient(${COLORS.green} ${pct}%, ${COLORS.greenTint} ${pct}% 100%)`,
+            background: COLORS.card,
+            border: `0.5px solid rgba(26,17,8,0.12)`,
+            borderRadius: 14,
+            padding: "12px 14px",
+            minWidth: 92,
           }}
-          aria-hidden
         >
           <div
-            className="flex items-center justify-center"
+            className="uppercase"
+            style={{ fontSize: 8, fontWeight: 500, letterSpacing: "0.12em", color: COLORS.veryMuted, marginBottom: 4 }}
+          >
+            Roovr Score
+          </div>
+          <div
             style={{
-              width: 44,
-              height: 44,
-              borderRadius: 999,
-              background: COLORS.card,
               fontFamily: HEADING_FONT,
-              fontSize: 14,
-              color: COLORS.dark,
+              fontSize: 32,
+              fontWeight: 400,
+              color: COLORS.green,
+              lineHeight: 1,
             }}
           >
-            {score}
+            {data.score.toFixed(1)}
           </div>
+          <div style={{ fontSize: 9, color: COLORS.veryMuted, marginTop: 2 }}>out of 10</div>
         </div>
       </div>
 
@@ -1272,54 +1313,43 @@ function SampleReportCard() {
       >
         <div
           className="uppercase"
-          style={{
-            fontSize: 10,
-            fontWeight: 500,
-            letterSpacing: "0.1em",
-            color: COLORS.veryMuted,
-          }}
+          style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.veryMuted }}
         >
           Area pricing analysis
         </div>
         <div className="mt-3 grid grid-cols-3 gap-3">
           {[
-            { label: "This property", val: "£694", sub: "per sq ft", color: COLORS.dark },
-            { label: "Area average", val: "£641", sub: "per sq ft", color: COLORS.dark },
-            { label: "Vs area avg", val: "+8.3%", sub: "above average", color: "#A32D2D" },
+            { label: "This property", val: data.ppsfThis, sub: "per sq ft", color: COLORS.dark, subColor: COLORS.veryMuted },
+            { label: "Area average", val: data.ppsfArea, sub: "per sq ft", color: COLORS.dark, subColor: COLORS.veryMuted },
+            {
+              label: "Vs area avg",
+              val: data.vsArea,
+              sub: data.vsAreaPositive ? "above average" : "below average",
+              color: data.vsAreaPositive ? "#A32D2D" : COLORS.green,
+              subColor: data.vsAreaPositive ? "#A32D2D" : COLORS.green,
+            },
           ].map((m) => (
             <div key={m.label}>
               <div style={{ fontSize: 10, color: COLORS.veryMuted }}>{m.label}</div>
               <div
                 className="mt-0.5"
-                style={{
-                  fontFamily: HEADING_FONT,
-                  fontSize: 18,
-                  color: m.color,
-                  fontWeight: 400,
-                }}
+                style={{ fontFamily: HEADING_FONT, fontSize: 18, color: m.color, fontWeight: 400 }}
               >
                 {m.val}
               </div>
-              <div style={{ fontSize: 10, color: m.color === "#A32D2D" ? "#A32D2D" : COLORS.veryMuted }}>
-                {m.sub}
-              </div>
+              <div style={{ fontSize: 10, color: m.subColor }}>{m.sub}</div>
             </div>
           ))}
         </div>
         <div
           className="relative mt-3"
-          style={{
-            background: "rgba(26,17,8,0.08)",
-            height: 6,
-            borderRadius: 999,
-            overflow: "hidden",
-          }}
+          style={{ background: "rgba(26,17,8,0.08)", height: 6, borderRadius: 999, overflow: "hidden" }}
         >
           <div
             style={{
               position: "absolute",
               inset: 0,
-              width: "85%",
+              width: `${data.barFill}%`,
               background: COLORS.green,
               borderRadius: 999,
             }}
@@ -1328,94 +1358,67 @@ function SampleReportCard() {
             style={{
               position: "absolute",
               inset: 0,
-              width: "92%",
-              background: "#A32D2D",
+              width: `${data.barCompare}%`,
+              background: data.vsAreaPositive ? "#A32D2D" : COLORS.green,
               opacity: 0.5,
               borderRadius: 999,
             }}
           />
         </div>
-        <p className="mt-3" style={{ fontSize: 10, color: COLORS.muted, lineHeight: 1.5 }}>
-          At 900 sq ft, you're paying £48,600 more than the area average price per sq ft.
-          This property has less outdoor space than comparable flats — worth negotiating.
+        <p className="mt-3" style={{ fontSize: 10, color: COLORS.muted, lineHeight: 1.55 }}>
+          {data.pricingNote}
         </p>
       </div>
 
       {/* Red flags */}
       <div
         className="mt-4 uppercase"
-        style={{
-          fontSize: 10,
-          fontWeight: 500,
-          letterSpacing: "0.1em",
-          color: COLORS.veryMuted,
-        }}
+        style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.veryMuted }}
       >
         Red flags
       </div>
       <div className="mt-2 flex flex-col gap-2">
-        {[
-          {
-            sev: "HIGH",
-            bg: "#A32D2D",
-            fg: "#FFFDF9",
-            text: "Priced 8.3% above local £/sqft average — limited justification in listing",
-          },
-          {
-            sev: "MEDIUM",
-            bg: "#C8862A",
-            fg: "#FFFDF9",
-            text: "42 days on market — above UK average, some negotiation leverage",
-          },
-          {
-            sev: "LOW",
-            bg: "rgba(26,17,8,0.12)",
-            fg: COLORS.dark,
-            text: "Ground floor flat — noise, security and resale considerations",
-          },
-        ].map((f) => (
-          <div key={f.sev} className="flex items-start gap-2">
-            <span
-              style={{
-                background: f.bg,
-                color: f.fg,
-                fontSize: 9,
-                fontWeight: 500,
-                letterSpacing: "0.05em",
-                borderRadius: 4,
-                padding: "3px 6px",
-                marginTop: 1,
-                flexShrink: 0,
-              }}
-            >
-              {f.sev}
-            </span>
-            <span style={{ fontSize: 11, color: COLORS.muted, lineHeight: 1.5 }}>
-              {f.text}
-            </span>
-          </div>
-        ))}
+        {data.flags.map((f, i) => {
+          const sty =
+            f.sev === "HIGH"
+              ? { bg: "#A32D2D", fg: "#FFFDF9" }
+              : f.sev === "MEDIUM"
+              ? { bg: "#C8862A", fg: "#FFFDF9" }
+              : { bg: "rgba(26,17,8,0.12)", fg: COLORS.dark };
+          return (
+            <div key={i} className="flex items-start gap-2">
+              <span
+                style={{
+                  background: sty.bg,
+                  color: sty.fg,
+                  fontSize: 9,
+                  fontWeight: 500,
+                  letterSpacing: "0.05em",
+                  borderRadius: 4,
+                  padding: "3px 6px",
+                  marginTop: 1,
+                  flexShrink: 0,
+                }}
+              >
+                {f.sev}
+              </span>
+              <span style={{ fontSize: 11, color: COLORS.muted, lineHeight: 1.55 }}>{f.text}</span>
+            </div>
+          );
+        })}
       </div>
 
       {/* Bottom metrics */}
       <div className="mt-4 grid grid-cols-3 gap-2">
-        {[
-          { label: "Stamp duty", val: "£18,750", color: COLORS.dark },
-          { label: "Flood risk", val: "Low", color: COLORS.green },
-          { label: "Monthly est.", val: "£2,840", color: COLORS.dark },
-        ].map((m) => (
+        {data.metrics.map((m) => (
           <div
             key={m.label}
-            style={{
-              background: COLORS.bg,
-              borderRadius: 8,
-              padding: "10px 12px",
-            }}
+            style={{ background: COLORS.bg, borderRadius: 10, padding: "10px 12px" }}
           >
             <div style={{ fontSize: 10, color: COLORS.veryMuted }}>{m.label}</div>
             <div
               className="mt-0.5"
-              style={{ fontSize: 13, fontWeight: 500, color: m.color }}
+              style={{ fontSize: 13, fontWeight: 500, color: m.positive ? COLORS.green : COLORS.dark }}
             >
               {m.val}
             </div>
@@ -1423,9 +1426,61 @@ function SampleReportCard() {
         ))}
       </div>
 
-      <p className="mt-3" style={{ fontSize: 10, color: COLORS.veryMuted }}>
-        Sample only · Based on a real SW11 listing · Area data from Land Registry
+      <p className="mt-4" style={{ fontSize: 10, color: COLORS.veryMuted, marginTop: "auto", paddingTop: 12 }}>
+        {data.footnote}
       </p>
     </div>
   );
 }
+
+const SAMPLE_A: SampleData = {
+  meta: "3 bed · Flat · Clapham SW11",
+  address: "Lavender Hill, SW11",
+  price: "£625,000",
+  score: 7.4,
+  ppsfThis: "£694",
+  ppsfArea: "£641",
+  vsArea: "+8.3%",
+  vsAreaPositive: true,
+  barFill: 85,
+  barCompare: 92,
+  pricingNote:
+    "At 900 sq ft, you're paying £48,600 more than the area average price per sq ft. Less outdoor space than comparable flats — worth negotiating.",
+  flags: [
+    { sev: "HIGH", text: "Priced 8.3% above local £/sqft average — limited justification in listing" },
+    { sev: "MEDIUM", text: "42 days on market — above UK average, some negotiation leverage" },
+    { sev: "LOW", text: "Ground floor flat — noise, security and resale considerations" },
+  ],
+  metrics: [
+    { label: "Stamp duty", val: "£18,750" },
+    { label: "Flood risk", val: "Low", positive: true },
+    { label: "Monthly est.", val: "£2,840" },
+  ],
+  footnote: "Sample only · Based on a real SW11 listing · Area data from Land Registry",
+};
+
+const SAMPLE_B: SampleData = {
+  meta: "4 bed · Semi-detached · Chelmsford CM2",
+  address: "Beehive Lane, CM2",
+  price: "£485,000",
+  score: 8.2,
+  ppsfThis: "£362",
+  ppsfArea: "£391",
+  vsArea: "−7.4%",
+  vsAreaPositive: false,
+  barFill: 78,
+  barCompare: 72,
+  pricingNote:
+    "At 1,340 sq ft, you're paying £38,860 less than the area average — strong value for the size. Garden and parking match comparable semis.",
+  flags: [
+    { sev: "MEDIUM", text: "EPC rating D — budget for insulation upgrade in first 12 months" },
+    { sev: "MEDIUM", text: "Chain involved — vendor buying onwards, expect 12-16 week timeline" },
+    { sev: "LOW", text: "Bathroom last updated 2014 — cosmetic refresh likely within 5 years" },
+  ],
+  metrics: [
+    { label: "Stamp duty", val: "£11,750" },
+    { label: "Flood risk", val: "Very low", positive: true },
+    { label: "Monthly est.", val: "£2,210" },
+  ],
+  footnote: "Sample only · Based on a real CM2 listing · Area data from Land Registry",
+};

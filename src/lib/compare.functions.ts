@@ -155,7 +155,7 @@ export const emailComparison = createServerFn({ method: "POST" })
     const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F1EFE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:680px;margin:0 auto;">
     <div style="background:#1A1108;padding:20px 24px;">
-      <div style="font-size:20px;font-weight:700;color:#FFFDF9;"><span style="color:#1B4332;">●</span> Roovr</div>
+      <div style="font-size:20px;font-weight:700;color:#FFFDF9;"><span style="color:#2D6A4F;">●</span> Roovr</div>
     </div>
     <div style="background:#FFFDF9;padding:32px 24px;">
       <h1 style="font-size:22px;font-weight:600;color:#1A1108;margin:0 0 24px;">Property comparison</h1>

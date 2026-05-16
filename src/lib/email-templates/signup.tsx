@@ -80,7 +80,7 @@ const header = { padding: '0 0 24px' }
 const brand = {
   fontSize: '20px',
   fontWeight: 700 as const,
-  color: '#1B4332',
+  color: '#2D6A4F',
   letterSpacing: '-0.01em',
   margin: 0,
 }
@@ -104,7 +104,7 @@ const text = {
   margin: '0 0 24px',
 }
 const button = {
-  backgroundColor: '#1B4332',
+  backgroundColor: '#2D6A4F',
   color: '#FFFDF9',
   fontSize: '15px',
   fontWeight: 600 as const,
@@ -126,7 +126,7 @@ const small = {
 }
 const linkStyle = {
   fontSize: '13px',
-  color: '#1B4332',
+  color: '#2D6A4F',
   wordBreak: 'break-all' as const,
 }
 const smallMuted = {

@@ -119,7 +119,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
             disabled={loading}
             className="inline-flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{
-              background: "#1B4332",
+              background: "#2D6A4F",
               color: "#FFFDF9",
               fontSize: 13,
               fontWeight: 500,
@@ -181,10 +181,10 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
             width: 24,
             height: 24,
             borderRadius: 999,
-            background: "#1B4332",
+            background: "#2D6A4F",
             color: "#FFFDF9",
             fontSize: 11,
-            fontWeight: 600,
+            fontWeight: 500,
           }}
         >
           {email[0]?.toUpperCase() ?? "?"}
@@ -240,13 +240,16 @@ export function SiteHeader() {
 
   return (
     <header
-      className="bg-background sticky top-0 z-40"
-      style={{ borderBottom: "0.5px solid rgba(26,17,8,0.12)" }}
+      className="sticky top-0 z-40"
+      style={{
+        background: "#F1EFE8",
+        borderBottom: "0.5px solid rgba(26,17,8,0.1)",
+      }}
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-8" style={{ height: 56 }}>
         <Link to="/" className="flex items-center gap-2">
           <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: "#2D6A4F", display: "inline-block" }} />
-          <span style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.3px" }}>
+          <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 17, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.3px" }}>
             Roovr
           </span>
         </Link>
@@ -254,7 +257,7 @@ export function SiteHeader() {
           {!loggedIn && (
             <Link
               to="/pricing"
-              style={{ fontSize: 13, color: "#888780" }}
+              style={{ fontSize: 13, color: "#5F5E5A" }}
               className="hover:text-foreground transition-colors"
               activeProps={{ style: { fontSize: 13, color: "#1A1108" } }}
             >
@@ -269,11 +272,11 @@ export function SiteHeader() {
                 className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
                 style={{
                   background: "#1A1108",
-                  color: "#FFFDF9",
+                  color: "#F1EFE8",
                   fontSize: 13,
                   fontWeight: 500,
                   borderRadius: 100,
-                  padding: "10px 20px",
+                  padding: "9px 20px",
                 }}
               >
                 Dashboard
@@ -284,9 +287,15 @@ export function SiteHeader() {
             <>
               <Link
                 to="/buyer-login"
-                className="hidden sm:inline transition-colors hover:text-foreground"
-                style={{ fontSize: 13, color: "#888780" }}
-                activeProps={{ style: { fontSize: 13, color: "#1A1108" } }}
+                className="hidden sm:inline-flex items-center justify-center transition-opacity hover:opacity-90"
+                style={{
+                  background: "#1A1108",
+                  color: "#F1EFE8",
+                  fontSize: 13,
+                  fontWeight: 500,
+                  borderRadius: 100,
+                  padding: "9px 20px",
+                }}
               >
                 Buyer Login
               </Link>
@@ -296,7 +305,7 @@ export function SiteHeader() {
                 className="inline-flex sm:hidden items-center justify-center transition-opacity hover:opacity-90"
                 style={{
                   background: "#1A1108",
-                  color: "#FFFDF9",
+                  color: "#F1EFE8",
                   fontSize: 13,
                   fontWeight: 500,
                   borderRadius: 100,
@@ -321,29 +330,41 @@ export function SiteFooter() {
         style={{
           background: "#F1EFE8",
           color: "#888780",
-          fontSize: 12,
+          fontSize: 11,
+          fontWeight: 300,
+          lineHeight: 1.65,
           textAlign: "center",
           padding: "14px 24px",
           width: "100%",
           margin: 0,
           display: "block",
+          borderTop: "0.5px solid rgba(26,17,8,0.08)",
         }}
       >
         Roovr reports are AI-generated and advisory only. Always verify information independently and seek professional advice from a solicitor, surveyor, and mortgage broker before making any offer.
       </div>
-      <footer style={{ background: "#1A1108", margin: 0, padding: 0, display: "block", width: "100%" }}>
+      <footer
+        style={{
+          background: "#F1EFE8",
+          margin: 0,
+          padding: 0,
+          display: "block",
+          width: "100%",
+          borderTop: "0.5px solid rgba(26,17,8,0.1)",
+        }}
+      >
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div className="flex items-center gap-2">
             <span aria-hidden style={{ width: 9, height: 9, borderRadius: 999, background: "#2D6A4F", display: "inline-block" }} />
-            <span style={{ fontSize: 18, fontWeight: 500, color: "#FFFDF9" }}>Roovr</span>
-            <span style={{ fontSize: 13, color: "#888780", marginLeft: 12 }}>© 2026 Roovr</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 17, fontWeight: 500, color: "#1A1108" }}>Roovr</span>
+            <span style={{ fontSize: 12, color: "#888780", marginLeft: 12 }}>© 2026 Roovr</span>
           </div>
-          <div className="flex gap-6" style={{ fontSize: 13, color: "#888780" }}>
-            <Link to="/pricing" className="hover:text-[#FFFDF9] transition-colors">Pricing</Link>
-            <Link to="/about" className="hover:text-[#FFFDF9] transition-colors">About</Link>
-            <Link to="/faq" className="hover:text-[#FFFDF9] transition-colors">FAQ</Link>
-            <Link to="/privacy" className="hover:text-[#FFFDF9] transition-colors">Privacy</Link>
-            <Link to="/terms" className="hover:text-[#FFFDF9] transition-colors">Terms</Link>
+          <div className="flex flex-wrap gap-6" style={{ fontSize: 12, color: "#888780" }}>
+            <Link to="/pricing" className="hover:text-[#1A1108] transition-colors">Pricing</Link>
+            <Link to="/about" className="hover:text-[#1A1108] transition-colors">About</Link>
+            <Link to="/faq" className="hover:text-[#1A1108] transition-colors">FAQ</Link>
+            <Link to="/privacy" className="hover:text-[#1A1108] transition-colors">Privacy</Link>
+            <Link to="/terms" className="hover:text-[#1A1108] transition-colors">Terms</Link>
           </div>
         </div>
       </footer>
