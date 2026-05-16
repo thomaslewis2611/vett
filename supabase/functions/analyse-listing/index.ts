@@ -183,6 +183,20 @@ Rules:
 - sellerMotivation: score 1-10, label Low/Moderate/High/Very High, signals (short strings), 2-3 sentence commentary.
 - viewingChecklist: 8-15 items, category Structure|Legal|Running costs|Negotiation|Practical, plus one-sentence "why".
 - renovationCosts: only for identified issues. estimatedCost like "£15,000 – £25,000". priority: "High priority" (safety/mortgageability/habitability), "Medium priority" (comfort/efficiency/5-yr resale), "Low priority" (cosmetic/deferrable). Never "Essential". Sum totalEstimatedMin/Max. 2-3 sentence commentary. If none: items:[], totals:0.
+- COSTS — produce a comprehensive cost breakdown. Populate every field in costs:
+  • valuationFee: lender's valuation £150–£1,500 by price (~£250 to £250k, ~£400 to £500k, ~£700 to £1m, ~£1,200 above). 0 if cash/remortgage.
+  • landRegistryFee: HMLR scale 1 — <£80k=£20; £80k–£100k=£40; £100k–£200k=£95; £200k–£500k=£135; £500k–£1m=£270; >£1m=£455.
+  • electronicTransferFee: default 40.
+  • removalCosts: £500 flat/small, £800 3-bed, £1,200 larger (+£300 if long distance).
+  • indemnityInsurance: 150 if listing mentions planning/extension/conversion/loft/dormer/garage conv/side return; else 0.
+  • buildingsInsurance: annual estimate — £200 flat (note in mortgageAssumptions that this is often included in service charge), £350–£600 house.
+  • serviceCharge (LEASEHOLD ONLY): 0 freehold; £1,500–£4,000/yr leasehold flat; extract if stated, otherwise estimate and say so.
+  • groundRent (LEASEHOLD ONLY): extract if stated; 0 for post-2022 leases. If a new lease shows >£0 ground rent, raise a red flag.
+  • leaseholdYears: years remaining on lease if stated. <80 yrs → red flag (mortgageability, extension cost).
+  • councilTaxMonthly: from metrics.councilTaxBand using England averages (A≈£1,500, B≈£1,750, C≈£2,000, D≈£2,250, E≈£2,750, F≈£3,250, G≈£3,750, H≈£4,500) ÷ 12.
+  • buildingsInsuranceMonthly: buildingsInsurance/12.
+  • serviceChargeMonthly: serviceCharge/12 (0 freehold).
+  • totalUpfront = purchasePrice + stampDuty + legalFees + surveyFees + mortgageFees + valuationFee + landRegistryFee + electronicTransferFee + removalCosts + indemnityInsurance + buildingsInsurance.
 - Be direct — this buyer is about to spend hundreds of thousands.
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
