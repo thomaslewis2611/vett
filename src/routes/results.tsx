@@ -269,49 +269,56 @@ function ResultsPage() {
 
   const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
 
-  // Pre-analysis precheck: detect whether EPC + sqft can be extracted
-  // from the listing text. If either is missing, show a modal so the
-  // user can supply them before the analysis starts.
-  type PrecheckPhase = "idle" | "checking" | "needs-input" | "ready";
-  const skipPrecheck = Boolean(saved_id) || Boolean(text) || Boolean(cached) || !url;
-  const [precheckPhase, setPrecheckPhase] = useState<PrecheckPhase>(
-    skipPrecheck ? "ready" : "idle",
-  );
-  const [precheckMissing, setPrecheckMissing] = useState<{ epc: boolean; sqft: boolean }>(
-    { epc: false, sqft: false },
-  );
-  const [overrides, setOverrides] = useState<{ userEpc: string | null; userSqft: number | null }>(
-    { userEpc: null, userSqft: null },
+  type PreAnalysisOverrides = { userEpc: string | null; userSqft: number | null };
+  type PreAnalysisState =
+    | { status: "ready"; overrides: PreAnalysisOverrides }
+    | { status: "fetching" }
+    | { status: "needs-input"; missing: { epc: boolean; sqft: boolean } };
+  const emptyOverrides: PreAnalysisOverrides = { userEpc: null, userSqft: null };
+  const shouldRunPreAnalysis = Boolean(url) && !text && !saved_id && !cached;
+  const [preAnalysis, setPreAnalysis] = useState<PreAnalysisState>(
+    shouldRunPreAnalysis ? { status: "fetching" } : { status: "ready", overrides: emptyOverrides },
   );
 
   useEffect(() => {
-    if (skipPrecheck || precheckPhase !== "idle") return;
+    if (!shouldRunPreAnalysis) {
+      setPreAnalysis({ status: "ready", overrides: emptyOverrides });
+      return;
+    }
+
     let cancelled = false;
-    setPrecheckPhase("checking");
-    console.log("[precheck] starting scan for EPC + sqft", { url, hasText: Boolean(text) });
+    setPreAnalysis({ status: "fetching" });
+    console.log("[pre-analysis] fetching listing page content before analysis", { url });
+
     (async () => {
       try {
-        const r = await precheckFn({ data: { url, text } });
+        const result = await precheckFn({ data: { url } });
         if (cancelled) return;
-        console.log("[precheck] result", r);
-        if (r.skipped || (r.epcFound && r.sqftFound)) {
-          console.log("[precheck] proceeding directly to analysis (no modal needed)");
-          setPrecheckPhase("ready");
-        } else {
-          console.log("[precheck] missing data, showing modal", {
-            epcMissing: !r.epcFound,
-            sqftMissing: !r.sqftFound,
-          });
-          setPrecheckMissing({ epc: !r.epcFound, sqft: !r.sqftFound });
-          setPrecheckPhase("needs-input");
+
+        const missing = { epc: !result.epcFound, sqft: !result.sqftFound };
+        console.log("[pre-analysis] scanned fetched listing text", {
+          url,
+          textLength: result.textLength,
+          epcFound: result.epcFound,
+          sqftFound: result.sqftFound,
+          epcRating: result.epcRating,
+          missing,
+        });
+
+        if (!missing.epc && !missing.sqft) {
+          setPreAnalysis({ status: "ready", overrides: emptyOverrides });
+          return;
         }
+
+        setPreAnalysis({ status: "needs-input", missing });
       } catch (err) {
-        console.warn("[results] precheck failed, proceeding without it:", (err as Error)?.message);
-        if (!cancelled) setPrecheckPhase("ready");
+        console.warn("[pre-analysis] failed; starting analysis without pre-analysis modal", (err as Error)?.message);
+        if (!cancelled) setPreAnalysis({ status: "ready", overrides: emptyOverrides });
       }
     })();
+
     return () => { cancelled = true; };
-  }, [skipPrecheck, precheckPhase, precheckFn, url, text]);
+  }, [shouldRunPreAnalysis, precheckFn, url]);
 
   const POLL_INTERVAL_MS = 2000;
   // Long timeout to tolerate mobile screen-locks suspending JS for minutes.
