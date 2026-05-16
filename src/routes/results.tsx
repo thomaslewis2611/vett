@@ -761,7 +761,10 @@ function ResultsPage() {
               <button
                 onClick={() => {
                   forgetJobId(url);
-                  query.refetch();
+                  try {
+                    sessionStorage.removeItem(analysisCacheKey(url, text, token));
+                  } catch { /* ignore */ }
+                  setForceRestart((n) => n + 1);
                 }}
                 className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
