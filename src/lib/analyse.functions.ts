@@ -1936,6 +1936,24 @@ async function runAnalysis(
     );
   }
 
+  // Prepend user-confirmed EPC/sqft as authoritative facts so Claude treats
+  // them like values explicitly stated in the listing text.
+  const overrideNotes: string[] = [];
+  if (overrides?.userEpc) {
+    overrideNotes.push(
+      `EPC RATING EXTRACTED: ${overrides.userEpc.toUpperCase()}`,
+      `USER-CONFIRMED EPC RATING: ${overrides.userEpc.toUpperCase()} (treat as explicitly stated in the listing; use as epc.rating)`,
+    );
+  }
+  if (overrides?.userSqft && overrides.userSqft > 0) {
+    overrideNotes.push(
+      `USER-CONFIRMED SQUARE FOOTAGE: ${overrides.userSqft} sq ft (treat as EXPLICITLY stated in the listing; use as property.sqft and compute metrics.pricePerSqFt from it; do NOT output the "Square footage is typically shown..." placeholder sentence — calculate £/sqft normally)`,
+    );
+  }
+  if (overrideNotes.length) {
+    listingContent = `${overrideNotes.join("\n")}\n\n${listingContent}`;
+  }
+
   let output: z.infer<typeof analysisSchema>;
   const client = new Anthropic({ apiKey, timeout: 120_000, maxRetries: 1 });
   const userContent = `Listing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
