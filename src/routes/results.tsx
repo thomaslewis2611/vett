@@ -419,6 +419,7 @@ function ResultsPage() {
   const POLL_TIMEOUT_MS = 10 * 60_000;
   const [wasHidden, setWasHidden] = useState(false);
   const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const [forceRestart, setForceRestart] = useState(0);
 
   type QueryResult = { analysis: AnalysisResult; savedOwnerEmail?: string | null; savedListingUrl?: string | null };
 
