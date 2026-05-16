@@ -1123,7 +1123,7 @@ async function runJob(
       const ac = new AbortController();
       const timer = setTimeout(() => ac.abort(), budget);
       try {
-        const text = await callClaude(systemPrompt, userContent, 6000, ac.signal);
+        const text = await callClaude(systemPrompt, userContent, 4000, ac.signal);
         console.log(`[analyse-listing] Claude response length: ${text.length}`);
         parsed = parseWithRepair(text) as Record<string, unknown>;
       } finally {
