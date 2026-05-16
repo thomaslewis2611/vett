@@ -148,17 +148,27 @@ function detectFloorPlan(html: string): boolean {
 }
 
 async function fetchListingHtml(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-GB,en;q=0.9",
-    },
-    redirect: "follow",
-  });
-  if (!res.ok) return "";
-  return await res.text();
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 5000);
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-GB,en;q=0.9",
+      },
+      redirect: "follow",
+      signal: ctl.signal,
+    });
+    if (!res.ok) return "";
+    return await res.text();
+  } catch (err) {
+    console.warn(`[analyse-listing] fetchListingHtml failed/timeout`, err);
+    return "";
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ---------- Claude prompt ----------
