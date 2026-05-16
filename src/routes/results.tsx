@@ -917,7 +917,7 @@ const LOADING_TIPS = [
   "Tip: Your viewing checklist will be specific to the red flags found in this listing",
 ];
 
-const ACCENT = "#1B4332";
+const ACCENT = "#2D6A4F";
 
 // Defensive sanitiser for any Claude / model-generated string before it
 // reaches the DOM. Coerces to string and strips HTML tags + leading/trailing
