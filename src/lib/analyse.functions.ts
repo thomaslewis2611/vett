@@ -452,6 +452,18 @@ function extractEpcAndCouncilTax(html: string): { epc: string | null; councilTax
   return { epc, councilTax };
 }
 
+function detectFloorPlan(html: string): boolean {
+  if (!html) return false;
+  const patterns: RegExp[] = [
+    /\bfloorplans?\b/i,
+    /["']floorplans?["']\s*:/i,
+    /\/floorplans?\//i,
+    /_FLP_\d+/i,
+    /floor[\s-]*plan/i,
+  ];
+  return patterns.some((p) => p.test(html));
+}
+
 function extractListedDate(html: string): { dateStr: string; daysOnMarket: number } | null {
   if (!html) return null;
   const patterns: RegExp[] = [
