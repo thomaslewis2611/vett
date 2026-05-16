@@ -5,7 +5,7 @@ import { LogOut, LayoutDashboard, Mail, ChevronDown, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkBuyerPassByEmail } from "@/lib/access.functions";
 import { sendBuyerPassMagicLink } from "@/lib/checkout.functions";
-import { RoovrMark } from "@/components/roovr-mark";
+
 
 function truncateEmail(email: string, max = 14) {
   const [name, domain] = email.split("@");
@@ -245,7 +245,7 @@ export function SiteHeader() {
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-8" style={{ height: 56 }}>
         <Link to="/" className="flex items-center gap-2">
-          <RoovrMark size={28} />
+          <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: "#2D6A4F", display: "inline-block" }} />
           <span style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.3px" }}>
             Roovr
           </span>
@@ -334,7 +334,7 @@ export function SiteFooter() {
       <footer style={{ background: "#1A1108", margin: 0, padding: 0, display: "block", width: "100%" }}>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div className="flex items-center gap-2">
-            <RoovrMark size={24} />
+            <span aria-hidden style={{ width: 9, height: 9, borderRadius: 999, background: "#2D6A4F", display: "inline-block" }} />
             <span style={{ fontSize: 18, fontWeight: 500, color: "#FFFDF9" }}>Roovr</span>
             <span style={{ fontSize: 13, color: "#888780", marginLeft: 12 }}>© 2026 Roovr</span>
           </div>
