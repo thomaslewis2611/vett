@@ -20,7 +20,7 @@ import {
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { DisclaimerBar } from "@/components/disclaimer-bar";
 import { formatGBP, type AnalysisResult } from "@/lib/mock-analysis";
-import { startAnalysisJob, getAnalysisJob, fetchBuyerPassExtras, analyseEpcRating, analyseFloodZone, analyseManualSqft, refetchLocalDataForPostcode } from "@/lib/analyse.functions";
+import { startAnalysisJob, getAnalysisJob, fetchBuyerPassExtras, analyseEpcRating, analyseFloodZone, analyseManualSqft, refetchLocalDataForPostcode, precheckListing } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
 import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser, getSavedAnalysis } from "@/lib/checkout.functions";
 import { sendReportEmail } from "@/lib/email-report.functions";
@@ -263,10 +263,48 @@ function ResultsPage() {
   const startJobFn = useServerFn(startAnalysisJob);
   const getJobFn = useServerFn(getAnalysisJob);
   const getSavedFn = useServerFn(getSavedAnalysis);
+  const precheckFn = useServerFn(precheckListing);
 
   const hasInput = Boolean(url || text || saved_id);
 
   const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
+
+  // Pre-analysis precheck: detect whether EPC + sqft can be extracted
+  // from the listing text. If either is missing, show a modal so the
+  // user can supply them before the analysis starts.
+  type PrecheckPhase = "idle" | "checking" | "needs-input" | "ready";
+  const skipPrecheck = Boolean(saved_id) || Boolean(text) || Boolean(cached) || !url;
+  const [precheckPhase, setPrecheckPhase] = useState<PrecheckPhase>(
+    skipPrecheck ? "ready" : "idle",
+  );
+  const [precheckMissing, setPrecheckMissing] = useState<{ epc: boolean; sqft: boolean }>(
+    { epc: false, sqft: false },
+  );
+  const [overrides, setOverrides] = useState<{ userEpc: string | null; userSqft: number | null }>(
+    { userEpc: null, userSqft: null },
+  );
+
+  useEffect(() => {
+    if (skipPrecheck || precheckPhase !== "idle") return;
+    let cancelled = false;
+    setPrecheckPhase("checking");
+    (async () => {
+      try {
+        const r = await precheckFn({ data: { url, text } });
+        if (cancelled) return;
+        if (r.skipped || (r.epcFound && r.sqftFound)) {
+          setPrecheckPhase("ready");
+        } else {
+          setPrecheckMissing({ epc: !r.epcFound, sqft: !r.sqftFound });
+          setPrecheckPhase("needs-input");
+        }
+      } catch (err) {
+        console.warn("[results] precheck failed, proceeding without it:", (err as Error)?.message);
+        if (!cancelled) setPrecheckPhase("ready");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [skipPrecheck, precheckPhase, precheckFn, url, text]);
 
   const POLL_INTERVAL_MS = 2000;
   // Long timeout to tolerate mobile screen-locks suspending JS for minutes.
@@ -340,7 +378,14 @@ function ResultsPage() {
       }
       if (!jobId) {
         const started = await startJobFn({
-          data: { url, text, accessToken: token ?? null, sessionJwt },
+          data: {
+            url,
+            text,
+            accessToken: token ?? null,
+            sessionJwt,
+            userEpc: overrides.userEpc,
+            userSqft: overrides.userSqft,
+          },
         });
         jobId = started.jobId;
         rememberJobId(url, jobId);
@@ -382,7 +427,7 @@ function ResultsPage() {
         }
       }
     },
-    enabled: hasInput,
+    enabled: hasInput && precheckPhase === "ready",
     retry: false,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
@@ -463,6 +508,22 @@ function ResultsPage() {
           </div>
         )}
         <LoadingState url={url} />
+        {precheckPhase === "needs-input" && (
+          <PrecheckModal
+            missing={precheckMissing}
+            onSubmit={(vals) => {
+              setOverrides({
+                userEpc: vals.epc ? vals.epc.toUpperCase() : null,
+                userSqft: vals.sqft && vals.sqft > 0 ? vals.sqft : null,
+              });
+              setPrecheckPhase("ready");
+            }}
+            onSkip={() => {
+              setOverrides({ userEpc: null, userSqft: null });
+              setPrecheckPhase("ready");
+            }}
+          />
+        )}
         <DisclaimerBar />
         <SiteFooter />
       </div>
@@ -5186,5 +5247,178 @@ function CapitalGrowthSection({
         </p>
       </div>
     </section>
+  );
+}
+
+// ---------------- Pre-analysis modal ----------------
+// Asks the user for EPC rating and/or square footage when those values
+// can't be detected in the listing text. Submitting passes the values
+// straight into the analysis so the report is accurate first time.
+function PrecheckModal({
+  missing,
+  onSubmit,
+  onSkip,
+}: {
+  missing: { epc: boolean; sqft: boolean };
+  onSubmit: (vals: { epc: string | null; sqft: number | null }) => void;
+  onSkip: () => void;
+}) {
+  const [epc, setEpc] = useState<string>("");
+  const [sqft, setSqft] = useState<string>("");
+  const sqftNum = Number(sqft);
+  const sqftValid = !missing.sqft || (Number.isFinite(sqftNum) && sqftNum >= 50 && sqftNum <= 50000);
+  const epcValid = !missing.epc || /^[A-G]$/.test(epc);
+  const canSubmit = (missing.epc ? epcValid : true) && (missing.sqft ? sqftValid : true) && (
+    (missing.epc && epcValid) || (missing.sqft && sqftValid)
+  );
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="precheck-title"
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 100,
+        background: "rgba(0,0,0,0.55)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+      }}
+    >
+      <div
+        style={{
+          background: "#FFFDF9",
+          borderRadius: 16,
+          border: "1px solid #E6E1D8",
+          maxWidth: 480,
+          width: "100%",
+          padding: "28px 24px 24px",
+          boxShadow: "0 24px 60px -20px rgba(26,17,8,0.35)",
+        }}
+      >
+        <h2
+          id="precheck-title"
+          style={{ fontSize: 20, fontWeight: 600, color: "#1A1108", lineHeight: 1.25, letterSpacing: "-0.01em" }}
+        >
+          Help us give you the most accurate report
+        </h2>
+        <p style={{ marginTop: 10, fontSize: 14, color: "#5F5E5A", lineHeight: 1.55 }}>
+          We couldn't find the following details in the listing text — they're usually on the floor plan
+          or EPC certificate attached to the listing. Adding them now means your report will include
+          accurate price per sq ft analysis and energy cost estimates.
+        </p>
+
+        <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
+          {missing.epc && (
+            <div>
+              <label
+                htmlFor="precheck-epc"
+                style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#1A1108", marginBottom: 6 }}
+              >
+                EPC Rating
+              </label>
+              <select
+                id="precheck-epc"
+                value={epc}
+                onChange={(e) => setEpc(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  fontSize: 14,
+                  borderRadius: 8,
+                  border: "1px solid #D7D1C5",
+                  background: "#FFFDF9",
+                  color: "#1A1108",
+                  outline: "none",
+                }}
+              >
+                <option value="">Select…</option>
+                {["A", "B", "C", "D", "E", "F", "G"].map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {missing.sqft && (
+            <div>
+              <label
+                htmlFor="precheck-sqft"
+                style={{ display: "block", fontSize: 13, fontWeight: 500, color: "#1A1108", marginBottom: 6 }}
+              >
+                Square footage (sq ft)
+              </label>
+              <input
+                id="precheck-sqft"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                value={sqft}
+                onChange={(e) => setSqft(e.target.value.replace(/[^0-9]/g, ""))}
+                placeholder="e.g. 1,180"
+                style={{
+                  width: "100%",
+                  padding: "10px 12px",
+                  fontSize: 14,
+                  borderRadius: 8,
+                  border: "1px solid #D7D1C5",
+                  background: "#FFFDF9",
+                  color: "#1A1108",
+                  outline: "none",
+                }}
+              />
+              {sqft && !sqftValid && (
+                <p style={{ marginTop: 6, fontSize: 12, color: "#B14523" }}>
+                  Enter a value between 50 and 50,000.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
+          <button
+            type="button"
+            disabled={!canSubmit}
+            onClick={() =>
+              onSubmit({
+                epc: missing.epc && epc ? epc : null,
+                sqft: missing.sqft && sqftValid && sqftNum > 0 ? sqftNum : null,
+              })
+            }
+            style={{
+              background: canSubmit ? "#D85A30" : "#E6B9A6",
+              color: "#FFFDF9",
+              fontSize: 14,
+              fontWeight: 500,
+              borderRadius: 100,
+              padding: "12px 20px",
+              border: "none",
+              cursor: canSubmit ? "pointer" : "not-allowed",
+              transition: "background 120ms",
+            }}
+          >
+            Run analysis with these details →
+          </button>
+          <button
+            type="button"
+            onClick={onSkip}
+            style={{
+              background: "transparent",
+              color: "#5F5E5A",
+              fontSize: 13,
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+              textUnderlineOffset: 3,
+              padding: "4px 8px",
+            }}
+          >
+            Skip — I'll add these later
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

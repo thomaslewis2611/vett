@@ -1907,6 +1907,7 @@ async function runAnalysis(
   url: string,
   pastedText: string,
   apiKey: string,
+  overrides?: { userEpc?: string | null; userSqft?: number | null },
 ): Promise<FullAnalysis> {
   let listingContent = pastedText;
   let landRegistry: LandRegistryResult = null;
@@ -1933,6 +1934,24 @@ async function runAnalysis(
     throw new Error(
       "FETCH_BLOCKED: We couldn't automatically read this listing. You can paste the listing description below to get your full analysis."
     );
+  }
+
+  // Prepend user-confirmed EPC/sqft as authoritative facts so Claude treats
+  // them like values explicitly stated in the listing text.
+  const overrideNotes: string[] = [];
+  if (overrides?.userEpc) {
+    overrideNotes.push(
+      `EPC RATING EXTRACTED: ${overrides.userEpc.toUpperCase()}`,
+      `USER-CONFIRMED EPC RATING: ${overrides.userEpc.toUpperCase()} (treat as explicitly stated in the listing; use as epc.rating)`,
+    );
+  }
+  if (overrides?.userSqft && overrides.userSqft > 0) {
+    overrideNotes.push(
+      `USER-CONFIRMED SQUARE FOOTAGE: ${overrides.userSqft} sq ft (treat as EXPLICITLY stated in the listing; use as property.sqft and compute metrics.pricePerSqFt from it; do NOT output the "Square footage is typically shown..." placeholder sentence — calculate £/sqft normally)`,
+    );
+  }
+  if (overrideNotes.length) {
+    listingContent = `${overrideNotes.join("\n")}\n\n${listingContent}`;
   }
 
   let output: z.infer<typeof analysisSchema>;
@@ -2236,6 +2255,8 @@ export const analyseListing = createServerFn({ method: "POST" })
       text: z.string().max(50000).optional(),
       accessToken: z.string().max(200).optional().nullable(),
       sessionJwt: z.string().max(4000).optional().nullable(),
+      userEpc: z.string().regex(/^[A-Ga-g]$/).optional().nullable(),
+      userSqft: z.number().min(50).max(50000).optional().nullable(),
     })
   )
   .handler(async ({ data }): Promise<AnalysisResult> => {
@@ -2257,10 +2278,17 @@ export const analyseListing = createServerFn({ method: "POST" })
       }
     }
 
+    const overrides = {
+      userEpc: data.userEpc ?? null,
+      userSqft: data.userSqft ?? null,
+    };
+    const hasOverrides = Boolean(overrides.userEpc || overrides.userSqft);
+
     // Dedupe concurrent / rapid-repeat analyses for the same URL.
     // Pasted-text submissions skip the cache (content varies per call).
+    // Override submissions also skip — different users may pass different values.
     let full: FullAnalysis;
-    if (url && !pastedText) {
+    if (url && !pastedText && !hasOverrides) {
       const cached = recentAnalyses.get(url);
       if (cached && Date.now() - cached.at < ANALYSIS_DEDUPE_TTL_MS) {
         console.log("[analyseListing] returning cached result", { url, ageMs: Date.now() - cached.at });
@@ -2284,7 +2312,7 @@ export const analyseListing = createServerFn({ method: "POST" })
         }
       }
     } else {
-      full = await runAnalysis(url, pastedText, apiKey);
+      full = await runAnalysis(url, pastedText, apiKey, overrides);
     }
 
     const unlocked = await hasFullAccess({
@@ -2317,6 +2345,7 @@ async function processAnalysisJob(
   jobId: string,
   url: string,
   pastedText: string,
+  overrides?: { userEpc?: string | null; userSqft?: number | null },
 ): Promise<void> {
   console.log(`[processAnalysisJob] started for jobId: ${jobId}`);
   let step = "init";
@@ -2326,8 +2355,9 @@ async function processAnalysisJob(
     if (!apiKey) {
       throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
     }
+    const hasOverrides = Boolean(overrides?.userEpc || overrides?.userSqft);
     let full: FullAnalysis;
-    if (url && !pastedText) {
+    if (url && !pastedText && !hasOverrides) {
       const cached = recentAnalyses.get(url);
       if (cached && Date.now() - cached.at < ANALYSIS_DEDUPE_TTL_MS) {
         console.log(`[processAnalysisJob] using cached analysis for ${url}`);
@@ -2353,7 +2383,7 @@ async function processAnalysisJob(
       }
     } else {
       step = "run-analysis";
-      full = await runAnalysis(url, pastedText, apiKey);
+      full = await runAnalysis(url, pastedText, apiKey, overrides);
     }
 
     step = "update-job-row";
@@ -2395,12 +2425,18 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
       text: z.string().max(50000).optional(),
       accessToken: z.string().max(200).optional().nullable(),
       sessionJwt: z.string().max(4000).optional().nullable(),
+      userEpc: z.string().regex(/^[A-Ga-g]$/).optional().nullable(),
+      userSqft: z.number().min(50).max(50000).optional().nullable(),
     })
   )
   .handler(async ({ data }): Promise<{ jobId: string }> => {
     const url = data.url?.trim() ?? "";
     const pastedText = data.text?.trim() ?? "";
     if (!url && !pastedText) throw new Error("Provide a listing URL or pasted text");
+    const overrides = {
+      userEpc: data.userEpc ?? null,
+      userSqft: data.userSqft ?? null,
+    };
 
     if (url) {
       try {
@@ -2441,7 +2477,7 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     let invokeErrorMessage = "";
     try {
       const result = await supabaseAdmin.functions.invoke("analyse-listing", {
-        body: { jobId, url, pastedText },
+        body: { jobId, url, pastedText, userEpc: overrides.userEpc, userSqft: overrides.userSqft },
       });
       console.log(`[startAnalysisJob] Edge Function invoke result:`, JSON.stringify({
         hasData: !!result.data,
@@ -2487,7 +2523,7 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     if (needsFallback) {
       console.warn(`[startAnalysisJob] Falling back to in-process analysis for ${jobId}`);
       try {
-        await processAnalysisJob(jobId, url, pastedText);
+        await processAnalysisJob(jobId, url, pastedText, overrides);
       } catch (fallbackErr) {
         const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
         console.error(`[startAnalysisJob] fallback analysis failed for ${jobId}:`, msg);
@@ -3249,4 +3285,90 @@ export const analyseManualSqft = createServerFn({ method: "POST" })
     }
 
     return { ok: true as const, manualSqftAnalysis: out };
+  });
+
+// ---------------- Pre-analysis precheck ----------------
+// Lightweight check that fetches the listing HTML once and reports
+// whether EPC rating and square footage can be extracted from the
+// listing text. Used to prompt the user for the missing fields BEFORE
+// the full analysis starts so the report is accurate first time.
+function detectSqftInText(text: string): boolean {
+  if (!text) return false;
+  // Match e.g. "1,180 sq ft", "1180 sqft", "1180 sq. ft", "1180 ft2"
+  if (/\b\d{2,3}(?:[,\s]?\d{3})\s*(?:sq\.?\s*ft|sqft|ft\.?\s*²|ft2|square\s+feet)\b/i.test(text)) return true;
+  if (/\b\d{3,5}\s*(?:sq\.?\s*ft|sqft|ft\.?\s*²|ft2|square\s+feet)\b/i.test(text)) return true;
+  // Square metres — convertible
+  if (/\b\d{2,4}(?:\.\d+)?\s*(?:sq\.?\s*m|sqm|m²|m2|square\s+met(?:re|er)s?)\b/i.test(text)) return true;
+  return false;
+}
+
+export const precheckListing = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      url: z.string().max(2000).optional(),
+      text: z.string().max(50000).optional(),
+    })
+  )
+  .handler(async ({ data }): Promise<{
+    epcFound: boolean;
+    sqftFound: boolean;
+    epcRating: string | null;
+    skipped: boolean;
+  }> => {
+    const url = data.url?.trim() ?? "";
+    const pastedText = data.text?.trim() ?? "";
+    // Pasted-text submissions skip precheck — user already controls the input.
+    if (pastedText || !url) {
+      return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+    }
+    try {
+      validateListingUrl(url);
+    } catch {
+      return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+    }
+
+    // Try cache first.
+    let cachedText: string | null = null;
+    try {
+      const { data: cached } = await supabaseAdmin
+        .from("listing_cache")
+        .select("text_content, fetched_at")
+        .eq("url", url)
+        .maybeSingle();
+      if (
+        cached?.text_content &&
+        Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
+      ) {
+        cachedText = cached.text_content;
+      }
+    } catch { /* ignore */ }
+
+    let html = "";
+    if (!cachedText) {
+      try {
+        html = await basicFetchListingHtml(url);
+      } catch (err) {
+        console.warn("[precheckListing] fetch failed, skipping precheck:", (err as Error)?.message);
+        return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+      }
+    }
+
+    let epcRating: string | null = null;
+    if (html) {
+      epcRating = extractEpcAndCouncilTax(html).epc;
+    } else if (cachedText) {
+      const m = cachedText.match(/EPC\s+RATING\s+EXTRACTED:\s*([A-G])/i)
+        ?? cachedText.match(/EPC[\s_-]*rating[^A-Za-z0-9]{0,10}([A-G])\b/i);
+      if (m?.[1]) epcRating = m[1].toUpperCase();
+    }
+
+    const textForSqft = cachedText ?? (html ? htmlToCleanText(html) : "");
+    const sqftFound = detectSqftInText(textForSqft);
+
+    return {
+      epcFound: Boolean(epcRating),
+      sqftFound,
+      epcRating,
+      skipped: false,
+    };
   });
