@@ -1223,7 +1223,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                 className="truncate"
                 style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", lineHeight: 1.3 }}
               >
-                {a.property.address}
+                {sanitiseText(a.property.address)}
               </h1>
               <div
                 className="mt-2"
