@@ -1767,7 +1767,7 @@ function PricePerSqftCard({
             className="mt-2 text-[11px]"
             style={{ color: "#5F5E5A", lineHeight: 1.5 }}
           >
-            {manual.commentary}
+            {sanitiseText(manual.commentary)}
           </div>
           <button
             type="button"
