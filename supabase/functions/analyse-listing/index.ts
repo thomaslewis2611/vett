@@ -848,7 +848,12 @@ async function setCachedPropertyData(supabase: any, postcode: string, pd: PdResu
 }
 
 // ---------- Main job runner ----------
-async function runJob(jobId: string, url: string, pastedText: string) {
+async function runJob(
+  jobId: string,
+  url: string,
+  pastedText: string,
+  overrides?: { userEpc: string | null; userSqft: number | null },
+) {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -865,7 +870,19 @@ async function runJob(jobId: string, url: string, pastedText: string) {
       console.log(`[analyse-listing] listing length: ${listingContent.length}, floor plan: ${floorPlanFlag}`);
     }
     if (listingContent) {
-      listingContent = `FLOOR PLAN PRESENT: ${floorPlanFlag}\n\n${listingContent}`;
+      const overrideNotes: string[] = [`FLOOR PLAN PRESENT: ${floorPlanFlag}`];
+      if (overrides?.userEpc) {
+        overrideNotes.push(
+          `EPC RATING EXTRACTED: ${overrides.userEpc}`,
+          `USER-CONFIRMED EPC RATING: ${overrides.userEpc} (treat as explicitly stated in the listing; use as epc.rating)`,
+        );
+      }
+      if (overrides?.userSqft && overrides.userSqft > 0) {
+        overrideNotes.push(
+          `USER-CONFIRMED SQUARE FOOTAGE: ${overrides.userSqft} sq ft (treat as EXPLICITLY stated in the listing; use as property.sqft and compute metrics.pricePerSqFt from it; do NOT output the "Square footage is typically shown..." placeholder sentence — calculate £/sqft normally)`,
+        );
+      }
+      listingContent = `${overrideNotes.join("\n")}\n\n${listingContent}`;
     }
     if (!listingContent || listingContent.length < 100) {
       throw new Error(
