@@ -2264,6 +2264,24 @@ export const analyseListing = createServerFn({ method: "POST" })
       throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
     }
 
+export const analyseListing = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      url: z.string().max(2000).optional(),
+      text: z.string().max(50000).optional(),
+      accessToken: z.string().max(200).optional().nullable(),
+      sessionJwt: z.string().max(4000).optional().nullable(),
+      userEpc: z.string().regex(/^[A-Ga-g]$/).optional().nullable(),
+      userSqft: z.number().min(50).max(50000).optional().nullable(),
+    })
+  )
+  .handler(async ({ data }): Promise<AnalysisResult> => {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      console.error("[analyseListing] Missing ANTHROPIC_API_KEY");
+      throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
+    }
+
     const url = data.url?.trim() ?? "";
     const pastedText = data.text?.trim() ?? "";
     if (!url && !pastedText) throw new Error("Provide a listing URL or pasted text");
@@ -2276,10 +2294,17 @@ export const analyseListing = createServerFn({ method: "POST" })
       }
     }
 
+    const overrides = {
+      userEpc: data.userEpc ?? null,
+      userSqft: data.userSqft ?? null,
+    };
+    const hasOverrides = Boolean(overrides.userEpc || overrides.userSqft);
+
     // Dedupe concurrent / rapid-repeat analyses for the same URL.
     // Pasted-text submissions skip the cache (content varies per call).
+    // Override submissions also skip — different users may pass different values.
     let full: FullAnalysis;
-    if (url && !pastedText) {
+    if (url && !pastedText && !hasOverrides) {
       const cached = recentAnalyses.get(url);
       if (cached && Date.now() - cached.at < ANALYSIS_DEDUPE_TTL_MS) {
         console.log("[analyseListing] returning cached result", { url, ageMs: Date.now() - cached.at });
@@ -2303,7 +2328,7 @@ export const analyseListing = createServerFn({ method: "POST" })
         }
       }
     } else {
-      full = await runAnalysis(url, pastedText, apiKey);
+      full = await runAnalysis(url, pastedText, apiKey, overrides);
     }
 
     const unlocked = await hasFullAccess({
