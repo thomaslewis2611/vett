@@ -3304,10 +3304,10 @@ function detectSqftInText(text: string): boolean {
 function detectEpcInText(text: string): string | null {
   if (!text) return null;
   const patterns: RegExp[] = [
-    /\bEPC\b[^A-Ga-g]{0,30}\b([A-G])\b/i,
-    /\benergy\s+(?:performance\s+)?(?:rating|band|efficiency\s+rating)\b[^A-Ga-g]{0,30}\b([A-G])\b/i,
-    /\b(?:rating|band)\b[^A-Ga-g]{0,12}\b([A-G])\b[^.]{0,40}\b(?:EPC|energy)\b/i,
-    /\b(?:EPC|energy)\b[^.]{0,40}\b(?:rating|band)\b[^A-Ga-g]{0,12}\b([A-G])\b/i,
+    /\bEPC\b(?:\s+(?:rating|band|certificate))?\s*[:\-–—]?\s*([A-G])\b/i,
+    /\benergy\s+(?:performance\s+)?(?:rating|band|efficiency\s+rating)\b\s*[:\-–—]?\s*([A-G])\b/i,
+    /\b(?:EPC|energy)\b[^.]{0,80}\b(?:rating|band)\b[^.]{0,24}\b([A-G])\b/i,
+    /\b(?:rating|band)\b\s*[:\-–—]?\s*([A-G])\b[^.]{0,60}\b(?:EPC|energy)\b/i,
   ];
   for (const re of patterns) {
     const m = text.match(re);
