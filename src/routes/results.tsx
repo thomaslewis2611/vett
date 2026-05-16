@@ -1223,13 +1223,13 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         <div
           className="no-print w-full max-w-full overflow-x-hidden"
           style={{
-            background: "#FAECE7",
-            borderBottom: "0.5px solid rgba(153,60,29,0.15)",
+            background: "#EAF3DE",
+            borderBottom: "0.5px solid rgba(45,106,79,0.15)",
           }}
         >
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2 sm:px-8" style={{ fontSize: 12, color: "#993C1D" }}>
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2 sm:px-8" style={{ fontSize: 12, color: "#2D6A4F" }}>
             <span className="truncate">Buyer Pass active</span>
-            <Link to="/dashboard" style={{ color: "#993C1D", fontWeight: 500 }} className="shrink-0 hover:underline">
+            <Link to="/dashboard" style={{ color: "#2D6A4F", fontWeight: 500 }} className="shrink-0 hover:underline">
               View all your analyses →
             </Link>
           </div>
