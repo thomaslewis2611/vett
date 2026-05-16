@@ -640,7 +640,13 @@ function ResultsPage() {
               <p className="mt-3 text-sm text-muted-foreground">{friendlyMsg}</p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <button
-                  onClick={() => query.refetch()}
+                  onClick={() => {
+                    // Drop any stored jobId for this URL so the next run of
+                    // the query starts a brand-new analysis job instead of
+                    // re-attaching to the failed one.
+                    forgetJobId(url);
+                    query.refetch();
+                  }}
                   className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
                   Try again
