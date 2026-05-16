@@ -919,6 +919,17 @@ const LOADING_TIPS = [
 
 const ACCENT = "#1B4332";
 
+// Defensive sanitiser for any Claude / model-generated string before it
+// reaches the DOM. Coerces to string and strips HTML tags + leading/trailing
+// whitespace so untrusted content cannot inject markup. JSX text nodes are
+// already auto-escaped by React, but this also defends against pasted HTML
+// surfacing visually as tags and ensures non-string values render cleanly.
+function sanitiseText(s: unknown): string {
+  if (s === null || s === undefined) return "";
+  const str = typeof s === "string" ? s : String(s);
+  return str.replace(/<[^>]*>/g, "").trim();
+}
+
 function prettyUrl(url?: string): string | null {
   if (!url) return null;
   try {
@@ -1212,7 +1223,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                 className="truncate"
                 style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", lineHeight: 1.3 }}
               >
-                {a.property.address}
+                {sanitiseText(a.property.address)}
               </h1>
               <div
                 className="mt-2"
@@ -1235,7 +1246,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
               </div>
             </div>
             <div className="shrink-0">
-              <ScoreBadge score={a.score} label={a.scoreLabel} />
+              <ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} />
             </div>
           </div>
         </section>
@@ -1756,7 +1767,7 @@ function PricePerSqftCard({
             className="mt-2 text-[11px]"
             style={{ color: "#5F5E5A", lineHeight: 1.5 }}
           >
-            {manual.commentary}
+            {sanitiseText(manual.commentary)}
           </div>
           <button
             type="button"
@@ -2221,8 +2232,8 @@ function RedFlagItem({
           {flag.severity}
         </span>
         <div>
-          <div className="font-medium">{flag.title}</div>
-          <p className="mt-1 text-sm text-muted-foreground">{flag.detail}</p>
+          <div className="font-medium">{sanitiseText(flag.title)}</div>
+          <p className="mt-1 text-sm text-muted-foreground">{sanitiseText(flag.detail)}</p>
         </div>
       </div>
     </div>
@@ -3236,8 +3247,8 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
             }
             return out;
           };
-          const desc = rewriteNarrative(ac.areaDescription);
-          const note = rewriteNarrative(ac.comparableNote);
+          const desc = sanitiseText(rewriteNarrative(ac.areaDescription));
+          const note = sanitiseText(rewriteNarrative(ac.comparableNote));
           return (
             <>
               {desc && (
@@ -3316,7 +3327,7 @@ function PlanningReferenceSection({ analysis }: { analysis: AnalysisResult }) {
         )}
         {pr.commentary && (
           <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.55 }}>
-            {pr.commentary}
+            {sanitiseText(pr.commentary)}
           </p>
         )}
         <div
@@ -3634,7 +3645,7 @@ function EpcSection({
               </div>
             )}
             {epc?.commentary && (
-              <p className="mt-3 text-sm" style={{ color: "#1A1108" }}>{epc.commentary}</p>
+              <p className="mt-3 text-sm" style={{ color: "#1A1108" }}>{sanitiseText(epc.commentary)}</p>
             )}
             <button
               type="button"
@@ -4178,7 +4189,7 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
 
         {crime.commentary && (
           <p className="mt-4" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            {crime.commentary}
+            {sanitiseText(crime.commentary)}
           </p>
         )}
 
@@ -4347,7 +4358,7 @@ function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgrad
 
         {bb.commentary && (
           <p className="mt-4" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            {bb.commentary}
+            {sanitiseText(bb.commentary)}
           </p>
         )}
 
@@ -4600,7 +4611,7 @@ function FloodRiskSection({
 
             {fr.commentary && (
               <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6, marginTop: 14 }}>
-                {fr.commentary}
+                {sanitiseText(fr.commentary)}
               </p>
             )}
 
@@ -4671,7 +4682,7 @@ function FloodRiskSection({
 
           {fr?.commentary && (
             <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6, marginTop: 14 }}>
-              {fr.commentary}
+              {sanitiseText(fr.commentary)}
             </p>
           )}
 
@@ -4881,7 +4892,7 @@ function SellerMotivationSection({ analysis, unlocked }: { analysis: AnalysisRes
               </div>
             )}
             <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-              {sm.commentary}
+              {sanitiseText(sm.commentary)}
             </p>
           </div>
           {!unlocked && hasDetails && (
@@ -5135,7 +5146,7 @@ function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResu
         </div>
         {rc.commentary && (
           <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            {rc.commentary}
+            {sanitiseText(rc.commentary)}
           </p>
         )}
         <p className="mt-3" style={{ fontSize: 11, color: "#888780" }}>
