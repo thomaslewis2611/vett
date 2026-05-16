@@ -5557,10 +5557,10 @@ function PrecheckModal({
               </label>
               <input
                 id="precheck-sqft"
-                inputMode="numeric"
-                pattern="[0-9]*"
+                inputMode="decimal"
+                pattern="[0-9]*\.?[0-9]*"
                 value={sqft}
-                onChange={(e) => setSqft(e.target.value.replace(/[^0-9]/g, ""))}
+                onChange={(e) => setSqft(e.target.value.replace(/[^0-9.]/g, ""))}
                 placeholder="e.g. 1,180"
                 style={{
                   width: "100%",
