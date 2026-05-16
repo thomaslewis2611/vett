@@ -1882,18 +1882,22 @@ async function hasFullAccess(opts: {
 // "shape" to obscure visually.
 function toPreview(a: AnalysisResult): AnalysisResult {
   try {
+    if (!a || typeof a !== "object") {
+      throw new Error("toPreview: invalid input");
+    }
     return {
       ...a,
       redFlags: Array.isArray(a?.redFlags) ? a.redFlags.slice(0, 2) : [],
-      viewingQuestions: [],
-      comparables: [],
+      viewingQuestions: Array.isArray(a?.viewingQuestions) ? [] : [],
+      comparables: Array.isArray(a?.comparables) ? [] : [],
       nearbySchools: null,
       crime: null,
       broadband: null,
       transport: null,
       renovationCosts: null,
     };
-  } catch {
+  } catch (e) {
+    console.error("[toPreview] failed, returning safe fallback:", e);
     return {
       property: { address: "", price: 0, beds: 0, baths: 0, type: "", sqft: 0, listingUrl: "" },
       score: 0,
@@ -2575,8 +2579,8 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
     // Always derive the overall Roovr score from sub-scores so older
     // saved analyses (where Claude returned a flat 6.8) display correctly.
     try {
-      const subAny = (full as unknown as { subScores?: Record<string, number> }).subScores;
-      if (subAny && typeof subAny === "object") {
+      const subAny = (full as unknown as { subScores?: Record<string, number> | null })?.subScores;
+      if (subAny && typeof subAny === "object" && !Array.isArray(subAny)) {
         const weights: Record<string, number> = {
           valueForMoney: 0.25,
           locationQuality: 0.20,
@@ -2588,7 +2592,7 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
         let weightedSum = 0;
         let totalWeight = 0;
         for (const [k, w] of Object.entries(weights)) {
-          const v = Number(subAny[k]);
+          const v = Number(subAny?.[k]);
           if (isFinite(v) && v > 0) { weightedSum += v * w; totalWeight += w; }
         }
         if (totalWeight > 0) {
