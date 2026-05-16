@@ -53,6 +53,12 @@ function recallJobId(url: string | undefined | null): string | undefined {
   if (!key) return undefined;
   try { return sessionStorage.getItem(key) ?? undefined; } catch { return undefined; }
 }
+function forgetJobId(url: string | undefined | null) {
+  if (typeof window === "undefined") return;
+  const key = jobIdKey(url);
+  if (!key) return;
+  try { sessionStorage.removeItem(key); } catch { /* ignore */ }
+}
 const ANALYSIS_CACHE_PREFIX = "roovr:analysis:";
 
 function analysisCacheKey(url?: string, text?: string, token?: string) {
@@ -257,8 +263,77 @@ export const Route = createFileRoute("/results")({
       },
     ],
   }),
-  component: ResultsPage,
+  component: ResultsPageWithBoundary,
 });
+
+class ResultsErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: unknown) {
+    console.error("[ResultsErrorBoundary] caught render error", error, info);
+  }
+  handleReset = () => {
+    // Clear all roovr-prefixed session keys for a clean retry.
+    if (typeof window !== "undefined") {
+      try {
+        const keys: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const k = sessionStorage.key(i);
+          if (k && k.startsWith("roovrJobId:")) keys.push(k);
+        }
+        keys.forEach((k) => sessionStorage.removeItem(k));
+      } catch { /* ignore */ }
+    }
+    this.setState({ error: null });
+    if (typeof window !== "undefined") window.location.reload();
+  };
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex min-h-screen flex-col bg-background">
+          <SiteHeader />
+          <main className="mx-auto max-w-xl px-6 py-20">
+            <div className="text-center">
+              <h1 className="text-2xl font-semibold tracking-tight">Analysis failed</h1>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Something went wrong loading this report. Please try again.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={this.handleReset}
+                  className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
+                  Try again
+                </button>
+                <a
+                  href="/"
+                  className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-medium hover:bg-accent"
+                >
+                  Start over
+                </a>
+              </div>
+            </div>
+          </main>
+          <SiteFooter />
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function ResultsPageWithBoundary() {
+  return (
+    <ResultsErrorBoundary>
+      <ResultsPage />
+    </ResultsErrorBoundary>
+  );
+}
 
 function ResultsPage() {
   const { url, text, token, saved_id } = Route.useSearch();
@@ -634,7 +709,13 @@ function ResultsPage() {
               <p className="mt-3 text-sm text-muted-foreground">{friendlyMsg}</p>
               <div className="mt-6 flex flex-wrap justify-center gap-3">
                 <button
-                  onClick={() => query.refetch()}
+                  onClick={() => {
+                    // Drop any stored jobId for this URL so the next run of
+                    // the query starts a brand-new analysis job instead of
+                    // re-attaching to the failed one.
+                    forgetJobId(url);
+                    query.refetch();
+                  }}
                   className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
                   Try again
