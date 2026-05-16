@@ -263,10 +263,48 @@ function ResultsPage() {
   const startJobFn = useServerFn(startAnalysisJob);
   const getJobFn = useServerFn(getAnalysisJob);
   const getSavedFn = useServerFn(getSavedAnalysis);
+  const precheckFn = useServerFn(precheckListing);
 
   const hasInput = Boolean(url || text || saved_id);
 
   const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
+
+  // Pre-analysis precheck: detect whether EPC + sqft can be extracted
+  // from the listing text. If either is missing, show a modal so the
+  // user can supply them before the analysis starts.
+  type PrecheckPhase = "idle" | "checking" | "needs-input" | "ready";
+  const skipPrecheck = Boolean(saved_id) || Boolean(text) || Boolean(cached) || !url;
+  const [precheckPhase, setPrecheckPhase] = useState<PrecheckPhase>(
+    skipPrecheck ? "ready" : "idle",
+  );
+  const [precheckMissing, setPrecheckMissing] = useState<{ epc: boolean; sqft: boolean }>(
+    { epc: false, sqft: false },
+  );
+  const [overrides, setOverrides] = useState<{ userEpc: string | null; userSqft: number | null }>(
+    { userEpc: null, userSqft: null },
+  );
+
+  useEffect(() => {
+    if (skipPrecheck || precheckPhase !== "idle") return;
+    let cancelled = false;
+    setPrecheckPhase("checking");
+    (async () => {
+      try {
+        const r = await precheckFn({ data: { url, text } });
+        if (cancelled) return;
+        if (r.skipped || (r.epcFound && r.sqftFound)) {
+          setPrecheckPhase("ready");
+        } else {
+          setPrecheckMissing({ epc: !r.epcFound, sqft: !r.sqftFound });
+          setPrecheckPhase("needs-input");
+        }
+      } catch (err) {
+        console.warn("[results] precheck failed, proceeding without it:", (err as Error)?.message);
+        if (!cancelled) setPrecheckPhase("ready");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [skipPrecheck, precheckPhase, precheckFn, url, text]);
 
   const POLL_INTERVAL_MS = 2000;
   // Long timeout to tolerate mobile screen-locks suspending JS for minutes.
