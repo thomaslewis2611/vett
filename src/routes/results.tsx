@@ -5146,7 +5146,7 @@ function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResu
         </div>
         {rc.commentary && (
           <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            {rc.commentary}
+            {sanitiseText(rc.commentary)}
           </p>
         )}
         <p className="mt-3" style={{ fontSize: 11, color: "#888780" }}>
