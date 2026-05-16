@@ -333,11 +333,7 @@ export function SiteFooter() {
       <footer style={{ background: "#1A1108", margin: 0, padding: 0, display: "block", width: "100%" }}>
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div className="flex items-center gap-2">
-            <span
-              aria-hidden
-              className="inline-block"
-              style={{ width: 8, height: 8, borderRadius: 9999, background: "#1B4332" }}
-            />
+            <RoovrMark size={24} />
             <span style={{ fontSize: 18, fontWeight: 500, color: "#FFFDF9" }}>Roovr</span>
             <span style={{ fontSize: 13, color: "#888780", marginLeft: 12 }}>© 2026 Roovr</span>
           </div>
