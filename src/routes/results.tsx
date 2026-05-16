@@ -53,6 +53,12 @@ function recallJobId(url: string | undefined | null): string | undefined {
   if (!key) return undefined;
   try { return sessionStorage.getItem(key) ?? undefined; } catch { return undefined; }
 }
+function forgetJobId(url: string | undefined | null) {
+  if (typeof window === "undefined") return;
+  const key = jobIdKey(url);
+  if (!key) return;
+  try { sessionStorage.removeItem(key); } catch { /* ignore */ }
+}
 const ANALYSIS_CACHE_PREFIX = "roovr:analysis:";
 
 function analysisCacheKey(url?: string, text?: string, token?: string) {
