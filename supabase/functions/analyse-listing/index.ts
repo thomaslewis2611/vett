@@ -855,6 +855,12 @@ async function runJob(
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // Hard 90s deadline for the whole job. Claude is aborted if it overruns
+  // and enrichment steps (GIAS Ofsted scraping) are skipped when time is tight.
+  const DEADLINE_MS = 90_000;
+  const startedAt = Date.now();
+  const remaining = () => Math.max(0, DEADLINE_MS - (Date.now() - startedAt));
+
   try {
     let listingContent = pastedText?.trim() ?? "";
     let floorPlanFlag: "yes" | "unknown" = "unknown";
