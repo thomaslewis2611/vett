@@ -336,7 +336,15 @@ function ResultsPage() {
   type QueryResult = { analysis: AnalysisResult; savedOwnerEmail?: string | null; savedListingUrl?: string | null };
 
   const query = useQuery<QueryResult>({
-    queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
+    queryKey: [
+      "analysis",
+      url ?? "",
+      text ?? "",
+      token ?? "",
+      saved_id ?? "",
+      analysisOverrides.userEpc ?? "",
+      analysisOverrides.userSqft ?? "",
+    ],
     queryFn: async ({ signal }): Promise<QueryResult> => {
       if (saved_id) {
         // Wait for auth session to hydrate so the bearer token is attached.
