@@ -21,15 +21,17 @@ export const Route = createFileRoute("/about")({
   component: AboutPage,
 });
 
+const HEADING = "'Playfair Display', Georgia, serif";
+
 function Section({ heading, children }: { heading: string; children: React.ReactNode }) {
   return (
-    <section className="mt-12">
-      <h2 style={{ fontSize: 22, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>
+    <section className="mt-14">
+      <h2 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 28, color: "#1A1108", letterSpacing: "-0.3px" }}>
         {heading}
       </h2>
       <p
         className="mt-4 max-w-2xl"
-        style={{ fontSize: 15, color: "#5F5E5A", lineHeight: 1.7 }}
+        style={{ fontSize: 16, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.75 }}
       >
         {children}
       </p>
@@ -39,15 +41,36 @@ function Section({ heading, children }: { heading: string; children: React.React
 
 function AboutPage() {
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#FFFDF9" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#F1EFE8" }}>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl px-8 py-20 flex-1">
-        <h1 style={{ fontSize: 40, fontWeight: 500, color: "#1A1108", letterSpacing: "-1.5px", lineHeight: 1.15 }}>
-          Why we built <span style={{ color: "#1B4332" }}>Roovr</span>
+      <main className="mx-auto w-full max-w-3xl px-6 sm:px-8 py-20 sm:py-28 flex-1">
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#2D6A4F",
+          }}
+        >
+          About Roovr
+        </div>
+        <h1
+          className="mt-4"
+          style={{
+            fontFamily: HEADING,
+            fontWeight: 400,
+            fontSize: 52,
+            color: "#1A1108",
+            letterSpacing: "-1px",
+            lineHeight: 1.05,
+          }}
+        >
+          Why we built <em style={{ fontStyle: "italic", color: "#2D6A4F" }}>Roovr</em>
         </h1>
         <p
-          className="mt-6 max-w-2xl"
-          style={{ fontSize: 16, color: "#5F5E5A", lineHeight: 1.7 }}
+          className="mt-7 max-w-2xl"
+          style={{ fontSize: 18, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.7 }}
         >
           Buying a home is the biggest financial decision most people will ever make. Yet buyers go into viewings armed with nothing more than a listing description written by the agent trying to sell it. We built Roovr to change that. Paste any Rightmove or Zoopla listing and get an honest, AI-powered analysis in 60 to 90 seconds — red flags, true costs, fair value, and exactly what to ask at the viewing. No estate agent spin. Just the facts.
         </p>
@@ -62,7 +85,7 @@ function AboutPage() {
 
         <Section heading="Get in touch">
           Questions, feedback, or press enquiries — email us at{" "}
-          <a href="mailto:support@roovr.co" style={{ color: "#1B4332" }} className="hover:underline">
+          <a href="mailto:support@roovr.co" style={{ color: "#2D6A4F", fontWeight: 400 }} className="hover:underline">
             support@roovr.co
           </a>
         </Section>

@@ -63,18 +63,22 @@ function PaymentSuccessPage() {
     };
   }, [session_id, tier, verify]);
 
+  const HEADING = "'Playfair Display', Georgia, serif";
+
   const renderMagicLinkScreen = (opts: {
     title: string;
     body: React.ReactNode;
     email: string;
   }) => (
     <div className="text-center">
-      <div className="mx-auto inline-flex h-12 w-12 items-center justify-center" style={{ background: "#FAECE7", borderRadius: 999 }}>
-        <CheckCircle2 className="h-6 w-6" style={{ color: "#1B4332" }} />
+      <div className="mx-auto inline-flex h-12 w-12 items-center justify-center" style={{ background: "#F1EFE8", borderRadius: 999 }}>
+        <CheckCircle2 className="h-6 w-6" style={{ color: "#2D6A4F" }} />
       </div>
-      <h1 className="mt-6 text-3xl font-semibold tracking-tight">{opts.title}</h1>
-      <p className="mt-3 text-base" style={{ color: "#1A1108" }}>{opts.body}</p>
-      <p className="mt-2 text-sm" style={{ color: "#888780" }}>Can't find it? Check your spam folder.</p>
+      <h1 className="mt-6" style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 36, color: "#1A1108", letterSpacing: "-0.5px" }}>
+        {opts.title}
+      </h1>
+      <p className="mt-4" style={{ fontSize: 16, fontWeight: 300, color: "#1A1108", lineHeight: 1.6 }}>{opts.body}</p>
+      <p className="mt-2" style={{ fontSize: 13, fontWeight: 300, color: "#888780" }}>Can't find it? Check your spam folder.</p>
       <button
         type="button"
         onClick={async () => {
@@ -86,75 +90,97 @@ function PaymentSuccessPage() {
             setResendMsg("Could not resend right now. Try again shortly.");
           }
         }}
-        className="mt-6 inline-flex items-center gap-2"
-        style={{ background: "#1A1108", color: "#FFFDF9", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "12px 24px" }}
+        className="mt-7 inline-flex items-center gap-2 transition-opacity hover:opacity-90"
+        style={{ background: "#2D6A4F", color: "#FFFDF9", fontSize: 14, fontWeight: 500, borderRadius: 100, padding: "13px 24px" }}
       >
         <MailOpen className="h-4 w-4" /> Resend magic link
       </button>
       {resendMsg && (
-        <p className="mt-3 text-sm" style={{ color: "#5F5E5A" }}>{resendMsg}</p>
+        <p className="mt-3" style={{ fontSize: 13, fontWeight: 300, color: "#5F5E5A" }}>{resendMsg}</p>
       )}
     </div>
   );
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8" }}>
       <SiteHeader />
-      <main className="mx-auto max-w-xl px-6 py-24">
-        {state.status === "loading" && (
-          <div className="text-center">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin" style={{ color: "#1B4332" }} />
-            <h1 className="mt-6 text-2xl font-semibold tracking-tight">Confirming your payment…</h1>
-            <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>This usually takes a couple of seconds.</p>
-          </div>
-        )}
+      <main className="mx-auto w-full max-w-xl px-6 py-20 sm:py-24 flex-1">
+        <div
+          className="p-8 sm:p-10"
+          style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
+        >
+          {state.status === "loading" && (
+            <div className="text-center">
+              <Loader2 className="mx-auto h-8 w-8 animate-spin" style={{ color: "#2D6A4F" }} />
+              <h1 className="mt-6" style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 28, color: "#1A1108", letterSpacing: "-0.4px" }}>
+                Confirming your payment…
+              </h1>
+              <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>This usually takes a couple of seconds.</p>
+            </div>
+          )}
 
-        {state.status === "single" && renderMagicLinkScreen({
-          title: "Payment confirmed",
-          body: (
-            <>
-              {state.hadAnalysisJob
-                ? "Your report is saved. Click your magic link to view it with full Single Report access."
-                : "Your report is saved to your account."}{" "}
-              We've sent a magic link to{" "}
-              <span style={{ fontWeight: 500 }}>{state.email}</span> — click it to access your report from any device.
-            </>
-          ),
-          email: state.email,
-        })}
-
-        {state.status === "pass" && (() => {
-          const expiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
-          const expiryLabel = expiry.toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          });
-          return renderMagicLinkScreen({
-            title: "You're all set",
+          {state.status === "single" && renderMagicLinkScreen({
+            title: "Payment confirmed",
             body: (
               <>
                 {state.hadAnalysisJob
-                  ? "Your report is saved. Click your magic link to view it with full Buyer Pass access. "
-                  : ""}
-                Your Buyer Pass is active until <span style={{ fontWeight: 500 }}>{expiryLabel}</span>. We've sent a magic link to{" "}
-                <span style={{ fontWeight: 500 }}>{state.email}</span> — click it to start analysing properties.
+                  ? "Your report is saved. Click your magic link to view it with full Single Report access."
+                  : "Your report is saved to your account."}{" "}
+                We've sent a magic link to{" "}
+                <span style={{ fontWeight: 500 }}>{state.email}</span> — click it to access your report from any device.
               </>
             ),
             email: state.email,
-          });
-        })()}
+          })}
 
-        {state.status === "error" && (
-          <div className="text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">Something went wrong</h1>
-            <p className="mt-3 text-sm" style={{ color: "#5F5E5A" }}>{state.message}</p>
-            <p className="mt-4 text-sm" style={{ color: "#5F5E5A" }}>
-              Need help? Email <a href="mailto:support@roovr.co" style={{ color: "#1B4332" }}>support@roovr.co</a>
-            </p>
-            <Link to="/" className="mt-6 inline-block" style={{ fontSize: 13, color: "#1B4332" }}>← Back to home</Link>
-          </div>
-        )}
+          {state.status === "pass" && (() => {
+            const expiry = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+            const expiryLabel = expiry.toLocaleDateString("en-GB", {
+              day: "2-digit",
+              month: "long",
+              year: "numeric",
+            });
+            return renderMagicLinkScreen({
+              title: "You're all set",
+              body: (
+                <>
+                  {state.hadAnalysisJob
+                    ? "Your report is saved. Click your magic link to view it with full Buyer Pass access. "
+                    : ""}
+                  Your Buyer Pass is active until <span style={{ fontWeight: 500 }}>{expiryLabel}</span>. We've sent a magic link to{" "}
+                  <span style={{ fontWeight: 500 }}>{state.email}</span> — click it to start analysing properties.
+                </>
+              ),
+              email: state.email,
+            });
+          })()}
+
+          {state.status === "error" && (
+            <div className="text-center">
+              <h1 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 28, color: "#1A1108", letterSpacing: "-0.4px" }}>
+                Something went wrong
+              </h1>
+              <p className="mt-4" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>{state.message}</p>
+              <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>
+                Need help? Email <a href="mailto:support@roovr.co" style={{ color: "#2D6A4F", fontWeight: 500 }}>support@roovr.co</a>
+              </p>
+              <Link
+                to="/"
+                className="mt-6 inline-flex items-center justify-center transition-opacity hover:opacity-90"
+                style={{
+                  background: "#2D6A4F",
+                  color: "#FFFDF9",
+                  fontSize: 14,
+                  fontWeight: 500,
+                  borderRadius: 100,
+                  padding: "12px 22px",
+                }}
+              >
+                Back to home
+              </Link>
+            </div>
+          )}
+        </div>
       </main>
       <SiteFooter />
     </div>

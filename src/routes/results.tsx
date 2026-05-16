@@ -917,7 +917,7 @@ const LOADING_TIPS = [
   "Tip: Your viewing checklist will be specific to the red flags found in this listing",
 ];
 
-const ACCENT = "#1B4332";
+const ACCENT = "#2D6A4F";
 
 // Defensive sanitiser for any Claude / model-generated string before it
 // reaches the DOM. Coerces to string and strips HTML tags + leading/trailing
@@ -964,86 +964,116 @@ function LoadingState({ url }: { url?: string }) {
   const finalising = elapsed >= 60;
   const anchor = prettyUrl(url);
 
-  return (
-    <main className="mx-auto flex max-w-xl flex-col px-6 py-12 sm:py-16 animate-in fade-in duration-500">
-      <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
-        {/* Progress bar */}
-        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full transition-[width] duration-700 ease-out"
-            style={{ width: `${progress}%`, background: ACCENT }}
-          />
-        </div>
+  const HEADING = "'Playfair Display', Georgia, serif";
 
-        {/* Anchor: property URL */}
-        {anchor && (
-          <div className="mt-5">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Analysing
-            </p>
-            <p className="mt-1 truncate text-sm font-medium text-foreground" title={url}>
-              {anchor}
+  return (
+    <main
+      className="flex-1 w-full animate-in fade-in duration-500"
+      style={{ background: "#F1EFE8" }}
+    >
+      <div className="mx-auto max-w-xl px-6 py-16 sm:py-20">
+        <div
+          className="p-7 sm:p-9"
+          style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
+        >
+          {/* Progress bar */}
+          <div className="h-1.5 w-full overflow-hidden" style={{ background: "#F1EFE8", borderRadius: 999 }}>
+            <div
+              className="h-full transition-[width] duration-700 ease-out"
+              style={{ width: `${progress}%`, background: ACCENT, borderRadius: 999 }}
+            />
+          </div>
+
+          {/* Anchor: property URL */}
+          {anchor && (
+            <div className="mt-6">
+              <p
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: ACCENT,
+                }}
+              >
+                Analysing
+              </p>
+              <p className="mt-1 truncate" style={{ fontSize: 14, fontWeight: 400, color: "#1A1108" }} title={url}>
+                {anchor}
+              </p>
+            </div>
+          )}
+
+          <h1
+            className="mt-6"
+            style={{
+              fontFamily: HEADING,
+              fontWeight: 400,
+              fontSize: 30,
+              color: "#1A1108",
+              letterSpacing: "-0.5px",
+              lineHeight: 1.15,
+            }}
+          >
+            Building your Roovr report
+          </h1>
+          <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.65 }}>
+            Decoding agent jargon, estimating true costs and drafting your negotiation
+            strategy. This usually takes 60–90 seconds.
+          </p>
+
+          {/* Step indicators */}
+          <ul className="mt-7 space-y-3">
+            {LOADING_STEPS.map((step) => {
+              const done = elapsed >= step.tickAt;
+              const active = !done && elapsed >= step.tickAt - 5;
+              return (
+                <li
+                  key={step.label}
+                  className={`flex items-center gap-3 transition-opacity duration-500 ${
+                    done || active ? "opacity-100" : "opacity-40"
+                  }`}
+                  style={{ fontSize: 14, fontWeight: 300 }}
+                >
+                  <span
+                    className="flex h-5 w-5 shrink-0 items-center justify-center"
+                    style={{
+                      background: done ? "rgba(45,106,79,0.12)" : "#F1EFE8",
+                      borderRadius: 999,
+                    }}
+                  >
+                    {done ? (
+                      <Check className="h-3.5 w-3.5" style={{ color: ACCENT }} />
+                    ) : active ? (
+                      <Loader2 className="h-3 w-3 animate-spin" style={{ color: ACCENT }} />
+                    ) : (
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: "rgba(95,94,90,0.4)" }} />
+                    )}
+                  </span>
+                  <span style={{ color: done ? "#1A1108" : "#888780" }}>{step.label}</span>
+                </li>
+              );
+            })}
+            {finalising && (
+              <li className="flex items-center gap-3 animate-in fade-in duration-500" style={{ fontSize: 14, fontWeight: 300 }}>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin" style={{ color: ACCENT }} />
+                </span>
+                <span style={{ color: "#1A1108" }}>Finalising your report…</span>
+              </li>
+            )}
+          </ul>
+
+          {/* Rotating tip */}
+          <div className="mt-8 p-4" style={{ background: "#F1EFE8", borderRadius: 10 }}>
+            <p
+              key={tipIdx}
+              className="animate-in fade-in slide-in-from-bottom-1 duration-500"
+              style={{ fontSize: 12, fontWeight: 300, lineHeight: 1.6, color: "#5F5E5A" }}
+            >
+              {LOADING_TIPS[tipIdx]}
             </p>
           </div>
-        )}
-
-        <h1 className="mt-6 text-xl font-semibold tracking-tight sm:text-2xl">
-          Building your Roovr report
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Decoding agent jargon, estimating true costs and drafting your negotiation
-          strategy. This usually takes 60–90 seconds.
-        </p>
-
-        {/* Step indicators */}
-        <ul className="mt-6 space-y-3 text-sm">
-          {LOADING_STEPS.map((step) => {
-            const done = elapsed >= step.tickAt;
-            const active = !done && elapsed >= step.tickAt - 5;
-            return (
-              <li
-                key={step.label}
-                className={`flex items-center gap-3 transition-opacity duration-500 ${
-                  done || active ? "opacity-100" : "opacity-40"
-                }`}
-              >
-                <span
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                    done ? "bg-emerald-500/15" : "bg-muted"
-                  }`}
-                >
-                  {done ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : active ? (
-                    <Loader2 className="h-3 w-3 animate-spin" style={{ color: ACCENT }} />
-                  ) : (
-                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-                  )}
-                </span>
-                <span className={done ? "text-foreground" : "text-muted-foreground"}>
-                  {step.label}
-                </span>
-              </li>
-            );
-          })}
-          {finalising && (
-            <li className="flex items-center gap-3 animate-in fade-in duration-500">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin" style={{ color: ACCENT }} />
-              </span>
-              <span className="text-foreground">Finalising your report…</span>
-            </li>
-          )}
-        </ul>
-
-        {/* Rotating tip */}
-        <div className="mt-8 rounded-xl bg-muted/60 p-4">
-          <p
-            key={tipIdx}
-            className="text-xs leading-relaxed text-muted-foreground animate-in fade-in slide-in-from-bottom-1 duration-500"
-          >
-            {LOADING_TIPS[tipIdx]}
-          </p>
         </div>
       </div>
     </main>
@@ -2729,23 +2759,41 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
     }
   };
 
+  const HEADING = "'Playfair Display', Georgia, serif";
   return (
-    <div className="p-6 sm:p-8" style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)" }}>
+    <div
+      className="p-8 sm:p-10"
+      style={{ background: "#1A1108", borderRadius: 16, color: "#FFFDF9" }}
+    >
       <UpsellPassModal
         open={upsellOpen}
         onClose={() => { setUpsellOpen(false); setLoadingTier(null); }}
         onChoosePass={() => { setUpsellOpen(false); startCheckout("pass"); }}
         onChooseSingle={() => { setUpsellOpen(false); startCheckout("single"); }}
       />
-      <div className="inline-flex items-center gap-2" style={{ background: "#FAECE7", color: "#993C1D", borderRadius: 100, padding: "4px 10px", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em" }}>
-        <Sparkles className="h-3 w-3" /> UNLOCK THE FULL REPORT
+      <div
+        className="inline-flex items-center gap-2"
+        style={{
+          color: "#2D6A4F",
+          fontSize: 11,
+          fontWeight: 500,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+        }}
+      >
+        <Sparkles className="h-3 w-3" /> Unlock the full report
       </div>
-      <h3 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+      <h3
+        className="mt-3"
+        style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 32, color: "#FFFDF9", letterSpacing: "-0.5px", lineHeight: 1.15 }}
+      >
         See every red flag, the true cost and how to negotiate
       </h3>
-      <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>Pick the option that suits you.</p>
+      <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>
+        Pick the option that suits you.
+      </p>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="mt-7 grid gap-4 md:grid-cols-2">
         <PlanCard
           title="Single report"
           price="£4.99"
@@ -2798,21 +2846,23 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         />
       </div>
 
-      {err && <p className="mt-4 text-sm" style={{ color: "#993C1D" }}>{err}</p>}
+      {err && <p className="mt-4" style={{ fontSize: 13, color: "#FCA5A5" }}>{err}</p>}
 
-      <div className="mt-6 text-center">
+      <div className="mt-7 text-center">
         {!showRestore ? (
           <button
             type="button"
             onClick={() => setShowRestore(true)}
             className="text-xs underline-offset-4 hover:underline"
-            style={{ color: "#5F5E5A" }}
+            style={{ color: "rgba(255,253,249,0.7)", fontWeight: 300 }}
           >
             Already purchased? Restore your access →
           </button>
         ) : (
           <form onSubmit={handleRestore} className="mx-auto mt-2 max-w-sm text-left">
-            <label className="block text-xs" style={{ color: "#5F5E5A" }}>Enter your email</label>
+            <label className="block" style={{ fontSize: 12, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>
+              Enter your email
+            </label>
             <div className="mt-2 flex gap-2">
               <input
                 type="email"
@@ -2820,17 +2870,17 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
                 value={restoreEmail}
                 onChange={(e) => setRestoreEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="flex-1 px-3 py-2 outline-none"
-                style={{ background: "#F1EFE8", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(26,17,8,0.12)" }}
+                className="flex-1 px-4 py-2 outline-none"
+                style={{ background: "rgba(255,253,249,0.08)", color: "#FFFDF9", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(255,253,249,0.18)" }}
               />
               <button
                 type="submit"
-                style={{ background: "#1A1108", color: "#FFFDF9", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "8px 18px" }}
+                style={{ background: "#2D6A4F", color: "#FFFDF9", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "9px 18px" }}
               >
                 Send access link
               </button>
             </div>
-            {restoreMsg && <p className="mt-2 text-xs" style={{ color: "#5F5E5A" }}>{restoreMsg}</p>}
+            {restoreMsg && <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>{restoreMsg}</p>}
           </form>
         )}
       </div>
@@ -2869,46 +2919,57 @@ function PlanCard({
   onClick?: () => void;
   loading?: boolean;
 }) {
+  const HEADING = "'Playfair Display', Georgia, serif";
+  const isFeatured = !!highlight;
   return (
     <div
       id={id}
       className="relative p-6"
       style={{
-        background: "#FFFDF9",
-        borderRadius: 12,
-        border: highlight ? "2px solid #1B4332" : "0.5px solid rgba(26,17,8,0.12)",
+        background: isFeatured ? "#2D6A4F" : "#FFFDF9",
+        borderRadius: 16,
+        border: isFeatured ? "0.5px solid rgba(255,253,249,0.15)" : "0.5px solid rgba(26,17,8,0.1)",
+        color: isFeatured ? "#FFFDF9" : "#1A1108",
       }}
     >
-      {highlight && (
+      {isFeatured && (
         <span
           className="absolute -top-3 right-6 uppercase"
-          style={{ background: "#FAECE7", color: "#993C1D", fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", borderRadius: 100, padding: "4px 10px" }}
+          style={{ background: "#FFFDF9", color: "#2D6A4F", fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", borderRadius: 100, padding: "5px 12px" }}
         >
           Most popular
         </span>
       )}
-      <h4 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>{title}</h4>
-      <div className="mt-3 flex items-baseline gap-2">
+      <h4 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 22, color: isFeatured ? "#FFFDF9" : "#1A1108", letterSpacing: "-0.3px" }}>
+        {title}
+      </h4>
+      <div className="mt-3 flex items-baseline gap-2 flex-wrap">
         {originalPrice && (
-          <span style={{ fontSize: 18, color: "#888780", textDecoration: "line-through" }}>{originalPrice}</span>
+          <span style={{ fontSize: 18, color: isFeatured ? "rgba(255,253,249,0.5)" : "#888780", textDecoration: "line-through" }}>{originalPrice}</span>
         )}
-        <span style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>{price}</span>
+        <span style={{ fontFamily: HEADING, fontSize: 32, fontWeight: 400, color: isFeatured ? "#FFFDF9" : "#1A1108", letterSpacing: "-0.8px" }}>
+          {price}
+        </span>
       </div>
-      <p className="mt-1" style={{ fontSize: 12, color: "#888780" }}>{cadence}</p>
-      {subnote && <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A" }}>{subnote}</p>}
+      <p className="mt-1" style={{ fontSize: 12, fontWeight: 300, color: isFeatured ? "rgba(255,253,249,0.7)" : "#888780" }}>{cadence}</p>
+      {subnote && <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: isFeatured ? "rgba(255,253,249,0.7)" : "#5F5E5A" }}>{subnote}</p>}
       {plusIntro && (
-        <p className="mt-5" style={{ fontSize: 13, color: "#888780", fontStyle: "italic" }}>
+        <p className="mt-5" style={{ fontSize: 13, fontWeight: 300, color: isFeatured ? "rgba(255,253,249,0.7)" : "#888780", fontStyle: "italic" }}>
           {plusIntro}
         </p>
       )}
       <ul className={plusIntro ? "mt-2 space-y-2.5" : "mt-5 space-y-2.5"}>
         {features.map((f) => (
-          <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
-            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#1B4332" }} />
+          <li
+            key={f}
+            className="flex items-start gap-2.5"
+            style={{ fontSize: 14, fontWeight: 300, color: isFeatured ? "#FFFDF9" : "#1A1108" }}
+          >
+            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: isFeatured ? "#FFFDF9" : "#2D6A4F" }} />
             <span>
               {f}
               {/^transport links/i.test(f) && (
-                <span className="block text-[11px]" style={{ color: "#888780", marginTop: 2 }}>
+                <span className="block text-[11px]" style={{ color: isFeatured ? "rgba(255,253,249,0.6)" : "#888780", marginTop: 2 }}>
                   London properties only
                 </span>
               )}
@@ -2924,24 +2985,24 @@ function PlanCard({
             document.getElementById(upsell.targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
           className="mt-4 text-left hover:underline"
-          style={{ fontSize: 12, fontWeight: 500, color: "#1B4332" }}
+          style={{ fontSize: 12, fontWeight: 500, color: "#2D6A4F" }}
         >
           {upsell.text}
         </button>
       )}
-      {footnote && <p className="mt-4" style={{ fontSize: 12, color: "#888780" }}>{footnote}</p>}
+      {footnote && <p className="mt-4" style={{ fontSize: 12, fontWeight: 300, color: isFeatured ? "rgba(255,253,249,0.65)" : "#888780" }}>{footnote}</p>}
       <button
         type="button"
         onClick={onClick}
         disabled={loading}
         className="mt-6 inline-flex w-full items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
         style={{
-          background: highlight ? "#1B4332" : "#1A1108",
-          color: "#FFFDF9",
-          fontSize: 13,
+          background: isFeatured ? "#FFFDF9" : "#2D6A4F",
+          color: isFeatured ? "#1A1108" : "#FFFDF9",
+          fontSize: 14,
           fontWeight: 500,
           borderRadius: 100,
-          padding: "12px 24px",
+          padding: "13px 24px",
         }}
       >
         {loading && <Loader2 className="h-4 w-4 animate-spin" />}

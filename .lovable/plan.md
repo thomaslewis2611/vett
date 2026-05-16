@@ -1,78 +1,48 @@
-## Tier restructure
+## Goal
 
-Move flood risk, schools, crime, broadband, transport and full sold-price history from Buyer Pass into the Single Report tier. Add two new PropertyData-backed sections. Buyer Pass becomes purely additive (chat, growth detail, demographics, compare, dashboard, email).
+Roll out the new homepage design language (Playfair Display + Inter, cream `#F1EFE8` / paper `#FFFDF9`, forest green `#2D6A4F`, dark `#1A1108`, 0.5px borders, 16px cards, 100px pill buttons) across every other page and shared component. Visual-only — no routing, checkout, analysis, or data-fetching changes.
 
-## Results page (`src/routes/results.tsx`)
+## Approach
 
-**Gating helper.** Internally use three states derived from `access.level`:
-- `tierFree` (`none` / `expired`)
-- `tierSingle` (`single`)
-- `tierPass` (`pass`)
+1. **Load fonts globally** in `src/routes/__root.tsx` (Playfair Display 400/500 + italic 400, Inter 300/400/500 via Google Fonts `<link>`), and add CSS custom properties `--font-display: "Playfair Display"` and `--font-sans: "Inter"` in `src/styles.css` so existing `h1/h2/h3` automatically pick up the serif and body text picks up Inter. Update the `@theme` block accordingly.
+2. **Shared chrome** (`src/components/site-chrome.tsx`): tighten `SiteHeader` styling (already close — verify spacing, Inter weights, pill button), keep `SiteFooter` aligned to homepage spec (cream top disclaimer band, dark footer with logo dot + wordmark, links right). Disclaimer bar component stays a no-op.
+3. **Reusable visual primitives**: introduce small helpers (only if needed) for eyebrow label, paper card, pill button — but prefer inline styles consistent with `routes/index.tsx` so we don't fight the existing shadcn tokens.
+4. **Page-by-page rewrites** (visual only, preserving every hook, server-fn call, and handler):
+   - `src/routes/pricing.tsx` — dark `#1A1108` section, two-card layout mirroring homepage pricing block.
+   - `src/routes/results.tsx` — property header card, forest-green conic score, Playfair section headings, paper cards w/ 0.5px borders; rebuild loading screen (cream bg, serif heading, Inter 300 subtext); rebuild paywall gate to match dark pricing block; update error/empty states.
+   - `src/routes/dashboard.tsx` — "My Reports" Playfair 38px heading, paper cards w/ 0.5px borders, forest score badges, serif empty state.
+   - `src/routes/my-reports.tsx` + `src/routes/my-report.tsx` — same card/heading treatment as dashboard.
+   - `src/routes/faq.tsx` — Playfair heading + clean accordion using paper cards.
+   - `src/routes/about.tsx` — editorial rewrite (serif heading, Inter 300 body, generous whitespace).
+   - `src/routes/privacy.tsx` + `src/routes/terms.tsx` — Playfair heading, Inter 300 body, single `#FFFDF9` card wrapper.
+   - `src/routes/payment-success.tsx` — serif heading inside paper card, pill CTA.
+   - `src/routes/buyer-login.tsx` — centred paper card, serif heading, Inter 300 helper text.
+   - `src/routes/compare.tsx` — minimal pass to align headings/cards (not in spec but shares aesthetic).
+5. **Components**:
+   - `src/components/upsell-pass-modal.tsx` — Playfair heading, paper card style, forest pill CTA.
+   - `src/router.tsx` `GlobalErrorPage` — match new error card aesthetic.
+6. **Mobile**: keep existing responsive utilities; verify single-column stacking under 768px where new grids are introduced.
 
-Replace the `isBuyerPass` prop on `FloodRiskSection`, `NearbySchoolsSection`, `CrimeSection`, `BroadbandSection`, `TransportSection` with `unlocked: boolean` (true for single + pass) plus an `onUpgrade` that points to **Single Report checkout** for free users (not Buyer Pass). The locked teaser copy changes to "Unlock with a Single Report — £4.99".
+## Constraints and non-goals
 
-**Render rules.**
-- Render flood / schools / crime / broadband / transport sections for ALL users. Free → locked teaser. Single + Pass → full data.
-- Buyer Pass extras fetch (`fetchBuyerPassExtras`) keeps working for pass users; add a parallel single-tier path so Single Report users also see this data — already populated by the analyse-listing edge function from PropertyData, so no new fetch is needed; just lift the gate.
-- AI chat stays Pass-only. Update its locked teaser copy to "Unlock with Buyer Pass — £24.99".
+- Do not modify: `client.ts`, `client.server.ts`, `types.ts`, `auth-middleware.ts`, `auth-attacher.ts`, `.env`, `supabase/config.toml`, `src/routeTree.gen.ts`.
+- Do not touch business logic in any server function, checkout flow, or analysis pipeline.
+- Severity colours (red flags / amber warnings) stay unchanged.
+- Keep `src/routes/index.tsx` exactly as it is (already the source of truth).
 
-**Two new sections (visible to Single + Pass; teaser for Free).**
+## Technical details
 
-a. `PriceHistorySection` — reads `a.propertyData?.soldPrices`. Renders a table: date, price, type, address. Single + Pass see up to 10 rows. Free see last 3 rows then a blurred overlay "Unlock with a Single Report — £4.99". Footer: "Source: Land Registry via PropertyData".
+- Fonts loaded once via `__root.tsx` `head().links` so SSR emits `<link rel="preconnect">` + stylesheet.
+- In `src/styles.css`: set `--font-display: 'Playfair Display', Georgia, serif;` and `--font-sans: 'Inter', system-ui, sans-serif;`. Update the `h1..h6` rule to `font-family: var(--font-display); font-weight: 400;`. Adjust `body` to `font-weight: 300;` for editorial feel where appropriate (or keep 400 and apply 300 per-page).
+- Eyebrow utility (inline): `style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#2D6A4F' }}`.
+- Paper card: `background: '#FFFDF9'; border: '0.5px solid rgba(26,17,8,0.1); borderRadius: 16`.
+- Inner metric card: `background: '#F1EFE8'; borderRadius: 10`.
+- Primary pill: `background: '#2D6A4F'; color: '#FFFDF9'; borderRadius: 100; padding: '12px 22px'; fontFamily: Inter; fontWeight: 500; fontSize: 14`.
+- Secondary pill: transparent, `border: '0.5px solid #1A1108'`, `color: '#1A1108'`, same radius/padding.
+- Dark pricing band: full-bleed section with `background: '#1A1108'`, paper cards inside, forest green featured tier (`#2D6A4F`).
+- Results loading screen rebuilt as cream full-height container with Playfair heading "Building your Roovr report" + Inter 300 subtext + existing progress text retained.
 
-b. `CapitalGrowthSection` — reads `a.propertyData?.growth`.
-- Free + Single → headline only ("+12.3% over 5 years").
-- Pass → full 1yr / 3yr / 5yr breakdown plus area commentary.
-- Single sees an inline "Upgrade to Buyer Pass for full 1/3/5yr breakdown →" hint.
+## Verification
 
-**Inline placement order** (after EPC / Area context, before paywall for free):
-
-```text
-Score → Metrics → Seller motivation (paid) → EPC → Area → Planning ref →
-Auction → Red flags → Viewing checklist →
-[Free paywall here] →
-True cost → Negotiation → Renovation →
-Flood → Schools → Crime → Broadband → Transport →
-Price history → Capital growth →
-AI chat (pass) / AI locked teaser (single) →
-Inline Buyer Pass upgrade (single only)
-```
-
-**Inline Buyer Pass upgrade card** (`InlineBuyerPassUpgrade`) — rewrite features to Pass-exclusive only:
-- Unlimited analyses for 90 days
-- AI chat on every property
-- Capital growth (1yr/3yr/5yr breakdown)
-- Area demographics
-- Compare properties side by side
-- All reports saved to dashboard
-- Report emailed to you
-
-**Inline pricing cards** (`PlanCard` block ~line 1765) — update both feature lists per spec.
-
-## Pricing page (`src/routes/pricing.tsx`)
-
-Replace both `Plan` `features` arrays with the spec lists (Single Report 13 items; Buyer Pass 7 "plus" items). Update upsell/SEO copy to mention Single Report includes flood, schools, crime, broadband, transport, sold price history.
-
-## Data sources
-
-All gated data already exists:
-- Flood, schools, crime, broadband → already populated by analyse-listing edge function from PropertyData (mapped onto `a.floodRisk`, `a.nearbySchools`, `a.crime`, `a.broadband`).
-- `a.propertyData.soldPrices` / `.growth` → already stored on the analysis JSON.
-- Transport → existing field on the analysis.
-
-No new server functions, no migration, no payment changes.
-
-## Out of scope (explicitly unchanged)
-
-- Stripe price IDs, checkout, webhook
-- `access.functions.ts` access check logic
-- Auth flows
-- Buyer Pass entitlements server-side
-- AI chat behaviour
-
-## Test pass after changes
-
-1. Open a results URL as anonymous → confirm flood/schools/crime/broadband/transport show locked teasers with "Unlock with a Single Report — £4.99", price history shows 3 blurred rows.
-2. Single Report URL token → confirm those five sections render full data, price history shows 10 rows, capital growth shows headline only with Pass upsell hint, AI chat shows Pass teaser with "£24.99".
-3. Buyer Pass logged-in → confirm capital growth shows full 1/3/5yr breakdown and AI chat is live.
-4. `/pricing` and inline pricing cards on free results page reflect new feature lists.
+- After edits, sweep each route to confirm: serif headings render, no shadcn defaults leaking generic Inter-only typography, pricing/paywall consistent, mobile breakpoint stacks correctly.
+- Run build to surface any TS/JSX issues.

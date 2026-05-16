@@ -10,19 +10,36 @@ import {
 
 import appCss from "../styles.css?url";
 
+const HEADING_FONT = "'Playfair Display', Georgia, serif";
+
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
+    <div className="flex min-h-screen items-center justify-center px-4" style={{ background: "#F1EFE8" }}>
+      <div
+        className="w-full max-w-md text-center p-10"
+        style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
+      >
+        <div style={{ fontFamily: HEADING_FONT, fontWeight: 400, fontSize: 64, color: "#1A1108", lineHeight: 1 }}>
+          404
+        </div>
+        <h2 style={{ fontFamily: HEADING_FONT, fontWeight: 400, fontSize: 24, color: "#1A1108", marginTop: 12 }}>
+          Page not found
+        </h2>
+        <p className="mt-3" style={{ fontWeight: 300, fontSize: 14, color: "#5F5E5A" }}>
           The page you're looking for doesn't exist or has been moved.
         </p>
-        <div className="mt-6">
+        <div className="mt-7">
           <Link
             to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
+            style={{
+              background: "#2D6A4F",
+              color: "#FFFDF9",
+              fontSize: 14,
+              fontWeight: 500,
+              borderRadius: 100,
+              padding: "12px 22px",
+            }}
           >
             Go home
           </Link>
@@ -37,27 +54,47 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+    <div className="flex min-h-screen items-center justify-center px-4" style={{ background: "#F1EFE8" }}>
+      <div
+        className="w-full max-w-md text-center p-10"
+        style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
+      >
+        <h1 style={{ fontFamily: HEADING_FONT, fontWeight: 400, fontSize: 28, color: "#1A1108" }}>
           This page didn't load
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
+        <p className="mt-3" style={{ fontWeight: 300, fontSize: 14, color: "#5F5E5A" }}>
           Something went wrong on our end. You can try refreshing or head back home.
         </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+        <div className="mt-7 flex flex-wrap justify-center gap-2">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
+            style={{
+              background: "#2D6A4F",
+              color: "#FFFDF9",
+              fontSize: 14,
+              fontWeight: 500,
+              borderRadius: 100,
+              padding: "12px 22px",
+            }}
           >
             Try again
           </button>
           <a
             href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
+            className="inline-flex items-center justify-center transition-colors"
+            style={{
+              background: "transparent",
+              border: "0.5px solid #1A1108",
+              color: "#1A1108",
+              fontSize: 14,
+              fontWeight: 500,
+              borderRadius: 100,
+              padding: "12px 22px",
+            }}
           >
             Go home
           </a>
@@ -91,6 +128,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         href: appCss,
       },
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
+      {
+        rel: "stylesheet",
+        href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600&display=swap",
+      },
     ],
   }),
   shellComponent: RootShell,

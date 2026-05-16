@@ -13,13 +13,15 @@ export const Route = createFileRoute("/terms")({
   component: TermsPage,
 });
 
+const HEADING = "'Playfair Display', Georgia, serif";
+
 function Section({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
   return (
     <section className="mt-10">
-      <h2 style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.4px" }}>
+      <h2 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 24, color: "#1A1108", letterSpacing: "-0.3px" }}>
         {n}. {title}
       </h2>
-      <div className="mt-3 max-w-2xl" style={{ fontSize: 15, color: "#5F5E5A", lineHeight: 1.7 }}>
+      <div className="mt-3 max-w-2xl" style={{ fontSize: 15, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.75 }}>
         {children}
       </div>
     </section>
@@ -28,13 +30,17 @@ function Section({ n, title, children }: { n: number; title: string; children: R
 
 function TermsPage() {
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#FFFDF9" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#F1EFE8" }}>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl px-8 py-20 flex-1">
-        <h1 style={{ fontSize: 40, fontWeight: 500, color: "#1A1108", letterSpacing: "-1.5px", lineHeight: 1.15 }}>
+      <main className="mx-auto w-full max-w-3xl px-6 sm:px-8 py-16 sm:py-20 flex-1">
+        <div
+          className="p-8 sm:p-12"
+          style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
+        >
+        <h1 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 44, color: "#1A1108", letterSpacing: "-0.8px", lineHeight: 1.1 }}>
           Terms of Service
         </h1>
-        <p className="mt-3" style={{ fontSize: 13, color: "#888780" }}>Last updated: 14 May 2026</p>
+        <p className="mt-3" style={{ fontSize: 13, fontWeight: 300, color: "#888780" }}>Last updated: 14 May 2026</p>
 
         <Section n={1} title="What Roovr provides">
           Roovr provides AI-generated property analysis reports to help UK home buyers research properties. Reports are informational only.
@@ -65,6 +71,7 @@ function TermsPage() {
         <Section n={9} title="Contact">
           <a href="mailto:support@roovr.co" style={{ color: "#1B4332" }} className="hover:underline">support@roovr.co</a>
         </Section>
+        </div>
       </main>
       <SiteFooter />
     </div>

@@ -274,11 +274,13 @@ function DashboardPage() {
     }
   };
 
+  const HEADING = "'Playfair Display', Georgia, serif";
+
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8" }}>
         <SiteHeader />
-        <main className="mx-auto max-w-3xl px-6 py-24 text-center" style={{ color: "#5F5E5A" }}>
+        <main className="mx-auto max-w-3xl px-6 py-24 text-center flex-1" style={{ fontWeight: 300, color: "#5F5E5A" }}>
           Loading your dashboard…
         </main>
         <SiteFooter />
@@ -292,18 +294,20 @@ function DashboardPage() {
   const expiryDateShort = expiresAt ? formatDateShort(expiresAt) : "";
 
   return (
-    <div className="flex min-h-screen flex-col bg-background" style={{ width: "100%", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box" }}>
+    <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8", width: "100%", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box" }}>
       <SiteHeader />
       <main
-        className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 sm:py-12"
+        className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6 sm:py-14"
         style={{ boxSizing: "border-box", maxWidth: "100%", overflowX: "hidden" }}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4" style={{ maxWidth: "100%", boxSizing: "border-box" }}>
           <div className="min-w-0" style={{ maxWidth: "100%" }}>
-            <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
-            <p className="mt-1 truncate text-sm" style={{ color: "#5F5E5A" }}>{email}</p>
+            <h1 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 38, color: "#1A1108", letterSpacing: "-0.6px", lineHeight: 1.1 }}>
+              My Reports
+            </h1>
+            <p className="mt-2 truncate" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>{email}</p>
             {passStatus === "active" && expiresAt && (
-              <p className="mt-1" style={{ fontSize: 11, color: "#888780" }}>
+              <p className="mt-1" style={{ fontSize: 11, fontWeight: 400, color: "#2D6A4F", letterSpacing: "0.05em" }}>
                 Buyer Pass active · Expires {expiryDateShort}
               </p>
             )}
@@ -426,29 +430,31 @@ function DashboardPage() {
             disabled={expired}
             className="inline-flex w-full items-center justify-center gap-1 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             style={{
-              background: "#1B4332",
+              background: "#2D6A4F",
               color: "#FFFDF9",
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 500,
               borderRadius: 100,
-              padding: "12px 20px",
+              padding: "13px 24px",
             }}
           >
             Analyse <ArrowRight className="h-4 w-4" />
           </button>
         </form>
 
-        <section className="mt-12">
+        <section className="mt-14">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h2 className="text-xl font-semibold tracking-tight">Your recent reports</h2>
+            <h2 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 26, color: "#1A1108", letterSpacing: "-0.3px" }}>
+              Your recent reports
+            </h2>
             {!expired && rows.length >= 2 && (
               <Link
                 to="/compare"
                 className="inline-flex items-center"
                 style={{
-                  border: "1.5px solid #1A1108",
+                  border: "0.5px solid #1A1108",
                   borderRadius: 100,
-                  padding: "8px 16px",
+                  padding: "9px 18px",
                   fontSize: 13,
                   fontWeight: 500,
                   color: "#1A1108",
@@ -461,13 +467,18 @@ function DashboardPage() {
           </div>
           {rows.length === 0 ? (
             <div
-              className="mt-4 p-8 text-center"
-              style={{ background: "#F1EFE8", borderRadius: 12, color: "#5F5E5A", fontSize: 14 }}
+              className="mt-5 p-10 text-center"
+              style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
             >
-              You haven't analysed any properties yet. Paste a listing above to get started.
+              <h3 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 22, color: "#1A1108", letterSpacing: "-0.3px" }}>
+                No reports yet
+              </h3>
+              <p className="mt-2" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>
+                Paste a Rightmove listing above to generate your first analysis.
+              </p>
             </div>
           ) : (
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-5 space-y-3">
               {rows.map((r) => {
                 const a = r.analysis_json ?? {};
                 const address = a?.property?.address ?? r.listing_url ?? "Untitled";
@@ -476,8 +487,8 @@ function DashboardPage() {
                 return (
                   <li
                     key={r.id}
-                    className="group relative flex w-full flex-col gap-2 p-4 pr-12 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:pr-12"
-                    style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)", boxSizing: "border-box" }}
+                    className="group relative flex w-full flex-col gap-2 p-5 pr-12 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:pr-12"
+                    style={{ background: "#FFFDF9", borderRadius: 16, border: "0.5px solid rgba(26,17,8,0.1)", boxSizing: "border-box" }}
                   >
                     {!r.id.startsWith("token:") && (
                       <button
@@ -486,18 +497,18 @@ function DashboardPage() {
                         aria-label={r.is_pinned ? "Unpin report" : "Pin report"}
                         title={r.is_pinned ? "Unpin from top" : "Pin to top"}
                         className={`absolute right-3 top-3 rounded-full p-1.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 ${r.is_pinned ? "sm:opacity-100" : ""}`}
-                        style={{ color: r.is_pinned ? "#1B4332" : "#B8B6AE" }}
+                        style={{ color: r.is_pinned ? "#2D6A4F" : "#B8B6AE" }}
                       >
                         <Pin
                           className="h-4 w-4"
-                          fill={r.is_pinned ? "#1B4332" : "none"}
+                          fill={r.is_pinned ? "#2D6A4F" : "none"}
                           strokeWidth={2}
                         />
                       </button>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
+                      <div className="truncate" style={{ fontFamily: HEADING, fontSize: 18, fontWeight: 400, color: "#1A1108", letterSpacing: "-0.2px" }}>{address}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontSize: 12, fontWeight: 300, color: "#888780" }}>
                         {price > 0 && <span>{formatGBP(price)}</span>}
                         <span>{new Date(r.created_at).toLocaleDateString()}</span>
                       </div>
@@ -506,12 +517,12 @@ function DashboardPage() {
                       {score !== null && (
                         <span
                           style={{
-                            background: "#FAECE7",
-                            color: "#993C1D",
+                            background: "#F1EFE8",
+                            color: "#2D6A4F",
                             fontSize: 12,
                             fontWeight: 500,
-                            borderRadius: 8,
-                            padding: "4px 10px",
+                            borderRadius: 100,
+                            padding: "5px 12px",
                           }}
                         >
                           {score.toFixed(1)} / 10
@@ -524,7 +535,7 @@ function DashboardPage() {
                             token: r.id.slice("token:".length),
                             url: r.listing_url ?? undefined,
                           }}
-                          style={{ fontSize: 13, color: "#1B4332" }}
+                          style={{ fontSize: 13, fontWeight: 500, color: "#2D6A4F" }}
                         >
                           View →
                         </Link>
@@ -532,7 +543,7 @@ function DashboardPage() {
                         <Link
                           to="/results"
                           search={{ saved_id: r.id }}
-                          style={{ fontSize: 13, color: "#1B4332" }}
+                          style={{ fontSize: 13, fontWeight: 500, color: "#2D6A4F" }}
                         >
                           View →
                         </Link>

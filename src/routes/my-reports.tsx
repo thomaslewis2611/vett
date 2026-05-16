@@ -99,11 +99,13 @@ function MyReportsPage() {
     navigate({ to: "/" });
   };
 
+  const HEADING = "'Playfair Display', Georgia, serif";
+
   if (loading || hasPass) {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8" }}>
         <SiteHeader />
-        <main className="mx-auto max-w-3xl px-6 py-24 text-center" style={{ color: "#5F5E5A" }}>
+        <main className="mx-auto max-w-3xl px-6 py-24 text-center flex-1" style={{ fontWeight: 300, color: "#5F5E5A" }}>
           Loading your reports…
         </main>
         <SiteFooter />
@@ -114,14 +116,16 @@ function MyReportsPage() {
   const isEmpty = saved.length === 0 && pending.length === 0;
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8" }}>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 sm:py-12">
+      <main className="mx-auto w-full max-w-4xl px-4 py-10 sm:px-6 sm:py-14 flex-1">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
           <div className="min-w-0">
-            <h1 className="text-3xl font-semibold tracking-tight">My reports</h1>
+            <h1 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 38, color: "#1A1108", letterSpacing: "-0.6px", lineHeight: 1.1 }}>
+              My Reports
+            </h1>
             {email && (
-              <p className="mt-1 truncate text-sm" style={{ color: "#5F5E5A" }}>
+              <p className="mt-2 truncate" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>
                 {email}
               </p>
             )}
@@ -130,51 +134,55 @@ function MyReportsPage() {
             type="button"
             onClick={onSignOut}
             className="inline-flex w-fit items-center gap-2"
-            style={{ fontSize: 13, color: "#5F5E5A" }}
+            style={{ fontSize: 13, fontWeight: 300, color: "#5F5E5A" }}
           >
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </div>
 
-        <section className="mt-8">
+        <section className="mt-10">
           {isEmpty ? (
             <div
-              className="p-8 text-center"
-              style={{ background: "#F1EFE8", borderRadius: 12, color: "#5F5E5A", fontSize: 14 }}
+              className="p-10 text-center"
+              style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
             >
-              We couldn't find any reports linked to this email. If you've just paid, give it a
-              minute and refresh.
+              <h3 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 22, color: "#1A1108", letterSpacing: "-0.3px" }}>
+                Nothing here yet
+              </h3>
+              <p className="mt-2" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>
+                We couldn't find any reports linked to this email. If you've just paid, give it a minute and refresh.
+              </p>
             </div>
           ) : (
             <ul className="space-y-3">
               {pending.map((p) => (
                 <li
                   key={p.token}
-                  className="flex w-full flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                  className="flex w-full flex-col gap-2 p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                   style={{
                     background: "#FFFDF9",
-                    borderRadius: 12,
-                    border: "0.5px solid rgba(26,17,8,0.12)",
+                    borderRadius: 16,
+                    border: "0.5px solid rgba(26,17,8,0.1)",
                   }}
                 >
                   <div className="flex min-w-0 flex-1 items-start gap-3">
                     <div
                       className="inline-flex h-10 w-10 shrink-0 items-center justify-center"
-                      style={{ background: "#FAECE7", borderRadius: 10 }}
+                      style={{ background: "#F1EFE8", borderRadius: 10 }}
                     >
-                      <FileText className="h-5 w-5" style={{ color: "#993C1D" }} />
+                      <FileText className="h-5 w-5" style={{ color: "#2D6A4F" }} />
                     </div>
                     <div className="min-w-0">
                       <div
                         className="truncate"
-                        style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}
+                        style={{ fontFamily: HEADING, fontSize: 18, fontWeight: 400, color: "#1A1108", letterSpacing: "-0.2px" }}
                       >
                         Your purchased report
                       </div>
                       {p.listing_url && (
                         <div
                           className="mt-1 truncate"
-                          style={{ fontSize: 12, color: "#888780" }}
+                          style={{ fontSize: 12, fontWeight: 300, color: "#888780" }}
                         >
                           {p.listing_url}
                         </div>
@@ -186,12 +194,12 @@ function MyReportsPage() {
                     search={{ url: p.listing_url ?? undefined }}
                     className="inline-flex items-center justify-center gap-1"
                     style={{
-                      background: "#1A1108",
+                      background: "#2D6A4F",
                       color: "#FFFDF9",
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: 500,
                       borderRadius: 100,
-                      padding: "10px 18px",
+                      padding: "11px 20px",
                     }}
                   >
                     Open report <ArrowRight className="h-4 w-4" />
@@ -206,23 +214,23 @@ function MyReportsPage() {
                 return (
                   <li
                     key={r.id}
-                    className="flex w-full flex-col gap-2 p-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+                    className="flex w-full flex-col gap-2 p-5 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                     style={{
                       background: "#FFFDF9",
-                      borderRadius: 12,
-                      border: "0.5px solid rgba(26,17,8,0.12)",
+                      borderRadius: 16,
+                      border: "0.5px solid rgba(26,17,8,0.1)",
                     }}
                   >
                     <div className="min-w-0 flex-1">
                       <div
                         className="truncate"
-                        style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}
+                        style={{ fontFamily: HEADING, fontSize: 18, fontWeight: 400, color: "#1A1108", letterSpacing: "-0.2px" }}
                       >
                         {address}
                       </div>
                       <div
-                        className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs"
-                        style={{ color: "#888780" }}
+                        className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1"
+                        style={{ fontSize: 12, fontWeight: 300, color: "#888780" }}
                       >
                         {price > 0 && <span>{formatGBP(price)}</span>}
                         <span>{new Date(r.created_at).toLocaleDateString()}</span>
@@ -232,12 +240,12 @@ function MyReportsPage() {
                       {score !== null && (
                         <span
                           style={{
-                            background: "#FAECE7",
-                            color: "#993C1D",
+                            background: "#F1EFE8",
+                            color: "#2D6A4F",
                             fontSize: 12,
                             fontWeight: 500,
-                            borderRadius: 8,
-                            padding: "4px 10px",
+                            borderRadius: 100,
+                            padding: "5px 12px",
                           }}
                         >
                           {score.toFixed(1)} / 10
@@ -246,7 +254,7 @@ function MyReportsPage() {
                       <Link
                         to="/results"
                         search={{ saved_id: r.id }}
-                        style={{ fontSize: 13, color: "#1B4332" }}
+                        style={{ fontSize: 13, fontWeight: 500, color: "#2D6A4F" }}
                       >
                         View →
                       </Link>
@@ -258,23 +266,25 @@ function MyReportsPage() {
           )}
         </section>
 
-        <section className="mt-12">
-          <h2 className="text-lg font-semibold tracking-tight">Want to analyse more properties?</h2>
-          <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>
+        <section className="mt-14">
+          <h2 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 24, color: "#1A1108", letterSpacing: "-0.3px" }}>
+            Want to analyse more properties?
+          </h2>
+          <p className="mt-3 max-w-2xl" style={{ fontSize: 15, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.65 }}>
             Your purchase covers a single report. To unlock unlimited analyses for 90 days,
             including AI chat, flood risk and nearby schools, upgrade to the Buyer Pass.
           </p>
-          <div className="mt-4 flex gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
             <Link
               to="/pricing"
               className="inline-flex items-center gap-1"
               style={{
-                background: "#1B4332",
+                background: "#2D6A4F",
                 color: "#FFFDF9",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 500,
                 borderRadius: 100,
-                padding: "10px 18px",
+                padding: "12px 22px",
               }}
             >
               Upgrade to Buyer Pass <ArrowRight className="h-4 w-4" />
@@ -283,12 +293,12 @@ function MyReportsPage() {
               to="/"
               className="inline-flex items-center gap-1"
               style={{
-                border: "1.5px solid #1A1108",
+                border: "0.5px solid #1A1108",
                 color: "#1A1108",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 500,
                 borderRadius: 100,
-                padding: "8.5px 18px",
+                padding: "12px 22px",
               }}
             >
               Try a free preview
