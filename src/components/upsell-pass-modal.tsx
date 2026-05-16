@@ -108,13 +108,10 @@ export function UpsellPassModal({
         <div
           className="inline-block uppercase"
           style={{
-            background: "#FAECE7",
-            color: "#993C1D",
+            color: "#2D6A4F",
             fontSize: 11,
             fontWeight: 500,
-            letterSpacing: "0.06em",
-            borderRadius: 100,
-            padding: "4px 10px",
+            letterSpacing: "0.1em",
           }}
         >
           Better value
@@ -122,13 +119,20 @@ export function UpsellPassModal({
 
         <h2
           id="upsell-pass-title"
-          className="mt-4"
-          style={{ fontSize: 22, fontWeight: 500, color: "#1A1108", lineHeight: 1.25, letterSpacing: "-0.5px" }}
+          className="mt-3"
+          style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 26,
+            fontWeight: 400,
+            color: "#1A1108",
+            lineHeight: 1.2,
+            letterSpacing: "-0.4px",
+          }}
         >
           You've already bought a report — want unlimited for 90 days?
         </h2>
 
-        <p className="mt-3" style={{ fontSize: 14, color: "#5F5E5A", lineHeight: 1.6 }}>
+        <p className="mt-4" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.65 }}>
           Upgrade to Buyer Pass and analyse as many properties as you like for 90 days,
           plus AI chat on every property. You've already spent £4.99 — it's just £20 more for unlimited access.
         </p>
@@ -137,14 +141,14 @@ export function UpsellPassModal({
           type="button"
           onClick={choosePass}
           disabled={!!submitting}
-          className="mt-6 inline-flex w-full items-center justify-center transition-colors hover:bg-[#993C1D] disabled:opacity-60"
+          className="mt-6 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90 disabled:opacity-60"
           style={{
-            background: "#1B4332",
+            background: "#2D6A4F",
             color: "#FFFDF9",
             fontSize: 14,
             fontWeight: 500,
             borderRadius: 100,
-            padding: "12px 20px",
+            padding: "13px 22px",
           }}
         >
           {submitting === "pass" ? "Starting checkout…" : "Upgrade to Buyer Pass — £20 →"}
