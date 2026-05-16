@@ -1793,10 +1793,32 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
   return { text, landRegistry, scotland, postcode, floodRisk, nearbySchools, crime, broadband, transport };
 }
 
+// ---- Resolve a Supabase user email from a session JWT, server-side. ----
+// Returns null if the token is missing, invalid, expired, or env is missing.
+async function resolveEmailFromJwt(sessionJwt: string | null | undefined): Promise<string | null> {
+  if (!sessionJwt) return null;
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+  if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) return null;
+  try {
+    const c = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+    const { data } = await c.auth.getUser(sessionJwt);
+    return data.user?.email ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ---- Server-side access check (single report token OR authenticated Buyer Pass) ----
+// Accepts either a sessionJwt (which will be resolved to an email) or a
+// pre-resolved userEmail. Pre-resolved emails skip the JWT round-trip and
+// are used by the async-job pipeline (email stored at job-creation time).
 async function hasFullAccess(opts: {
   accessToken?: string | null;
   sessionJwt?: string | null;
+  userEmail?: string | null;
   listingUrl?: string | null;
 }): Promise<boolean> {
   // 1. Single report token
@@ -1819,57 +1841,47 @@ async function hasFullAccess(opts: {
   }
 
   // 2. Authenticated session: Buyer Pass OR Single Report by email
-  if (opts.sessionJwt) {
-    const SUPABASE_URL = process.env.SUPABASE_URL;
-    const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
-    if (SUPABASE_URL && SUPABASE_PUBLISHABLE_KEY) {
-      try {
-        const c = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-          auth: { persistSession: false, autoRefreshToken: false },
-        });
-        const { data } = await c.auth.getUser(opts.sessionJwt);
-        const email = data.user?.email;
-        if (email) {
-          const { data: row } = await supabaseAdmin
-            .from("buyer_pass_users")
-            .select("email, expires_at")
-            .ilike("email", email)
-            .maybeSingle();
-          if (row) {
-            const expiresAt = (row as { expires_at: string | null }).expires_at;
-            if (!expiresAt || new Date(expiresAt).getTime() > Date.now()) return true;
-          }
-          // Single Report tied to this email AND this specific listing URL.
-          // Email alone is NOT enough — Single Report access is per-listing.
-          if (opts.listingUrl) {
-            const { data: sr } = await supabaseAdmin
-              .from("single_report_tokens")
-              .select("expires_at")
-              .ilike("user_email", email)
-              .eq("listing_url", opts.listingUrl)
-              .order("created_at", { ascending: false })
-              .limit(1)
-              .maybeSingle();
-            if (sr) {
-              const exp = (sr as { expires_at: string }).expires_at;
-              if (!exp || new Date(exp).getTime() > Date.now()) return true;
-            }
-            // Fallback: a saved analysis already exists for this exact listing
-            // (covers cases where the token row was pruned but the report
-            // remains in saved_analyses).
-            const { data: saved } = await supabaseAdmin
-              .from("saved_analyses")
-              .select("id")
-              .ilike("user_email", email)
-              .eq("listing_url", opts.listingUrl)
-              .limit(1)
-              .maybeSingle();
-            if (saved) return true;
-          }
-        }
-      } catch {
-        /* ignore */
+  const email = opts.userEmail ?? await resolveEmailFromJwt(opts.sessionJwt);
+  if (email) {
+    try {
+      const { data: row } = await supabaseAdmin
+        .from("buyer_pass_users")
+        .select("email, expires_at")
+        .ilike("email", email)
+        .maybeSingle();
+      if (row) {
+        const expiresAt = (row as { expires_at: string | null }).expires_at;
+        if (!expiresAt || new Date(expiresAt).getTime() > Date.now()) return true;
       }
+      // Single Report tied to this email AND this specific listing URL.
+      // Email alone is NOT enough — Single Report access is per-listing.
+      if (opts.listingUrl) {
+        const { data: sr } = await supabaseAdmin
+          .from("single_report_tokens")
+          .select("expires_at")
+          .ilike("user_email", email)
+          .eq("listing_url", opts.listingUrl)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (sr) {
+          const exp = (sr as { expires_at: string }).expires_at;
+          if (!exp || new Date(exp).getTime() > Date.now()) return true;
+        }
+        // Fallback: a saved analysis already exists for this exact listing
+        // (covers cases where the token row was pruned but the report
+        // remains in saved_analyses).
+        const { data: saved } = await supabaseAdmin
+          .from("saved_analyses")
+          .select("id")
+          .ilike("user_email", email)
+          .eq("listing_url", opts.listingUrl)
+          .limit(1)
+          .maybeSingle();
+        if (saved) return true;
+      }
+    } catch {
+      /* ignore */
     }
   }
 
@@ -2478,13 +2490,18 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
       }
     }
 
+    // Resolve email server-side from the session JWT so we can store it on
+    // the job row. We never persist the JWT itself — only the email, which
+    // is what later access checks need.
+    const userEmail = await resolveEmailFromJwt(data.sessionJwt ?? null);
+
     const { data: row, error } = await supabaseAdmin
       .from("analysis_jobs")
       .insert({
         url: url || "(pasted text)",
         pasted_text: pastedText || null,
         access_token: data.accessToken ?? null,
-        session_jwt: data.sessionJwt ?? null,
+        user_email: userEmail,
         status: "pending",
       })
       .select("id")
@@ -2552,7 +2569,6 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       jobId: z.string().uuid(),
-      sessionJwt: z.string().max(4000).optional().nullable(),
     })
   )
   .handler(async ({ data }): Promise<{
@@ -2562,7 +2578,7 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
   }> => {
     const { data: row, error } = await supabaseAdmin
       .from("analysis_jobs")
-      .select("status, result_json, error, url, access_token")
+      .select("status, result_json, error, url, access_token, user_email")
       .eq("id", data.jobId)
       .maybeSingle();
 
@@ -2603,9 +2619,11 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
     } catch (e) {
       console.warn("[getAnalysisJob] subScores recompute failed:", e);
     }
+    // Use the email stored at job-creation time for access checks rather
+    // than re-validating a JWT on every poll.
     const unlocked = await hasFullAccess({
       accessToken: (row.access_token as string | null) ?? null,
-      sessionJwt: data.sessionJwt ?? null,
+      userEmail: (row.user_email as string | null) ?? null,
       listingUrl: (row.url as string | null) ?? null,
     });
 

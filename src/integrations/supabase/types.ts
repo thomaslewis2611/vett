@@ -22,7 +22,6 @@ export type Database = {
           id: string
           pasted_text: string | null
           result_json: Json | null
-          session_jwt: string | null
           status: string
           updated_at: string
           url: string
@@ -35,7 +34,6 @@ export type Database = {
           id?: string
           pasted_text?: string | null
           result_json?: Json | null
-          session_jwt?: string | null
           status?: string
           updated_at?: string
           url: string
@@ -48,7 +46,6 @@ export type Database = {
           id?: string
           pasted_text?: string | null
           result_json?: Json | null
-          session_jwt?: string | null
           status?: string
           updated_at?: string
           url?: string

@@ -480,7 +480,7 @@ function ResultsPage() {
       // start a brand-new job; the poll loop below will retry the fetch.
       if (jobId) {
         try {
-          const probe = await getJobFn({ data: { jobId, sessionJwt } });
+          const probe = await getJobFn({ data: { jobId } });
           if (probe.status === "complete" && probe.analysis) {
             if (!(probe.analysis as { partial?: boolean })?.partial) {
               writeCachedAnalysis(probe.analysis, url, text, token);
@@ -529,7 +529,7 @@ function ResultsPage() {
         // status === "error" from the server should fail the analysis.
         let status: Awaited<ReturnType<typeof getJobFn>> | null = null;
         try {
-          status = await getJobFn({ data: { jobId, sessionJwt } });
+          status = await getJobFn({ data: { jobId } });
           consecutiveTransientErrors = 0;
         } catch (err) {
           consecutiveTransientErrors += 1;
