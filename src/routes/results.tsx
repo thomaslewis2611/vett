@@ -3327,7 +3327,7 @@ function PlanningReferenceSection({ analysis }: { analysis: AnalysisResult }) {
         )}
         {pr.commentary && (
           <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.55 }}>
-            {pr.commentary}
+            {sanitiseText(pr.commentary)}
           </p>
         )}
         <div
