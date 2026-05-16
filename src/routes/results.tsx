@@ -3452,43 +3452,83 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
 
   if (!sub) return null;
   return (
-    <section className="mt-6">
+    <section style={{ marginTop: 16 }}>
       <div
-        className="rounded-2xl p-6 sm:p-7"
-        style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)" }}
+        style={{
+          background: "#FFFDF9",
+          borderRadius: 20,
+          border: "0.5px solid rgba(26,17,8,0.1)",
+          padding: "32px 40px",
+        }}
       >
-        <h3 className="mb-4 text-sm font-medium uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+        <h3
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            color: "#888780",
+            textTransform: "uppercase",
+            marginBottom: 24,
+          }}
+        >
           Score breakdown
         </h3>
-        <div className="space-y-4">
-          {SUB_SCORE_LABELS.map(({ key, label, how }) => {
+        <div>
+          {SUB_SCORE_LABELS.map(({ key, label, how }, idx) => {
             const v = Number(sub[key] ?? 0);
             const pct = Math.max(0, Math.min(100, (v / 10) * 100));
-            const color = scoreColor(v);
+            const barColor = v >= 7 ? "#2D6A4F" : v >= 5 ? "#BA7517" : "#A32D2D";
             const reason = reasons[key];
             const summary = reason && reason.trim().length > 0 ? reason.trim() : null;
             return (
-              <div key={key}>
-                <div className="grid grid-cols-[minmax(140px,160px)_1fr_36px] items-center gap-4">
-                  <span className="inline-flex items-center gap-1.5" style={{ fontSize: 13, color: "#5F5E5A" }}>
+              <div
+                key={key}
+                style={{
+                  paddingTop: idx === 0 ? 0 : 24,
+                  paddingBottom: idx === SUB_SCORE_LABELS.length - 1 ? 0 : 24,
+                  borderBottom:
+                    idx === SUB_SCORE_LABELS.length - 1
+                      ? "none"
+                      : "0.5px solid rgba(26,17,8,0.07)",
+                }}
+              >
+                <div
+                  className="grid items-center"
+                  style={{ gridTemplateColumns: "180px 1fr 40px", gap: 16 }}
+                >
+                  <span
+                    className="inline-flex items-center gap-1.5"
+                    style={{ fontSize: 13, color: "#1A1108", fontWeight: 400 }}
+                  >
                     {label}
                     <ScoreInfoTooltip text={how} />
                   </span>
                   <div
-                    className="relative w-full overflow-hidden rounded-full"
-                    style={{ height: 6, background: "#F1EFE8" }}
+                    className="relative w-full overflow-hidden"
+                    style={{ height: 4, background: "#F1EFE8", borderRadius: 100 }}
                   >
                     <div
-                      className="absolute inset-y-0 left-0 rounded-full"
-                      style={{ width: `${pct}%`, background: color }}
+                      className="absolute inset-y-0 left-0"
+                      style={{ width: `${pct}%`, background: barColor, borderRadius: 100 }}
                     />
                   </div>
-                  <span className="text-right" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>
+                  <span
+                    className="text-right"
+                    style={{ fontSize: 14, fontWeight: 500, color: "#1A1108" }}
+                  >
                     {v.toFixed(1)}
                   </span>
                 </div>
                 {summary && (
-                  <p className="mt-1.5" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: "#888780",
+                      lineHeight: 1.6,
+                      fontWeight: 300,
+                      marginTop: 6,
+                    }}
+                  >
                     {summary}
                   </p>
                 )}
