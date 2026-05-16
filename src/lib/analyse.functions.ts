@@ -1882,18 +1882,22 @@ async function hasFullAccess(opts: {
 // "shape" to obscure visually.
 function toPreview(a: AnalysisResult): AnalysisResult {
   try {
+    if (!a || typeof a !== "object") {
+      throw new Error("toPreview: invalid input");
+    }
     return {
       ...a,
       redFlags: Array.isArray(a?.redFlags) ? a.redFlags.slice(0, 2) : [],
-      viewingQuestions: [],
-      comparables: [],
+      viewingQuestions: Array.isArray(a?.viewingQuestions) ? [] : [],
+      comparables: Array.isArray(a?.comparables) ? [] : [],
       nearbySchools: null,
       crime: null,
       broadband: null,
       transport: null,
       renovationCosts: null,
     };
-  } catch {
+  } catch (e) {
+    console.error("[toPreview] failed, returning safe fallback:", e);
     return {
       property: { address: "", price: 0, beds: 0, baths: 0, type: "", sqft: 0, listingUrl: "" },
       score: 0,
