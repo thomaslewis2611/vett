@@ -119,7 +119,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
             disabled={loading}
             className="inline-flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{
-              background: "#1B4332",
+              background: "#2D6A4F",
               color: "#FFFDF9",
               fontSize: 13,
               fontWeight: 500,
