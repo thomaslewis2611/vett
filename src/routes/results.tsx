@@ -5229,10 +5229,7 @@ function ChecklistItem({ item, why }: { item: string; why: string }) {
 
 function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisResult; unlocked: boolean }) {
   const vc = analysis.viewingChecklist;
-  // Debug: temporary red border so we can verify the section's actual layout position.
-  // If this border ever appears below the paywall on screen, the issue is real CSS reordering.
-  // If you don't see this border at all, the section is returning null (no checklist data).
-  const debugBorder = import.meta.env.DEV ? { outline: "3px solid red", outlineOffset: 4 } : {};
+  const debugBorder = {};
   if (!vc || vc.items.length === 0) {
     // Render a visible placeholder instead of null so the section is never silently missing.
     // This guarantees the checklist always sits ABOVE the paywall in the DOM, matching JSX order.
