@@ -664,9 +664,18 @@ function ResultsPage() {
           <div
             role="status"
             aria-live="polite"
-            className="mx-auto mt-4 block max-w-xl rounded-xl border border-border bg-accent px-4 py-3 text-sm text-accent-foreground"
+            className="mx-auto mt-4 flex max-w-xl items-center gap-2 rounded-xl border border-border bg-accent px-4 py-3 text-sm text-accent-foreground"
           >
-            Still analysing your property…
+            <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
+            <span className="flex-1">Welcome back — we kept analysing while you were away…</span>
+            <button
+              type="button"
+              onClick={() => setShowResumeBanner(false)}
+              aria-label="Dismiss"
+              className="shrink-0 rounded p-1 text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground"
+            >
+              <X className="h-4 w-4" aria-hidden="true" />
+            </button>
           </div>
         )}
         <LoadingState url={url} />
