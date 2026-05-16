@@ -288,13 +288,20 @@ function ResultsPage() {
     if (skipPrecheck || precheckPhase !== "idle") return;
     let cancelled = false;
     setPrecheckPhase("checking");
+    console.log("[precheck] starting scan for EPC + sqft", { url, hasText: Boolean(text) });
     (async () => {
       try {
         const r = await precheckFn({ data: { url, text } });
         if (cancelled) return;
+        console.log("[precheck] result", r);
         if (r.skipped || (r.epcFound && r.sqftFound)) {
+          console.log("[precheck] proceeding directly to analysis (no modal needed)");
           setPrecheckPhase("ready");
         } else {
+          console.log("[precheck] missing data, showing modal", {
+            epcMissing: !r.epcFound,
+            sqftMissing: !r.sqftFound,
+          });
           setPrecheckMissing({ epc: !r.epcFound, sqft: !r.sqftFound });
           setPrecheckPhase("needs-input");
         }
