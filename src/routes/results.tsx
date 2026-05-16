@@ -432,6 +432,7 @@ function ResultsPage() {
       saved_id ?? "",
       analysisOverrides.userEpc ?? "",
       analysisOverrides.userSqft ?? "",
+      forceRestart,
     ],
     queryFn: async ({ signal }): Promise<QueryResult> => {
       if (saved_id) {
