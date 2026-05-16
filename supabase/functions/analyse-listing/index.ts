@@ -557,31 +557,42 @@ function isLondonPostcode(pc: string): boolean {
 type PdKey = typeof PD_ENDPOINTS[number];
 type PdResults = Partial<Record<PdKey, unknown>>;
 
+async function fetchPdEndpoint(ep: string, postcode: string): Promise<unknown> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
+  const started = Date.now();
+  try {
+    const pc = encodeURIComponent(postcode);
+    const r = await fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`, {
+      signal: ctl.signal,
+    });
+    const json = await r.json();
+    console.log(`[analyse-listing] pd ${ep} ${Date.now() - started}ms`);
+    return json;
+  } catch (err) {
+    console.warn(`[analyse-listing] pd ${ep} failed/timeout after ${Date.now() - started}ms`, err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchPropertyDataAll(postcode: string): Promise<PdResults> {
   if (!PROPERTYDATA_API_KEY) {
     console.warn("[analyse-listing] PROPERTYDATA_API_KEY missing");
     return {};
   }
-  const pc = encodeURIComponent(postcode);
   const london = isLondonPostcode(postcode);
   const settled = await Promise.allSettled(
     PD_ENDPOINTS.map((ep) => {
-      // Skip /ptal entirely outside London — it only returns data for London postcodes.
-      if (ep === "ptal" && !london) {
-        return Promise.resolve(null);
-      }
-      return fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`).then((r) => r.json());
+      if (ep === "ptal" && !london) return Promise.resolve(null);
+      return fetchPdEndpoint(ep, postcode);
     }),
   );
   const out: PdResults = {};
   PD_ENDPOINTS.forEach((ep, i) => {
     const s = settled[i];
-    if (s.status === "fulfilled") {
-      out[ep] = s.value;
-    } else {
-      console.warn(`[analyse-listing] propertydata ${ep} failed`, s.reason);
-      out[ep] = null;
-    }
+    out[ep] = s.status === "fulfilled" ? s.value : null;
   });
   return out;
 }
