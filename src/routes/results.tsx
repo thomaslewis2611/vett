@@ -2955,12 +2955,41 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
             )}
           </div>
         )}
-        {ac.areaDescription && (
-          <p className="mt-4 text-sm" style={{ color: "#1A1108" }}>{ac.areaDescription}</p>
-        )}
-        {ac.comparableNote && (
-          <p className="mt-2 text-sm" style={{ color: "#1A1108" }}>{ac.comparableNote}</p>
-        )}
+        {(() => {
+          const manualActive = typeof manualPpsf === "number" && manualPpsf > 0;
+          const rewriteNarrative = (text: string | null | undefined): string | null => {
+            if (!text) return null;
+            if (!manualActive) return text;
+            let out = text;
+            // Replace £X/sqft, £X per sq ft, £X psf, £X / sq ft (with optional thousands separators / decimals)
+            const ppsfPattern = /£\s?(\d{1,3}(?:,\d{3})*|\d+)(?:\.\d+)?\s*(?:\/|per)?\s*(?:sq\s*\.?\s*ft|sqft|psf)/gi;
+            out = out.replace(ppsfPattern, `£${Math.round(propPpsf as number).toLocaleString()}/sqft`);
+            // Replace "X% above/below ... area" with the recalculated pct
+            if (ppsfPct !== null) {
+              const pctPattern = /\b\d+(?:\.\d+)?\s*%\s*(above|below)\b/gi;
+              const newPct = `${Math.abs(ppsfPct).toFixed(1)}% ${ppsfPct > 0 ? "above" : "below"}`;
+              out = out.replace(pctPattern, newPct);
+            }
+            return out;
+          };
+          const desc = rewriteNarrative(ac.areaDescription);
+          const note = rewriteNarrative(ac.comparableNote);
+          return (
+            <>
+              {desc && (
+                <p className="mt-4 text-sm" style={{ color: "#1A1108" }}>{desc}</p>
+              )}
+              {note && (
+                <p className="mt-2 text-sm" style={{ color: "#1A1108" }}>{note}</p>
+              )}
+              {manualActive && (
+                <p className="mt-2 text-xs italic" style={{ color: "#888780" }}>
+                  Price per sq ft figures above reflect your manually entered square footage.
+                </p>
+              )}
+            </>
+          );
+        })()}
         <p className="mt-4 text-xs" style={{ color: "#888780" }}>
           {soldAvg
             ? "Area £/sqft from PropertyData (Land Registry sold transactions)."
