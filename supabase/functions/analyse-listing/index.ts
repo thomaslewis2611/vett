@@ -190,22 +190,21 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "comparables": []
 }
 
-PLANNING REFERENCE: Detect any UK planning reference numbers in the listing text (format: XX/XXXXX/XXX e.g. 24/01893/FUL, also older XXXX/XXXX). Look near the words: planning, permission, reference, application, consent, approval. If found, populate planningReference with the reference, what it relates to (e.g. "rear kitchen extension"), the applicationType (Householder | Full Planning | Change of Use | Listed Building Consent | Unknown), whether it is for this property or a neighbouring property (isNeighbouring: true if the listing context indicates the application is on a next-door / adjacent property rather than the subject property), and 2-3 sentences of commentary on what this means for the buyer including what documents to request from the seller's solicitors (planning decision notice, approved drawings, building regs completion certificate). If no planning reference is present, return planningReference: null. Do NOT invent a reference number.
+PLANNING REFERENCE: detect UK planning refs (XX/XXXXX/XXX e.g. 24/01893/FUL, or older XXXX/XXXX) near words planning/permission/reference/application/consent/approval. If found populate planningReference with reference, relatesTo (e.g. "rear kitchen extension"), applicationType (Householder|Full Planning|Change of Use|Listed Building Consent|Unknown), isNeighbouring (true if on an adjacent property), and 2-3 sentences of commentary including docs to request (decision notice, approved drawings, building regs completion). If none: planningReference:null. Never invent a reference.
 
-PROPERTYDATA CONTEXT: At the top of the listing content you will find official PropertyData API results. Use these as ground truth facts — they override any estimates you would otherwise make:
-- SOLD PRICES: Use these for price history section and comparable analysis. These are real Land Registry transactions.
-- FLOOR AREAS: If the listing says "Ask agent" for sq ft but floor areas data is available, use the most recent floor area for this property type in the postcode.
-- CAPITAL GROWTH: Use for area pricing analysis commentary — quote the actual growth percentage.
-- FLOOD RISK: Use PropertyData flood risk data instead of estimating. Quote the actual risk level.
-- LISTED BUILDINGS: If this property appears in listed buildings data, flag it and set listingTransparency lower if the listing does not mention it.
-- CONSERVATION AREA: If in a conservation area, mention implications for extensions and alterations.
-- PLANNING APPLICATIONS: Use recent planning applications for context. If there are nearby large developments, flag as a consideration.
-- CRIME: Use actual crime data for area pricing analysis. If crime is notably high, flag it.
-- INTERNET SPEED: Quote actual speeds in area pricing analysis.
-- SCHOOLS: Use actual school data with Ofsted ratings.
-- ENERGY EFFICIENCY: If EPC data is available from PropertyData, use it instead of extracting from listing text.
+PROPERTYDATA CONTEXT (treat as ground truth, override your estimates):
+- SOLD PRICES → price history + comparables (real Land Registry).
+- FLOOR AREAS → use only for this exact property's sq ft.
+- CAPITAL GROWTH → quote actual % in area pricing/resale.
+- FLOOD RISK → quote actual risk level.
+- LISTED BUILDINGS → flag if present and not mentioned in listing (lower listingTransparency).
+- CONSERVATION AREA → note extension/alteration implications.
+- PLANNING APPLICATIONS → flag any nearby large/relevant ones.
+- CRIME → use real data; flag if notably high.
+- INTERNET SPEED → quote actual speeds.
+- SCHOOLS → use actual data with Ofsted ratings.
 
-If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for.`;
+Unknown fields: 0 for numbers, "Unknown" for strings. Never invent comparables.`;
 
 // ---------- JSON repair ----------
 function cleanResponse(raw: string): string {
