@@ -5,6 +5,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { scheduleBackground } from "@/lib/execution-context";
 import type { AnalysisResult } from "./mock-analysis";
+import { computeWeightedScore } from "./score";
 
 const analysisSchema = z.object({
   property: z.object({
