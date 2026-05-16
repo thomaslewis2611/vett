@@ -282,12 +282,16 @@ function ResultsPage() {
   );
   const analysisReady = preAnalysis.status === "ready";
   const analysisOverrides = analysisReady ? preAnalysis.overrides : EMPTY_PRE_ANALYSIS_OVERRIDES;
+  const preAnalysisKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!shouldRunPreAnalysis) {
+      preAnalysisKeyRef.current = null;
       setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
       return;
     }
+    if (preAnalysisKeyRef.current === url) return;
+    preAnalysisKeyRef.current = url ?? null;
 
     let cancelled = false;
     setPreAnalysis({ status: "fetching" });
