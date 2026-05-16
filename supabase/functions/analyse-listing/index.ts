@@ -10,6 +10,7 @@
 //   4. Update the analysis_jobs row to `complete` / `error`.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { computeWeightedScore } from "../../../src/lib/score.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -1229,26 +1230,10 @@ async function runJob(
     // Recompute the overall Roovr score as a weighted average of the six
     // sub-scores. Claude tends to anchor the overall figure (commonly 6.8)
     // even when sub-scores vary, so we always derive it deterministically.
-    const sub = (parsed.subScores ?? {}) as Record<string, unknown>;
-    const weights: Record<string, number> = {
-      valueForMoney: 0.25,
-      locationQuality: 0.20,
-      riskLevel: 0.20,
-      resalePotential: 0.15,
-      listingTransparency: 0.10,
-      marketTiming: 0.10,
-    };
-    let weightedSum = 0;
-    let totalWeight = 0;
-    for (const [k, w] of Object.entries(weights)) {
-      const v = Number(sub[k]);
-      if (isFinite(v) && v > 0) {
-        weightedSum += v * w;
-        totalWeight += w;
-      }
-    }
-    if (totalWeight > 0) {
-      parsed.score = Math.round((weightedSum / totalWeight) * 10) / 10;
+    const sub = (parsed.subScores ?? {}) as Record<string, number>;
+    const derivedScore = computeWeightedScore(sub);
+    if (isFinite(derivedScore)) {
+      parsed.score = derivedScore;
     }
 
     if (claudeTimedOut) parsed.partial = true;

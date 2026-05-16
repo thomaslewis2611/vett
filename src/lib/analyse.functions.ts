@@ -5,6 +5,7 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { scheduleBackground } from "@/lib/execution-context";
 import type { AnalysisResult } from "./mock-analysis";
+import { computeWeightedScore } from "./score";
 
 const analysisSchema = z.object({
   property: z.object({
@@ -2597,23 +2598,9 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
     try {
       const subAny = (full as unknown as { subScores?: Record<string, number> | null })?.subScores;
       if (subAny && typeof subAny === "object" && !Array.isArray(subAny)) {
-        const weights: Record<string, number> = {
-          valueForMoney: 0.25,
-          locationQuality: 0.20,
-          riskLevel: 0.20,
-          resalePotential: 0.15,
-          listingTransparency: 0.10,
-          marketTiming: 0.10,
-        };
-        let weightedSum = 0;
-        let totalWeight = 0;
-        for (const [k, w] of Object.entries(weights)) {
-          const v = Number(subAny?.[k]);
-          if (isFinite(v) && v > 0) { weightedSum += v * w; totalWeight += w; }
-        }
-        if (totalWeight > 0) {
-          (full as unknown as { score: number }).score =
-            Math.round((weightedSum / totalWeight) * 10) / 10;
+        const derived = computeWeightedScore(subAny);
+        if (isFinite(derived)) {
+          (full as unknown as { score: number }).score = derived;
         }
       }
     } catch (e) {

@@ -6,6 +6,7 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGBP } from "@/lib/mock-analysis";
 import { createCheckoutSession } from "@/lib/checkout.functions";
+import { computeWeightedScore } from "@/lib/score";
 
 const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
@@ -40,24 +41,11 @@ type PassStatus = "active" | "expiring" | "expired";
 // Derive the overall Roovr score from sub-scores. Mirrors the server-side
 // weighting so dashboard matches the report page even for older saved rows
 // where the stored `score` field is stale (Claude often returned 6.8).
-const SCORE_WEIGHTS: Record<string, number> = {
-  valueForMoney: 0.25,
-  locationQuality: 0.20,
-  riskLevel: 0.20,
-  resalePotential: 0.15,
-  listingTransparency: 0.10,
-  marketTiming: 0.10,
-};
 function computeOverallScore(a: any): number | null {
   const sub = a?.subScores;
   if (sub && typeof sub === "object") {
-    let weightedSum = 0;
-    let totalWeight = 0;
-    for (const [k, w] of Object.entries(SCORE_WEIGHTS)) {
-      const v = Number(sub[k]);
-      if (isFinite(v) && v > 0) { weightedSum += v * w; totalWeight += w; }
-    }
-    if (totalWeight > 0) return Math.round((weightedSum / totalWeight) * 10) / 10;
+    const v = computeWeightedScore(sub as Record<string, number>);
+    if (isFinite(v)) return v;
   }
   return typeof a?.score === "number" ? a.score : null;
 }
