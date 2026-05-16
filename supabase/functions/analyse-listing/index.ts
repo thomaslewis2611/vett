@@ -148,17 +148,27 @@ function detectFloorPlan(html: string): boolean {
 }
 
 async function fetchListingHtml(url: string): Promise<string> {
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
-      Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-      "Accept-Language": "en-GB,en;q=0.9",
-    },
-    redirect: "follow",
-  });
-  if (!res.ok) return "";
-  return await res.text();
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 5000);
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-GB,en;q=0.9",
+      },
+      redirect: "follow",
+      signal: ctl.signal,
+    });
+    if (!res.ok) return "";
+    return await res.text();
+  } catch (err) {
+    console.warn(`[analyse-listing] fetchListingHtml failed/timeout`, err);
+    return "";
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 // ---------- Claude prompt ----------
@@ -547,31 +557,42 @@ function isLondonPostcode(pc: string): boolean {
 type PdKey = typeof PD_ENDPOINTS[number];
 type PdResults = Partial<Record<PdKey, unknown>>;
 
+async function fetchPdEndpoint(ep: string, postcode: string): Promise<unknown> {
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 15000);
+  const started = Date.now();
+  try {
+    const pc = encodeURIComponent(postcode);
+    const r = await fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`, {
+      signal: ctl.signal,
+    });
+    const json = await r.json();
+    console.log(`[analyse-listing] pd ${ep} ${Date.now() - started}ms`);
+    return json;
+  } catch (err) {
+    console.warn(`[analyse-listing] pd ${ep} failed/timeout after ${Date.now() - started}ms`, err);
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function fetchPropertyDataAll(postcode: string): Promise<PdResults> {
   if (!PROPERTYDATA_API_KEY) {
     console.warn("[analyse-listing] PROPERTYDATA_API_KEY missing");
     return {};
   }
-  const pc = encodeURIComponent(postcode);
   const london = isLondonPostcode(postcode);
   const settled = await Promise.allSettled(
     PD_ENDPOINTS.map((ep) => {
-      // Skip /ptal entirely outside London — it only returns data for London postcodes.
-      if (ep === "ptal" && !london) {
-        return Promise.resolve(null);
-      }
-      return fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`).then((r) => r.json());
+      if (ep === "ptal" && !london) return Promise.resolve(null);
+      return fetchPdEndpoint(ep, postcode);
     }),
   );
   const out: PdResults = {};
   PD_ENDPOINTS.forEach((ep, i) => {
     const s = settled[i];
-    if (s.status === "fulfilled") {
-      out[ep] = s.value;
-    } else {
-      console.warn(`[analyse-listing] propertydata ${ep} failed`, s.reason);
-      out[ep] = null;
-    }
+    out[ep] = s.status === "fulfilled" ? s.value : null;
   });
   return out;
 }
@@ -1042,7 +1063,9 @@ async function runJob(
     if (!listingContent && url) {
       validateUrl(url);
       console.log(`[analyse-listing] fetching ${url}`);
+      const htmlStart = Date.now();
       const html = await fetchListingHtml(url);
+      console.log(`[analyse-listing] HTML fetch complete: ${Date.now() - htmlStart}ms`);
       if (detectFloorPlan(html)) floorPlanFlag = "yes";
       listingContent = htmlToListingText(html);
       console.log(`[analyse-listing] listing length: ${listingContent.length}, floor plan: ${floorPlanFlag}`);
@@ -1068,27 +1091,14 @@ async function runJob(
       );
     }
 
-    // PropertyData fetches in parallel (Promise.allSettled inside fetchPropertyDataAll)
-    // typically resolve in a few seconds, so we await them before calling Claude in
-    // order to feed conservation-area / planning-applications / growth context into
-    // the prompt. Claude is by far the slowest step (~30–60s) so total wall time is
-    // dominated by it and stays well under the 90s target.
     let postcode = extractPostcode(listingContent);
     let inferredPostcode = false;
     let partialPostcode: string | null = null;
-    if (!postcode) {
-      partialPostcode = extractPartialPostcode(listingContent);
-      // Ask Claude to guess the full postcode from the address before falling
-      // back to the manual input prompt in the UI.
-      const guess = await inferPostcodeFromAddress(listingContent, partialPostcode);
-      if (guess) {
-        console.log(`[analyse-listing] inferred postcode ${guess} (partial hint: ${partialPostcode ?? "none"})`);
-        postcode = guess;
-        inferredPostcode = true;
-      }
-    }
     let pd: PdResults = {};
+
     if (postcode) {
+      // Have postcode — fetch PD directly.
+      const pdStart = Date.now();
       const cached = await getCachedPropertyData(supabase, postcode);
       if (cached) {
         console.log(`[analyse-listing] propertydata cache hit ${postcode}`);
@@ -1101,6 +1111,33 @@ async function runJob(
           console.warn("[analyse-listing] propertydata fetch failed", e);
           pd = {};
         }
+      }
+      console.log(`[analyse-listing] PropertyData complete: ${Date.now() - pdStart}ms`);
+    } else {
+      // No full postcode — run Claude inference in parallel with a cache probe
+      // on the partial postcode (best-effort). Once inference resolves, fetch PD.
+      partialPostcode = extractPartialPostcode(listingContent);
+      const inferStart = Date.now();
+      const guess = await inferPostcodeFromAddress(listingContent, partialPostcode);
+      console.log(`[analyse-listing] Postcode inference complete: ${Date.now() - inferStart}ms`);
+      if (guess) {
+        console.log(`[analyse-listing] inferred postcode ${guess} (partial hint: ${partialPostcode ?? "none"})`);
+        postcode = guess;
+        inferredPostcode = true;
+        const pdStart = Date.now();
+        const cached = await getCachedPropertyData(supabase, postcode);
+        if (cached) {
+          pd = cached;
+        } else {
+          try {
+            pd = await fetchPropertyDataAll(postcode);
+            await setCachedPropertyData(supabase, postcode, pd);
+          } catch (e) {
+            console.warn("[analyse-listing] propertydata fetch failed", e);
+            pd = {};
+          }
+        }
+        console.log(`[analyse-listing] PropertyData complete: ${Date.now() - pdStart}ms`);
       }
     }
 
@@ -1119,19 +1156,23 @@ async function runJob(
     let parsed: Record<string, unknown> = {};
     try {
       console.log(`[analyse-listing] calling Claude (primary)`);
+      const claudeStart = Date.now();
       const text = await callClaude(systemPrompt, userContent, 4000);
-      console.log(`[analyse-listing] Claude response length: ${text.length}`);
+      console.log(`[analyse-listing] Claude complete: ${Date.now() - claudeStart}ms (response length ${text.length})`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
     } catch (primaryErr) {
       console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
       const simplified =
         systemPrompt +
         "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+      const claudeStart = Date.now();
       const text = await callClaude(simplified, userContent, 4000);
+      console.log(`[analyse-listing] Claude complete (retry): ${Date.now() - claudeStart}ms`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
       parsed.renovationCosts = null;
     }
 
+    const mappingStart = Date.now();
     // Make sure listingUrl is set on the property block.
     const property = (parsed.property ?? {}) as Record<string, unknown>;
     if (!property.listingUrl) property.listingUrl = url || "";
@@ -1170,6 +1211,7 @@ async function runJob(
     if (mappedBroadband) parsed.broadband = mappedBroadband;
     const mappedPtal = mapPdPtal(pd["ptal"]);
     if (mappedPtal) parsed.ptal = mappedPtal;
+    console.log(`[analyse-listing] Data mapping complete: ${Date.now() - mappingStart}ms`);
 
     // Override areaContext.avgPricePerSqFtArea with the PropertyData sold £/sqft
     // figure when available — it's the most accurate area benchmark for buyers.
