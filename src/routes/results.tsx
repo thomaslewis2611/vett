@@ -1726,8 +1726,16 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 function PropertyPill({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center rounded-full px-3 py-1"
-      style={{ background: "#F1EFE8", color: "#5F5E5A", fontSize: 12, fontWeight: 500 }}
+      className="inline-flex items-center"
+      style={{
+        background: "#F1EFE8",
+        color: "#5F5E5A",
+        fontSize: 12,
+        fontWeight: 400,
+        padding: "5px 12px",
+        borderRadius: 100,
+        border: "0.5px solid rgba(26,17,8,0.1)",
+      }}
     >
       {children}
     </span>
@@ -1735,23 +1743,57 @@ function PropertyPill({ children }: { children: React.ReactNode }) {
 }
 
 function ScoreBadge({ score, label }: { score: number; label: string }) {
-  const pct = (score / 10) * 100;
-  const ring = `conic-gradient(var(--primary) ${pct}%, var(--primary-soft) ${pct}%)`;
   return (
-    <div className="flex items-center gap-4">
+    <div
+      style={{
+        background: "#FFFDF9",
+        border: "0.5px solid rgba(26,17,8,0.12)",
+        borderRadius: 16,
+        padding: "20px 24px",
+        textAlign: "center",
+        minWidth: 130,
+      }}
+    >
       <div
-        className="flex h-24 w-24 items-center justify-center rounded-full"
-        style={{ background: ring }}
+        style={{
+          fontSize: 9,
+          fontWeight: 500,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "#888780",
+          marginBottom: 6,
+        }}
       >
-        <div className="flex h-[84px] w-[84px] flex-col items-center justify-center rounded-full bg-card">
-          <span className="text-2xl font-semibold leading-none">{score.toFixed(1)}</span>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">/ 10</span>
-        </div>
+        Roovr Score
       </div>
-      <div className="hidden max-w-[160px] sm:block">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">Roovr score</div>
-        <div className="text-sm font-medium leading-tight">{label}</div>
+      <div
+        style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: 48,
+          fontWeight: 400,
+          color: "#2D6A4F",
+          lineHeight: 1,
+          marginBottom: 2,
+        }}
+      >
+        {score.toFixed(1)}
       </div>
+      <div style={{ fontSize: 10, color: "#888780", marginBottom: 10 }}>out of 10</div>
+      {label && (
+        <span
+          style={{
+            background: "#EAF3DE",
+            borderRadius: 100,
+            padding: "4px 10px",
+            fontSize: 10,
+            fontWeight: 500,
+            color: "#2D6A4F",
+            display: "inline-block",
+          }}
+        >
+          {label}
+        </span>
+      )}
     </div>
   );
 }
