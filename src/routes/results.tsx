@@ -1079,35 +1079,70 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                 </p>
               )}
             </div>
-            {!unlocked && (
-              <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
-                Free preview
-              </span>
-            )}
           </div>
-          <div className="mt-4 space-y-3">
-            {(() => {
-              const hasSqft = Boolean(a.manualSqftAnalysis?.sqft) || (a.property?.sqft ?? 0) > 0;
-              const hasEpc = Boolean(a.epc?.rating);
-              const hasFlood = Boolean(a.floodRisk?.manualZone) || Boolean(a.floodRisk?.riskLevel) || Boolean(a.floodRisk?.overallRisk);
-              const filtered = (a.redFlags ?? []).filter((f) => {
-                const t = `${f.title} ${f.detail}`.toLowerCase();
-                const missingPhrase = /(no\s|missing|not\s+(disclosed|listed|provided|stated|recorded|shown|checked|given)|undisclosed|unknown|absent|without|hidden|not\s+available)/;
-                if (hasSqft && /(sq\.?\s?ft|square\s?(foot|feet|footage)|floor\s?area)/.test(t) && missingPhrase.test(t)) {
-                  return false;
-                }
-                if (hasEpc && /\bepc\b|energy\s+performance/.test(t) && missingPhrase.test(t)) {
-                  return false;
-                }
-                if (hasFlood && /flood/.test(t) && missingPhrase.test(t)) {
-                  return false;
-                }
-                return true;
-              });
-              const list = unlocked ? filtered : filtered.slice(0, 2);
-              return list.map((f, i) => <RedFlagItem key={i} flag={f} />);
-            })()}
-          </div>
+          {(() => {
+            const hasSqft = Boolean(a.manualSqftAnalysis?.sqft) || (a.property?.sqft ?? 0) > 0;
+            const hasEpc = Boolean(a.epc?.rating);
+            const hasFlood = Boolean(a.floodRisk?.manualZone) || Boolean(a.floodRisk?.riskLevel) || Boolean(a.floodRisk?.overallRisk);
+            const filtered = (a.redFlags ?? []).filter((f) => {
+              const t = `${f.title} ${f.detail}`.toLowerCase();
+              const missingPhrase = /(no\s|missing|not\s+(disclosed|listed|provided|stated|recorded|shown|checked|given)|undisclosed|unknown|absent|without|hidden|not\s+available)/;
+              if (hasSqft && /(sq\.?\s?ft|square\s?(foot|feet|footage)|floor\s?area)/.test(t) && missingPhrase.test(t)) {
+                return false;
+              }
+              if (hasEpc && /\bepc\b|energy\s+performance/.test(t) && missingPhrase.test(t)) {
+                return false;
+              }
+              if (hasFlood && /flood/.test(t) && missingPhrase.test(t)) {
+                return false;
+              }
+              return true;
+            });
+            const severityRank = { high: 0, medium: 1, low: 2 } as const;
+            const sorted = [...filtered].sort(
+              (a, b) => (severityRank[a.severity] ?? 3) - (severityRank[b.severity] ?? 3),
+            );
+            const previewCount = unlocked ? sorted.length : Math.min(3, sorted.length);
+            const previewList = sorted.slice(0, previewCount);
+            const hiddenList = sorted.slice(previewCount);
+            const hiddenCount = hiddenList.length;
+            return (
+              <>
+                {!unlocked && (
+                  <div className="mt-2 flex items-center justify-end">
+                    <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-medium text-primary">
+                      {hiddenCount > 0
+                        ? `${previewCount} shown · ${hiddenCount} more unlocked with full report`
+                        : "Free preview"}
+                    </span>
+                  </div>
+                )}
+                <div className="mt-4 space-y-3">
+                  {previewList.map((f, i) => (
+                    <RedFlagItem key={`p-${i}`} flag={f} />
+                  ))}
+                </div>
+                {!unlocked && hiddenCount > 0 && (
+                  <div className="relative mt-3 overflow-hidden">
+                    <div
+                      className="space-y-3"
+                      style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none" }}
+                    >
+                      {hiddenList.map((f, i) => (
+                        <RedFlagItem key={`h-${i}`} flag={f} />
+                      ))}
+                    </div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
+                      <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+                      <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+                        Unlock {hiddenCount} more red flag{hiddenCount === 1 ? "" : "s"} with Single Report or Buyer Pass
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </section>
 
         {/* Viewing checklist — all users (first 2 free, rest blurred for free) */}
