@@ -919,6 +919,17 @@ const LOADING_TIPS = [
 
 const ACCENT = "#1B4332";
 
+// Defensive sanitiser for any Claude / model-generated string before it
+// reaches the DOM. Coerces to string and strips HTML tags + leading/trailing
+// whitespace so untrusted content cannot inject markup. JSX text nodes are
+// already auto-escaped by React, but this also defends against pasted HTML
+// surfacing visually as tags and ensures non-string values render cleanly.
+function sanitiseText(s: unknown): string {
+  if (s === null || s === undefined) return "";
+  const str = typeof s === "string" ? s : String(s);
+  return str.replace(/<[^>]*>/g, "").trim();
+}
+
 function prettyUrl(url?: string): string | null {
   if (!url) return null;
   try {
