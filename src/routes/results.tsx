@@ -1490,10 +1490,13 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           // Hide a section entirely when there's no postcode at all and we have
           // no data to show. Otherwise render as before (which will show its
           // own "unavailable" state for the partial-postcode case).
+          // For free users (not paid), always render the section so its
+          // locked placeholder card is shown — this gives the score breakdown
+          // sub-scores visible context and makes the upgrade value clear.
           const showFlood = !(noPostcode && floodMissing);
-          const showSchools = !(noPostcode && schoolsMissing);
-          const showCrime = !(noPostcode && crimeMissing);
-          const showBroadband = !(noPostcode && broadbandMissing);
+          const showSchools = !isPaid || !(noPostcode && schoolsMissing);
+          const showCrime = !isPaid || !(noPostcode && crimeMissing);
+          const showBroadband = !isPaid || !(noPostcode && broadbandMissing);
 
           const showBanner =
             isPaid &&
@@ -1588,16 +1591,14 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           );
         })()}
 
-        {/* Transport links — Single Report + Buyer Pass only; hidden entirely on free */}
-        {(access.level === "single" || access.level === "pass") && (
-          <TransportSection
-            analysis={a}
-            isBuyerPass={true}
-            fetching={access.level === "pass" && fetchingExtras && a.transport == null}
-            onUpgrade={() => upgradeToSingle(listingUrl)}
-            onUpgradePass={() => upgradeToPass(listingUrl)}
-          />
-        )}
+        {/* Transport links — locked placeholder for free, full data for Single/Pass */}
+        <TransportSection
+          analysis={a}
+          isBuyerPass={access.level === "single" || access.level === "pass"}
+          fetching={access.level === "pass" && fetchingExtras && a.transport == null}
+          onUpgrade={() => upgradeToSingle(listingUrl)}
+          onUpgradePass={() => upgradeToPass(listingUrl)}
+        />
 
         {/* Sold price history (PropertyData / Land Registry) */}
         <PriceHistorySection
