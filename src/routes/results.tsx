@@ -371,7 +371,8 @@ function ResultsPage() {
       const { data: sess } = await supabase.auth.getSession();
       const sessionJwt = sess.session?.access_token ?? null;
 
-      let jobId = recallJobId(url);
+      const hasAnalysisOverrides = Boolean(analysisOverrides.userEpc || analysisOverrides.userSqft);
+      let jobId = hasAnalysisOverrides ? undefined : recallJobId(url);
       // Verify any existing jobId is still known to the server before reusing.
       // Only discard the jobId on an explicit "not found" — transient
       // network errors (mobile screen-lock, flaky connection) must NOT
@@ -394,6 +395,11 @@ function ResultsPage() {
         }
       }
       if (!jobId) {
+        console.log("[results] starting analysis job", {
+          url,
+          hasUserEpc: Boolean(analysisOverrides.userEpc),
+          hasUserSqft: Boolean(analysisOverrides.userSqft),
+        });
         const started = await startJobFn({
           data: {
             url,
