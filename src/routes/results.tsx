@@ -1067,7 +1067,22 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
     const eligible = access.level === "pass" || access.level === "single";
     if (!fromSaved && eligible && access.email && !savedRef.current && listingUrl) {
       savedRef.current = true;
-      saveFn({ data: { email: access.email, listingUrl, analysis: a } }).catch(() => { /* ignore */ });
+      (async () => {
+        try {
+          // Skip if a row already exists — avoid overwriting user-entered
+          // data (manual EPC, sq ft, flood zone) that may have been saved
+          // into analysis_json after the initial report was generated.
+          const { data: existing } = await supabase
+            .from("saved_analyses")
+            .select("id")
+            .eq("user_email", access.email!.toLowerCase())
+            .eq("listing_url", listingUrl)
+            .limit(1)
+            .maybeSingle();
+          if (existing) return;
+          await saveFn({ data: { email: access.email!, listingUrl, analysis: a } });
+        } catch { /* ignore */ }
+      })();
     }
   }, [access.level, access.email, listingUrl, a, saveFn, fromSaved]);
 
