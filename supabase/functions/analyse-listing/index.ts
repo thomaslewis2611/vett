@@ -127,6 +127,8 @@ function detectFloorPlan(html: string): boolean {
   ];
   return patterns.some((p) => p.test(html));
 }
+
+async function fetchListingHtml(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: {
       "User-Agent":
