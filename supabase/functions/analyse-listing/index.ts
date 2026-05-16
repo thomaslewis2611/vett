@@ -853,12 +853,17 @@ async function runJob(jobId: string, url: string, pastedText: string) {
 
   try {
     let listingContent = pastedText?.trim() ?? "";
+    let floorPlanFlag: "yes" | "unknown" = "unknown";
     if (!listingContent && url) {
       validateUrl(url);
       console.log(`[analyse-listing] fetching ${url}`);
       const html = await fetchListingHtml(url);
+      if (detectFloorPlan(html)) floorPlanFlag = "yes";
       listingContent = htmlToListingText(html);
-      console.log(`[analyse-listing] listing length: ${listingContent.length}`);
+      console.log(`[analyse-listing] listing length: ${listingContent.length}, floor plan: ${floorPlanFlag}`);
+    }
+    if (listingContent) {
+      listingContent = `FLOOR PLAN PRESENT: ${floorPlanFlag}\n\n${listingContent}`;
     }
     if (!listingContent || listingContent.length < 100) {
       throw new Error(
