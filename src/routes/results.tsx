@@ -4358,7 +4358,7 @@ function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgrad
 
         {bb.commentary && (
           <p className="mt-4" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            {bb.commentary}
+            {sanitiseText(bb.commentary)}
           </p>
         )}
 
