@@ -10,13 +10,18 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Paste any Rightmove or Zoopla listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in seconds.",
+          "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
       },
       { property: "og:title", content: "Roovr — AI property analysis for smarter buyers" },
       {
         property: "og:description",
         content:
-          "Paste any Rightmove or Zoopla listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in seconds.",
+          "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
+      },
+      {
+        name: "twitter:description",
+        content:
+          "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
       },
     ],
   }),
