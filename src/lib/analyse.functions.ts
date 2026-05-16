@@ -1883,7 +1883,7 @@ async function hasFullAccess(opts: {
 function toPreview(a: AnalysisResult): AnalysisResult {
   return {
     ...a,
-    redFlags: a.redFlags.slice(0, 2),
+    redFlags: Array.isArray(a?.redFlags) ? a.redFlags.slice(0, 2) : [],
     viewingQuestions: [],
     comparables: [],
     nearbySchools: null,
