@@ -5589,7 +5589,7 @@ function PrecheckModal({
             onClick={() =>
               onSubmit({
                 epc: hasEpc && epcValid ? epc : null,
-                sqft: hasSqft && sqftValid && sqftNum > 0 ? sqftNum : null,
+                sqft: hasSqft && sqftValid && sqftNum > 0 ? Math.round(sqftNum) : null,
               })
             }
             style={{
