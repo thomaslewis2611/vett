@@ -2569,7 +2569,6 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       jobId: z.string().uuid(),
-      sessionJwt: z.string().max(4000).optional().nullable(),
     })
   )
   .handler(async ({ data }): Promise<{
@@ -2579,7 +2578,7 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
   }> => {
     const { data: row, error } = await supabaseAdmin
       .from("analysis_jobs")
-      .select("status, result_json, error, url, access_token")
+      .select("status, result_json, error, url, access_token, user_email")
       .eq("id", data.jobId)
       .maybeSingle();
 
@@ -2620,9 +2619,11 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
     } catch (e) {
       console.warn("[getAnalysisJob] subScores recompute failed:", e);
     }
+    // Use the email stored at job-creation time for access checks rather
+    // than re-validating a JWT on every poll.
     const unlocked = await hasFullAccess({
       accessToken: (row.access_token as string | null) ?? null,
-      sessionJwt: data.sessionJwt ?? null,
+      userEmail: (row.user_email as string | null) ?? null,
       listingUrl: (row.url as string | null) ?? null,
     });
 
