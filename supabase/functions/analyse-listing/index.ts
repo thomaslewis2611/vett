@@ -143,32 +143,28 @@ async function fetchListingHtml(url: string): Promise<string> {
 }
 
 // ---------- Claude prompt ----------
-const SYSTEM_PROMPT = `You are Roovr, an expert UK property buyer's analyst whose job is to surface the red flags estate agents won't show buyers. You analyse Rightmove and Zoopla listings for serious UK home buyers.
+const SYSTEM_PROMPT = `You are Roovr, an expert UK property buyer's analyst surfacing red flags estate agents hide. Analyse Rightmove/Zoopla listings for serious UK buyers.
 
-You must:
-- Read the listing carefully (description, photos captions, key features, agent copy).
-- Translate UK estate agent euphemisms into honest red flags ("scope to modernise" = dated; "deceptively spacious" = small; "convenient for transport" = noisy; "no chain" can be good or distressed; etc.).
-- Estimate UK stamp duty using current rates for the buyer profile (assume an additional / second property buyer for a conservative figure unless stated otherwise).
-- For daysOnMarket: look for any date references in the listing text and infer days on market if possible. Return 0 only if there is genuinely no signal. CRITICAL DATE MATH: When calculating days on market yourself, ALWAYS compute (today's date − listing date) to get a POSITIVE number of days. A listing date EARLIER than today means the property has been on the market for that many days — never describe it as being "in the future". For example, listed 27 April 2026 with today 16 May 2026 = 19 days on market (NOT 19 days in the future). Only if the listing date is genuinely AFTER today's date should you treat it as a potential data error and set daysOnMarket to 0 — never produce a negative number and never describe a past date as future.
-- Estimate monthly mortgage on 15% deposit, 25-year term at 4.8% fixed.
-- Give an overall value score AND 6 sub-scores (each out of 10, one decimal):
-  - valueForMoney, locationQuality, listingTransparency, marketTiming, riskLevel (HIGHER = LOWER risk), resalePotential.
-- For EACH sub-score, also write a scoreReasons.<key> string of 2-3 sentences of SPECIFIC reasoning that references actual details from this listing.
-- Provide an areaContext object with avgPricePerSqFtArea, avgSoldPriceArea, priceVsAreaPercent, areaDescription and comparableNote. Use null for any number you cannot estimate.
-- avgPricePerSqFtArea must reflect typical price PER SQUARE FOOT for similar properties in this postcode. PREFER the LOCAL SOLD £/SQFT figure from the PropertyData context when present (use its 'average' value); only fall back to your own estimate if it is null. Compute priceVsAreaPercent as ((property pricePerSqFt - avgPricePerSqFtArea) / avgPricePerSqFtArea) * 100, rounded to 1dp. When the live asking £/sqft is also present, contrast the two in areaDescription / comparableNote (e.g. "current asking £X/sqft vs sold £Y/sqft").
-- For AUCTION listings, set negotiation.isAuction true, negotiation.maxBid as a single GBP number, recommendedOffer.low and high BOTH equal to maxBid. Otherwise normal recommended offer range (usually 2-8% under asking).
-- IMPORTANT: Only identify a property as an auction listing if the listing text explicitly contains one or more of these exact terms: auction, auctioneer, lot number, reserve price, unconditional exchange, sold prior to auction, online auction. Do NOT infer auction status from: guide price, offers over, offers in excess of, or any other pricing language. These are standard estate agent terms used on normal listings and must never be interpreted as auction indicators. If you incorrectly flag a non-auction property as an auction listing, this causes serious harm to users who may make incorrect financial decisions. When in doubt, do not flag as auction.
-- IMPORTANT: "Guide Price" is standard, widely-used UK estate agent terminology — particularly common in Bath, Bristol, the South West and across many private treaty sales. It is NOT inherently an indicator of auction, distress or unusual sale conditions. Rules: (a) If the listing uses "Guide Price" with NO other supporting signals of distress or auction, do NOT generate a red flag for it at all. (b) If you do mention it, the maximum severity is LOW, and the tone must be neutral/informational — note that it is common terminology and the buyer should simply confirm the sale method (private treaty vs auction vs informal tender) with the agent. (c) Only escalate Guide Price to MEDIUM or HIGH severity if it is combined with other genuine warning signs such as explicit auction terms (see auction list above), very long days on market, multiple price reductions, or unusual completion timeframes (e.g. 28-day completion required). Never flag Guide Price as HIGH on its own.
-- IMPORTANT: SQUARE FOOTAGE. Only use a square footage figure if it is EXPLICITLY stated in the listing text (e.g. "1,180 sq ft", "110 sqm", or a PropertyData FLOOR AREAS figure for this exact property). NEVER estimate, infer, calculate, or assume square footage from bedroom count, property type, room dimensions, or general knowledge. If sq ft is not explicitly stated: set property.sqft to 0, set metrics.pricePerSqFt to 0, set areaContext.priceVsAreaPercent to null, and anywhere price per sq ft would otherwise be referenced (areaContext.comparableNote, scoreReasons.valueForMoney, redFlags details, etc.) include this exact sentence verbatim instead of any £/sqft figure: "Square footage is typically shown on the listing's floor plan. Please enter it in the sq ft input field below for accurate price per sq ft analysis. If no floor plan is available, ensure you request accurate square footage data from the agent — this is a key part of any property analysis and essential for assessing whether you are buying at the right price per square foot." Do not produce any estimated or assumed £/sqft number under any circumstances when sq ft is unknown.
-- IMPORTANT: MISSING SQ FT IS NOT A RED FLAG. Square footage is almost never included in Rightmove listing text — it is standard UK practice for sq ft to appear on the floorplan only, which is not passed to you as text. Therefore: (a) NEVER generate a red flag, transparency issue, or risk note about sq ft being missing from the listing description. (b) NEVER lower the listingTransparency sub-score because sq ft is absent from the text. (c) Assume sq ft exists on the floorplan and rely on the standard prompt to the user to enter it (see the SQUARE FOOTAGE rule above). (d) Only treat missing sq ft as genuinely suspicious or as a transparency red flag if there is EXPLICIT evidence the agent is withholding it — for example the agent literally answers "Ask agent" to a size field, OR the listing has no floorplan at all (i.e. "FLOOR PLAN PRESENT: no" is explicitly present). In those narrow cases a LOW or MEDIUM transparency note is acceptable. Never use missing sq ft as a contributing factor to a low listingTransparency score unless a floorplan is confirmed absent.
-- IMPORTANT: Floor plans. If the listing content begins with or contains a line like "FLOOR PLAN PRESENT: yes" (injected by our scraper after detecting a floor plan image, a "Floorplan" tab, or a floorplan asset on the listing page), the listing HAS a floor plan — do NOT generate any "no floor plan provided", "missing floor plan", or similar red flag under any circumstances. Only flag a missing floor plan if the line "FLOOR PLAN PRESENT: no" is explicitly present, or if there is no FLOOR PLAN PRESENT line at all AND the listing description itself gives no indication of a floor plan. Floor plan images are not passed to you as text, so absence of mention in the listing description is not evidence of absence.
-- Tailor 8 viewing questions to specific things in this listing.
-- EPC: extract a rating from the listing if present ("EPC rating D" / "EPC Rating: D"). Otherwise return epc: null. If found, populate rating, score, potentialRating, estimatedAnnualEnergyCost where visible (else null) and ALWAYS write a 2-3 sentence commentary tailored to size and rating.
-- Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
-- DATES: Never assume a date is a typo or error simply because it falls in the current or future year. If the listing states a date in 2026 or later, accept it as written — do not suggest it may be a typo for a prior year. Only flag a date as suspicious if it is logically impossible (e.g. a future date for a past event that cannot have occurred yet, such as a "sold" date that has not happened).
-- Populate sellerMotivation based on days on market, reductions, chain status, language urgency. Score 1-10, label Low/Moderate/High/Very High, signals as short concrete strings, 2-3 sentence commentary.
-- Populate viewingChecklist with 8-15 specific actionable items (each in category Structure/Legal/Running costs/Negotiation/Practical, plus a one-sentence "why").
-- Populate renovationCosts only for issues identified. estimatedCost as "£15,000 – £25,000" style range. priority is one of "High priority", "Medium priority", "Low priority". For renovation priority: use "High priority" for items that affect safety, mortgageability, or immediate habitability; "Medium priority" for items that affect comfort, energy efficiency, or resale value within 5 years; "Low priority" for cosmetic or lifestyle improvements the buyer may choose to defer or skip entirely. Never use "Essential" as this implies no choice — buyers may choose to accept any condition. Sum totalEstimatedMin/Max. 2-3 sentence commentary. If none, items: [], totals: 0.
+Rules:
+- Read description, captions, key features, agent copy.
+- Translate UK euphemisms into honest red flags ("scope to modernise"=dated; "deceptively spacious"=small; "convenient for transport"=noisy; "no chain" can be good or distressed).
+- Estimate UK stamp duty at current rates (assume additional/second-property buyer for conservative figure unless stated).
+- daysOnMarket: infer from any date in the listing. Compute (today − listing date) → POSITIVE days. A past listing date = days on market, NEVER "in the future". If genuinely no signal, return 0. Never return negative numbers.
+- Monthly mortgage: 15% deposit, 25-year term, 4.8% fixed.
+- Overall score plus 6 sub-scores out of 10 (one decimal): valueForMoney, locationQuality, listingTransparency, marketTiming, riskLevel (HIGHER=LOWER risk), resalePotential. For each, write scoreReasons.<key> as 2-3 sentences referencing SPECIFIC details from this listing.
+- areaContext: avgPricePerSqFtArea, avgSoldPriceArea, priceVsAreaPercent, areaDescription, comparableNote. Use null when unknown. PREFER LOCAL SOLD £/SQFT from PropertyData context (its 'average') as avgPricePerSqFtArea; else estimate. priceVsAreaPercent = ((propertyPpsf - avgPricePerSqFtArea)/avgPricePerSqFtArea)*100, 1dp. If live asking £/sqft is also present, contrast both in areaDescription/comparableNote.
+- AUCTION: set negotiation.isAuction true ONLY if listing explicitly contains: auction, auctioneer, lot number, reserve price, unconditional exchange, sold prior to auction, online auction. NEVER infer from "guide price", "offers over", "offers in excess of". When auction: maxBid = single GBP number, recommendedOffer.low=high=maxBid. Otherwise normal offer range (2-8% under asking).
+- "Guide Price" is standard UK terminology (esp. Bath/Bristol/South West). With no other distress signals: do NOT generate a red flag for it. If mentioned, max severity LOW, neutral tone, suggest buyer confirm sale method with agent. Only escalate to MEDIUM/HIGH if combined with explicit auction terms, very long days on market, multiple reductions, or unusual completion (e.g. 28-day).
+- SQUARE FOOTAGE: only use a figure if EXPLICITLY stated in listing text (e.g. "1,180 sq ft", "110 sqm") or in PropertyData FLOOR AREAS for this exact property. NEVER estimate from beds/type/room dims. If unknown: property.sqft=0, metrics.pricePerSqFt=0, areaContext.priceVsAreaPercent=null, and wherever £/sqft would appear (comparableNote, scoreReasons.valueForMoney, redFlags detail) insert this EXACT sentence verbatim instead: "Square footage is typically shown on the listing's floor plan. Please enter it in the sq ft input field below for accurate price per sq ft analysis. If no floor plan is available, ensure you request accurate square footage data from the agent — this is a key part of any property analysis and essential for assessing whether you are buying at the right price per square foot."
+- MISSING SQ FT IS NOT A RED FLAG and must not lower listingTransparency. Sq ft is normally on the floorplan only. Only treat as a transparency issue if the agent literally answers "Ask agent" for size OR "FLOOR PLAN PRESENT: no" is explicit.
+- FLOOR PLAN: if "FLOOR PLAN PRESENT: yes" appears, the listing HAS one — never flag missing floor plan. Only flag missing if "FLOOR PLAN PRESENT: no" is explicit, or no FLOOR PLAN PRESENT line AND the description gives no indication.
+- 8 viewing questions tailored to specifics in this listing.
+- EPC: extract rating if listed ("EPC rating D"); else epc:null. If found, populate rating/score/potentialRating/estimatedAnnualEnergyCost (null where missing) and 2-3 sentence commentary tailored to size+rating.
+- DATES: accept dates in current/future year as written; only flag if logically impossible.
+- sellerMotivation: score 1-10, label Low/Moderate/High/Very High, signals (short strings), 2-3 sentence commentary.
+- viewingChecklist: 8-15 items, category Structure|Legal|Running costs|Negotiation|Practical, plus one-sentence "why".
+- renovationCosts: only for identified issues. estimatedCost like "£15,000 – £25,000". priority: "High priority" (safety/mortgageability/habitability), "Medium priority" (comfort/efficiency/5-yr resale), "Low priority" (cosmetic/deferrable). Never "Essential". Sum totalEstimatedMin/Max. 2-3 sentence commentary. If none: items:[], totals:0.
+- Be direct — this buyer is about to spend hundreds of thousands.
 
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
@@ -194,22 +190,21 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "comparables": []
 }
 
-PLANNING REFERENCE: Detect any UK planning reference numbers in the listing text (format: XX/XXXXX/XXX e.g. 24/01893/FUL, also older XXXX/XXXX). Look near the words: planning, permission, reference, application, consent, approval. If found, populate planningReference with the reference, what it relates to (e.g. "rear kitchen extension"), the applicationType (Householder | Full Planning | Change of Use | Listed Building Consent | Unknown), whether it is for this property or a neighbouring property (isNeighbouring: true if the listing context indicates the application is on a next-door / adjacent property rather than the subject property), and 2-3 sentences of commentary on what this means for the buyer including what documents to request from the seller's solicitors (planning decision notice, approved drawings, building regs completion certificate). If no planning reference is present, return planningReference: null. Do NOT invent a reference number.
+PLANNING REFERENCE: detect UK planning refs (XX/XXXXX/XXX e.g. 24/01893/FUL, or older XXXX/XXXX) near words planning/permission/reference/application/consent/approval. If found populate planningReference with reference, relatesTo (e.g. "rear kitchen extension"), applicationType (Householder|Full Planning|Change of Use|Listed Building Consent|Unknown), isNeighbouring (true if on an adjacent property), and 2-3 sentences of commentary including docs to request (decision notice, approved drawings, building regs completion). If none: planningReference:null. Never invent a reference.
 
-PROPERTYDATA CONTEXT: At the top of the listing content you will find official PropertyData API results. Use these as ground truth facts — they override any estimates you would otherwise make:
-- SOLD PRICES: Use these for price history section and comparable analysis. These are real Land Registry transactions.
-- FLOOR AREAS: If the listing says "Ask agent" for sq ft but floor areas data is available, use the most recent floor area for this property type in the postcode.
-- CAPITAL GROWTH: Use for area pricing analysis commentary — quote the actual growth percentage.
-- FLOOD RISK: Use PropertyData flood risk data instead of estimating. Quote the actual risk level.
-- LISTED BUILDINGS: If this property appears in listed buildings data, flag it and set listingTransparency lower if the listing does not mention it.
-- CONSERVATION AREA: If in a conservation area, mention implications for extensions and alterations.
-- PLANNING APPLICATIONS: Use recent planning applications for context. If there are nearby large developments, flag as a consideration.
-- CRIME: Use actual crime data for area pricing analysis. If crime is notably high, flag it.
-- INTERNET SPEED: Quote actual speeds in area pricing analysis.
-- SCHOOLS: Use actual school data with Ofsted ratings.
-- ENERGY EFFICIENCY: If EPC data is available from PropertyData, use it instead of extracting from listing text.
+PROPERTYDATA CONTEXT (treat as ground truth, override your estimates):
+- SOLD PRICES → price history + comparables (real Land Registry).
+- FLOOR AREAS → use only for this exact property's sq ft.
+- CAPITAL GROWTH → quote actual % in area pricing/resale.
+- FLOOD RISK → quote actual risk level.
+- LISTED BUILDINGS → flag if present and not mentioned in listing (lower listingTransparency).
+- CONSERVATION AREA → note extension/alteration implications.
+- PLANNING APPLICATIONS → flag any nearby large/relevant ones.
+- CRIME → use real data; flag if notably high.
+- INTERNET SPEED → quote actual speeds.
+- SCHOOLS → use actual data with Ofsted ratings.
 
-If a field is unknown, use 0 for numbers, "Unknown" for strings, and never invent precise comparables you have no basis for.`;
+Unknown fields: 0 for numbers, "Unknown" for strings. Never invent comparables.`;
 
 // ---------- JSON repair ----------
 function cleanResponse(raw: string): string {
@@ -269,6 +264,7 @@ async function callClaude(
   system: string,
   userContent: string,
   maxTokens: number,
+  signal?: AbortSignal,
 ): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -283,6 +279,7 @@ async function callClaude(
       system,
       messages: [{ role: "user", content: userContent }],
     }),
+    signal,
   });
   if (!res.ok) {
     const body = await res.text();
@@ -858,6 +855,12 @@ async function runJob(
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  // Hard 90s deadline for the whole job. Claude is aborted if it overruns
+  // and enrichment steps (GIAS Ofsted scraping) are skipped when time is tight.
+  const DEADLINE_MS = 90_000;
+  const startedAt = Date.now();
+  const remaining = () => Math.max(0, DEADLINE_MS - (Date.now() - startedAt));
+
   try {
     let listingContent = pastedText?.trim() ?? "";
     let floorPlanFlag: "yes" | "unknown" = "unknown";
@@ -938,20 +941,53 @@ async function runJob(
     const dateLine = `Today's date is ${todayStr}. Use this as your reference for all date-related reasoning. Do not flag dates in the current year as errors or typos unless they are logically impossible.\n\n`;
     const systemPrompt = dateLine + SYSTEM_PROMPT;
 
-    let parsed: Record<string, unknown>;
+    let parsed: Record<string, unknown> = {};
+    let claudeTimedOut = false;
     try {
-      console.log("[analyse-listing] calling Claude (primary)");
-      const text = await callClaude(systemPrompt, userContent, 6000);
-      console.log(`[analyse-listing] Claude response length: ${text.length}`);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
+      const budget = remaining();
+      if (budget < 5000) throw new Error("DEADLINE_EXCEEDED before Claude call");
+      console.log(`[analyse-listing] calling Claude (primary), budget ${budget}ms`);
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), budget);
+      try {
+        const text = await callClaude(systemPrompt, userContent, 6000, ac.signal);
+        console.log(`[analyse-listing] Claude response length: ${text.length}`);
+        parsed = parseWithRepair(text) as Record<string, unknown>;
+      } finally {
+        clearTimeout(timer);
+      }
     } catch (primaryErr) {
-      console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
-      const simplified =
-        systemPrompt +
-        "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
-      const text = await callClaude(simplified, userContent, 6000);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
-      parsed.renovationCosts = null;
+      const msg = primaryErr instanceof Error ? primaryErr.message : String(primaryErr);
+      const aborted = msg.includes("abort") || msg.includes("DEADLINE");
+      if (aborted) {
+        console.warn("[analyse-listing] Claude exceeded deadline, returning partial result");
+        claudeTimedOut = true;
+        parsed = { partial: true, partialReason: "Analysis exceeded the 90s time budget. Returning area data only." };
+      } else {
+        console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
+        const budget = remaining();
+        if (budget < 5000) {
+          claudeTimedOut = true;
+          parsed = { partial: true, partialReason: "Analysis exceeded the 90s time budget." };
+        } else {
+          const simplified =
+            systemPrompt +
+            "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+          const ac2 = new AbortController();
+          const timer2 = setTimeout(() => ac2.abort(), budget);
+          try {
+            const text = await callClaude(simplified, userContent, 6000, ac2.signal);
+            parsed = parseWithRepair(text) as Record<string, unknown>;
+            parsed.renovationCosts = null;
+          } catch (retryErr) {
+            console.warn("[analyse-listing] simplified retry also failed", retryErr);
+            claudeTimedOut = true;
+            parsed = { partial: true, partialReason: "Analysis exceeded the 90s time budget." };
+          } finally {
+            clearTimeout(timer2);
+          }
+        }
+      }
     }
 
     // Make sure listingUrl is set on the property block.
@@ -981,7 +1017,10 @@ async function runJob(
     // nearbySchools / crime / broadband / ptal. Only set when we have real data so
     // the UI can fall back to its "data unavailable" state otherwise.
     const mappedSchools = mapPdSchools(pd["schools"]);
-    const enrichedSchools = await enrichSchoolsWithGias(mappedSchools, postcode);
+    // Skip Ofsted scraping if we're already past the deadline or tight on budget.
+    const enrichedSchools = remaining() > 8000 && !claudeTimedOut
+      ? await enrichSchoolsWithGias(mappedSchools, postcode)
+      : mappedSchools;
     if (enrichedSchools) parsed.nearbySchools = enrichedSchools;
     const mappedCrime = mapPdCrime(pd["crime"]);
     if (mappedCrime) parsed.crime = mappedCrime;
@@ -1040,16 +1079,18 @@ async function runJob(
       parsed.score = Math.round((weightedSum / totalWeight) * 10) / 10;
     }
 
+    if (claudeTimedOut) parsed.partial = true;
     const { error: updErr } = await supabase
       .from("analysis_jobs")
       .update({
         status: "complete",
         result_json: parsed,
+        error: claudeTimedOut ? "PARTIAL: 90s deadline exceeded" : null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
     if (updErr) throw updErr;
-    console.log(`[analyse-listing] job ${jobId} complete`);
+    console.log(`[analyse-listing] job ${jobId} complete in ${Date.now() - startedAt}ms (partial=${claudeTimedOut})`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[analyse-listing] job ${jobId} failed:`, message, err);
