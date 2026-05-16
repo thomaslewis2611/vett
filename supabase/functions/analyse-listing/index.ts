@@ -1149,7 +1149,7 @@ async function runJob(
           const ac2 = new AbortController();
           const timer2 = setTimeout(() => ac2.abort(), budget);
           try {
-            const text = await callClaude(simplified, userContent, 6000, ac2.signal);
+            const text = await callClaude(simplified, userContent, 4000, ac2.signal);
             parsed = parseWithRepair(text) as Record<string, unknown>;
             parsed.renovationCosts = null;
           } catch (retryErr) {
