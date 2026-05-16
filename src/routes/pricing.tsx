@@ -200,67 +200,93 @@ function Plan({
   upsell?: { text: string; targetId: string };
   onClick?: () => void;
 }) {
+  const isFeatured = !!highlight;
   return (
     <div
       id={id}
       className="relative p-8"
       style={{
-        background: "#FFFDF9",
-        borderRadius: 12,
-        border: highlight ? "2px solid #1B4332" : "0.5px solid rgba(26,17,8,0.12)",
+        background: isFeatured ? "#2D6A4F" : "#FFFDF9",
+        borderRadius: 16,
+        border: isFeatured ? "0.5px solid rgba(255,253,249,0.15)" : "0.5px solid rgba(26,17,8,0.1)",
+        color: isFeatured ? "#FFFDF9" : "#1A1108",
       }}
     >
-      {highlight && (
+      {isFeatured && (
         <span
           className="absolute -top-3 right-6 uppercase"
           style={{
-            background: "#FAECE7",
-            color: "#993C1D",
+            background: "#FFFDF9",
+            color: "#2D6A4F",
             fontSize: 10,
             fontWeight: 500,
-            letterSpacing: "0.08em",
+            letterSpacing: "0.1em",
             borderRadius: 100,
-            padding: "4px 10px",
+            padding: "5px 12px",
           }}
         >
           Most popular
         </span>
       )}
-      <h3 style={{ fontSize: 18, fontWeight: 500, color: "#1A1108" }}>{title}</h3>
-      <div className="mt-3 flex items-baseline gap-2">
+      <h3
+        style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontWeight: 400,
+          fontSize: 24,
+          color: isFeatured ? "#FFFDF9" : "#1A1108",
+          letterSpacing: "-0.3px",
+        }}
+      >
+        {title}
+      </h3>
+      <div className="mt-3 flex items-baseline gap-2 flex-wrap">
         {originalPrice && (
-          <span style={{ fontSize: 18, color: "#888780", textDecoration: "line-through" }}>
+          <span style={{ fontSize: 18, color: isFeatured ? "rgba(255,253,249,0.55)" : "#888780", textDecoration: "line-through" }}>
             {originalPrice}
           </span>
         )}
-        <span style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px" }}>
+        <span
+          style={{
+            fontFamily: "'Playfair Display', Georgia, serif",
+            fontSize: 36,
+            fontWeight: 400,
+            color: isFeatured ? "#FFFDF9" : "#1A1108",
+            letterSpacing: "-1px",
+          }}
+        >
           {price}
         </span>
-        <span style={{ fontSize: 13, color: "#888780" }}>{cadence}</span>
+        <span style={{ fontSize: 13, fontWeight: 300, color: isFeatured ? "rgba(255,253,249,0.7)" : "#888780" }}>
+          {cadence}
+        </span>
       </div>
       {headline && (
-        <p className="mt-3" style={{ fontSize: 14, fontWeight: 500, color: "#1A1108" }}>
+        <p className="mt-4" style={{ fontSize: 14, fontWeight: 400, color: isFeatured ? "#FFFDF9" : "#1A1108" }}>
           {headline}
         </p>
       )}
       {subnote && (
-        <p className="mt-2" style={{ fontSize: 12, color: "#5F5E5A" }}>
+        <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: isFeatured ? "rgba(255,253,249,0.7)" : "#5F5E5A" }}>
           {subnote}
         </p>
       )}
       {plusIntro && (
-        <p className="mt-5" style={{ fontSize: 13, color: "#888780", fontStyle: "italic" }}>
+        <p className="mt-5" style={{ fontSize: 13, fontWeight: 300, color: isFeatured ? "rgba(255,253,249,0.7)" : "#888780", fontStyle: "italic" }}>
           {plusIntro}
         </p>
       )}
       <ul className={plusIntro ? "mt-2 space-y-2.5" : "mt-5 space-y-2.5"}>
         {features.map((f) => (
-          <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
-            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#1B4332" }} />
+          <li
+            key={f}
+            className="flex items-start gap-2.5"
+            style={{ fontSize: 14, fontWeight: 300, color: isFeatured ? "#FFFDF9" : "#1A1108" }}
+          >
+            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: isFeatured ? "#FFFDF9" : "#2D6A4F" }} />
             <span>
               {f}
               {/^transport links/i.test(f) && (
-                <span className="block text-[11px]" style={{ color: "#888780", marginTop: 2 }}>
+                <span className="block text-[11px]" style={{ color: isFeatured ? "rgba(255,253,249,0.6)" : "#888780", marginTop: 2 }}>
                   London properties only
                 </span>
               )}
@@ -276,13 +302,13 @@ function Plan({
             document.getElementById(upsell.targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
           className="mt-4 text-left hover:underline"
-          style={{ fontSize: 13, fontWeight: 500, color: "#1B4332" }}
+          style={{ fontSize: 13, fontWeight: 500, color: "#2D6A4F" }}
         >
           {upsell.text}
         </button>
       )}
       {footnote && (
-        <p className="mt-4" style={{ fontSize: 12, color: "#888780" }}>
+        <p className="mt-4" style={{ fontSize: 12, fontWeight: 300, color: isFeatured ? "rgba(255,253,249,0.65)" : "#888780" }}>
           {footnote}
         </p>
       )}
@@ -292,12 +318,12 @@ function Plan({
           onClick={onClick}
           className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
           style={{
-            background: highlight ? "#1B4332" : "#1A1108",
-            color: "#FFFDF9",
-            fontSize: 13,
+            background: isFeatured ? "#FFFDF9" : "#2D6A4F",
+            color: isFeatured ? "#1A1108" : "#FFFDF9",
+            fontSize: 14,
             fontWeight: 500,
             borderRadius: 100,
-            padding: "12px 24px",
+            padding: "13px 24px",
             border: 0,
           }}
         >
@@ -308,12 +334,12 @@ function Plan({
           to="/"
           className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
           style={{
-            background: highlight ? "#1B4332" : "#1A1108",
-            color: "#FFFDF9",
-            fontSize: 13,
+            background: isFeatured ? "#FFFDF9" : "#2D6A4F",
+            color: isFeatured ? "#1A1108" : "#FFFDF9",
+            fontSize: 14,
             fontWeight: 500,
             borderRadius: 100,
-            padding: "12px 24px",
+            padding: "13px 24px",
           }}
         >
           {cta}
