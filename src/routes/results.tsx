@@ -480,7 +480,7 @@ function ResultsPage() {
       // start a brand-new job; the poll loop below will retry the fetch.
       if (jobId) {
         try {
-          const probe = await getJobFn({ data: { jobId, sessionJwt } });
+          const probe = await getJobFn({ data: { jobId } });
           if (probe.status === "complete" && probe.analysis) {
             if (!(probe.analysis as { partial?: boolean })?.partial) {
               writeCachedAnalysis(probe.analysis, url, text, token);
