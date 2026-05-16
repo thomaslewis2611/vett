@@ -427,7 +427,7 @@ function ResultsPage() {
         }
       }
     },
-    enabled: hasInput,
+    enabled: hasInput && precheckPhase === "ready",
     retry: false,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
