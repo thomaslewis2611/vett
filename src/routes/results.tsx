@@ -2232,8 +2232,8 @@ function RedFlagItem({
           {flag.severity}
         </span>
         <div>
-          <div className="font-medium">{flag.title}</div>
-          <p className="mt-1 text-sm text-muted-foreground">{flag.detail}</p>
+          <div className="font-medium">{sanitiseText(flag.title)}</div>
+          <p className="mt-1 text-sm text-muted-foreground">{sanitiseText(flag.detail)}</p>
         </div>
       </div>
     </div>
