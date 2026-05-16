@@ -280,6 +280,8 @@ function ResultsPage() {
   const [preAnalysis, setPreAnalysis] = useState<PreAnalysisState>(
     shouldRunPreAnalysis ? { status: "fetching" } : { status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES },
   );
+  const analysisReady = preAnalysis.status === "ready";
+  const analysisOverrides = analysisReady ? preAnalysis.overrides : EMPTY_PRE_ANALYSIS_OVERRIDES;
 
   useEffect(() => {
     if (!shouldRunPreAnalysis) {
@@ -299,7 +301,7 @@ function ResultsPage() {
         const missing = { epc: !result.epcFound, sqft: !result.sqftFound };
         console.log("[pre-analysis] scanned fetched listing text", {
           url,
-          textLength: result.textLength,
+          textLength: "textLength" in result ? result.textLength : undefined,
           epcFound: result.epcFound,
           sqftFound: result.sqftFound,
           epcRating: result.epcRating,
@@ -398,8 +400,8 @@ function ResultsPage() {
             text,
             accessToken: token ?? null,
             sessionJwt,
-            userEpc: overrides.userEpc,
-            userSqft: overrides.userSqft,
+            userEpc: analysisOverrides.userEpc,
+            userSqft: analysisOverrides.userSqft,
           },
         });
         jobId = started.jobId;
@@ -442,7 +444,7 @@ function ResultsPage() {
         }
       }
     },
-    enabled: hasInput && precheckPhase === "ready",
+    enabled: hasInput && analysisReady,
     retry: false,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
