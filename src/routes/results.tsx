@@ -626,7 +626,7 @@ function ResultsPage() {
         <SiteHeader />
         <main className="mx-auto flex max-w-xl flex-1 items-center px-6 py-16 text-center">
           <div className="w-full rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
-            <Loader2 className="mx-auto h-5 w-5 animate-spin" style={{ color: CORAL }} />
+            <Loader2 className="mx-auto h-5 w-5 animate-spin" style={{ color: ACCENT }} />
             <h1 className="mt-4 text-xl font-semibold tracking-tight">Checking listing details</h1>
             <p className="mt-2 text-sm text-muted-foreground">
               We’re reading the listing first so any missing EPC or sq ft details can be added before analysis starts.
@@ -917,7 +917,7 @@ const LOADING_TIPS = [
   "Tip: Your viewing checklist will be specific to the red flags found in this listing",
 ];
 
-const CORAL = "#1B4332";
+const ACCENT = "#1B4332";
 
 function prettyUrl(url?: string): string | null {
   if (!url) return null;
@@ -960,7 +960,7 @@ function LoadingState({ url }: { url?: string }) {
         <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
           <div
             className="h-full rounded-full transition-[width] duration-700 ease-out"
-            style={{ width: `${progress}%`, background: CORAL }}
+            style={{ width: `${progress}%`, background: ACCENT }}
           />
         </div>
 
@@ -1004,7 +1004,7 @@ function LoadingState({ url }: { url?: string }) {
                   {done ? (
                     <Check className="h-3.5 w-3.5 text-emerald-600" />
                   ) : active ? (
-                    <Loader2 className="h-3 w-3 animate-spin" style={{ color: CORAL }} />
+                    <Loader2 className="h-3 w-3 animate-spin" style={{ color: ACCENT }} />
                   ) : (
                     <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
                   )}
@@ -1018,7 +1018,7 @@ function LoadingState({ url }: { url?: string }) {
           {finalising && (
             <li className="flex items-center gap-3 animate-in fade-in duration-500">
               <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin" style={{ color: CORAL }} />
+                <Loader2 className="h-4 w-4 animate-spin" style={{ color: ACCENT }} />
               </span>
               <span className="text-foreground">Finalising your report…</span>
             </li>
