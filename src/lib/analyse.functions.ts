@@ -2425,12 +2425,18 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
       text: z.string().max(50000).optional(),
       accessToken: z.string().max(200).optional().nullable(),
       sessionJwt: z.string().max(4000).optional().nullable(),
+      userEpc: z.string().regex(/^[A-Ga-g]$/).optional().nullable(),
+      userSqft: z.number().min(50).max(50000).optional().nullable(),
     })
   )
   .handler(async ({ data }): Promise<{ jobId: string }> => {
     const url = data.url?.trim() ?? "";
     const pastedText = data.text?.trim() ?? "";
     if (!url && !pastedText) throw new Error("Provide a listing URL or pasted text");
+    const overrides = {
+      userEpc: data.userEpc ?? null,
+      userSqft: data.userSqft ?? null,
+    };
 
     if (url) {
       try {
