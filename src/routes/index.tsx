@@ -130,155 +130,513 @@ function Index() {
     >
       <SiteHeader />
 
-      {/* 2. HERO */}
-      <section style={{ padding: "80px 24px 64px" }}>
-        <div className="mx-auto text-center" style={{ maxWidth: 800 }}>
-          <span
-            className="inline-flex items-center gap-2"
-            style={{
-              background: COLORS.card,
-              border: `0.5px solid ${COLORS.border}`,
-              color: COLORS.muted,
-              fontSize: 12,
-              fontWeight: 400,
-              borderRadius: 100,
-              padding: "6px 14px",
-            }}
-          >
+      {/* 2. HERO — split layout */}
+      <style>{`
+        @keyframes roovrTickerScroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        .roovr-hero-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 48px;
+          align-items: start;
+        }
+        @media (min-width: 768px) {
+          .roovr-hero-grid {
+            grid-template-columns: minmax(0,480px) minmax(0,1fr);
+            gap: 64px;
+          }
+          .roovr-hero-right { transform: translateY(-20px); }
+        }
+        .roovr-hero-left { max-width: 480px; margin-left: auto; margin-right: auto; }
+        @media (min-width: 768px) {
+          .roovr-hero-left { margin-left: 0; margin-right: 0; }
+        }
+      `}</style>
+
+      <section style={{ padding: "80px 24px 48px" }}>
+        <div className="mx-auto roovr-hero-grid" style={{ maxWidth: 1100 }}>
+          {/* LEFT */}
+          <div className="roovr-hero-left text-center md:text-left">
             <span
-              aria-hidden
+              className="inline-flex items-center gap-2"
               style={{
-                width: 6,
-                height: 6,
-                borderRadius: 999,
-                background: COLORS.green,
-                display: "inline-block",
-              }}
-            />
-            AI-powered property analysis · UK only
-          </span>
-
-          <h1
-            className="mt-7 text-balance"
-            style={{
-              fontFamily: HEADING_FONT,
-              fontSize: "clamp(34px, 6vw, 56px)",
-              fontWeight: 400,
-              lineHeight: 1.1,
-              color: COLORS.dark,
-              letterSpacing: "-0.5px",
-            }}
-          >
-            You're about to spend £400,000.{" "}
-            <em
-              style={{
-                fontStyle: "italic",
+                background: COLORS.card,
+                border: `0.5px solid ${COLORS.border}`,
+                color: COLORS.muted,
+                fontSize: 12,
                 fontWeight: 400,
-                color: COLORS.green,
-              }}
-            >
-              Know what you're buying.
-            </em>
-          </h1>
-
-          <p
-            className="mx-auto mt-6"
-            style={{
-              fontFamily: BODY_FONT,
-              fontWeight: 300,
-              fontSize: 16,
-              color: COLORS.muted,
-              maxWidth: 520,
-              lineHeight: 1.6,
-            }}
-          >
-            Paste any Rightmove listing. Get red flags, true costs, a negotiation strategy,
-            flood risk, local schools and more — in under 2 minutes.
-          </p>
-
-          <form
-            onSubmit={handleAnalyse}
-            className="mx-auto mt-10 flex items-center gap-2"
-            style={{
-              maxWidth: 640,
-              border: `1.5px solid ${COLORS.dark}`,
-              borderRadius: 100,
-              background: COLORS.card,
-              padding: 4,
-            }}
-          >
-            <div className="flex flex-1 items-center gap-2 px-4">
-              <Link2 className="h-4 w-4 shrink-0" style={{ color: COLORS.veryMuted }} />
-              <input
-                id="url-input"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                placeholder="Paste a Rightmove listing URL…"
-                className="w-full bg-transparent py-2.5 outline-none"
-                style={{ fontSize: 14, color: COLORS.dark, fontFamily: BODY_FONT }}
-                aria-label="Property listing URL"
-              />
-            </div>
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
-              style={{
-                background: COLORS.green,
-                color: COLORS.card,
-                fontSize: 13,
-                fontWeight: 500,
                 borderRadius: 100,
-                padding: "12px 24px",
+                padding: "6px 14px",
               }}
             >
-              Analyse
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          </form>
+              <span
+                aria-hidden
+                style={{
+                  width: 6,
+                  height: 6,
+                  borderRadius: 999,
+                  background: COLORS.green,
+                  display: "inline-block",
+                }}
+              />
+              AI-powered property analysis · UK only
+            </span>
 
-          {error && (
-            <p role="alert" className="mx-auto mt-3" style={{ fontSize: 12, color: "#993C1D" }}>
-              {error}
-            </p>
-          )}
-          {notice && !error && (
-            <p role="status" className="mx-auto mt-3" style={{ fontSize: 12, color: COLORS.muted }}>
-              {notice}
-            </p>
-          )}
-
-          <p className="mx-auto mt-3" style={{ fontSize: 11, color: COLORS.veryMuted }}>
-            Works best with Rightmove · More sites coming soon · UK properties only
-          </p>
-
-          <ul className="mx-auto mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
-            {[
-              "From £4.99 · one-off",
-              "No subscription",
-              "Report in under 2 minutes",
-            ].map((t) => (
-              <li
-                key={t}
-                className="flex items-center gap-2"
-                style={{ fontSize: 12, color: COLORS.muted }}
+            <h1
+              className="mt-7 text-balance"
+              style={{
+                fontFamily: HEADING_FONT,
+                fontSize: "clamp(34px, 5vw, 48px)",
+                fontWeight: 400,
+                lineHeight: 1.1,
+                color: COLORS.dark,
+                letterSpacing: "-0.5px",
+              }}
+            >
+              You're about to spend £400,000.{" "}
+              <em
+                style={{
+                  fontStyle: "italic",
+                  fontWeight: 400,
+                  color: COLORS.green,
+                }}
               >
-                <span
-                  className="inline-flex items-center justify-center"
+                Know what you're buying.
+              </em>
+            </h1>
+
+            <p
+              className="mt-6"
+              style={{
+                fontFamily: BODY_FONT,
+                fontWeight: 300,
+                fontSize: 16,
+                color: COLORS.muted,
+                lineHeight: 1.6,
+              }}
+            >
+              Paste any Rightmove listing. Get red flags, true costs, a negotiation strategy,
+              flood risk, local schools and more — in under 2 minutes.
+            </p>
+
+            <form
+              onSubmit={handleAnalyse}
+              className="mt-8 flex items-center gap-2"
+              style={{
+                border: `1.5px solid ${COLORS.dark}`,
+                borderRadius: 100,
+                background: COLORS.card,
+                padding: 4,
+              }}
+            >
+              <div className="flex flex-1 items-center gap-2 px-4 min-w-0">
+                <Link2 className="h-4 w-4 shrink-0" style={{ color: COLORS.veryMuted }} />
+                <input
+                  id="url-input"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="Paste a Rightmove listing URL…"
+                  className="w-full bg-transparent py-2.5 outline-none"
+                  style={{ fontSize: 14, color: COLORS.dark, fontFamily: BODY_FONT }}
+                  aria-label="Property listing URL"
+                />
+              </div>
+              <button
+                type="submit"
+                className="inline-flex items-center justify-center gap-2 transition-opacity hover:opacity-90"
+                style={{
+                  background: COLORS.green,
+                  color: COLORS.card,
+                  fontSize: 13,
+                  fontWeight: 500,
+                  borderRadius: 100,
+                  padding: "12px 20px",
+                }}
+              >
+                Analyse
+                <ArrowRight className="h-4 w-4" />
+              </button>
+            </form>
+
+            {error && (
+              <p role="alert" className="mt-3" style={{ fontSize: 12, color: "#993C1D" }}>
+                {error}
+              </p>
+            )}
+            {notice && !error && (
+              <p role="status" className="mt-3" style={{ fontSize: 12, color: COLORS.muted }}>
+                {notice}
+              </p>
+            )}
+
+            {/* Example chips */}
+            <div className="mt-5">
+              <div style={{ fontSize: 11, color: COLORS.veryMuted, marginBottom: 6 }}>
+                Try an example:
+              </div>
+              <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
+                {[
+                  { label: "SW11 flat →", url: "https://www.rightmove.co.uk/properties/example-sw11" },
+                  { label: "Bristol house →", url: "https://www.rightmove.co.uk/properties/example-bristol" },
+                  { label: "Bath terrace →", url: "https://www.rightmove.co.uk/properties/example-bath" },
+                ].map((chip) => (
+                  <button
+                    key={chip.label}
+                    type="button"
+                    onClick={() => setUrl(chip.url)}
+                    style={{
+                      background: "#fff",
+                      border: "0.5px solid rgba(26,17,8,0.15)",
+                      borderRadius: 100,
+                      fontSize: 11,
+                      color: COLORS.muted,
+                      padding: "5px 12px",
+                      cursor: "pointer",
+                      fontFamily: BODY_FONT,
+                    }}
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <p className="mt-3" style={{ fontSize: 11, color: COLORS.veryMuted }}>
+              Works best with Rightmove · More sites coming soon · UK properties only
+            </p>
+
+            <ul className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 justify-center md:justify-start">
+              {[
+                "From £4.99 · one-off",
+                "No subscription",
+                "Report in under 2 minutes",
+              ].map((t) => (
+                <li
+                  key={t}
+                  className="flex items-center gap-2"
+                  style={{ fontSize: 12, color: COLORS.muted }}
+                >
+                  <span
+                    className="inline-flex items-center justify-center"
+                    style={{
+                      width: 16,
+                      height: 16,
+                      borderRadius: 999,
+                      background: COLORS.greenTint,
+                    }}
+                  >
+                    <Check className="h-2.5 w-2.5" style={{ color: COLORS.green }} />
+                  </span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* RIGHT — sample report card */}
+          <div className="roovr-hero-right">
+            <div
+              style={{
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: COLORS.green,
+                marginBottom: 8,
+              }}
+            >
+              Example report
+            </div>
+            <div
+              style={{
+                background: "#FFFDF9",
+                border: "0.5px solid rgba(26,17,8,0.1)",
+                borderRadius: 16,
+                padding: 24,
+              }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div style={{ fontSize: 11, color: COLORS.veryMuted }}>
+                    3 bed · Flat · Clapham, SW11
+                  </div>
+                  <div
+                    style={{
+                      fontFamily: HEADING_FONT,
+                      fontSize: 22,
+                      color: COLORS.dark,
+                      marginTop: 2,
+                    }}
+                  >
+                    £625,000
+                  </div>
+                </div>
+                <div
                   style={{
-                    width: 16,
-                    height: 16,
-                    borderRadius: 999,
-                    background: COLORS.greenTint,
+                    width: 54,
+                    height: 54,
+                    borderRadius: "50%",
+                    background: "conic-gradient(#2D6A4F 0% 74%, #EAF3DE 74% 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
                   }}
                 >
-                  <Check className="h-2.5 w-2.5" style={{ color: COLORS.green }} />
-                </span>
-                {t}
-              </li>
-            ))}
-          </ul>
+                  <div
+                    style={{
+                      width: 42,
+                      height: 42,
+                      borderRadius: "50%",
+                      background: "#FFFDF9",
+                      display: "flex",
+                      alignItems: "baseline",
+                      justifyContent: "center",
+                      paddingTop: 14,
+                    }}
+                  >
+                    <span style={{ fontSize: 13, fontWeight: 500, color: COLORS.dark }}>7.4</span>
+                    <span style={{ fontSize: 8, color: COLORS.veryMuted, marginLeft: 1 }}>/10</span>
+                  </div>
+                </div>
+              </div>
+
+              <div
+                style={{
+                  background: "#F1EFE8",
+                  borderRadius: 10,
+                  padding: "12px 14px",
+                  margin: "16px 0 12px",
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: COLORS.veryMuted,
+                    marginBottom: 8,
+                  }}
+                >
+                  Area pricing analysis
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: "This property", value: "£694", sub: "per sq ft", red: false },
+                    { label: "Area average", value: "£641", sub: "per sq ft", red: false },
+                    { label: "Vs avg", value: "+8.3%", sub: "above", red: true },
+                  ].map((m) => (
+                    <div key={m.label}>
+                      <div style={{ fontSize: 9, color: COLORS.veryMuted }}>{m.label}</div>
+                      <div
+                        style={{
+                          fontSize: 15,
+                          fontWeight: 500,
+                          color: m.red ? "#A32D2D" : COLORS.dark,
+                          marginTop: 2,
+                        }}
+                      >
+                        {m.value}
+                      </div>
+                      <div style={{ fontSize: 9, color: m.red ? "#A32D2D" : COLORS.veryMuted }}>
+                        {m.sub}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  style={{
+                    position: "relative",
+                    height: 5,
+                    background: "rgba(26,17,8,0.1)",
+                    borderRadius: 3,
+                    marginTop: 10,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "85%",
+                      background: COLORS.green,
+                      borderRadius: 3,
+                    }}
+                  />
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      width: "92%",
+                      background: "#A32D2D",
+                      opacity: 0.5,
+                      borderRadius: 3,
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: 10, color: COLORS.muted, marginTop: 8 }}>
+                  At 900 sq ft, you're paying ~£48,600 above the area average.
+                </div>
+              </div>
+
+              <div style={{ marginTop: 14 }}>
+                <div
+                  style={{
+                    fontSize: 9,
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: COLORS.veryMuted,
+                    marginBottom: 6,
+                  }}
+                >
+                  Red flags
+                </div>
+                <ul style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {[
+                    { sev: "HIGH", bg: "#FAECE7", fg: "#993C1D", text: "Priced above local £/sqft — negotiate" },
+                    { sev: "MEDIUM", bg: "#FAEEDA", fg: "#854F0B", text: "42 days on market — leverage available" },
+                    { sev: "LOW", bg: "#F1EFE8", fg: "#5F5E5A", text: "Ground floor — resale consideration" },
+                  ].map((f) => (
+                    <li key={f.sev} className="flex items-center gap-2">
+                      <span
+                        style={{
+                          background: f.bg,
+                          color: f.fg,
+                          fontSize: 9,
+                          fontWeight: 600,
+                          textTransform: "uppercase",
+                          padding: "2px 6px",
+                          borderRadius: 100,
+                          letterSpacing: "0.04em",
+                        }}
+                      >
+                        {f.sev}
+                      </span>
+                      <span style={{ fontSize: 11, color: COLORS.dark }}>{f.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div
+                className="grid grid-cols-3 gap-2"
+                style={{
+                  background: "#F1EFE8",
+                  borderRadius: 8,
+                  padding: 9,
+                  marginTop: 14,
+                }}
+              >
+                {[
+                  { label: "Stamp duty", value: "£18,750", color: COLORS.dark },
+                  { label: "Flood risk", value: "Low", color: COLORS.green },
+                  { label: "Monthly est.", value: "£2,840", color: COLORS.dark },
+                ].map((m) => (
+                  <div key={m.label}>
+                    <div
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 500,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.06em",
+                        color: COLORS.veryMuted,
+                      }}
+                    >
+                      {m.label}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 500, color: m.color, marginTop: 2 }}>
+                      {m.value}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  fontSize: 9,
+                  color: COLORS.veryMuted,
+                  textAlign: "center",
+                  marginTop: 10,
+                }}
+              >
+                Sample only · SW11 data · Land Registry
+              </div>
+            </div>
+          </div>
         </div>
       </section>
+
+      {/* 2b. SCROLLING DATA TICKER */}
+      <div
+        aria-hidden
+        style={{
+          background: "#F1EFE8",
+          borderTop: "0.5px solid rgba(26,17,8,0.1)",
+          borderBottom: "0.5px solid rgba(26,17,8,0.1)",
+          padding: "14px 0",
+          overflow: "hidden",
+          WebkitMaskImage:
+            "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
+          maskImage:
+            "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            width: "max-content",
+            animation: "roovrTickerScroll 35s linear infinite",
+          }}
+        >
+          {[0, 1].map((dup) => (
+            <div
+              key={dup}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 32,
+                paddingRight: 32,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {[
+                "Clapham SW11 · £694/sqft · +8.3% vs area avg",
+                "Bath BA1 · Guide price · 42 days on market",
+                "Manchester M15 · £389/sqft · Flood risk: Low",
+                "Bristol BS8 · 7.4/10 Roovr score",
+                "Leeds LS1 · £312/sqft · 3 red flags found",
+                "Oxford OX1 · £721/sqft · +12.1% vs area avg",
+                "Edinburgh EH3 · 8.1/10 Roovr score",
+                "Brighton BN1 · 56 days on market · strong leverage",
+                "Notting Hill W11 · £1,240/sqft · 2 high severity flags",
+                "Cambridge CB1 · £598/sqft · EPC rating D",
+                "Islington N1 · 8.6/10 Roovr score · Below area avg",
+                "Sheffield S1 · £287/sqft · Flood risk: Medium",
+              ].map((item, i) => (
+                <span
+                  key={`${dup}-${i}`}
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 32,
+                    fontFamily: BODY_FONT,
+                    fontSize: 12,
+                    color: COLORS.muted,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <span style={{ color: COLORS.green }}>●</span>
+                  {item}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* 3. STATS BAR */}
       <section
