@@ -2345,6 +2345,7 @@ async function processAnalysisJob(
   jobId: string,
   url: string,
   pastedText: string,
+  overrides?: { userEpc?: string | null; userSqft?: number | null },
 ): Promise<void> {
   console.log(`[processAnalysisJob] started for jobId: ${jobId}`);
   let step = "init";
@@ -2354,8 +2355,9 @@ async function processAnalysisJob(
     if (!apiKey) {
       throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
     }
+    const hasOverrides = Boolean(overrides?.userEpc || overrides?.userSqft);
     let full: FullAnalysis;
-    if (url && !pastedText) {
+    if (url && !pastedText && !hasOverrides) {
       const cached = recentAnalyses.get(url);
       if (cached && Date.now() - cached.at < ANALYSIS_DEDUPE_TTL_MS) {
         console.log(`[processAnalysisJob] using cached analysis for ${url}`);
@@ -2381,7 +2383,7 @@ async function processAnalysisJob(
       }
     } else {
       step = "run-analysis";
-      full = await runAnalysis(url, pastedText, apiKey);
+      full = await runAnalysis(url, pastedText, apiKey, overrides);
     }
 
     step = "update-job-row";
