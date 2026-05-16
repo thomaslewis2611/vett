@@ -299,11 +299,12 @@ function ResultsPage() {
 
     (async () => {
       try {
+        console.log("[pre-analysis] calling precheckListing server fn", { url });
         const result = await precheckFn({ data: { url } });
         if (cancelled) return;
 
         const missing = { epc: !result.epcFound, sqft: !result.sqftFound };
-        console.log("[pre-analysis] scanned fetched listing text", {
+        console.log("[pre-analysis] precheckListing returned", {
           url,
           textLength: "textLength" in result ? result.textLength : undefined,
           epcFound: result.epcFound,
@@ -313,14 +314,25 @@ function ResultsPage() {
         });
 
         if (!missing.epc && !missing.sqft) {
+          console.log("[pre-analysis] both EPC and sqft found — skipping modal, starting analysis");
           setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
           return;
         }
 
+        console.log("[pre-analysis] missing details — showing modal", missing);
         setPreAnalysis({ status: "needs-input", missing });
       } catch (err) {
-        console.warn("[pre-analysis] failed; starting analysis without pre-analysis modal", (err as Error)?.message);
-        if (!cancelled) setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
+        // If precheck fails (network, 500, timeout, etc.) we cannot confirm
+        // whether the listing already contains EPC / sqft. Be safe and show
+        // the modal asking for BOTH, rather than silently skipping it —
+        // the user can still hit "Skip" to proceed without overrides.
+        console.warn(
+          "[pre-analysis] precheckListing threw — showing modal with both fields as a fallback",
+          (err as Error)?.message,
+        );
+        if (!cancelled) {
+          setPreAnalysis({ status: "needs-input", missing: { epc: true, sqft: true } });
+        }
       }
     })();
 
