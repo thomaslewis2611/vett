@@ -28,45 +28,71 @@ export const Route = createFileRoute("/pricing")({
 
 function PricingPage() {
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8" }}>
       <SiteHeader />
 
-      <main className="mx-auto max-w-4xl px-6 py-20">
-        <div className="text-center">
-          <h1 className="text-4xl font-semibold tracking-tight sm:text-5xl">
-            Simple, honest pricing
-          </h1>
-          <p className="mx-auto mt-4 max-w-xl text-muted-foreground">
-            One-time payments. No auto-renewals, no hidden fees.
-          </p>
-        </div>
+      <main className="w-full" style={{ background: "#1A1108" }}>
+        <div className="mx-auto max-w-5xl px-6 py-20 sm:py-28">
+          <div className="text-center">
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                color: "#2D6A4F",
+              }}
+            >
+              Pricing
+            </div>
+            <h1
+              className="mt-4"
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontWeight: 400,
+                fontSize: 48,
+                lineHeight: 1.1,
+                color: "#FFFDF9",
+                letterSpacing: "-0.5px",
+              }}
+            >
+              Simple, honest pricing
+            </h1>
+            <p
+              className="mx-auto mt-5 max-w-xl"
+              style={{ fontWeight: 300, fontSize: 16, color: "rgba(255,253,249,0.7)" }}
+            >
+              One-time payments. No auto-renewals, no hidden fees.
+            </p>
+          </div>
 
-        <div className="mt-14 grid gap-6 md:grid-cols-2">
-          <Plan
-            title="Single report"
-            price="£4.99"
-            cadence="One-off payment"
-            cta="Buy a report"
-            features={[
-              "Full analysis with all red flags",
-              "EPC analysis",
-              "Area pricing analysis",
-              "True cost breakdown and stamp duty",
-              "Negotiation strategy and recommended offer",
-              "Viewing checklist — specific to this property",
-              "Renovation cost estimator",
-              "Seller motivation score",
-              "Flood risk assessment",
-              "Nearby schools with Ofsted ratings",
-              "Crime statistics",
-              "Broadband and internet speed",
-              "Transport links",
-              "Report saved to your account",
-              "Email your report to you",
-            ]}
-            upsell={{ text: "Upgrade to Buyer Pass for AI chat, comparisons and unlimited analyses →", targetId: "buyer-pass-card" }}
-          />
-          <BuyerPassPlan />
+          <div className="mt-14 grid gap-6 md:grid-cols-2">
+            <Plan
+              title="Single report"
+              price="£4.99"
+              cadence="One-off payment"
+              cta="Buy a report"
+              features={[
+                "Full analysis with all red flags",
+                "EPC analysis",
+                "Area pricing analysis",
+                "True cost breakdown and stamp duty",
+                "Negotiation strategy and recommended offer",
+                "Viewing checklist — specific to this property",
+                "Renovation cost estimator",
+                "Seller motivation score",
+                "Flood risk assessment",
+                "Nearby schools with Ofsted ratings",
+                "Crime statistics",
+                "Broadband and internet speed",
+                "Transport links",
+                "Report saved to your account",
+                "Email your report to you",
+              ]}
+              upsell={{ text: "Upgrade to Buyer Pass for AI chat, comparisons and unlimited analyses →", targetId: "buyer-pass-card" }}
+            />
+            <BuyerPassPlan />
+          </div>
         </div>
       </main>
 
