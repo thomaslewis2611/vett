@@ -149,7 +149,7 @@ You must:
 - Read the listing carefully (description, photos captions, key features, agent copy).
 - Translate UK estate agent euphemisms into honest red flags ("scope to modernise" = dated; "deceptively spacious" = small; "convenient for transport" = noisy; "no chain" can be good or distressed; etc.).
 - Estimate UK stamp duty using current rates for the buyer profile (assume an additional / second property buyer for a conservative figure unless stated otherwise).
-- For daysOnMarket: look for any date references in the listing text and infer days on market if possible. Return 0 only if there is genuinely no signal.
+- For daysOnMarket: look for any date references in the listing text and infer days on market if possible. Return 0 only if there is genuinely no signal. CRITICAL DATE MATH: When calculating days on market yourself, ALWAYS compute (today's date − listing date) to get a POSITIVE number of days. A listing date EARLIER than today means the property has been on the market for that many days — never describe it as being "in the future". For example, listed 27 April 2026 with today 16 May 2026 = 19 days on market (NOT 19 days in the future). Only if the listing date is genuinely AFTER today's date should you treat it as a potential data error and set daysOnMarket to 0 — never produce a negative number and never describe a past date as future.
 - Estimate monthly mortgage on 15% deposit, 25-year term at 4.8% fixed.
 - Give an overall value score AND 6 sub-scores (each out of 10, one decimal):
   - valueForMoney, locationQuality, listingTransparency, marketTiming, riskLevel (HIGHER = LOWER risk), resalePotential.
