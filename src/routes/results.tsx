@@ -1254,27 +1254,64 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 
         {/* Property header */}
         <section
-          className="mt-6 w-full rounded-3xl px-6 py-6 sm:px-8 sm:py-8"
+          className="mt-6 w-full"
           style={{
             background: "#FFFDF9",
-            borderBottom: "0.5px solid rgba(26,17,8,0.12)",
+            borderRadius: 20,
+            border: "0.5px solid rgba(26,17,8,0.1)",
+            padding: "36px 40px",
           }}
         >
-          <div className="flex items-start justify-between gap-6">
-            <div className="min-w-0 flex-1">
+          <div
+            className="grid items-start gap-6 sm:gap-10"
+            style={{ gridTemplateColumns: "minmax(0,1fr) auto" }}
+          >
+            <div className="min-w-0">
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  color: "#2D6A4F",
+                  textTransform: "uppercase",
+                  marginBottom: 10,
+                }}
+              >
+                Rightmove{(() => {
+                  const parts = String(a.property.address || "")
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter((s) => s && !/^[A-Z]{1,2}\d/i.test(s));
+                  const area = parts.slice(-2).join(", ");
+                  return area ? ` · ${area}` : "";
+                })()}
+              </div>
               <h1
-                className="truncate"
-                style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", lineHeight: 1.3 }}
+                style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: 28,
+                  fontWeight: 400,
+                  color: "#1A1108",
+                  lineHeight: 1.2,
+                  marginBottom: 16,
+                }}
               >
                 {sanitiseText(a.property.address)}
               </h1>
               <div
-                className="mt-2"
-                style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", lineHeight: 1.2 }}
+                style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: 36,
+                  fontWeight: 400,
+                  color: "#1A1108",
+                  letterSpacing: "-0.5px",
+                  lineHeight: 1,
+                  marginBottom: 20,
+                }}
               >
                 {formatGBP(a.property.price)}
               </div>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
                 <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
                 <PropertyPill>{a.property.baths} bath{a.property.baths === 1 ? "" : "s"}</PropertyPill>
                 {(a.property.sqft > 0 || a.manualSqftAnalysis?.sqft) && (
