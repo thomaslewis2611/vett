@@ -2477,7 +2477,7 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     let invokeErrorMessage = "";
     try {
       const result = await supabaseAdmin.functions.invoke("analyse-listing", {
-        body: { jobId, url, pastedText },
+        body: { jobId, url, pastedText, userEpc: overrides.userEpc, userSqft: overrides.userSqft },
       });
       console.log(`[startAnalysisJob] Edge Function invoke result:`, JSON.stringify({
         hasData: !!result.data,
