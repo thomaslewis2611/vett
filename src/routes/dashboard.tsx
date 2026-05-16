@@ -487,8 +487,8 @@ function DashboardPage() {
                 return (
                   <li
                     key={r.id}
-                    className="group relative flex w-full flex-col gap-2 p-4 pr-12 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:pr-12"
-                    style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)", boxSizing: "border-box" }}
+                    className="group relative flex w-full flex-col gap-2 p-5 pr-12 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:pr-12"
+                    style={{ background: "#FFFDF9", borderRadius: 16, border: "0.5px solid rgba(26,17,8,0.1)", boxSizing: "border-box" }}
                   >
                     {!r.id.startsWith("token:") && (
                       <button
@@ -497,18 +497,18 @@ function DashboardPage() {
                         aria-label={r.is_pinned ? "Unpin report" : "Pin report"}
                         title={r.is_pinned ? "Unpin from top" : "Pin to top"}
                         className={`absolute right-3 top-3 rounded-full p-1.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 ${r.is_pinned ? "sm:opacity-100" : ""}`}
-                        style={{ color: r.is_pinned ? "#1B4332" : "#B8B6AE" }}
+                        style={{ color: r.is_pinned ? "#2D6A4F" : "#B8B6AE" }}
                       >
                         <Pin
                           className="h-4 w-4"
-                          fill={r.is_pinned ? "#1B4332" : "none"}
+                          fill={r.is_pinned ? "#2D6A4F" : "none"}
                           strokeWidth={2}
                         />
                       </button>
                     )}
                     <div className="min-w-0 flex-1">
-                      <div className="truncate" style={{ fontSize: 15, fontWeight: 500, color: "#1A1108" }}>{address}</div>
-                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs" style={{ color: "#888780" }}>
+                      <div className="truncate" style={{ fontFamily: HEADING, fontSize: 18, fontWeight: 400, color: "#1A1108", letterSpacing: "-0.2px" }}>{address}</div>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1" style={{ fontSize: 12, fontWeight: 300, color: "#888780" }}>
                         {price > 0 && <span>{formatGBP(price)}</span>}
                         <span>{new Date(r.created_at).toLocaleDateString()}</span>
                       </div>
@@ -517,12 +517,12 @@ function DashboardPage() {
                       {score !== null && (
                         <span
                           style={{
-                            background: "#FAECE7",
-                            color: "#993C1D",
+                            background: "#F1EFE8",
+                            color: "#2D6A4F",
                             fontSize: 12,
                             fontWeight: 500,
-                            borderRadius: 8,
-                            padding: "4px 10px",
+                            borderRadius: 100,
+                            padding: "5px 12px",
                           }}
                         >
                           {score.toFixed(1)} / 10
@@ -535,7 +535,7 @@ function DashboardPage() {
                             token: r.id.slice("token:".length),
                             url: r.listing_url ?? undefined,
                           }}
-                          style={{ fontSize: 13, color: "#1B4332" }}
+                          style={{ fontSize: 13, fontWeight: 500, color: "#2D6A4F" }}
                         >
                           View →
                         </Link>
@@ -543,7 +543,7 @@ function DashboardPage() {
                         <Link
                           to="/results"
                           search={{ saved_id: r.id }}
-                          style={{ fontSize: 13, color: "#1B4332" }}
+                          style={{ fontSize: 13, fontWeight: 500, color: "#2D6A4F" }}
                         >
                           View →
                         </Link>
