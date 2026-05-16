@@ -5456,8 +5456,11 @@ function PrecheckModal({
           Help us give you the most accurate report
         </h2>
         <p style={{ marginTop: 10, fontSize: 14, color: "#5F5E5A", lineHeight: 1.55 }}>
-          We couldn't find the following in the listing — they're usually on the floor plan or EPC
-          certificate. Adding them now means your report will be more accurate from the start.
+          {missing.epc && missing.sqft
+            ? "We couldn't find the following in the listing text — the square footage will be found on the floor plan, and the EPC within the relevant section on the listing which often stores a copy of the EPC certificate. Add below for a more comprehensive analysis."
+            : missing.sqft
+              ? "We couldn't find the square footage within the listing text. This will be found on the floor plan. Add below for a more comprehensive analysis."
+              : "We couldn't find the EPC within the listing text. This will be found in the relevant section of the listing, which often stores a copy of the EPC certificate. Add below for a more comprehensive analysis."}
         </p>
 
         <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
