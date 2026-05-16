@@ -172,6 +172,17 @@ function Index() {
             </button>
           </form>
 
+          {error && (
+            <p role="alert" className="mx-auto mt-3" style={{ fontSize: 12, color: "#993C1D" }}>
+              {error}
+            </p>
+          )}
+          {notice && !error && (
+            <p role="status" className="mx-auto mt-3" style={{ fontSize: 12, color: "#5F5E5A" }}>
+              {notice}
+            </p>
+          )}
+
           <p className="mx-auto mt-3" style={{ fontSize: 11, color: "#888780" }}>
             Works best with Rightmove listings · More sites coming soon · UK properties only
           </p>
