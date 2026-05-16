@@ -2574,26 +2574,30 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
     const full = row.result_json as unknown as FullAnalysis;
     // Always derive the overall Roovr score from sub-scores so older
     // saved analyses (where Claude returned a flat 6.8) display correctly.
-    const subAny = (full as unknown as { subScores?: Record<string, number> }).subScores;
-    if (subAny) {
-      const weights: Record<string, number> = {
-        valueForMoney: 0.25,
-        locationQuality: 0.20,
-        riskLevel: 0.20,
-        resalePotential: 0.15,
-        listingTransparency: 0.10,
-        marketTiming: 0.10,
-      };
-      let weightedSum = 0;
-      let totalWeight = 0;
-      for (const [k, w] of Object.entries(weights)) {
-        const v = Number(subAny[k]);
-        if (isFinite(v) && v > 0) { weightedSum += v * w; totalWeight += w; }
+    try {
+      const subAny = (full as unknown as { subScores?: Record<string, number> }).subScores;
+      if (subAny && typeof subAny === "object") {
+        const weights: Record<string, number> = {
+          valueForMoney: 0.25,
+          locationQuality: 0.20,
+          riskLevel: 0.20,
+          resalePotential: 0.15,
+          listingTransparency: 0.10,
+          marketTiming: 0.10,
+        };
+        let weightedSum = 0;
+        let totalWeight = 0;
+        for (const [k, w] of Object.entries(weights)) {
+          const v = Number(subAny[k]);
+          if (isFinite(v) && v > 0) { weightedSum += v * w; totalWeight += w; }
+        }
+        if (totalWeight > 0) {
+          (full as unknown as { score: number }).score =
+            Math.round((weightedSum / totalWeight) * 10) / 10;
+        }
       }
-      if (totalWeight > 0) {
-        (full as unknown as { score: number }).score =
-          Math.round((weightedSum / totalWeight) * 10) / 10;
-      }
+    } catch (e) {
+      console.warn("[getAnalysisJob] subScores recompute failed:", e);
     }
     const unlocked = await hasFullAccess({
       accessToken: (row.access_token as string | null) ?? null,
