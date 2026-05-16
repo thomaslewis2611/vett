@@ -57,9 +57,9 @@
   --popover-foreground: #1A1108;
 
   /* Brand */
-  --primary: #1B4332;
+  --primary: #2D6A4F;
   --primary-foreground: #FFFDF9;
-  --primary-soft: #FAECE7;
+  --primary-soft: #EAF3DE;
 
   --secondary: #F1EFE8;
   --secondary-foreground: #1A1108;
@@ -67,8 +67,8 @@
   --muted: #F1EFE8;
   --muted-foreground: #888780;
 
-  --accent: #FAECE7;
-  --accent-foreground: #993C1D;
+  --accent: #EAF3DE;
+  --accent-foreground: #2D6A4F;
 
   --destructive: #993C1D;
   --destructive-foreground: #FFFDF9;
