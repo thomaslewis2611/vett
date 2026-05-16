@@ -1490,10 +1490,13 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           // Hide a section entirely when there's no postcode at all and we have
           // no data to show. Otherwise render as before (which will show its
           // own "unavailable" state for the partial-postcode case).
-          const showFlood = !(noPostcode && floodMissing);
-          const showSchools = !(noPostcode && schoolsMissing);
-          const showCrime = !(noPostcode && crimeMissing);
-          const showBroadband = !(noPostcode && broadbandMissing);
+          // For free users (not paid), always render the section so its
+          // locked placeholder card is shown — this gives the score breakdown
+          // sub-scores visible context and makes the upgrade value clear.
+          const showFlood = !isPaid || !(noPostcode && floodMissing);
+          const showSchools = !isPaid || !(noPostcode && schoolsMissing);
+          const showCrime = !isPaid || !(noPostcode && crimeMissing);
+          const showBroadband = !isPaid || !(noPostcode && broadbandMissing);
 
           const showBanner =
             isPaid &&
