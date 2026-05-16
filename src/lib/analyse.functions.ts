@@ -1742,7 +1742,10 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
     transportPromise,
   ]);
 
+  const hasFloorPlan = html ? detectFloorPlan(html) : false;
+
   const notes: string[] = [];
+  notes.push(`FLOOR PLAN PRESENT: ${hasFloorPlan ? "yes" : "unknown"}`);
   if (listed) {
     notes.push(`LISTING DATE: ${listed.dateStr} — ${listed.daysOnMarket} days on market as of today`);
     notes.push(`Date listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)`);
