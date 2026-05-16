@@ -51,7 +51,7 @@ function BuyerLoginPage() {
       <main className="mx-auto max-w-md px-6 py-20">
         <div className="text-center">
           <div className="mx-auto inline-flex h-12 w-12 items-center justify-center" style={{ background: "#FAECE7", borderRadius: 999 }}>
-            <Mail className="h-5 w-5" style={{ color: "#D85A30" }} />
+            <Mail className="h-5 w-5" style={{ color: "#1B4332" }} />
           </div>
           <h1 className="mt-6 text-3xl font-semibold tracking-tight">Buyer Login</h1>
           <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>
@@ -98,7 +98,7 @@ function BuyerLoginPage() {
 
         <p className="mt-8 text-center text-sm" style={{ color: "#5F5E5A" }}>
           Don't have a pass yet?{" "}
-          <Link to="/pricing" style={{ color: "#D85A30" }}>
+          <Link to="/pricing" style={{ color: "#1B4332" }}>
             See plans
           </Link>
         </p>

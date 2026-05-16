@@ -43,7 +43,7 @@ function AboutPage() {
       <SiteHeader />
       <main className="mx-auto w-full max-w-3xl px-8 py-20 flex-1">
         <h1 style={{ fontSize: 40, fontWeight: 500, color: "#1A1108", letterSpacing: "-1.5px", lineHeight: 1.15 }}>
-          Why we built <span style={{ color: "#D85A30" }}>Roovr</span>
+          Why we built <span style={{ color: "#1B4332" }}>Roovr</span>
         </h1>
         <p
           className="mt-6 max-w-2xl"
@@ -62,7 +62,7 @@ function AboutPage() {
 
         <Section heading="Get in touch">
           Questions, feedback, or press enquiries — email us at{" "}
-          <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">
+          <a href="mailto:support@roovr.co" style={{ color: "#1B4332" }} className="hover:underline">
             support@roovr.co
           </a>
         </Section>

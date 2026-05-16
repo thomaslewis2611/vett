@@ -361,7 +361,7 @@ function DashboardPage() {
               disabled={renewing}
               className="inline-flex w-full items-center justify-center sm:w-auto"
               style={{
-                background: "#D85A30",
+                background: "#1B4332",
                 color: "#FFFDF9",
                 fontSize: 13,
                 fontWeight: 500,
@@ -394,7 +394,7 @@ function DashboardPage() {
               disabled={renewing}
               className="inline-flex w-full items-center justify-center sm:w-auto"
               style={{
-                background: "#D85A30",
+                background: "#1B4332",
                 color: "#FFFDF9",
                 fontSize: 13,
                 fontWeight: 500,
@@ -438,7 +438,7 @@ function DashboardPage() {
             disabled={expired}
             className="inline-flex w-full items-center justify-center gap-1 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             style={{
-              background: "#D85A30",
+              background: "#1B4332",
               color: "#FFFDF9",
               fontSize: 13,
               fontWeight: 500,
@@ -498,11 +498,11 @@ function DashboardPage() {
                         aria-label={r.is_pinned ? "Unpin report" : "Pin report"}
                         title={r.is_pinned ? "Unpin from top" : "Pin to top"}
                         className={`absolute right-3 top-3 rounded-full p-1.5 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 ${r.is_pinned ? "sm:opacity-100" : ""}`}
-                        style={{ color: r.is_pinned ? "#D85A30" : "#B8B6AE" }}
+                        style={{ color: r.is_pinned ? "#1B4332" : "#B8B6AE" }}
                       >
                         <Pin
                           className="h-4 w-4"
-                          fill={r.is_pinned ? "#D85A30" : "none"}
+                          fill={r.is_pinned ? "#1B4332" : "none"}
                           strokeWidth={2}
                         />
                       </button>
@@ -536,7 +536,7 @@ function DashboardPage() {
                             token: r.id.slice("token:".length),
                             url: r.listing_url ?? undefined,
                           }}
-                          style={{ fontSize: 13, color: "#D85A30" }}
+                          style={{ fontSize: 13, color: "#1B4332" }}
                         >
                           View →
                         </Link>
@@ -544,7 +544,7 @@ function DashboardPage() {
                         <Link
                           to="/results"
                           search={{ saved_id: r.id }}
-                          style={{ fontSize: 13, color: "#D85A30" }}
+                          style={{ fontSize: 13, color: "#1B4332" }}
                         >
                           View →
                         </Link>

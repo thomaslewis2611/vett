@@ -70,7 +70,7 @@ function PaymentSuccessPage() {
   }) => (
     <div className="text-center">
       <div className="mx-auto inline-flex h-12 w-12 items-center justify-center" style={{ background: "#FAECE7", borderRadius: 999 }}>
-        <CheckCircle2 className="h-6 w-6" style={{ color: "#D85A30" }} />
+        <CheckCircle2 className="h-6 w-6" style={{ color: "#1B4332" }} />
       </div>
       <h1 className="mt-6 text-3xl font-semibold tracking-tight">{opts.title}</h1>
       <p className="mt-3 text-base" style={{ color: "#1A1108" }}>{opts.body}</p>
@@ -103,7 +103,7 @@ function PaymentSuccessPage() {
       <main className="mx-auto max-w-xl px-6 py-24">
         {state.status === "loading" && (
           <div className="text-center">
-            <Loader2 className="mx-auto h-8 w-8 animate-spin" style={{ color: "#D85A30" }} />
+            <Loader2 className="mx-auto h-8 w-8 animate-spin" style={{ color: "#1B4332" }} />
             <h1 className="mt-6 text-2xl font-semibold tracking-tight">Confirming your payment…</h1>
             <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>This usually takes a couple of seconds.</p>
           </div>
@@ -150,9 +150,9 @@ function PaymentSuccessPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Something went wrong</h1>
             <p className="mt-3 text-sm" style={{ color: "#5F5E5A" }}>{state.message}</p>
             <p className="mt-4 text-sm" style={{ color: "#5F5E5A" }}>
-              Need help? Email <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }}>support@roovr.co</a>
+              Need help? Email <a href="mailto:support@roovr.co" style={{ color: "#1B4332" }}>support@roovr.co</a>
             </p>
-            <Link to="/" className="mt-6 inline-block" style={{ fontSize: 13, color: "#D85A30" }}>← Back to home</Link>
+            <Link to="/" className="mt-6 inline-block" style={{ fontSize: 13, color: "#1B4332" }}>← Back to home</Link>
           </div>
         )}
       </main>

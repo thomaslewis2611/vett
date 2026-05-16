@@ -118,7 +118,7 @@ function MagicLinkModal({ onClose }: { onClose: () => void }) {
             disabled={loading}
             className="inline-flex items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-50"
             style={{
-              background: "#D85A30",
+              background: "#1B4332",
               color: "#FFFDF9",
               fontSize: 13,
               fontWeight: 500,
@@ -180,7 +180,7 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
             width: 24,
             height: 24,
             borderRadius: 999,
-            background: "#D85A30",
+            background: "#1B4332",
             color: "#FFFDF9",
             fontSize: 11,
             fontWeight: 600,
@@ -247,7 +247,7 @@ export function SiteHeader() {
           <span
             aria-hidden
             className="inline-block"
-            style={{ width: 8, height: 8, borderRadius: 9999, background: "#D85A30" }}
+            style={{ width: 8, height: 8, borderRadius: 9999, background: "#1B4332" }}
           />
           <span style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.3px" }}>
             Roovr
@@ -340,7 +340,7 @@ export function SiteFooter() {
             <span
               aria-hidden
               className="inline-block"
-              style={{ width: 8, height: 8, borderRadius: 9999, background: "#D85A30" }}
+              style={{ width: 8, height: 8, borderRadius: 9999, background: "#1B4332" }}
             />
             <span style={{ fontSize: 18, fontWeight: 500, color: "#FFFDF9" }}>Roovr</span>
             <span style={{ fontSize: 13, color: "#888780", marginLeft: 12 }}>© 2026 Roovr</span>

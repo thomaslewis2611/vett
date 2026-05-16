@@ -181,7 +181,7 @@ function Plan({
       style={{
         background: "#FFFDF9",
         borderRadius: 12,
-        border: highlight ? "2px solid #D85A30" : "0.5px solid rgba(26,17,8,0.12)",
+        border: highlight ? "2px solid #1B4332" : "0.5px solid rgba(26,17,8,0.12)",
       }}
     >
       {highlight && (
@@ -230,7 +230,7 @@ function Plan({
       <ul className={plusIntro ? "mt-2 space-y-2.5" : "mt-5 space-y-2.5"}>
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
-            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#D85A30" }} />
+            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#1B4332" }} />
             <span>
               {f}
               {/^transport links/i.test(f) && (
@@ -250,7 +250,7 @@ function Plan({
             document.getElementById(upsell.targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
           className="mt-4 text-left hover:underline"
-          style={{ fontSize: 13, fontWeight: 500, color: "#D85A30" }}
+          style={{ fontSize: 13, fontWeight: 500, color: "#1B4332" }}
         >
           {upsell.text}
         </button>
@@ -266,7 +266,7 @@ function Plan({
           onClick={onClick}
           className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
           style={{
-            background: highlight ? "#D85A30" : "#1A1108",
+            background: highlight ? "#1B4332" : "#1A1108",
             color: "#FFFDF9",
             fontSize: 13,
             fontWeight: 500,
@@ -282,7 +282,7 @@ function Plan({
           to="/"
           className="mt-7 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
           style={{
-            background: highlight ? "#D85A30" : "#1A1108",
+            background: highlight ? "#1B4332" : "#1A1108",
             color: "#FFFDF9",
             fontSize: 13,
             fontWeight: 500,
