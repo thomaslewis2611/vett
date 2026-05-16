@@ -1246,7 +1246,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
               </div>
             </div>
             <div className="shrink-0">
-              <ScoreBadge score={a.score} label={a.scoreLabel} />
+              <ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} />
             </div>
           </div>
         </section>
