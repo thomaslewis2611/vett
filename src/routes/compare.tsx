@@ -211,7 +211,7 @@ function ComparePage() {
                         style={{
                           background: "#FFFDF9",
                           borderRadius: 12,
-                          border: isSel ? "2px solid #D85A30" : "0.5px solid rgba(26,17,8,0.12)",
+                          border: isSel ? "2px solid #1B4332" : "0.5px solid rgba(26,17,8,0.12)",
                           boxSizing: "border-box",
                         }}
                       >
@@ -219,7 +219,7 @@ function ComparePage() {
                           {isSel && (
                             <span
                               style={{
-                                background: "#D85A30",
+                                background: "#1B4332",
                                 color: "#FFFDF9",
                                 width: 24,
                                 height: 24,
@@ -269,7 +269,7 @@ function ComparePage() {
                   onClick={onCompare}
                   disabled={selected.length !== 2}
                   style={{
-                    background: selected.length === 2 ? "#D85A30" : "#D1CFC8",
+                    background: selected.length === 2 ? "#1B4332" : "#D1CFC8",
                     color: "#FFFDF9",
                     fontSize: 13,
                     fontWeight: 500,
@@ -443,7 +443,7 @@ function ComparisonView({
             disabled={emailing || emailSent}
             className="inline-flex items-center gap-1.5"
             style={{
-              background: emailSent ? "#5F8A6A" : "#D85A30",
+              background: emailSent ? "#5F8A6A" : "#1B4332",
               color: "#FFFDF9",
               fontSize: 13,
               fontWeight: 500,
@@ -572,7 +572,7 @@ function FlagsList({ flags }: { flags: { severity: string; title: string }[] }) 
     <ul style={{ margin: 0, padding: 0, listStyle: "none" }}>
       {flags.map((f, i) => (
         <li key={i} style={{ fontSize: 13, color: "#1A1108", lineHeight: 1.5, marginBottom: 6 }}>
-          <span style={{ color: "#D85A30", fontWeight: 700 }}>•</span> {f.title}
+          <span style={{ color: "#1B4332", fontWeight: 700 }}>•</span> {f.title}
         </li>
       ))}
     </ul>

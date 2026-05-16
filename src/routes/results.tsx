@@ -771,7 +771,7 @@ const LOADING_TIPS = [
   "Tip: Your viewing checklist will be specific to the red flags found in this listing",
 ];
 
-const CORAL = "#D85A30";
+const CORAL = "#1B4332";
 
 function prettyUrl(url?: string): string | null {
   if (!url) return null;
@@ -1141,7 +1141,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                         className="rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors"
                         style={
                           active
-                            ? { backgroundColor: "#D85A30", borderColor: "#D85A30", color: "#FFFFFF" }
+                            ? { backgroundColor: "#1B4332", borderColor: "#1B4332", color: "#FFFFFF" }
                             : { backgroundColor: "transparent", borderColor: "#D8D6CE", color: "#5F5E5A" }
                         }
                       >
@@ -1251,7 +1251,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                       ))}
                     </div>
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-                      <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+                      <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
                       <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
                         Unlock {hiddenCount} more red flag{hiddenCount === 1 ? "" : "s"} with Single Report or Buyer Pass
                       </p>
@@ -1472,7 +1472,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 
         {unlocked && access.level === "pass" && (
           <div className="mt-10 text-center">
-            <Link to="/dashboard" style={{ fontSize: 13, color: "#D85A30" }}>
+            <Link to="/dashboard" style={{ fontSize: 13, color: "#1B4332" }}>
               Go to your dashboard →
             </Link>
           </div>
@@ -1616,7 +1616,7 @@ function PricePerSqftCard({
             type="button"
             onClick={() => setEditing(true)}
             className="mt-2 text-[11px]"
-            style={{ color: "#D85A30", fontWeight: 500 }}
+            style={{ color: "#1B4332", fontWeight: 500 }}
           >
             Edit →
           </button>
@@ -1661,7 +1661,7 @@ function PricePerSqftCard({
                 type="button"
                 onClick={submit}
                 className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-medium text-white"
-                style={{ background: "#D85A30" }}
+                style={{ background: "#1B4332" }}
               >
                 Calculate →
               </button>
@@ -1776,7 +1776,7 @@ function PostcodePromptBanner({
           onClick={submit}
           disabled={submitting}
           className="shrink-0 rounded-md px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60"
-          style={{ background: "#D85A30" }}
+          style={{ background: "#1B4332" }}
         >
           {submitting ? "Loading…" : "Save →"}
         </button>
@@ -1853,7 +1853,7 @@ function InferredPostcodeNotice({
             type="button"
             onClick={() => setEditing(true)}
             className="hover:underline"
-            style={{ color: "#D85A30", background: "transparent", border: 0, cursor: "pointer" }}
+            style={{ color: "#1B4332", background: "transparent", border: 0, cursor: "pointer" }}
           >
             Enter the correct postcode →
           </button>
@@ -1878,7 +1878,7 @@ function InferredPostcodeNotice({
             onClick={submit}
             disabled={submitting}
             className="shrink-0 rounded-md px-3 py-1 text-[11px] font-medium text-white disabled:opacity-60"
-            style={{ background: "#D85A30" }}
+            style={{ background: "#1B4332" }}
           >
             {submitting ? "Loading…" : "Save →"}
           </button>
@@ -2014,7 +2014,7 @@ function CouncilTaxBandCard({
               setEditing(true);
             }}
             className="mt-2 text-[11px]"
-            style={{ color: "#D85A30", fontWeight: 500 }}
+            style={{ color: "#1B4332", fontWeight: 500 }}
           >
             Edit →
           </button>
@@ -2044,7 +2044,7 @@ function CouncilTaxBandCard({
               onClick={submit}
               disabled={!isKnownCouncilTaxBand(selected)}
               className="shrink-0 rounded-md px-2.5 py-1 text-[11px] font-medium text-white disabled:opacity-50"
-              style={{ background: "#D85A30" }}
+              style={{ background: "#1B4332" }}
             >
               Save →
             </button>
@@ -2107,7 +2107,7 @@ function LockedFeatureCard({
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-1.5">
-            <Lock className="h-3.5 w-3.5" style={{ color: "#D85A30" }} />
+            <Lock className="h-3.5 w-3.5" style={{ color: "#1B4332" }} />
             <h4 className="text-sm font-semibold tracking-tight truncate" style={{ color: "#1A1108" }}>
               {title}
             </h4>
@@ -2169,7 +2169,7 @@ function LockedFeaturesGrid() {
             }}
           >
             <div className="flex items-center gap-1.5">
-              <Lock className="h-3.5 w-3.5 shrink-0" style={{ color: "#D85A30" }} />
+              <Lock className="h-3.5 w-3.5 shrink-0" style={{ color: "#1B4332" }} />
               <h4 className="text-sm font-semibold tracking-tight" style={{ color: "#1A1108" }}>
                 {f.title}
               </h4>
@@ -2266,7 +2266,7 @@ function ExpiredPassGate({
         disabled={loading}
         className="mt-6 inline-flex items-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
         style={{
-          background: "#D85A30",
+          background: "#1B4332",
           color: "#FFFDF9",
           fontSize: 14,
           fontWeight: 500,
@@ -2703,7 +2703,7 @@ function PlanCard({
       style={{
         background: "#FFFDF9",
         borderRadius: 12,
-        border: highlight ? "2px solid #D85A30" : "0.5px solid rgba(26,17,8,0.12)",
+        border: highlight ? "2px solid #1B4332" : "0.5px solid rgba(26,17,8,0.12)",
       }}
     >
       {highlight && (
@@ -2731,7 +2731,7 @@ function PlanCard({
       <ul className={plusIntro ? "mt-2 space-y-2.5" : "mt-5 space-y-2.5"}>
         {features.map((f) => (
           <li key={f} className="flex items-start gap-2.5" style={{ fontSize: 14, color: "#1A1108" }}>
-            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#D85A30" }} />
+            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: "#1B4332" }} />
             <span>
               {f}
               {/^transport links/i.test(f) && (
@@ -2751,7 +2751,7 @@ function PlanCard({
             document.getElementById(upsell.targetId)?.scrollIntoView({ behavior: "smooth", block: "center" });
           }}
           className="mt-4 text-left hover:underline"
-          style={{ fontSize: 12, fontWeight: 500, color: "#D85A30" }}
+          style={{ fontSize: 12, fontWeight: 500, color: "#1B4332" }}
         >
           {upsell.text}
         </button>
@@ -2763,7 +2763,7 @@ function PlanCard({
         disabled={loading}
         className="mt-6 inline-flex w-full items-center justify-center gap-2 transition-opacity hover:opacity-90 disabled:opacity-60"
         style={{
-          background: highlight ? "#D85A30" : "#1A1108",
+          background: highlight ? "#1B4332" : "#1A1108",
           color: "#FFFDF9",
           fontSize: 13,
           fontWeight: 500,
@@ -2911,7 +2911,7 @@ function ScoreInfoTooltip({ text }: { text: string }) {
         aria-label="More info"
         aria-expanded={open}
         className="inline-flex items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40"
-        style={{ color: "#D85A30", lineHeight: 0 }}
+        style={{ color: "#1B4332", lineHeight: 0 }}
       >
         <Info size={18} aria-hidden="true" strokeWidth={2.25} />
       </button>
@@ -3134,7 +3134,7 @@ function PlanningReferenceSection({ analysis }: { analysis: AnalysisResult }) {
         <div
           style={{
             fontSize: 10,
-            color: "#D85A30",
+            color: "#1B4332",
             textTransform: "uppercase",
             letterSpacing: "0.08em",
             fontWeight: 600,
@@ -3190,7 +3190,7 @@ function PlanningReferenceSection({ analysis }: { analysis: AnalysisResult }) {
             href="https://www.planningportal.co.uk"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontSize: 13, color: "#D85A30", fontWeight: 500 }}
+            style={{ fontSize: 13, color: "#1B4332", fontWeight: 500 }}
           >
             Search this reference at planningportal.co.uk →
           </a>
@@ -3225,7 +3225,7 @@ function AuctionWarning({ analysis }: { analysis: AnalysisResult }) {
         className="flex items-start gap-4 p-5 sm:p-6"
         style={{ background: "#FAEEDA", color: "#633806", borderRadius: 12 }}
       >
-        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#D85A30" }} />
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" style={{ color: "#1B4332" }} />
         <div>
           <h3 style={{ fontSize: 16, fontWeight: 600, color: "#633806" }}>
             Auction property — standard mortgages rarely apply
@@ -3371,9 +3371,9 @@ function EpcSection({
                     style={{
                       width: 44,
                       height: 44,
-                      background: selected ? "#D85A30" : "transparent",
+                      background: selected ? "#1B4332" : "transparent",
                       color: selected ? "#FFFFFF" : "#5F5E5A",
-                      border: selected ? "1px solid #D85A30" : "1px solid #5F5E5A",
+                      border: selected ? "1px solid #1B4332" : "1px solid #5F5E5A",
                     }}
                   >
                     {b.letter}
@@ -3388,7 +3388,7 @@ function EpcSection({
                 disabled={!pick || submitting}
                 className="inline-flex items-center justify-center rounded-full transition-opacity hover:opacity-90 disabled:opacity-50"
                 style={{
-                  background: "#D85A30",
+                  background: "#1B4332",
                   color: "#FFFDF9",
                   fontSize: 13,
                   fontWeight: 500,
@@ -3680,18 +3680,18 @@ function TransportSection({ analysis, isBuyerPass, fetching: _fetching, onUpgrad
             </p>
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-            <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+            <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
               Unlock with a Single Report — £4.99 to see transport links and PTAL scores
             </p>
             <div className="mt-3 flex flex-col items-center gap-1">
               {onUpgrade && (
-                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Get Single Report — £4.99 →
                 </button>
               )}
               {onUpgradePass && (
-                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
                 </button>
               )}
@@ -3809,18 +3809,18 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUp
             <p className="mt-1" style={{ fontSize: 11, color: "#888780" }}>0.7 miles · Secondary</p>
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: "rgba(255,253,249,0.85)" }}>
-            <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+            <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
             <p className="text-center" style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
               Unlock with a Single Report — £4.99 to see nearby schools and Ofsted ratings
             </p>
             <div className="mt-3 flex flex-col items-center gap-1">
               {onUpgrade && (
-                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Get Single Report — £4.99 →
                 </button>
               )}
               {onUpgradePass && (
-                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
                 </button>
               )}
@@ -3857,7 +3857,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUp
                 href={giasUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{ color: "#D85A30" }}
+                style={{ color: "#1B4332" }}
                 className="hover:underline"
               >
                 get-information-schools.service.gov.uk
@@ -3930,18 +3930,18 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
             </div>
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-            <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+            <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
               Unlock with a Single Report — £4.99 to see local crime statistics
             </p>
             <div className="mt-3 flex flex-col items-center gap-1">
               {onUpgrade && (
-                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Get Single Report — £4.99 →
                 </button>
               )}
               {onUpgradePass && (
-                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
                 </button>
               )}
@@ -3972,7 +3972,7 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
         <div className="mt-4" style={cardStyle}>
           <p style={{ fontSize: 13, color: "#5F5E5A" }}>
             Crime data is currently unavailable for this postcode. Check{" "}
-            <a href="https://www.police.uk/pu/your-area/" target="_blank" rel="noopener noreferrer" style={{ color: "#D85A30" }} className="hover:underline">
+            <a href="https://www.police.uk/pu/your-area/" target="_blank" rel="noopener noreferrer" style={{ color: "#1B4332" }} className="hover:underline">
               police.uk
             </a>{" "}
             directly.
@@ -4023,7 +4023,7 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
                   <span style={{ color: "#5F5E5A", fontVariantNumeric: "tabular-nums" }}>{c.count}</span>
                 </div>
                 <div style={{ marginTop: 4, height: 4, background: "#F1EFE8", borderRadius: 4, overflow: "hidden" }}>
-                  <div style={{ width: `${Math.max(4, (c.count / maxCount) * 100)}%`, height: "100%", background: "#D85A30" }} />
+                  <div style={{ width: `${Math.max(4, (c.count / maxCount) * 100)}%`, height: "100%", background: "#1B4332" }} />
                 </div>
               </li>
             ))}
@@ -4045,7 +4045,7 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
             href="https://www.police.uk/pu/your-area/"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontSize: 12, color: "#D85A30" }}
+            style={{ fontSize: 12, color: "#1B4332" }}
             className="hover:underline"
           >
             View full crime map →
@@ -4087,18 +4087,18 @@ function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgrad
             </div>
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-            <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+            <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 340 }}>
               Unlock with a Single Report — £4.99 to see broadband speeds and connectivity
             </p>
             <div className="mt-3 flex flex-col items-center gap-1">
               {onUpgrade && (
-                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Get Single Report — £4.99 →
                 </button>
               )}
               {onUpgradePass && (
-                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
                 </button>
               )}
@@ -4129,7 +4129,7 @@ function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgrad
         <div className="mt-4" style={cardStyle}>
           <p style={{ fontSize: 13, color: "#5F5E5A" }}>
             Broadband data is currently unavailable for this postcode. Check{" "}
-            <a href="https://checker.ofcom.org.uk" target="_blank" rel="noopener noreferrer" style={{ color: "#D85A30" }} className="hover:underline">
+            <a href="https://checker.ofcom.org.uk" target="_blank" rel="noopener noreferrer" style={{ color: "#1B4332" }} className="hover:underline">
               checker.ofcom.org.uk
             </a>{" "}
             directly.
@@ -4159,7 +4159,7 @@ function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgrad
       <div className="mt-4" style={cardStyle}>
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <Wifi className="h-4 w-4" style={{ color: "#D85A30" }} />
+            <Wifi className="h-4 w-4" style={{ color: "#1B4332" }} />
             <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>Estimated speeds at this postcode</p>
           </div>
           <span style={{ ...ratingBadge(bb.speedRating), borderRadius: 999, padding: "4px 12px", fontSize: 12, fontWeight: 500 }}>
@@ -4211,7 +4211,7 @@ function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgrad
             href="https://checker.ofcom.org.uk"
             target="_blank"
             rel="noopener noreferrer"
-            style={{ fontSize: 12, color: "#D85A30" }}
+            style={{ fontSize: 12, color: "#1B4332" }}
             className="hover:underline"
           >
             Check full coverage at checker.ofcom.org.uk →
@@ -4295,12 +4295,12 @@ function FloodRiskSection({
               </p>
               <div className="mt-3 flex flex-col items-center gap-1">
                 {onUpgrade && (
-                  <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  <button type="button" onClick={onUpgrade} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                     Get Single Report — £4.99 →
                   </button>
                 )}
                 {onUpgradePass && (
-                  <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                  <button type="button" onClick={onUpgradePass} className="hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                     Or unlock Buyers Pass for all features and unlimited reports for 90 days — £24.99 →
                   </button>
                 )}
@@ -4466,7 +4466,7 @@ function FloodRiskSection({
                 type="button"
                 onClick={() => onFloodRiskUpdate?.({ ...fr, manualZone: null })}
                 className="hover:underline"
-                style={{ fontSize: 12, color: "#D85A30", fontWeight: 500 }}
+                style={{ fontSize: 12, color: "#1B4332", fontWeight: 500 }}
               >
                 Edit flood zone →
               </button>
@@ -4628,9 +4628,9 @@ function FloodRiskNoDataCard({
                 aria-pressed={selected}
                 className="inline-flex items-center justify-center rounded-full transition-all"
                 style={{
-                  background: selected ? "#D85A30" : "transparent",
+                  background: selected ? "#1B4332" : "transparent",
                   color: selected ? "#FFFFFF" : "#5F5E5A",
-                  border: selected ? "1px solid #D85A30" : "1px solid #5F5E5A",
+                  border: selected ? "1px solid #1B4332" : "1px solid #5F5E5A",
                   padding: "8px 16px",
                   fontSize: 13,
                   fontWeight: 500,
@@ -4655,7 +4655,7 @@ function FloodRiskNoDataCard({
           disabled={!pick || submitting}
           className="inline-flex items-center justify-center rounded-full transition-opacity hover:opacity-90 disabled:opacity-50"
           style={{
-            background: "#D85A30",
+            background: "#1B4332",
             color: "#FFFDF9",
             fontSize: 13,
             fontWeight: 500,
@@ -4740,7 +4740,7 @@ function SellerMotivationSection({ analysis, unlocked }: { analysis: AnalysisRes
           </div>
           {!unlocked && hasDetails && (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-              <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+              <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
               <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
                 Unlock seller motivation details with Single Report or Buyer Pass
               </p>
@@ -4874,7 +4874,7 @@ function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisRes
                   {renderCategoryGroups(vc.items.slice(2, 6))}
                 </div>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-                  <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+                  <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
                   <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
                     Unlock full viewing checklist with Single Report or Buyer Pass
                   </p>
@@ -4910,7 +4910,7 @@ function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResu
             </div>
           </div>
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
-            <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+            <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
             <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
               Unlock to see the full renovation cost estimate for this property
             </p>
@@ -5024,7 +5024,7 @@ function AIChatLockedTeaser({ onUpgrade }: { onUpgrade?: () => void }) {
           <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A" }}>You: What should I ask at the viewing?</p>
         </div>
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6" style={{ background: "rgba(255,253,249,0.85)" }}>
-          <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+          <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
           <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
             Unlock with Buyer Pass — £24.99 to ask anything about this property
           </p>
@@ -5033,7 +5033,7 @@ function AIChatLockedTeaser({ onUpgrade }: { onUpgrade?: () => void }) {
               type="button"
               onClick={onUpgrade}
               className="mt-3 hover:underline"
-              style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
+              style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}
             >
               Unlock with Buyer Pass — £24.99 →
             </button>
@@ -5107,7 +5107,7 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
         style={{
           display: "inline-block",
           marginTop: 20,
-          background: "#D85A30",
+          background: "#1B4332",
           color: "#FFFDF9",
           borderRadius: 100,
           padding: "14px 28px",
@@ -5193,12 +5193,12 @@ function PriceHistorySection({
                         <div style={{ height: 18, background: "rgba(26,17,8,0.06)", borderRadius: 4 }} />
                       </div>
                       <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: 16 }}>
-                        <Lock className="h-5 w-5 mb-2" style={{ color: "#D85A30" }} />
+                        <Lock className="h-5 w-5 mb-2" style={{ color: "#1B4332" }} />
                         <p style={{ fontSize: 13, color: "#1A1108", margin: 0 }}>
                           Unlock with a Single Report — £4.99 to see the full sold price history
                         </p>
                         {onUpgrade && (
-                          <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                          <button type="button" onClick={onUpgrade} className="mt-3 hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                             Get Single Report — £4.99 →
                           </button>
                         )}
@@ -5287,12 +5287,12 @@ function CapitalGrowthSection({
                   : "Buyer Pass unlocks the full 1yr / 3yr / 5yr breakdown"}
               </p>
               {tier === "single" && onUpgradePass && (
-                <button type="button" onClick={onUpgradePass} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgradePass} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Upgrade to Buyer Pass — £24.99 →
                 </button>
               )}
               {tier === "free" && onUpgradeSingle && (
-                <button type="button" onClick={onUpgradeSingle} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#D85A30", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
+                <button type="button" onClick={onUpgradeSingle} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#1B4332", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Get Single Report — £4.99 →
                 </button>
               )}
@@ -5444,7 +5444,7 @@ function PrecheckModal({
               })
             }
             style={{
-              background: canSubmit ? "#D85A30" : "#E6B9A6",
+              background: canSubmit ? "#1B4332" : "#E6B9A6",
               color: "#FFFDF9",
               fontSize: 14,
               fontWeight: 500,

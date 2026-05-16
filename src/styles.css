@@ -41,7 +41,7 @@
   --shadow-soft: none;
   --shadow-card: none;
   --shadow-glow: none;
-  --gradient-primary: #D85A30;
+  --gradient-primary: #1B4332;
   --gradient-soft: #FFFDF9;
 }
 
@@ -57,7 +57,7 @@
   --popover-foreground: #1A1108;
 
   /* Brand */
-  --primary: #D85A30;
+  --primary: #1B4332;
   --primary-foreground: #FFFDF9;
   --primary-soft: #FAECE7;
 
@@ -79,7 +79,7 @@
 
   --border: rgba(26, 17, 8, 0.12);
   --input: rgba(26, 17, 8, 0.12);
-  --ring: #D85A30;
+  --ring: #1B4332;
 
   /* Custom dark surface for CTA strip / footer */
   --surface-dark: #1A1108;

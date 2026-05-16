@@ -54,7 +54,7 @@ function PrivacyPage() {
             <li>You can email any report to yourself at any time using the "Email me my report" button, giving you a permanent copy</li>
             <li>
               You can request deletion of your data at any time by emailing{" "}
-              <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">support@roovr.co</a>
+              <a href="mailto:support@roovr.co" style={{ color: "#1B4332" }} className="hover:underline">support@roovr.co</a>
             </li>
           </ul>
         </Section>
@@ -62,7 +62,7 @@ function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1.5">
             <li>
               Stripe — payment processing (
-              <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "#D85A30" }} className="hover:underline">stripe.com/privacy</a>
+              <a href="https://stripe.com/privacy" target="_blank" rel="noopener noreferrer" style={{ color: "#1B4332" }} className="hover:underline">stripe.com/privacy</a>
               )
             </li>
             <li>Resend — transactional email delivery</li>
@@ -84,13 +84,13 @@ function PrivacyPage() {
             <li>We will never sell your data to third parties</li>
             <li>
               Contact{" "}
-              <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">support@roovr.co</a>{" "}
+              <a href="mailto:support@roovr.co" style={{ color: "#1B4332" }} className="hover:underline">support@roovr.co</a>{" "}
               to exercise your rights
             </li>
           </ul>
         </Section>
         <Section n={7} title="Contact">
-          <a href="mailto:support@roovr.co" style={{ color: "#D85A30" }} className="hover:underline">support@roovr.co</a>
+          <a href="mailto:support@roovr.co" style={{ color: "#1B4332" }} className="hover:underline">support@roovr.co</a>
         </Section>
       </main>
       <SiteFooter />

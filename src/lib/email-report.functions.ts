@@ -261,7 +261,7 @@ function buildReportHtml(opts: {
           .map(
             (it) => `
             <tr><td style="padding:8px 0;border-bottom:1px solid rgba(26,17,8,0.06);">
-              <div style="font-size:13px;color:#1A1108;line-height:1.5;"><span style="color:#D85A30;font-weight:700;">→</span> ${escapeHtml(it.item)}</div>
+              <div style="font-size:13px;color:#1A1108;line-height:1.5;"><span style="color:#1B4332;font-weight:700;">→</span> ${escapeHtml(it.item)}</div>
               ${it.why ? `<div style="font-size:12px;color:#5F5E5A;line-height:1.5;margin:3px 0 0 14px;">${escapeHtml(it.why)}</div>` : ""}
             </td></tr>`,
           )
@@ -486,7 +486,7 @@ function buildReportHtml(opts: {
   <div class="content" style="max-width:600px;margin:0 auto;padding:0;">
     <div class="px" style="background:#1A1108;padding:20px 24px;">
       <div style="font-size:20px;font-weight:700;color:#FFFDF9;letter-spacing:-0.01em;">
-        <span style="color:#D85A30;">●</span> Roovr
+        <span style="color:#1B4332;">●</span> Roovr
       </div>
     </div>
 
@@ -548,7 +548,7 @@ function buildReportHtml(opts: {
       ${growthHtml}
 
       <div style="margin:36px 0 8px;text-align:center;">
-        <a href="${escapeHtml(resultsUrl)}" class="cta-btn" style="background:#D85A30;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 24px;text-decoration:none;display:inline-block;min-height:44px;line-height:1.2;">View full report online →</a>
+        <a href="${escapeHtml(resultsUrl)}" class="cta-btn" style="background:#1B4332;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 24px;text-decoration:none;display:inline-block;min-height:44px;line-height:1.2;">View full report online →</a>
       </div>
 
       <p class="small-note" style="font-size:12px;color:#888780;line-height:1.5;margin:32px 0 0;text-align:center;">This report is AI-generated and advisory only. Always seek independent professional advice before making any offer.</p>

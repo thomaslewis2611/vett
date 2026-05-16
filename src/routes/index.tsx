@@ -89,7 +89,7 @@ function Index() {
           </span>
           <h1 className="mt-6 text-balance" suppressHydrationWarning>
             {headline.main}{" "}
-            <span style={{ color: "#D85A30" }}>{headline.highlight}</span>
+            <span style={{ color: "#1B4332" }}>{headline.highlight}</span>
           </h1>
           <p
             className="mx-auto mt-6 max-w-2xl text-balance"
@@ -124,7 +124,7 @@ function Index() {
               type="submit"
               className="inline-flex items-center justify-center gap-2 transition-colors hover:bg-[#993C1D]"
               style={{
-                background: "#D85A30",
+                background: "#1B4332",
                 color: "#FFFDF9",
                 fontSize: 13,
                 fontWeight: 500,
@@ -147,7 +147,7 @@ function Index() {
               "Reports from £4.99",
             ].map((t) => (
               <li key={t} className="flex items-center gap-2" style={{ fontSize: 12, color: "#888780" }}>
-                <Check className="h-3.5 w-3.5" style={{ color: "#D85A30" }} />
+                <Check className="h-3.5 w-3.5" style={{ color: "#1B4332" }} />
                 {t}
               </li>
             ))}
@@ -180,7 +180,7 @@ function Index() {
             >
               <div style={{ fontSize: 24, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.5px", lineHeight: 1.2 }}>
                 {s.value}
-                {s.unit && <span style={{ color: "#D85A30" }}>{s.unit}</span>}
+                {s.unit && <span style={{ color: "#1B4332" }}>{s.unit}</span>}
               </div>
               <div className="mt-2" style={{ fontSize: 13, color: "#888780" }}>
                 {s.label}
@@ -231,7 +231,7 @@ function Index() {
                   background: "#FFFDF9",
                 }}
               >
-                <s.icon className="h-4 w-4" style={{ color: "#D85A30" }} />
+                <s.icon className="h-4 w-4" style={{ color: "#1B4332" }} />
               </div>
               <h3 className="mt-5" style={{ fontSize: 14, fontWeight: 500, color: "#1A1108" }}>
                 {s.title}
@@ -248,7 +248,7 @@ function Index() {
       <section style={{ background: "#FFFDF9", padding: "48px 32px" }}>
         <div className="mx-auto flex max-w-4xl flex-col items-center gap-6 text-center">
           <h2 style={{ color: "#1A1108", fontSize: 32, fontWeight: 500, letterSpacing: "-1px" }}>
-            Ready to <span style={{ color: "#D85A30" }}>rove</span> your next listing?
+            Ready to <span style={{ color: "#1B4332" }}>rove</span> your next listing?
           </h2>
           <p style={{ color: "#5F5E5A", fontSize: 15, maxWidth: 520 }}>
             Paste a property listing URL and let Roovr do the research for you
@@ -258,7 +258,7 @@ function Index() {
             onClick={scrollToTop}
             className="inline-flex items-center gap-2 transition-colors hover:bg-[#993C1D]"
             style={{
-              background: "#D85A30",
+              background: "#1B4332",
               color: "#FFFDF9",
               fontSize: 13,
               fontWeight: 500,

@@ -139,7 +139,7 @@ export function UpsellPassModal({
           disabled={!!submitting}
           className="mt-6 inline-flex w-full items-center justify-center transition-colors hover:bg-[#993C1D] disabled:opacity-60"
           style={{
-            background: "#D85A30",
+            background: "#1B4332",
             color: "#FFFDF9",
             fontSize: 14,
             fontWeight: 500,

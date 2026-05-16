@@ -246,7 +246,7 @@ function MyReportsPage() {
                       <Link
                         to="/results"
                         search={{ saved_id: r.id }}
-                        style={{ fontSize: 13, color: "#D85A30" }}
+                        style={{ fontSize: 13, color: "#1B4332" }}
                       >
                         View →
                       </Link>
@@ -269,7 +269,7 @@ function MyReportsPage() {
               to="/pricing"
               className="inline-flex items-center gap-1"
               style={{
-                background: "#D85A30",
+                background: "#1B4332",
                 color: "#FFFDF9",
                 fontSize: 13,
                 fontWeight: 500,
