@@ -1995,6 +1995,7 @@ const FULL_REPORT_FEATURES: { title: string; sub: string; note?: string }[] = [
   { title: "Renovation cost estimate", sub: "What it would cost to improve" },
   { title: "Seller motivation score", sub: "How motivated is the vendor to sell?" },
   { title: "Area pricing analysis", sub: "Local comparables and price per sq ft" },
+  { title: "Planning & restrictions", sub: "Nearby planning applications and conservation area status", note: "Only shown where applicable" },
 ];
 
 function LockedFeaturesGrid() {
