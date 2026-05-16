@@ -173,6 +173,36 @@ export type Database = {
         }
         Relationships: []
       }
+      error_logs: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          error_stage: string | null
+          id: string
+          job_id: string | null
+          listing_url: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          error_stage?: string | null
+          id?: string
+          job_id?: string | null
+          listing_url?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          error_stage?: string | null
+          id?: string
+          job_id?: string | null
+          listing_url?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       listing_cache: {
         Row: {
           fetched_at: string
