@@ -4,7 +4,7 @@ import { Send, Sparkles, User } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { chatAboutProperty, type ChatMessage } from "@/lib/chat.functions";
-import type { AnalysisResult } from "@/lib/mock-analysis";
+import type { AnalysisResult } from "@/lib/analysis.types";
 import { supabase } from "@/integrations/supabase/client";
 
 const mdComponents = {
