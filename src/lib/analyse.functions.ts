@@ -3327,21 +3327,25 @@ export const precheckListing = createServerFn({ method: "POST" })
     epcFound: boolean;
     sqftFound: boolean;
     epcRating: string | null;
+    textLength: number;
     skipped: boolean;
   }> => {
     const url = data.url?.trim() ?? "";
     const pastedText = data.text?.trim() ?? "";
     console.log("[precheckListing] invoked", { hasUrl: Boolean(url), hasPastedText: Boolean(pastedText) });
-    // Pasted-text submissions skip precheck — user already controls the input.
-    if (pastedText || !url) {
-      console.log("[precheckListing] skipping (pasted text or no url)");
-      return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+    if (!url && !pastedText) {
+      return { epcFound: false, sqftFound: false, epcRating: null, textLength: 0, skipped: false };
+    }
+    if (pastedText) {
+      const epcRating = detectEpcInText(pastedText);
+      const sqftFound = detectSqftInText(pastedText);
+      return { epcFound: Boolean(epcRating), sqftFound, epcRating, textLength: pastedText.length, skipped: false };
     }
     try {
       validateListingUrl(url);
     } catch {
-      console.log("[precheckListing] skipping (invalid url)");
-      return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+      console.log("[precheckListing] invalid url, treating details as missing");
+      return { epcFound: false, sqftFound: false, epcRating: null, textLength: 0, skipped: false };
     }
 
     // Try cache first.
@@ -3392,6 +3396,7 @@ export const precheckListing = createServerFn({ method: "POST" })
       epcFound: Boolean(epcRating),
       sqftFound,
       epcRating,
+      textLength: textForScan.length,
       skipped: false,
     };
   });
