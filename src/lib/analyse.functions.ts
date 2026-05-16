@@ -3250,3 +3250,89 @@ export const analyseManualSqft = createServerFn({ method: "POST" })
 
     return { ok: true as const, manualSqftAnalysis: out };
   });
+
+// ---------------- Pre-analysis precheck ----------------
+// Lightweight check that fetches the listing HTML once and reports
+// whether EPC rating and square footage can be extracted from the
+// listing text. Used to prompt the user for the missing fields BEFORE
+// the full analysis starts so the report is accurate first time.
+function detectSqftInText(text: string): boolean {
+  if (!text) return false;
+  // Match e.g. "1,180 sq ft", "1180 sqft", "1180 sq. ft", "1180 ft2"
+  if (/\b\d{2,3}(?:[,\s]?\d{3})\s*(?:sq\.?\s*ft|sqft|ft\.?\s*²|ft2|square\s+feet)\b/i.test(text)) return true;
+  if (/\b\d{3,5}\s*(?:sq\.?\s*ft|sqft|ft\.?\s*²|ft2|square\s+feet)\b/i.test(text)) return true;
+  // Square metres — convertible
+  if (/\b\d{2,4}(?:\.\d+)?\s*(?:sq\.?\s*m|sqm|m²|m2|square\s+met(?:re|er)s?)\b/i.test(text)) return true;
+  return false;
+}
+
+export const precheckListing = createServerFn({ method: "POST" })
+  .inputValidator(
+    z.object({
+      url: z.string().max(2000).optional(),
+      text: z.string().max(50000).optional(),
+    })
+  )
+  .handler(async ({ data }): Promise<{
+    epcFound: boolean;
+    sqftFound: boolean;
+    epcRating: string | null;
+    skipped: boolean;
+  }> => {
+    const url = data.url?.trim() ?? "";
+    const pastedText = data.text?.trim() ?? "";
+    // Pasted-text submissions skip precheck — user already controls the input.
+    if (pastedText || !url) {
+      return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+    }
+    try {
+      validateListingUrl(url);
+    } catch {
+      return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+    }
+
+    // Try cache first.
+    let cachedText: string | null = null;
+    try {
+      const { data: cached } = await supabaseAdmin
+        .from("listing_cache")
+        .select("text_content, fetched_at")
+        .eq("url", url)
+        .maybeSingle();
+      if (
+        cached?.text_content &&
+        Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
+      ) {
+        cachedText = cached.text_content;
+      }
+    } catch { /* ignore */ }
+
+    let html = "";
+    if (!cachedText) {
+      try {
+        html = await basicFetchListingHtml(url);
+      } catch (err) {
+        console.warn("[precheckListing] fetch failed, skipping precheck:", (err as Error)?.message);
+        return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+      }
+    }
+
+    let epcRating: string | null = null;
+    if (html) {
+      epcRating = extractEpcAndCouncilTax(html).epc;
+    } else if (cachedText) {
+      const m = cachedText.match(/EPC\s+RATING\s+EXTRACTED:\s*([A-G])/i)
+        ?? cachedText.match(/EPC[\s_-]*rating[^A-Za-z0-9]{0,10}([A-G])\b/i);
+      if (m?.[1]) epcRating = m[1].toUpperCase();
+    }
+
+    const textForSqft = cachedText ?? (html ? htmlToCleanText(html) : "");
+    const sqftFound = detectSqftInText(textForSqft);
+
+    return {
+      epcFound: Boolean(epcRating),
+      sqftFound,
+      epcRating,
+      skipped: false,
+    };
+  });
