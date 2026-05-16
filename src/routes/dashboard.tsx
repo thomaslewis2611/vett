@@ -6,6 +6,7 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGBP } from "@/lib/mock-analysis";
 import { createCheckoutSession } from "@/lib/checkout.functions";
+import { computeWeightedScore } from "@/lib/score";
 
 const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
