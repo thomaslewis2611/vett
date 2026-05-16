@@ -1211,6 +1211,7 @@ async function runJob(
     if (mappedBroadband) parsed.broadband = mappedBroadband;
     const mappedPtal = mapPdPtal(pd["ptal"]);
     if (mappedPtal) parsed.ptal = mappedPtal;
+    console.log(`[analyse-listing] Data mapping complete: ${Date.now() - mappingStart}ms`);
 
     // Override areaContext.avgPricePerSqFtArea with the PropertyData sold £/sqft
     // figure when available — it's the most accurate area benchmark for buyers.
