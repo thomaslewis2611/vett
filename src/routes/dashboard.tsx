@@ -430,29 +430,31 @@ function DashboardPage() {
             disabled={expired}
             className="inline-flex w-full items-center justify-center gap-1 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             style={{
-              background: "#1B4332",
+              background: "#2D6A4F",
               color: "#FFFDF9",
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 500,
               borderRadius: 100,
-              padding: "12px 20px",
+              padding: "13px 24px",
             }}
           >
             Analyse <ArrowRight className="h-4 w-4" />
           </button>
         </form>
 
-        <section className="mt-12">
+        <section className="mt-14">
           <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h2 className="text-xl font-semibold tracking-tight">Your recent reports</h2>
+            <h2 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 26, color: "#1A1108", letterSpacing: "-0.3px" }}>
+              Your recent reports
+            </h2>
             {!expired && rows.length >= 2 && (
               <Link
                 to="/compare"
                 className="inline-flex items-center"
                 style={{
-                  border: "1.5px solid #1A1108",
+                  border: "0.5px solid #1A1108",
                   borderRadius: 100,
-                  padding: "8px 16px",
+                  padding: "9px 18px",
                   fontSize: 13,
                   fontWeight: 500,
                   color: "#1A1108",
@@ -465,13 +467,18 @@ function DashboardPage() {
           </div>
           {rows.length === 0 ? (
             <div
-              className="mt-4 p-8 text-center"
-              style={{ background: "#F1EFE8", borderRadius: 12, color: "#5F5E5A", fontSize: 14 }}
+              className="mt-5 p-10 text-center"
+              style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
             >
-              You haven't analysed any properties yet. Paste a listing above to get started.
+              <h3 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 22, color: "#1A1108", letterSpacing: "-0.3px" }}>
+                No reports yet
+              </h3>
+              <p className="mt-2" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>
+                Paste a Rightmove listing above to generate your first analysis.
+              </p>
             </div>
           ) : (
-            <ul className="mt-4 space-y-3">
+            <ul className="mt-5 space-y-3">
               {rows.map((r) => {
                 const a = r.analysis_json ?? {};
                 const address = a?.property?.address ?? r.listing_url ?? "Untitled";
