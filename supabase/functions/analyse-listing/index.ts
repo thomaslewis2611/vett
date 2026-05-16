@@ -308,6 +308,160 @@ async function callClaude(
   return block?.type === "text" ? block.text : "";
 }
 
+async function runStageWithRetry<T>(
+  stageName: string,
+  fn: (signal: AbortSignal) => Promise<T>,
+  timeoutMs: number,
+): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= 2; attempt += 1) {
+    const ac = new AbortController();
+    const timer = setTimeout(() => ac.abort(), timeoutMs);
+    const started = Date.now();
+    try {
+      console.log(`[analyse-listing] stage ${stageName} start (attempt ${attempt}/2, timeout ${timeoutMs}ms)`);
+      const result = await fn(ac.signal);
+      console.log(`[analyse-listing] stage ${stageName} complete in ${Date.now() - started}ms (attempt ${attempt}/2)`);
+      return result;
+    } catch (err) {
+      lastError = err;
+      const message = err instanceof Error ? err.message : String(err);
+      console.warn(`[analyse-listing] stage ${stageName} failed in ${Date.now() - started}ms (attempt ${attempt}/2): ${message}`, err);
+      if (attempt < 2) {
+        console.log(`[analyse-listing] stage ${stageName} retrying once`);
+        await new Promise((resolve) => setTimeout(resolve, 750));
+      }
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error(String(lastError ?? `${stageName} failed`));
+}
+
+function parseStageJson(raw: string, stageName: string): Record<string, unknown> {
+  const parsed = parseWithRepair(raw);
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`${stageName} returned invalid JSON`);
+  }
+  return parsed as Record<string, unknown>;
+}
+
+const STAGED_ANALYSIS_BASE_PROMPT = `You are Roovr, an expert UK property buyer's analyst surfacing red flags estate agents hide. Return ONLY valid JSON. Be specific to this UK listing. Never use markdown.
+
+Critical rules:
+- SQUARE FOOTAGE: only use explicit listing text or PropertyData floor areas. If unknown: sqft=0 and pricePerSqFt=0. Never estimate from beds/type.
+- EPC: only populate if found in listing or user-confirmed notes.
+- AUCTION: only if explicit terms appear: auction, auctioneer, lot number, reserve price, unconditional exchange, sold prior to auction, online auction. Never infer from guide price/offers over.
+- Guide Price is normal UK terminology and is not a red flag unless combined with explicit auction/distress evidence.
+- Stamp duty must use current MAIN RESIDENCE rates for England/NI, not second-home surcharge unless explicitly stated.
+- Monthly mortgage: 15% deposit, 25-year term, 4.8% fixed.
+- Missing sq ft is not a red flag and must not lower listingTransparency unless there is explicit evidence it is being withheld.`;
+
+const DEFAULT_STAGE_TIMEOUT_MS = 35_000;
+
+type StageInputs = {
+  systemPrompt: string;
+  baseContent: string;
+  listingContent: string;
+  url: string;
+};
+
+async function runStagedClaudeAnalysis(inputs: StageInputs): Promise<Record<string, unknown>> {
+  const { systemPrompt, baseContent, listingContent, url } = inputs;
+  const excerpt = listingContent.slice(0, 18_000);
+
+  const facts = await runStageWithRetry("fetch-parse-listing", async (signal) => {
+    const prompt = `${baseContent}
+
+Stage A — fetch and parse listing content. Extract the core facts only.
+Return ONLY JSON matching:
+{
+  "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "listingUrl": string },
+  "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
+  "epc": { "rating": string|null, "score": number|null, "potentialRating": string|null, "estimatedAnnualEnergyCost": string|null, "commentary": string } | null,
+  "areaContext": { "avgPricePerSqFtArea": number|null, "avgSoldPriceArea": number|null, "priceVsAreaPercent": number|null, "areaDescription": string, "comparableNote": string },
+  "planningReference": { "found": boolean, "reference": string|null, "relatesTo": string|null, "applicationType": "Householder"|"Full Planning"|"Change of Use"|"Listed Building Consent"|"Unknown"|null, "isNeighbouring": boolean, "commentary": string|null } | null
+}
+
+Listing excerpt:
+${excerpt}`;
+    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 2500, signal);
+    return parseStageJson(text, "fetch-parse-listing");
+  }, DEFAULT_STAGE_TIMEOUT_MS);
+
+  const redFlagsStage = await runStageWithRetry("identify-red-flags", async (signal) => {
+    const prompt = `${baseContent}
+
+Stage B — identify red flags, listing transparency, seller motivation and viewing checklist.
+Known facts from Stage A:
+${JSON.stringify(facts)}
+
+Return ONLY JSON matching:
+{
+  "scoreLabel": string,
+  "subScores": { "valueForMoney": number, "locationQuality": number, "listingTransparency": number, "marketTiming": number, "riskLevel": number, "resalePotential": number },
+  "scoreReasons": { "valueForMoney": string, "locationQuality": string, "listingTransparency": string, "marketTiming": string, "riskLevel": string, "resalePotential": string },
+  "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ],
+  "sellerMotivation": { "score": number, "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
+  "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] },
+  "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "High priority"|"Medium priority"|"Low priority", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string }
+}
+
+Listing excerpt:
+${excerpt}`;
+    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 3500, signal);
+    return parseStageJson(text, "identify-red-flags");
+  }, DEFAULT_STAGE_TIMEOUT_MS);
+
+  const costsStage = await runStageWithRetry("calculate-true-costs", async (signal) => {
+    const prompt = `${baseContent}
+
+Stage C — calculate true buying costs and viewing questions.
+Known facts from earlier stages:
+${JSON.stringify({ facts, redFlags: redFlagsStage.redFlags, renovationCosts: redFlagsStage.renovationCosts })}
+
+Return ONLY JSON matching:
+{
+  "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
+  "viewingQuestions": string[]
+}
+The viewingQuestions array must contain exactly 8 listing-specific questions.`;
+    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 1600, signal);
+    return parseStageJson(text, "calculate-true-costs");
+  }, DEFAULT_STAGE_TIMEOUT_MS);
+
+  const negotiationStage = await runStageWithRetry("build-negotiation-strategy", async (signal) => {
+    const prompt = `${baseContent}
+
+Stage D — build negotiation strategy and any Land Registry comparables.
+Known facts from earlier stages:
+${JSON.stringify({ facts, redFlags: redFlagsStage.redFlags, costs: costsStage.costs, sellerMotivation: redFlagsStage.sellerMotivation })}
+
+Return ONLY JSON matching:
+{
+  "negotiation": { "isAuction": boolean, "maxBid": number, "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] },
+  "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ]
+}
+Never invent comparables; use real PropertyData sold prices from context if available, otherwise return [].`;
+    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 1800, signal);
+    return parseStageJson(text, "build-negotiation-strategy");
+  }, DEFAULT_STAGE_TIMEOUT_MS);
+
+  const merged: Record<string, unknown> = {
+    ...facts,
+    ...redFlagsStage,
+    ...costsStage,
+    ...negotiationStage,
+  };
+  const property = { ...((merged.property as Record<string, unknown> | undefined) ?? {}) };
+  property.listingUrl = String(property.listingUrl || url || "");
+  merged.property = property;
+  if (!Array.isArray(merged.viewingQuestions)) merged.viewingQuestions = [];
+  if (!Array.isArray(merged.redFlags)) merged.redFlags = [];
+  if (!Array.isArray(merged.comparables)) merged.comparables = [];
+  return merged;
+}
+
 // ---------- External APIs (postcode-driven) ----------
 const POSTCODE_RE = /[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}/i;
 // Outward-only (e.g. "BA1", "SW1A", "EC1"): a postcode area + district with NO inward part.
