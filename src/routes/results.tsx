@@ -4682,7 +4682,7 @@ function FloodRiskSection({
 
           {fr?.commentary && (
             <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6, marginTop: 14 }}>
-              {fr.commentary}
+              {sanitiseText(fr.commentary)}
             </p>
           )}
 
