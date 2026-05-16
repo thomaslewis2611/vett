@@ -1189,12 +1189,12 @@ async function runJob(
     // Map PropertyData payloads into the shapes the frontend renders for
     // nearbySchools / crime / broadband / ptal. Only set when we have real data so
     // the UI can fall back to its "data unavailable" state otherwise.
+    // Skip GIAS Ofsted enrichment during the main analysis — it can add up
+    // to ~40s (5 schools × up to 8s each) and pushes us past the 90s
+    // deadline. PropertyData already returns basic school info; Ofsted
+    // ratings can be lazy-loaded later from the schools section.
     const mappedSchools = mapPdSchools(pd["schools"]);
-    // Skip Ofsted scraping if we're already past the deadline or tight on budget.
-    const enrichedSchools = remaining() > 8000 && !claudeTimedOut
-      ? await enrichSchoolsWithGias(mappedSchools, postcode)
-      : mappedSchools;
-    if (enrichedSchools) parsed.nearbySchools = enrichedSchools;
+    if (mappedSchools) parsed.nearbySchools = mappedSchools;
     const mappedCrime = mapPdCrime(pd["crime"]);
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
