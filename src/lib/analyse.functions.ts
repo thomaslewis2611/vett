@@ -3304,10 +3304,10 @@ function detectSqftInText(text: string): boolean {
 function detectEpcInText(text: string): string | null {
   if (!text) return null;
   const patterns: RegExp[] = [
-    /EPC\s+rating[:\s]+([A-G])\b/i,
-    /EPC\s+band[:\s]+([A-G])\b/i,
-    /energy\s+(?:rating|efficiency\s+rating)[:\s]+([A-G])\b/i,
-    /EPC[\s:_-]+([A-G])\b/i,
+    /\bEPC\b[^A-Ga-g]{0,30}\b([A-G])\b/i,
+    /\benergy\s+(?:performance\s+)?(?:rating|band|efficiency\s+rating)\b[^A-Ga-g]{0,30}\b([A-G])\b/i,
+    /\b(?:rating|band)\b[^A-Ga-g]{0,12}\b([A-G])\b[^.]{0,40}\b(?:EPC|energy)\b/i,
+    /\b(?:EPC|energy)\b[^.]{0,40}\b(?:rating|band)\b[^A-Ga-g]{0,12}\b([A-G])\b/i,
   ];
   for (const re of patterns) {
     const m = text.match(re);
@@ -3348,32 +3348,14 @@ export const precheckListing = createServerFn({ method: "POST" })
       return { epcFound: false, sqftFound: false, epcRating: null, textLength: 0, skipped: false };
     }
 
-    // Try cache first.
-    let cachedText: string | null = null;
-    try {
-      const { data: cached } = await supabaseAdmin
-        .from("listing_cache")
-        .select("text_content, fetched_at")
-        .eq("url", url)
-        .maybeSingle();
-      if (
-        cached?.text_content &&
-        Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
-      ) {
-        cachedText = cached.text_content;
-      }
-    } catch { /* ignore */ }
-
     let html = "";
-    if (!cachedText) {
-      try {
-        html = await basicFetchListingHtml(url);
-      } catch (err) {
-        console.warn("[precheckListing] fetch threw, treating as both-missing:", (err as Error)?.message);
-      }
+    try {
+      html = await basicFetchListingHtml(url);
+    } catch (err) {
+      console.warn("[precheckListing] fetch threw, treating as both-missing:", (err as Error)?.message);
     }
 
-    const textForScan = cachedText ?? (html ? htmlToCleanText(html) : "");
+    const textForScan = html ? htmlToCleanText(html) : "";
     let epcRating: string | null = null;
     if (html) {
       epcRating = extractEpcAndCouncilTax(html).epc;
@@ -3389,7 +3371,7 @@ export const precheckListing = createServerFn({ method: "POST" })
       epcFound: Boolean(epcRating),
       epcRating,
       sqftFound,
-      source: cachedText ? "cache" : (html ? "fetch" : "none"),
+      source: html ? "fetch" : "none",
     });
 
     return {
