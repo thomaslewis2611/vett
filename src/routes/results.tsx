@@ -3645,7 +3645,7 @@ function EpcSection({
               </div>
             )}
             {epc?.commentary && (
-              <p className="mt-3 text-sm" style={{ color: "#1A1108" }}>{epc.commentary}</p>
+              <p className="mt-3 text-sm" style={{ color: "#1A1108" }}>{sanitiseText(epc.commentary)}</p>
             )}
             <button
               type="button"
