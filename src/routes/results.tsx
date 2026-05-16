@@ -4892,7 +4892,7 @@ function SellerMotivationSection({ analysis, unlocked }: { analysis: AnalysisRes
               </div>
             )}
             <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-              {sm.commentary}
+              {sanitiseText(sm.commentary)}
             </p>
           </div>
           {!unlocked && hasDetails && (
