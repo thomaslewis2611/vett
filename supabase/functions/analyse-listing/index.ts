@@ -1143,8 +1143,8 @@ Deno.serve(async (req) => {
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-    await runJob(jobId, url, pastedText, { userEpc, userSqft });
-    return new Response(JSON.stringify({ ok: true }), {
+    scheduleEdgeBackground(runJob(jobId, url, pastedText, { userEpc, userSqft }));
+    return new Response(JSON.stringify({ ok: true, accepted: true }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
   } catch (err) {
