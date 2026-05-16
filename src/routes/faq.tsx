@@ -79,44 +79,71 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
 ];
 
 function FaqPage() {
+  const HEADING = "'Playfair Display', Georgia, serif";
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: "#FFFDF9" }}>
+    <div className="min-h-screen flex flex-col" style={{ background: "#F1EFE8" }}>
       <SiteHeader />
-      <main className="mx-auto w-full max-w-3xl px-8 py-20 flex-1">
-        <h1 style={{ fontSize: 40, fontWeight: 500, color: "#1A1108", letterSpacing: "-1.5px", lineHeight: 1.15 }}>
+      <main className="mx-auto w-full max-w-3xl px-6 sm:px-8 py-16 sm:py-24 flex-1">
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#2D6A4F",
+          }}
+        >
+          FAQ
+        </div>
+        <h1
+          className="mt-4"
+          style={{
+            fontFamily: HEADING,
+            fontWeight: 400,
+            fontSize: 48,
+            color: "#1A1108",
+            letterSpacing: "-1px",
+            lineHeight: 1.1,
+          }}
+        >
           Frequently asked questions
         </h1>
-        <p className="mt-3" style={{ fontSize: 15, color: "#5F5E5A" }}>
+        <p className="mt-4" style={{ fontSize: 16, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.7 }}>
           Everything you need to know about Roovr. Can't find an answer?{" "}
-          <a href="mailto:support@roovr.co" className="underline" style={{ color: "#1A1108" }}>
+          <a href="mailto:support@roovr.co" className="hover:underline" style={{ color: "#2D6A4F", fontWeight: 400 }}>
             Email support@roovr.co
           </a>
           .
         </p>
 
-        <Accordion type="single" collapsible className="mt-10 w-full">
-          {FAQS.map((item, i) => (
-            <AccordionItem
-              key={i}
-              value={`item-${i}`}
-              className="border-b"
-              style={{ borderColor: "#EDE9DF" }}
-            >
-              <AccordionTrigger
-                className="py-5 text-left hover:no-underline"
-                style={{ fontSize: 16, fontWeight: 500, color: "#1A1108" }}
+        <div
+          className="mt-10 p-4 sm:p-6"
+          style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
+        >
+          <Accordion type="single" collapsible className="w-full">
+            {FAQS.map((item, i) => (
+              <AccordionItem
+                key={i}
+                value={`item-${i}`}
+                className="border-b last:border-b-0"
+                style={{ borderColor: "rgba(26,17,8,0.08)" }}
               >
-                {item.q}
-              </AccordionTrigger>
-              <AccordionContent
-                className="pb-5 whitespace-pre-line"
-                style={{ fontSize: 15, color: "#5F5E5A", lineHeight: 1.7 }}
-              >
-                {item.a}
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+                <AccordionTrigger
+                  className="py-5 text-left hover:no-underline"
+                  style={{ fontFamily: HEADING, fontSize: 18, fontWeight: 400, color: "#1A1108", letterSpacing: "-0.2px" }}
+                >
+                  {item.q}
+                </AccordionTrigger>
+                <AccordionContent
+                  className="pb-5 whitespace-pre-line"
+                  style={{ fontSize: 15, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.75 }}
+                >
+                  {item.a}
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </div>
       </main>
       <SiteFooter />
     </div>
