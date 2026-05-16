@@ -745,6 +745,35 @@ function ResultsPage() {
     );
   }
 
+  if ((query.data!.analysis as unknown as { partial?: boolean })?.partial === true) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <SiteHeader />
+        <main className="mx-auto max-w-xl px-6 py-20">
+          <div className="rounded-2xl border border-border bg-card p-6 text-center shadow-sm">
+            <h1 className="text-xl font-semibold tracking-tight">Almost there</h1>
+            <p className="mt-3 text-sm text-muted-foreground">
+              This property took longer than usual to fully analyse. Tap below to try again — it usually completes on the second attempt.
+            </p>
+            <div className="mt-6 flex justify-center">
+              <button
+                onClick={() => {
+                  forgetJobId(url);
+                  query.refetch();
+                }}
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        </main>
+        <DisclaimerBar />
+        <SiteFooter />
+      </div>
+    );
+  }
+
   return (
     <ReportView
       analysis={query.data!.analysis}
