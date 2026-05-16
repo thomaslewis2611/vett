@@ -11,14 +11,14 @@ const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
 function buildMagicLinkHtml(actionLink: string, opts: { heading: string; body: string; cta: string }): string {
   return `<!doctype html><html><body style="margin:0;padding:32px 0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:0 20px;">
-    <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#1B4332;letter-spacing:-0.01em;">● Roovr</div></div>
+    <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#2D6A4F;letter-spacing:-0.01em;">● Roovr</div></div>
     <div style="background:#FFFDF9;border:1px solid rgba(26,17,8,0.12);border-radius:12px;padding:32px;">
       <h1 style="font-size:24px;font-weight:700;color:#1A1108;margin:0 0 12px;line-height:1.3;">${opts.heading}</h1>
       <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">${opts.body}</p>
-      <a href="${actionLink}" style="background:#1B4332;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 22px;text-decoration:none;display:inline-block;">${opts.cta}</a>
+      <a href="${actionLink}" style="background:#2D6A4F;color:#FFFDF9;font-size:15px;font-weight:600;border-radius:8px;padding:14px 22px;text-decoration:none;display:inline-block;">${opts.cta}</a>
       <hr style="border:none;border-top:1px solid rgba(26,17,8,0.12);margin:28px 0 20px;" />
       <p style="font-size:13px;color:#888780;line-height:1.5;margin:0 0 8px;">If the button does not work, copy and paste this link into your browser:</p>
-      <a href="${actionLink}" style="font-size:13px;color:#1B4332;word-break:break-all;">${actionLink}</a>
+      <a href="${actionLink}" style="font-size:13px;color:#2D6A4F;word-break:break-all;">${actionLink}</a>
       <p style="font-size:13px;color:#888780;line-height:1.5;margin:20px 0 0;">If you did not request this, you can safely ignore this email.</p>
     </div>
     <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.</p></div>

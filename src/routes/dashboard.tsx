@@ -353,7 +353,7 @@ function DashboardPage() {
               disabled={renewing}
               className="inline-flex w-full items-center justify-center sm:w-auto"
               style={{
-                background: "#1B4332",
+                background: "#2D6A4F",
                 color: "#FFFDF9",
                 fontSize: 13,
                 fontWeight: 500,
@@ -386,7 +386,7 @@ function DashboardPage() {
               disabled={renewing}
               className="inline-flex w-full items-center justify-center sm:w-auto"
               style={{
-                background: "#1B4332",
+                background: "#2D6A4F",
                 color: "#FFFDF9",
                 fontSize: 13,
                 fontWeight: 500,
