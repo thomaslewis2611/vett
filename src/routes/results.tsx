@@ -482,7 +482,9 @@ function ResultsPage() {
         try {
           const probe = await getJobFn({ data: { jobId, sessionJwt } });
           if (probe.status === "complete" && probe.analysis) {
-            writeCachedAnalysis(probe.analysis, url, text, token);
+            if (!(probe.analysis as { partial?: boolean })?.partial) {
+              writeCachedAnalysis(probe.analysis, url, text, token);
+            }
             return { analysis: probe.analysis };
           }
           if (probe.status === "error" && /not found/i.test(probe.error ?? "")) {
@@ -539,7 +541,9 @@ function ResultsPage() {
         }
         if (status) {
           if (status.status === "complete" && status.analysis) {
-            writeCachedAnalysis(status.analysis, url, text, token);
+            if (!(status.analysis as { partial?: boolean })?.partial) {
+              writeCachedAnalysis(status.analysis, url, text, token);
+            }
             return { analysis: status.analysis };
           }
           if (status.status === "error") {
