@@ -1223,13 +1223,13 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         <div
           className="no-print w-full max-w-full overflow-x-hidden"
           style={{
-            background: "#FAECE7",
-            borderBottom: "0.5px solid rgba(153,60,29,0.15)",
+            background: "#EAF3DE",
+            borderBottom: "0.5px solid rgba(45,106,79,0.15)",
           }}
         >
-          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2 sm:px-8" style={{ fontSize: 12, color: "#993C1D" }}>
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-2 sm:px-8" style={{ fontSize: 12, color: "#2D6A4F" }}>
             <span className="truncate">Buyer Pass active</span>
-            <Link to="/dashboard" style={{ color: "#993C1D", fontWeight: 500 }} className="shrink-0 hover:underline">
+            <Link to="/dashboard" style={{ color: "#2D6A4F", fontWeight: 500 }} className="shrink-0 hover:underline">
               View all your analyses →
             </Link>
           </div>
@@ -1254,27 +1254,64 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 
         {/* Property header */}
         <section
-          className="mt-6 w-full rounded-3xl px-6 py-6 sm:px-8 sm:py-8"
+          className="mt-6 w-full"
           style={{
             background: "#FFFDF9",
-            borderBottom: "0.5px solid rgba(26,17,8,0.12)",
+            borderRadius: 20,
+            border: "0.5px solid rgba(26,17,8,0.1)",
+            padding: "36px 40px",
           }}
         >
-          <div className="flex items-start justify-between gap-6">
-            <div className="min-w-0 flex-1">
+          <div
+            className="grid items-start gap-6 sm:gap-10"
+            style={{ gridTemplateColumns: "minmax(0,1fr) auto" }}
+          >
+            <div className="min-w-0">
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  color: "#2D6A4F",
+                  textTransform: "uppercase",
+                  marginBottom: 10,
+                }}
+              >
+                Rightmove{(() => {
+                  const parts = String(a.property.address || "")
+                    .split(",")
+                    .map((s) => s.trim())
+                    .filter((s) => s && !/^[A-Z]{1,2}\d/i.test(s));
+                  const area = parts.slice(-2).join(", ");
+                  return area ? ` · ${area}` : "";
+                })()}
+              </div>
               <h1
-                className="truncate"
-                style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", lineHeight: 1.3 }}
+                style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: 28,
+                  fontWeight: 400,
+                  color: "#1A1108",
+                  lineHeight: 1.2,
+                  marginBottom: 16,
+                }}
               >
                 {sanitiseText(a.property.address)}
               </h1>
               <div
-                className="mt-2"
-                style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", lineHeight: 1.2 }}
+                style={{
+                  fontFamily: "'Playfair Display', Georgia, serif",
+                  fontSize: 36,
+                  fontWeight: 400,
+                  color: "#1A1108",
+                  letterSpacing: "-0.5px",
+                  lineHeight: 1,
+                  marginBottom: 20,
+                }}
               >
                 {formatGBP(a.property.price)}
               </div>
-              <div className="mt-4 flex flex-wrap items-center gap-2">
+              <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
                 <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
                 <PropertyPill>{a.property.baths} bath{a.property.baths === 1 ? "" : "s"}</PropertyPill>
                 {(a.property.sqft > 0 || a.manualSqftAnalysis?.sqft) && (
@@ -1689,8 +1726,16 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 function PropertyPill({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center rounded-full px-3 py-1"
-      style={{ background: "#F1EFE8", color: "#5F5E5A", fontSize: 12, fontWeight: 500 }}
+      className="inline-flex items-center"
+      style={{
+        background: "#F1EFE8",
+        color: "#5F5E5A",
+        fontSize: 12,
+        fontWeight: 400,
+        padding: "5px 12px",
+        borderRadius: 100,
+        border: "0.5px solid rgba(26,17,8,0.1)",
+      }}
     >
       {children}
     </span>
@@ -1698,23 +1743,57 @@ function PropertyPill({ children }: { children: React.ReactNode }) {
 }
 
 function ScoreBadge({ score, label }: { score: number; label: string }) {
-  const pct = (score / 10) * 100;
-  const ring = `conic-gradient(var(--primary) ${pct}%, var(--primary-soft) ${pct}%)`;
   return (
-    <div className="flex items-center gap-4">
+    <div
+      style={{
+        background: "#FFFDF9",
+        border: "0.5px solid rgba(26,17,8,0.12)",
+        borderRadius: 16,
+        padding: "20px 24px",
+        textAlign: "center",
+        minWidth: 130,
+      }}
+    >
       <div
-        className="flex h-24 w-24 items-center justify-center rounded-full"
-        style={{ background: ring }}
+        style={{
+          fontSize: 9,
+          fontWeight: 500,
+          letterSpacing: "0.12em",
+          textTransform: "uppercase",
+          color: "#888780",
+          marginBottom: 6,
+        }}
       >
-        <div className="flex h-[84px] w-[84px] flex-col items-center justify-center rounded-full bg-card">
-          <span className="text-2xl font-semibold leading-none">{score.toFixed(1)}</span>
-          <span className="text-[10px] uppercase tracking-wider text-muted-foreground">/ 10</span>
-        </div>
+        Roovr Score
       </div>
-      <div className="hidden max-w-[160px] sm:block">
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">Roovr score</div>
-        <div className="text-sm font-medium leading-tight">{label}</div>
+      <div
+        style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: 48,
+          fontWeight: 400,
+          color: "#2D6A4F",
+          lineHeight: 1,
+          marginBottom: 2,
+        }}
+      >
+        {score.toFixed(1)}
       </div>
+      <div style={{ fontSize: 10, color: "#888780", marginBottom: 10 }}>out of 10</div>
+      {label && (
+        <span
+          style={{
+            background: "#EAF3DE",
+            borderRadius: 100,
+            padding: "4px 10px",
+            fontSize: 10,
+            fontWeight: 500,
+            color: "#2D6A4F",
+            display: "inline-block",
+          }}
+        >
+          {label}
+        </span>
+      )}
     </div>
   );
 }
@@ -3373,43 +3452,83 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
 
   if (!sub) return null;
   return (
-    <section className="mt-6">
+    <section style={{ marginTop: 16 }}>
       <div
-        className="rounded-2xl p-6 sm:p-7"
-        style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)" }}
+        style={{
+          background: "#FFFDF9",
+          borderRadius: 20,
+          border: "0.5px solid rgba(26,17,8,0.1)",
+          padding: "32px 40px",
+        }}
       >
-        <h3 className="mb-4 text-sm font-medium uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+        <h3
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            color: "#888780",
+            textTransform: "uppercase",
+            marginBottom: 24,
+          }}
+        >
           Score breakdown
         </h3>
-        <div className="space-y-4">
-          {SUB_SCORE_LABELS.map(({ key, label, how }) => {
+        <div>
+          {SUB_SCORE_LABELS.map(({ key, label, how }, idx) => {
             const v = Number(sub[key] ?? 0);
             const pct = Math.max(0, Math.min(100, (v / 10) * 100));
-            const color = scoreColor(v);
+            const barColor = v >= 7 ? "#2D6A4F" : v >= 5 ? "#BA7517" : "#A32D2D";
             const reason = reasons[key];
             const summary = reason && reason.trim().length > 0 ? reason.trim() : null;
             return (
-              <div key={key}>
-                <div className="grid grid-cols-[minmax(140px,160px)_1fr_36px] items-center gap-4">
-                  <span className="inline-flex items-center gap-1.5" style={{ fontSize: 13, color: "#5F5E5A" }}>
+              <div
+                key={key}
+                style={{
+                  paddingTop: idx === 0 ? 0 : 24,
+                  paddingBottom: idx === SUB_SCORE_LABELS.length - 1 ? 0 : 24,
+                  borderBottom:
+                    idx === SUB_SCORE_LABELS.length - 1
+                      ? "none"
+                      : "0.5px solid rgba(26,17,8,0.07)",
+                }}
+              >
+                <div
+                  className="grid items-center"
+                  style={{ gridTemplateColumns: "180px 1fr 40px", gap: 16 }}
+                >
+                  <span
+                    className="inline-flex items-center gap-1.5"
+                    style={{ fontSize: 13, color: "#1A1108", fontWeight: 400 }}
+                  >
                     {label}
                     <ScoreInfoTooltip text={how} />
                   </span>
                   <div
-                    className="relative w-full overflow-hidden rounded-full"
-                    style={{ height: 6, background: "#F1EFE8" }}
+                    className="relative w-full overflow-hidden"
+                    style={{ height: 4, background: "#F1EFE8", borderRadius: 100 }}
                   >
                     <div
-                      className="absolute inset-y-0 left-0 rounded-full"
-                      style={{ width: `${pct}%`, background: color }}
+                      className="absolute inset-y-0 left-0"
+                      style={{ width: `${pct}%`, background: barColor, borderRadius: 100 }}
                     />
                   </div>
-                  <span className="text-right" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108" }}>
+                  <span
+                    className="text-right"
+                    style={{ fontSize: 14, fontWeight: 500, color: "#1A1108" }}
+                  >
                     {v.toFixed(1)}
                   </span>
                 </div>
                 {summary && (
-                  <p className="mt-1.5" style={{ fontSize: 12, color: "#888780", lineHeight: 1.5 }}>
+                  <p
+                    style={{
+                      fontSize: 12,
+                      color: "#888780",
+                      lineHeight: 1.6,
+                      fontWeight: 300,
+                      marginTop: 6,
+                    }}
+                  >
                     {summary}
                   </p>
                 )}
