@@ -1,0 +1,1 @@
+ALTER TABLE public.analysis_jobs DROP COLUMN IF EXISTS session_jwt;
