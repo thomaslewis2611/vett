@@ -4189,7 +4189,7 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
 
         {crime.commentary && (
           <p className="mt-4" style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-            {crime.commentary}
+            {sanitiseText(crime.commentary)}
           </p>
         )}
 
