@@ -529,7 +529,7 @@ function ResultsPage() {
         // status === "error" from the server should fail the analysis.
         let status: Awaited<ReturnType<typeof getJobFn>> | null = null;
         try {
-          status = await getJobFn({ data: { jobId, sessionJwt } });
+          status = await getJobFn({ data: { jobId } });
           consecutiveTransientErrors = 0;
         } catch (err) {
           consecutiveTransientErrors += 1;
