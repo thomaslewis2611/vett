@@ -2490,13 +2490,18 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
       }
     }
 
+    // Resolve email server-side from the session JWT so we can store it on
+    // the job row. We never persist the JWT itself — only the email, which
+    // is what later access checks need.
+    const userEmail = await resolveEmailFromJwt(data.sessionJwt ?? null);
+
     const { data: row, error } = await supabaseAdmin
       .from("analysis_jobs")
       .insert({
         url: url || "(pasted text)",
         pasted_text: pastedText || null,
         access_token: data.accessToken ?? null,
-        session_jwt: data.sessionJwt ?? null,
+        user_email: userEmail,
         status: "pending",
       })
       .select("id")
