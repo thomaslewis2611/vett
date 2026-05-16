@@ -3247,8 +3247,8 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
             }
             return out;
           };
-          const desc = rewriteNarrative(ac.areaDescription);
-          const note = rewriteNarrative(ac.comparableNote);
+          const desc = sanitiseText(rewriteNarrative(ac.areaDescription));
+          const note = sanitiseText(rewriteNarrative(ac.comparableNote));
           return (
             <>
               {desc && (
