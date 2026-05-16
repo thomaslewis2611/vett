@@ -66,12 +66,18 @@ async function sendWithTimeout(apiKey: string, to: string, html: string): Promis
 export const Route = createFileRoute("/api/public/cron/check-expiry-reminders")({
   server: {
     handlers: {
-      POST: async () => {
+      POST: async ({ request }) => {
         const supabaseUrl = process.env.SUPABASE_URL;
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
         const resendKey = process.env.RESEND_API_KEY;
-        if (!supabaseUrl || !serviceKey || !resendKey) {
+        const cronSecret = process.env.CRON_SECRET;
+        if (!supabaseUrl || !serviceKey || !resendKey || !cronSecret) {
           return new Response(JSON.stringify({ error: "missing env" }), { status: 500 });
+        }
+
+        const provided = request.headers.get("x-cron-secret");
+        if (!provided || provided !== cronSecret) {
+          return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
         }
 
         const supabase = createClient(supabaseUrl, serviceKey);
