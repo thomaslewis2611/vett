@@ -274,11 +274,13 @@ function DashboardPage() {
     }
   };
 
+  const HEADING = "'Playfair Display', Georgia, serif";
+
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8" }}>
         <SiteHeader />
-        <main className="mx-auto max-w-3xl px-6 py-24 text-center" style={{ color: "#5F5E5A" }}>
+        <main className="mx-auto max-w-3xl px-6 py-24 text-center flex-1" style={{ fontWeight: 300, color: "#5F5E5A" }}>
           Loading your dashboard…
         </main>
         <SiteFooter />
@@ -292,18 +294,20 @@ function DashboardPage() {
   const expiryDateShort = expiresAt ? formatDateShort(expiresAt) : "";
 
   return (
-    <div className="flex min-h-screen flex-col bg-background" style={{ width: "100%", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box" }}>
+    <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8", width: "100%", maxWidth: "100%", overflowX: "hidden", boxSizing: "border-box" }}>
       <SiteHeader />
       <main
-        className="mx-auto w-full max-w-4xl flex-1 px-4 py-8 sm:px-6 sm:py-12"
+        className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6 sm:py-14"
         style={{ boxSizing: "border-box", maxWidth: "100%", overflowX: "hidden" }}
       >
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4" style={{ maxWidth: "100%", boxSizing: "border-box" }}>
           <div className="min-w-0" style={{ maxWidth: "100%" }}>
-            <h1 className="text-3xl font-semibold tracking-tight">Welcome back</h1>
-            <p className="mt-1 truncate text-sm" style={{ color: "#5F5E5A" }}>{email}</p>
+            <h1 style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 38, color: "#1A1108", letterSpacing: "-0.6px", lineHeight: 1.1 }}>
+              My Reports
+            </h1>
+            <p className="mt-2 truncate" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>{email}</p>
             {passStatus === "active" && expiresAt && (
-              <p className="mt-1" style={{ fontSize: 11, color: "#888780" }}>
+              <p className="mt-1" style={{ fontSize: 11, fontWeight: 400, color: "#2D6A4F", letterSpacing: "0.05em" }}>
                 Buyer Pass active · Expires {expiryDateShort}
               </p>
             )}
