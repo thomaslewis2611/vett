@@ -1199,18 +1199,17 @@ async function runJob(
       parsed.score = derivedScore;
     }
 
-    if (claudeTimedOut) parsed.partial = true;
     const { error: updErr } = await supabase
       .from("analysis_jobs")
       .update({
         status: "complete",
         result_json: parsed,
-        error: claudeTimedOut ? "PARTIAL: 90s deadline exceeded" : null,
+        error: null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
     if (updErr) throw updErr;
-    console.log(`[analyse-listing] job ${jobId} complete in ${Date.now() - startedAt}ms (partial=${claudeTimedOut})`);
+    console.log(`[analyse-listing] job ${jobId} complete in ${Date.now() - jobStartedAt}ms`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[analyse-listing] job ${jobId} failed:`, message, err);
