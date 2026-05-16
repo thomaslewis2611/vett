@@ -17,7 +17,7 @@ function buildHtml(expiryDate: string): string {
     <tr><td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;">
         <tr><td style="background:#1a1a1a;padding:24px 32px;">
-          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#E85D3A;vertical-align:middle;margin-right:8px;"></span>
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2D6A4F;vertical-align:middle;margin-right:8px;"></span>
           <span style="color:#ffffff;font-size:18px;font-weight:600;vertical-align:middle;">Roovr</span>
         </td></tr>
         <tr><td style="padding:40px 32px 24px 32px;">
@@ -25,7 +25,7 @@ function buildHtml(expiryDate: string): string {
           <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#444;">
             Your Roovr Buyer Pass expires on <strong>${formatDate(expiryDate)}</strong>. Renew now to keep unlimited access to property analyses, AI chat, flood risk data, and more.
           </p>
-          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#E85D3A;border-radius:999px;">
+          <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#2D6A4F;border-radius:999px;">
             <a href="https://roovr.co/pricing" style="display:inline-block;padding:14px 24px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">Renew my Buyer Pass — £24.99 →</a>
           </td></tr></table>
         </td></tr>
