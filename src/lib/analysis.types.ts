@@ -161,6 +161,18 @@ export type AnalysisResult = {
     legalFees: number;
     surveyFees: number;
     mortgageFees: number;
+    valuationFee?: number;
+    landRegistryFee?: number;
+    electronicTransferFee?: number;
+    removalCosts?: number;
+    indemnityInsurance?: number;
+    buildingsInsurance?: number;
+    serviceCharge?: number;
+    groundRent?: number;
+    leaseholdYears?: number;
+    councilTaxMonthly?: number;
+    buildingsInsuranceMonthly?: number;
+    serviceChargeMonthly?: number;
     totalUpfront: number;
     monthlyMortgage: number;
     mortgageAssumptions: string;
