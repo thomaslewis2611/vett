@@ -10,7 +10,7 @@
 //   4. Update the analysis_jobs row to `complete` / `error`.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
-import { computeWeightedScore } from "../../../src/lib/score.ts";
+import { computeWeightedScore } from "./score.ts";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -297,7 +297,6 @@ async function callClaude(
   system: string,
   userContent: string,
   maxTokens: number,
-  signal?: AbortSignal,
 ): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -312,7 +311,6 @@ async function callClaude(
       system,
       messages: [{ role: "user", content: userContent }],
     }),
-    signal,
   });
   if (!res.ok) {
     const body = await res.text();
@@ -325,17 +323,14 @@ async function callClaude(
 
 async function runStageWithRetry<T>(
   stageName: string,
-  fn: (signal: AbortSignal) => Promise<T>,
-  timeoutMs: number,
+  fn: () => Promise<T>,
 ): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), timeoutMs);
     const started = Date.now();
     try {
-      console.log(`[analyse-listing] stage ${stageName} start (attempt ${attempt}/2, timeout ${timeoutMs}ms)`);
-      const result = await fn(ac.signal);
+      console.log(`[analyse-listing] stage ${stageName} start (attempt ${attempt}/2)`);
+      const result = await fn();
       console.log(`[analyse-listing] stage ${stageName} complete in ${Date.now() - started}ms (attempt ${attempt}/2)`);
       return result;
     } catch (err) {
@@ -346,8 +341,6 @@ async function runStageWithRetry<T>(
         console.log(`[analyse-listing] stage ${stageName} retrying once`);
         await new Promise((resolve) => setTimeout(resolve, 750));
       }
-    } finally {
-      clearTimeout(timer);
     }
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError ?? `${stageName} failed`));
@@ -372,7 +365,6 @@ Critical rules:
 - Monthly mortgage: 15% deposit, 25-year term, 4.8% fixed.
 - Missing sq ft is not a red flag and must not lower listingTransparency unless there is explicit evidence it is being withheld.`;
 
-const DEFAULT_STAGE_TIMEOUT_MS = 35_000;
 
 type StageInputs = {
   systemPrompt: string;
@@ -385,7 +377,7 @@ async function runStagedClaudeAnalysis(inputs: StageInputs): Promise<Record<stri
   const { systemPrompt, baseContent, listingContent, url } = inputs;
   const excerpt = listingContent.slice(0, 18_000);
 
-  const facts = await runStageWithRetry("fetch-parse-listing", async (signal) => {
+  const facts = await runStageWithRetry("fetch-parse-listing", async () => {
     const prompt = `${baseContent}
 
 Stage A — fetch and parse listing content. Extract the core facts only.
@@ -400,11 +392,11 @@ Return ONLY JSON matching:
 
 Listing excerpt:
 ${excerpt}`;
-    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 2500, signal);
+    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 2500);
     return parseStageJson(text, "fetch-parse-listing");
-  }, DEFAULT_STAGE_TIMEOUT_MS);
+  });
 
-  const redFlagsStage = await runStageWithRetry("identify-red-flags", async (signal) => {
+  const redFlagsStage = await runStageWithRetry("identify-red-flags", async () => {
     const prompt = `${baseContent}
 
 Stage B — identify red flags, listing transparency, seller motivation and viewing checklist.
@@ -424,11 +416,11 @@ Return ONLY JSON matching:
 
 Listing excerpt:
 ${excerpt}`;
-    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 3500, signal);
+    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 3500);
     return parseStageJson(text, "identify-red-flags");
-  }, DEFAULT_STAGE_TIMEOUT_MS);
+  });
 
-  const costsStage = await runStageWithRetry("calculate-true-costs", async (signal) => {
+  const costsStage = await runStageWithRetry("calculate-true-costs", async () => {
     const prompt = `${baseContent}
 
 Stage C — calculate true buying costs and viewing questions.
@@ -441,11 +433,11 @@ Return ONLY JSON matching:
   "viewingQuestions": string[]
 }
 The viewingQuestions array must contain exactly 8 listing-specific questions.`;
-    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 1600, signal);
+    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 1600);
     return parseStageJson(text, "calculate-true-costs");
-  }, DEFAULT_STAGE_TIMEOUT_MS);
+  });
 
-  const negotiationStage = await runStageWithRetry("build-negotiation-strategy", async (signal) => {
+  const negotiationStage = await runStageWithRetry("build-negotiation-strategy", async () => {
     const prompt = `${baseContent}
 
 Stage D — build negotiation strategy and any Land Registry comparables.
@@ -458,9 +450,9 @@ Return ONLY JSON matching:
   "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ]
 }
 Never invent comparables; use real PropertyData sold prices from context if available, otherwise return [].`;
-    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 1800, signal);
+    const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 1800);
     return parseStageJson(text, "build-negotiation-strategy");
-  }, DEFAULT_STAGE_TIMEOUT_MS);
+  });
 
   const merged: Record<string, unknown> = {
     ...facts,
