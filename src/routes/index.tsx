@@ -44,6 +44,8 @@ const HEADLINES = [
 function Index() {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [headlineIdx, setHeadlineIdx] = useState(0);
   useEffect(() => {
     setHeadlineIdx(Math.floor(Math.random() * HEADLINES.length));
@@ -52,12 +54,45 @@ function Index() {
 
   const handleAnalyse = (e: React.FormEvent) => {
     e.preventDefault();
-    const trimmedUrl = url.trim();
-    if (!trimmedUrl) return;
-    navigate({
-      to: "/results",
-      search: { url: trimmedUrl },
-    });
+    setError(null);
+    setNotice(null);
+    const trimmed = url.trim();
+    if (!trimmed) return;
+
+    if (trimmed.length > 2000) {
+      setError("That doesn't look like a valid listing URL");
+      return;
+    }
+
+    const looksLikeUrl = /^https?:\/\//i.test(trimmed);
+    const hasUrlIshDomain = /\.(co\.uk|com|net|org|io|uk)\b/i.test(trimmed);
+
+    // Clearly not a URL → treat as pasted listing text
+    if (!looksLikeUrl && !hasUrlIshDomain) {
+      navigate({ to: "/results", search: { text: trimmed } });
+      return;
+    }
+
+    // Has a URL-ish domain but missing http(s):// → invalid
+    if (!looksLikeUrl) {
+      setError("That doesn't look like a valid listing URL");
+      return;
+    }
+
+    let parsed: URL;
+    try {
+      parsed = new URL(trimmed);
+    } catch {
+      setError("That doesn't look like a valid listing URL");
+      return;
+    }
+
+    const isRightmove = /(^|\.)rightmove\.co\.uk$/i.test(parsed.hostname);
+    if (!isRightmove) {
+      setNotice("Roovr works best with Rightmove listings — other sites coming soon");
+    }
+
+    navigate({ to: "/results", search: { url: trimmed } });
   };
 
   const scrollToTop = () => {
