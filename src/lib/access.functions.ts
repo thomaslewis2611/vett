@@ -56,9 +56,9 @@ export const getSingleReportByEmail = createServerFn({ method: "POST" })
   .handler(
     async ({
       data,
-    }): Promise<{ token: string | null; listingUrl: string | null; expiresAt: string | null }> => {
+    }): Promise<{ hasAccess: boolean; token: string | null; listingUrl: string | null; expiresAt: string | null }> => {
       if (!data.listingUrl) {
-        return { token: null, listingUrl: null, expiresAt: null };
+        return { hasAccess: false, token: null, listingUrl: null, expiresAt: null };
       }
       // Match a paid Single Report for this exact listing URL.
       const { data: saved } = await supabaseAdmin
@@ -69,7 +69,7 @@ export const getSingleReportByEmail = createServerFn({ method: "POST" })
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (!saved) return { token: null, listingUrl: null, expiresAt: null };
+      if (!saved) return { hasAccess: false, token: null, listingUrl: null, expiresAt: null };
 
       // Optional: surface the matching token's expiry if one exists.
       const { data: row } = await supabaseAdmin
@@ -81,10 +81,11 @@ export const getSingleReportByEmail = createServerFn({ method: "POST" })
         .limit(1)
         .maybeSingle();
       if (row && new Date(row.expires_at).getTime() < Date.now()) {
-        return { token: null, listingUrl: null, expiresAt: null };
+        return { hasAccess: false, token: null, listingUrl: null, expiresAt: null };
       }
       return {
-        token: row?.token ?? "saved",
+        hasAccess: true,
+        token: row?.token ?? null,
         listingUrl: data.listingUrl,
         expiresAt: row?.expires_at ?? null,
       };
