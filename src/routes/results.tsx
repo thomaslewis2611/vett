@@ -966,6 +966,22 @@ function LoadingState({ url, showResumeBanner = false }: { url?: string; showRes
             />
           </div>
 
+          {showResumeBanner && (
+            <p
+              role="status"
+              aria-live="polite"
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: ACCENT,
+                textAlign: "center",
+                padding: "6px 0",
+              }}
+            >
+              Welcome back — we kept your analysis running.
+            </p>
+          )}
+
           {/* Anchor: property URL */}
           {anchor && (
             <div className="mt-6">
