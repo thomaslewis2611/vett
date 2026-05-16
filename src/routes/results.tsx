@@ -419,6 +419,7 @@ function ResultsPage() {
   const POLL_TIMEOUT_MS = 10 * 60_000;
   const [wasHidden, setWasHidden] = useState(false);
   const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const [forceRestart, setForceRestart] = useState(0);
 
   type QueryResult = { analysis: AnalysisResult; savedOwnerEmail?: string | null; savedListingUrl?: string | null };
 
@@ -431,6 +432,7 @@ function ResultsPage() {
       saved_id ?? "",
       analysisOverrides.userEpc ?? "",
       analysisOverrides.userSqft ?? "",
+      forceRestart,
     ],
     queryFn: async ({ signal }): Promise<QueryResult> => {
       if (saved_id) {
@@ -759,7 +761,10 @@ function ResultsPage() {
               <button
                 onClick={() => {
                   forgetJobId(url);
-                  query.refetch();
+                  try {
+                    sessionStorage.removeItem(analysisCacheKey(url, text, token));
+                  } catch { /* ignore */ }
+                  setForceRestart((n) => n + 1);
                 }}
                 className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
               >
