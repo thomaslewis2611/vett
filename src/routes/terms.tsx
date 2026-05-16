@@ -71,6 +71,7 @@ function TermsPage() {
         <Section n={9} title="Contact">
           <a href="mailto:support@roovr.co" style={{ color: "#1B4332" }} className="hover:underline">support@roovr.co</a>
         </Section>
+        </div>
       </main>
       <SiteFooter />
     </div>
