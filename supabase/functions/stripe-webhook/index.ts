@@ -293,13 +293,13 @@ Deno.serve(async (req) => {
         resolved_user_id: resolvedUserId,
       });
 
-      const { error } = await supabase.from("single_report_tokens").insert({
+      const { error } = await supabase.from("single_report_tokens").upsert({
         token,
         listing_url: listingUrl,
         stripe_session_id: session.id,
         user_email: normalizedEmail,
         user_id: resolvedUserId,
-      });
+      }, { onConflict: "stripe_session_id", ignoreDuplicates: true });
       if (error) throw error;
 
       // Send a magic link so the customer can log in and revisit the report
