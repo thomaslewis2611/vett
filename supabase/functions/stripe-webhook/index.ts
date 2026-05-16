@@ -281,11 +281,8 @@ Deno.serve(async (req) => {
       let resolvedUserId: string | null = null;
       if (normalizedEmail) {
         try {
-          const { data: usersList } = await supabase.auth.admin.listUsers({ page: 1, perPage: 200 });
-          const match = usersList?.users?.find(
-            (u) => (u.email ?? "").toLowerCase() === normalizedEmail,
-          );
-          resolvedUserId = match?.id ?? null;
+          const { data } = await supabase.auth.admin.getUserByEmail(normalizedEmail);
+          resolvedUserId = data.user?.id ?? null;
         } catch (e) {
           console.error("[stripe-webhook] auth user lookup failed:", (e as Error).message);
         }
