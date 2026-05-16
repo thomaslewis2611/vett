@@ -5,6 +5,7 @@ import { LogOut, LayoutDashboard, Mail, ChevronDown, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkBuyerPassByEmail } from "@/lib/access.functions";
 import { sendBuyerPassMagicLink } from "@/lib/checkout.functions";
+import { RoovrMark } from "@/components/roovr-mark";
 
 function truncateEmail(email: string, max = 14) {
   const [name, domain] = email.split("@");
