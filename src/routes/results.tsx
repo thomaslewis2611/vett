@@ -886,7 +886,13 @@ class SafeSection extends Component<{ children: ReactNode; name?: string }, { ha
     console.error(`[SafeSection] ${this.props.name ?? "section"} failed to render`, error);
   }
   render() {
-    if (this.state.hasError) return null;
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: '16px', borderRadius: '12px', background: '#F1EFE8', color: '#888780', fontSize: 13, textAlign: 'center' }}>
+          This section couldn't load — please refresh to try again.
+        </div>
+      );
+    }
     return this.props.children;
   }
 }
