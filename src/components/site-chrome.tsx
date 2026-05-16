@@ -181,10 +181,10 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
             width: 24,
             height: 24,
             borderRadius: 999,
-            background: "#1B4332",
+            background: "#2D6A4F",
             color: "#FFFDF9",
             fontSize: 11,
-            fontWeight: 600,
+            fontWeight: 500,
           }}
         >
           {email[0]?.toUpperCase() ?? "?"}
