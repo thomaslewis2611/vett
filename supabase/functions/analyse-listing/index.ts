@@ -1123,7 +1123,7 @@ async function runJob(
       const ac = new AbortController();
       const timer = setTimeout(() => ac.abort(), budget);
       try {
-        const text = await callClaude(systemPrompt, userContent, 6000, ac.signal);
+        const text = await callClaude(systemPrompt, userContent, 4000, ac.signal);
         console.log(`[analyse-listing] Claude response length: ${text.length}`);
         parsed = parseWithRepair(text) as Record<string, unknown>;
       } finally {
@@ -1149,7 +1149,7 @@ async function runJob(
           const ac2 = new AbortController();
           const timer2 = setTimeout(() => ac2.abort(), budget);
           try {
-            const text = await callClaude(simplified, userContent, 6000, ac2.signal);
+            const text = await callClaude(simplified, userContent, 4000, ac2.signal);
             parsed = parseWithRepair(text) as Record<string, unknown>;
             parsed.renovationCosts = null;
           } catch (retryErr) {
@@ -1189,12 +1189,12 @@ async function runJob(
     // Map PropertyData payloads into the shapes the frontend renders for
     // nearbySchools / crime / broadband / ptal. Only set when we have real data so
     // the UI can fall back to its "data unavailable" state otherwise.
+    // Skip GIAS Ofsted enrichment during the main analysis — it can add up
+    // to ~40s (5 schools × up to 8s each) and pushes us past the 90s
+    // deadline. PropertyData already returns basic school info; Ofsted
+    // ratings can be lazy-loaded later from the schools section.
     const mappedSchools = mapPdSchools(pd["schools"]);
-    // Skip Ofsted scraping if we're already past the deadline or tight on budget.
-    const enrichedSchools = remaining() > 8000 && !claudeTimedOut
-      ? await enrichSchoolsWithGias(mappedSchools, postcode)
-      : mappedSchools;
-    if (enrichedSchools) parsed.nearbySchools = enrichedSchools;
+    if (mappedSchools) parsed.nearbySchools = mappedSchools;
     const mappedCrime = mapPdCrime(pd["crime"]);
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
