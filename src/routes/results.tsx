@@ -196,7 +196,7 @@ function useAccess(listingUrl: string | undefined, token: string | undefined, sa
         try {
           const r = await checkSingleByEmail({ data: { email: signedInEmail, listingUrl } });
           if (cancelled) return;
-          if (r.token) {
+          if (r.hasAccess) {
             console.log("Access check — saved_id:", savedId ?? null, "user email:", signedInEmail, "saved_analyses owner:", savedOwnerEmail ?? null, "access granted: single");
             setState({ level: "single", email: signedInEmail, expiresAt: r.expiresAt, loading: false });
             return;
