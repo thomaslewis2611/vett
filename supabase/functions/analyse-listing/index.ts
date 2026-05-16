@@ -941,20 +941,53 @@ async function runJob(
     const dateLine = `Today's date is ${todayStr}. Use this as your reference for all date-related reasoning. Do not flag dates in the current year as errors or typos unless they are logically impossible.\n\n`;
     const systemPrompt = dateLine + SYSTEM_PROMPT;
 
-    let parsed: Record<string, unknown>;
+    let parsed: Record<string, unknown> = {};
+    let claudeTimedOut = false;
     try {
-      console.log("[analyse-listing] calling Claude (primary)");
-      const text = await callClaude(systemPrompt, userContent, 6000);
-      console.log(`[analyse-listing] Claude response length: ${text.length}`);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
+      const budget = remaining();
+      if (budget < 5000) throw new Error("DEADLINE_EXCEEDED before Claude call");
+      console.log(`[analyse-listing] calling Claude (primary), budget ${budget}ms`);
+      const ac = new AbortController();
+      const timer = setTimeout(() => ac.abort(), budget);
+      try {
+        const text = await callClaude(systemPrompt, userContent, 6000, ac.signal);
+        console.log(`[analyse-listing] Claude response length: ${text.length}`);
+        parsed = parseWithRepair(text) as Record<string, unknown>;
+      } finally {
+        clearTimeout(timer);
+      }
     } catch (primaryErr) {
-      console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
-      const simplified =
-        systemPrompt +
-        "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
-      const text = await callClaude(simplified, userContent, 6000);
-      parsed = parseWithRepair(text) as Record<string, unknown>;
-      parsed.renovationCosts = null;
+      const msg = primaryErr instanceof Error ? primaryErr.message : String(primaryErr);
+      const aborted = msg.includes("abort") || msg.includes("DEADLINE");
+      if (aborted) {
+        console.warn("[analyse-listing] Claude exceeded deadline, returning partial result");
+        claudeTimedOut = true;
+        parsed = { partial: true, partialReason: "Analysis exceeded the 90s time budget. Returning area data only." };
+      } else {
+        console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
+        const budget = remaining();
+        if (budget < 5000) {
+          claudeTimedOut = true;
+          parsed = { partial: true, partialReason: "Analysis exceeded the 90s time budget." };
+        } else {
+          const simplified =
+            systemPrompt +
+            "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+          const ac2 = new AbortController();
+          const timer2 = setTimeout(() => ac2.abort(), budget);
+          try {
+            const text = await callClaude(simplified, userContent, 6000, ac2.signal);
+            parsed = parseWithRepair(text) as Record<string, unknown>;
+            parsed.renovationCosts = null;
+          } catch (retryErr) {
+            console.warn("[analyse-listing] simplified retry also failed", retryErr);
+            claudeTimedOut = true;
+            parsed = { partial: true, partialReason: "Analysis exceeded the 90s time budget." };
+          } finally {
+            clearTimeout(timer2);
+          }
+        }
+      }
     }
 
     // Make sure listingUrl is set on the property block.
