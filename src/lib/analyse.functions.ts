@@ -1907,6 +1907,7 @@ async function runAnalysis(
   url: string,
   pastedText: string,
   apiKey: string,
+  overrides?: { userEpc?: string | null; userSqft?: number | null },
 ): Promise<FullAnalysis> {
   let listingContent = pastedText;
   let landRegistry: LandRegistryResult = null;
