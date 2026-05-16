@@ -241,6 +241,9 @@ const searchSchema = z.object({
   saved_id: z.string().optional(),
 });
 
+type PreAnalysisOverrides = { userEpc: string | null; userSqft: number | null };
+const EMPTY_PRE_ANALYSIS_OVERRIDES: PreAnalysisOverrides = { userEpc: null, userSqft: null };
+
 
 export const Route = createFileRoute("/results")({
   validateSearch: searchSchema,
@@ -269,20 +272,18 @@ function ResultsPage() {
 
   const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
 
-  type PreAnalysisOverrides = { userEpc: string | null; userSqft: number | null };
   type PreAnalysisState =
     | { status: "ready"; overrides: PreAnalysisOverrides }
     | { status: "fetching" }
     | { status: "needs-input"; missing: { epc: boolean; sqft: boolean } };
-  const emptyOverrides: PreAnalysisOverrides = { userEpc: null, userSqft: null };
   const shouldRunPreAnalysis = Boolean(url) && !text && !saved_id && !cached;
   const [preAnalysis, setPreAnalysis] = useState<PreAnalysisState>(
-    shouldRunPreAnalysis ? { status: "fetching" } : { status: "ready", overrides: emptyOverrides },
+    shouldRunPreAnalysis ? { status: "fetching" } : { status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES },
   );
 
   useEffect(() => {
     if (!shouldRunPreAnalysis) {
-      setPreAnalysis({ status: "ready", overrides: emptyOverrides });
+      setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
       return;
     }
 
@@ -306,14 +307,14 @@ function ResultsPage() {
         });
 
         if (!missing.epc && !missing.sqft) {
-          setPreAnalysis({ status: "ready", overrides: emptyOverrides });
+          setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
           return;
         }
 
         setPreAnalysis({ status: "needs-input", missing });
       } catch (err) {
         console.warn("[pre-analysis] failed; starting analysis without pre-analysis modal", (err as Error)?.message);
-        if (!cancelled) setPreAnalysis({ status: "ready", overrides: emptyOverrides });
+        if (!cancelled) setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
       }
     })();
 
