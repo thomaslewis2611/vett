@@ -964,86 +964,116 @@ function LoadingState({ url }: { url?: string }) {
   const finalising = elapsed >= 60;
   const anchor = prettyUrl(url);
 
-  return (
-    <main className="mx-auto flex max-w-xl flex-col px-6 py-12 sm:py-16 animate-in fade-in duration-500">
-      <div className="rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
-        {/* Progress bar */}
-        <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full transition-[width] duration-700 ease-out"
-            style={{ width: `${progress}%`, background: ACCENT }}
-          />
-        </div>
+  const HEADING = "'Playfair Display', Georgia, serif";
 
-        {/* Anchor: property URL */}
-        {anchor && (
-          <div className="mt-5">
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">
-              Analysing
-            </p>
-            <p className="mt-1 truncate text-sm font-medium text-foreground" title={url}>
-              {anchor}
+  return (
+    <main
+      className="flex-1 w-full animate-in fade-in duration-500"
+      style={{ background: "#F1EFE8" }}
+    >
+      <div className="mx-auto max-w-xl px-6 py-16 sm:py-20">
+        <div
+          className="p-7 sm:p-9"
+          style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.1)", borderRadius: 16 }}
+        >
+          {/* Progress bar */}
+          <div className="h-1.5 w-full overflow-hidden" style={{ background: "#F1EFE8", borderRadius: 999 }}>
+            <div
+              className="h-full transition-[width] duration-700 ease-out"
+              style={{ width: `${progress}%`, background: ACCENT, borderRadius: 999 }}
+            />
+          </div>
+
+          {/* Anchor: property URL */}
+          {anchor && (
+            <div className="mt-6">
+              <p
+                style={{
+                  fontSize: 11,
+                  fontWeight: 500,
+                  letterSpacing: "0.1em",
+                  textTransform: "uppercase",
+                  color: ACCENT,
+                }}
+              >
+                Analysing
+              </p>
+              <p className="mt-1 truncate" style={{ fontSize: 14, fontWeight: 400, color: "#1A1108" }} title={url}>
+                {anchor}
+              </p>
+            </div>
+          )}
+
+          <h1
+            className="mt-6"
+            style={{
+              fontFamily: HEADING,
+              fontWeight: 400,
+              fontSize: 30,
+              color: "#1A1108",
+              letterSpacing: "-0.5px",
+              lineHeight: 1.15,
+            }}
+          >
+            Building your Roovr report
+          </h1>
+          <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.65 }}>
+            Decoding agent jargon, estimating true costs and drafting your negotiation
+            strategy. This usually takes 60–90 seconds.
+          </p>
+
+          {/* Step indicators */}
+          <ul className="mt-7 space-y-3">
+            {LOADING_STEPS.map((step) => {
+              const done = elapsed >= step.tickAt;
+              const active = !done && elapsed >= step.tickAt - 5;
+              return (
+                <li
+                  key={step.label}
+                  className={`flex items-center gap-3 transition-opacity duration-500 ${
+                    done || active ? "opacity-100" : "opacity-40"
+                  }`}
+                  style={{ fontSize: 14, fontWeight: 300 }}
+                >
+                  <span
+                    className="flex h-5 w-5 shrink-0 items-center justify-center"
+                    style={{
+                      background: done ? "rgba(45,106,79,0.12)" : "#F1EFE8",
+                      borderRadius: 999,
+                    }}
+                  >
+                    {done ? (
+                      <Check className="h-3.5 w-3.5" style={{ color: ACCENT }} />
+                    ) : active ? (
+                      <Loader2 className="h-3 w-3 animate-spin" style={{ color: ACCENT }} />
+                    ) : (
+                      <span className="h-1.5 w-1.5 rounded-full" style={{ background: "rgba(95,94,90,0.4)" }} />
+                    )}
+                  </span>
+                  <span style={{ color: done ? "#1A1108" : "#888780" }}>{step.label}</span>
+                </li>
+              );
+            })}
+            {finalising && (
+              <li className="flex items-center gap-3 animate-in fade-in duration-500" style={{ fontSize: 14, fontWeight: 300 }}>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center">
+                  <Loader2 className="h-4 w-4 animate-spin" style={{ color: ACCENT }} />
+                </span>
+                <span style={{ color: "#1A1108" }}>Finalising your report…</span>
+              </li>
+            )}
+          </ul>
+
+          {/* Rotating tip */}
+          <div className="mt-8 p-4" style={{ background: "#F1EFE8", borderRadius: 10 }}>
+            <p
+              key={tipIdx}
+              className="animate-in fade-in slide-in-from-bottom-1 duration-500"
+              style={{ fontSize: 12, fontWeight: 300, lineHeight: 1.6, color: "#5F5E5A" }}
+            >
+              {LOADING_TIPS[tipIdx]}
             </p>
           </div>
-        )}
-
-        <h1 className="mt-6 text-xl font-semibold tracking-tight sm:text-2xl">
-          Building your Roovr report
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Decoding agent jargon, estimating true costs and drafting your negotiation
-          strategy. This usually takes 60–90 seconds.
-        </p>
-
-        {/* Step indicators */}
-        <ul className="mt-6 space-y-3 text-sm">
-          {LOADING_STEPS.map((step) => {
-            const done = elapsed >= step.tickAt;
-            const active = !done && elapsed >= step.tickAt - 5;
-            return (
-              <li
-                key={step.label}
-                className={`flex items-center gap-3 transition-opacity duration-500 ${
-                  done || active ? "opacity-100" : "opacity-40"
-                }`}
-              >
-                <span
-                  className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
-                    done ? "bg-emerald-500/15" : "bg-muted"
-                  }`}
-                >
-                  {done ? (
-                    <Check className="h-3.5 w-3.5 text-emerald-600" />
-                  ) : active ? (
-                    <Loader2 className="h-3 w-3 animate-spin" style={{ color: ACCENT }} />
-                  ) : (
-                    <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
-                  )}
-                </span>
-                <span className={done ? "text-foreground" : "text-muted-foreground"}>
-                  {step.label}
-                </span>
-              </li>
-            );
-          })}
-          {finalising && (
-            <li className="flex items-center gap-3 animate-in fade-in duration-500">
-              <span className="flex h-5 w-5 shrink-0 items-center justify-center">
-                <Loader2 className="h-4 w-4 animate-spin" style={{ color: ACCENT }} />
-              </span>
-              <span className="text-foreground">Finalising your report…</span>
-            </li>
-          )}
-        </ul>
-
-        {/* Rotating tip */}
-        <div className="mt-8 rounded-xl bg-muted/60 p-4">
-          <p
-            key={tipIdx}
-            className="text-xs leading-relaxed text-muted-foreground animate-in fade-in slide-in-from-bottom-1 duration-500"
-          >
-            {LOADING_TIPS[tipIdx]}
-          </p>
         </div>
       </div>
     </main>
