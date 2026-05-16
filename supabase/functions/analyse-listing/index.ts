@@ -1057,13 +1057,17 @@ Deno.serve(async (req) => {
     const jobId = String(body?.jobId ?? "");
     const url = String(body?.url ?? "");
     const pastedText = String(body?.pastedText ?? body?.text ?? "");
+    const rawEpc = body?.userEpc;
+    const userEpc = typeof rawEpc === "string" && /^[A-Ga-g]$/.test(rawEpc) ? rawEpc.toUpperCase() : null;
+    const rawSqft = body?.userSqft;
+    const userSqft = typeof rawSqft === "number" && rawSqft >= 50 && rawSqft <= 50000 ? rawSqft : null;
     if (!jobId) {
       return new Response(JSON.stringify({ error: "jobId required" }), {
         status: 400,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     }
-    await runJob(jobId, url, pastedText);
+    await runJob(jobId, url, pastedText, { userEpc, userSqft });
     return new Response(JSON.stringify({ ok: true }), {
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
