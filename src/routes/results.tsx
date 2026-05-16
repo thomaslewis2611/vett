@@ -5323,11 +5323,11 @@ function PrecheckModal({
   const [epc, setEpc] = useState<string>("");
   const [sqft, setSqft] = useState<string>("");
   const sqftNum = Number(sqft);
-  const sqftValid = !missing.sqft || (Number.isFinite(sqftNum) && sqftNum >= 50 && sqftNum <= 50000);
-  const epcValid = !missing.epc || /^[A-G]$/.test(epc);
-  const canSubmit = (missing.epc ? epcValid : true) && (missing.sqft ? sqftValid : true) && (
-    (missing.epc && epcValid) || (missing.sqft && sqftValid)
-  );
+  const hasSqft = missing.sqft && sqft.trim().length > 0;
+  const hasEpc = missing.epc && epc.trim().length > 0;
+  const sqftValid = !hasSqft || (Number.isFinite(sqftNum) && sqftNum >= 50 && sqftNum <= 50000);
+  const epcValid = !hasEpc || /^[A-G]$/.test(epc);
+  const canSubmit = (hasEpc || hasSqft) && epcValid && sqftValid;
 
   return (
     <div
@@ -5363,9 +5363,8 @@ function PrecheckModal({
           Help us give you the most accurate report
         </h2>
         <p style={{ marginTop: 10, fontSize: 14, color: "#5F5E5A", lineHeight: 1.55 }}>
-          We couldn't find the following details in the listing text — they're usually on the floor plan
-          or EPC certificate attached to the listing. Adding them now means your report will include
-          accurate price per sq ft analysis and energy cost estimates.
+          We couldn't find the following in the listing — they're usually on the floor plan or EPC
+          certificate. Adding them now means your report will be more accurate from the start.
         </p>
 
         <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -5440,8 +5439,8 @@ function PrecheckModal({
             disabled={!canSubmit}
             onClick={() =>
               onSubmit({
-                epc: missing.epc && epc ? epc : null,
-                sqft: missing.sqft && sqftValid && sqftNum > 0 ? sqftNum : null,
+                epc: hasEpc && epcValid ? epc : null,
+                sqft: hasSqft && sqftValid && sqftNum > 0 ? sqftNum : null,
               })
             }
             style={{
@@ -5456,7 +5455,7 @@ function PrecheckModal({
               transition: "background 120ms",
             }}
           >
-            Run analysis with these details →
+            Run analysis →
           </button>
           <button
             type="button"
