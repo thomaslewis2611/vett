@@ -338,6 +338,8 @@ export type Database = {
     }
     Functions: {
       buyer_pass_email_exists: { Args: { _email: string }; Returns: boolean }
+      cleanup_old_analysis_jobs: { Args: never; Returns: undefined }
+      cleanup_property_data_cache: { Args: never; Returns: undefined }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
