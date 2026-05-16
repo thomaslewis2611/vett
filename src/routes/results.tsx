@@ -263,8 +263,77 @@ export const Route = createFileRoute("/results")({
       },
     ],
   }),
-  component: ResultsPage,
+  component: ResultsPageWithBoundary,
 });
+
+class ResultsErrorBoundary extends Component<
+  { children: ReactNode },
+  { error: Error | null }
+> {
+  state: { error: Error | null } = { error: null };
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
+  componentDidCatch(error: Error, info: unknown) {
+    console.error("[ResultsErrorBoundary] caught render error", error, info);
+  }
+  handleReset = () => {
+    // Clear all roovr-prefixed session keys for a clean retry.
+    if (typeof window !== "undefined") {
+      try {
+        const keys: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const k = sessionStorage.key(i);
+          if (k && k.startsWith("roovrJobId:")) keys.push(k);
+        }
+        keys.forEach((k) => sessionStorage.removeItem(k));
+      } catch { /* ignore */ }
+    }
+    this.setState({ error: null });
+    if (typeof window !== "undefined") window.location.reload();
+  };
+  render() {
+    if (this.state.error) {
+      return (
+        <div className="flex min-h-screen flex-col bg-background">
+          <SiteHeader />
+          <main className="mx-auto max-w-xl px-6 py-20">
+            <div className="text-center">
+              <h1 className="text-2xl font-semibold tracking-tight">Analysis failed</h1>
+              <p className="mt-3 text-sm text-muted-foreground">
+                Something went wrong loading this report. Please try again.
+              </p>
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <button
+                  onClick={this.handleReset}
+                  className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
+                >
+                  Try again
+                </button>
+                <a
+                  href="/"
+                  className="inline-flex items-center justify-center rounded-xl border border-border px-5 py-3 text-sm font-medium hover:bg-accent"
+                >
+                  Start over
+                </a>
+              </div>
+            </div>
+          </main>
+          <SiteFooter />
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function ResultsPageWithBoundary() {
+  return (
+    <ResultsErrorBoundary>
+      <ResultsPage />
+    </ResultsErrorBoundary>
+  );
+}
 
 function ResultsPage() {
   const { url, text, token, saved_id } = Route.useSearch();
