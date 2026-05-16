@@ -2255,22 +2255,6 @@ export const analyseListing = createServerFn({ method: "POST" })
       text: z.string().max(50000).optional(),
       accessToken: z.string().max(200).optional().nullable(),
       sessionJwt: z.string().max(4000).optional().nullable(),
-    })
-  )
-  .handler(async ({ data }): Promise<AnalysisResult> => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      console.error("[analyseListing] Missing ANTHROPIC_API_KEY");
-      throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
-    }
-
-export const analyseListing = createServerFn({ method: "POST" })
-  .inputValidator(
-    z.object({
-      url: z.string().max(2000).optional(),
-      text: z.string().max(50000).optional(),
-      accessToken: z.string().max(200).optional().nullable(),
-      sessionJwt: z.string().max(4000).optional().nullable(),
       userEpc: z.string().regex(/^[A-Ga-g]$/).optional().nullable(),
       userSqft: z.number().min(50).max(50000).optional().nullable(),
     })
