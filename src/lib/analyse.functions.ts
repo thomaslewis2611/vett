@@ -3290,12 +3290,30 @@ export const analyseManualSqft = createServerFn({ method: "POST" })
 // the full analysis starts so the report is accurate first time.
 function detectSqftInText(text: string): boolean {
   if (!text) return false;
-  // Match e.g. "1,180 sq ft", "1180 sqft", "1180 sq. ft", "1180 ft2"
-  if (/\b\d{2,3}(?:[,\s]?\d{3})\s*(?:sq\.?\s*ft|sqft|ft\.?\s*²|ft2|square\s+feet)\b/i.test(text)) return true;
-  if (/\b\d{3,5}\s*(?:sq\.?\s*ft|sqft|ft\.?\s*²|ft2|square\s+feet)\b/i.test(text)) return true;
-  // Square metres — convertible
-  if (/\b\d{2,4}(?:\.\d+)?\s*(?:sq\.?\s*m|sqm|m²|m2|square\s+met(?:re|er)s?)\b/i.test(text)) return true;
-  return false;
+  // Match e.g. "1,180 sq ft", "1180 sqft", "1180 sq. ft", "1180 ft2",
+  // "850 square feet", "850 square foot"
+  const patterns: RegExp[] = [
+    /\b\d{2,3}(?:[,\s]?\d{3})\s*(?:sq\.?\s*ft|sqft|ft\.?\s*²|ft2|square\s+f(?:ee|oo)t)\b/i,
+    /\b\d{3,5}\s*(?:sq\.?\s*ft|sqft|ft\.?\s*²|ft2|square\s+f(?:ee|oo)t)\b/i,
+    // Square metres — convertible
+    /\b\d{2,4}(?:\.\d+)?\s*(?:sq\.?\s*m|sqm|m²|m2|square\s+met(?:re|er)s?)\b/i,
+  ];
+  return patterns.some((re) => re.test(text));
+}
+
+function detectEpcInText(text: string): string | null {
+  if (!text) return null;
+  const patterns: RegExp[] = [
+    /EPC\s+rating[:\s]+([A-G])\b/i,
+    /EPC\s+band[:\s]+([A-G])\b/i,
+    /energy\s+(?:rating|efficiency\s+rating)[:\s]+([A-G])\b/i,
+    /EPC[\s:_-]+([A-G])\b/i,
+  ];
+  for (const re of patterns) {
+    const m = text.match(re);
+    if (m?.[1]) return m[1].toUpperCase();
+  }
+  return null;
 }
 
 export const precheckListing = createServerFn({ method: "POST" })
@@ -3313,13 +3331,16 @@ export const precheckListing = createServerFn({ method: "POST" })
   }> => {
     const url = data.url?.trim() ?? "";
     const pastedText = data.text?.trim() ?? "";
+    console.log("[precheckListing] invoked", { hasUrl: Boolean(url), hasPastedText: Boolean(pastedText) });
     // Pasted-text submissions skip precheck — user already controls the input.
     if (pastedText || !url) {
+      console.log("[precheckListing] skipping (pasted text or no url)");
       return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
     }
     try {
       validateListingUrl(url);
     } catch {
+      console.log("[precheckListing] skipping (invalid url)");
       return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
     }
 
@@ -3344,22 +3365,28 @@ export const precheckListing = createServerFn({ method: "POST" })
       try {
         html = await basicFetchListingHtml(url);
       } catch (err) {
-        console.warn("[precheckListing] fetch failed, skipping precheck:", (err as Error)?.message);
-        return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+        console.warn("[precheckListing] fetch threw, treating as both-missing:", (err as Error)?.message);
       }
     }
 
+    const textForScan = cachedText ?? (html ? htmlToCleanText(html) : "");
     let epcRating: string | null = null;
     if (html) {
       epcRating = extractEpcAndCouncilTax(html).epc;
-    } else if (cachedText) {
-      const m = cachedText.match(/EPC\s+RATING\s+EXTRACTED:\s*([A-G])/i)
-        ?? cachedText.match(/EPC[\s_-]*rating[^A-Za-z0-9]{0,10}([A-G])\b/i);
-      if (m?.[1]) epcRating = m[1].toUpperCase();
     }
+    if (!epcRating) {
+      epcRating = detectEpcInText(textForScan);
+    }
+    const sqftFound = detectSqftInText(textForScan);
 
-    const textForSqft = cachedText ?? (html ? htmlToCleanText(html) : "");
-    const sqftFound = detectSqftInText(textForSqft);
+    console.log("[precheckListing] scan complete", {
+      url,
+      textLength: textForScan.length,
+      epcFound: Boolean(epcRating),
+      epcRating,
+      sqftFound,
+      source: cachedText ? "cache" : (html ? "fetch" : "none"),
+    });
 
     return {
       epcFound: Boolean(epcRating),
