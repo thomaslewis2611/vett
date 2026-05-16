@@ -796,11 +796,8 @@ function Index() {
           padding: "80px 24px",
         }}
       >
-        <div
-          className="mx-auto grid grid-cols-1 md:grid-cols-2"
-          style={{ maxWidth: 960, gap: 64, alignItems: "center" }}
-        >
-          <div>
+        <div className="mx-auto" style={{ maxWidth: 1080 }}>
+          <div className="text-center" style={{ maxWidth: 720, marginInline: "auto" }}>
             <div
               className="uppercase"
               style={{
@@ -810,53 +807,55 @@ function Index() {
                 color: COLORS.green,
               }}
             >
-              Sample report
+              Example reports
             </div>
             <h2
               className="mt-3"
               style={{
                 fontFamily: HEADING_FONT,
-                fontSize: "clamp(26px, 4vw, 36px)",
+                fontSize: "clamp(28px, 4vw, 40px)",
                 fontWeight: 400,
                 color: COLORS.dark,
                 letterSpacing: "-0.5px",
                 lineHeight: 1.15,
               }}
             >
-              See exactly what you get before you pay
+              See exactly what you get
             </h2>
             <p
-              className="mt-5"
+              className="mt-4"
               style={{ fontSize: 14, fontWeight: 300, color: COLORS.muted, lineHeight: 1.7 }}
             >
-              Every report is tailored to the specific listing — not a generic checklist. We
-              read the agent copy, spot the euphemisms, and cross-reference real local data.
+              Every report is tailored to the specific listing — we read the agent copy, spot the
+              euphemisms, and cross-reference real local data.
             </p>
-            <p
-              className="mt-3"
-              style={{ fontSize: 14, fontWeight: 300, color: COLORS.muted, lineHeight: 1.7 }}
-            >
-              The price per square foot analysis alone can tell you whether you're paying a
-              fair price — or overpaying by tens of thousands.
-            </p>
+          </div>
+
+          <div
+            className="mt-12 grid grid-cols-1 md:grid-cols-2"
+            style={{ gap: 24, alignItems: "stretch" }}
+          >
+            <SampleReportCard data={SAMPLE_A} />
+            <SampleReportCard data={SAMPLE_B} />
+          </div>
+
+          <div className="mt-10 text-center">
             <button
               type="button"
               onClick={scrollToTop}
-              className="mt-6 inline-flex items-center gap-2 transition-opacity hover:opacity-90"
+              className="inline-flex items-center gap-2 transition-opacity hover:opacity-90"
               style={{
                 background: COLORS.green,
                 color: COLORS.card,
                 fontSize: 13,
                 fontWeight: 500,
                 borderRadius: 100,
-                padding: "12px 22px",
+                padding: "13px 26px",
               }}
             >
-              View full sample report →
+              Analyse your first property →
             </button>
           </div>
-
-          <SampleReportCard />
         </div>
       </section>
 
