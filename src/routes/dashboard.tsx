@@ -307,9 +307,20 @@ function DashboardPage() {
             </h1>
             <p className="mt-2 truncate" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>{email}</p>
             {passStatus === "active" && expiresAt && (
-              <p className="mt-1" style={{ fontSize: 11, fontWeight: 400, color: "#2D6A4F", letterSpacing: "0.05em" }}>
+              <span
+                className="mt-2 inline-flex items-center"
+                style={{
+                  background: "#EAF3DE",
+                  color: "#2D6A4F",
+                  fontSize: 11,
+                  fontWeight: 500,
+                  borderRadius: 100,
+                  padding: "4px 10px",
+                  letterSpacing: "0.02em",
+                }}
+              >
                 Buyer Pass active · Expires {expiryDateShort}
-              </p>
+              </span>
             )}
             <button
               type="button"
