@@ -2579,8 +2579,8 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
     // Always derive the overall Roovr score from sub-scores so older
     // saved analyses (where Claude returned a flat 6.8) display correctly.
     try {
-      const subAny = (full as unknown as { subScores?: Record<string, number> }).subScores;
-      if (subAny && typeof subAny === "object") {
+      const subAny = (full as unknown as { subScores?: Record<string, number> | null })?.subScores;
+      if (subAny && typeof subAny === "object" && !Array.isArray(subAny)) {
         const weights: Record<string, number> = {
           valueForMoney: 0.25,
           locationQuality: 0.20,
@@ -2592,7 +2592,7 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
         let weightedSum = 0;
         let totalWeight = 0;
         for (const [k, w] of Object.entries(weights)) {
-          const v = Number(subAny[k]);
+          const v = Number(subAny?.[k]);
           if (isFinite(v) && v > 0) { weightedSum += v * w; totalWeight += w; }
         }
         if (totalWeight > 0) {
