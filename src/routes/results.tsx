@@ -241,6 +241,9 @@ const searchSchema = z.object({
   saved_id: z.string().optional(),
 });
 
+type PreAnalysisOverrides = { userEpc: string | null; userSqft: number | null };
+const EMPTY_PRE_ANALYSIS_OVERRIDES: PreAnalysisOverrides = { userEpc: null, userSqft: null };
+
 
 export const Route = createFileRoute("/results")({
   validateSearch: searchSchema,
@@ -269,49 +272,60 @@ function ResultsPage() {
 
   const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
 
-  // Pre-analysis precheck: detect whether EPC + sqft can be extracted
-  // from the listing text. If either is missing, show a modal so the
-  // user can supply them before the analysis starts.
-  type PrecheckPhase = "idle" | "checking" | "needs-input" | "ready";
-  const skipPrecheck = Boolean(saved_id) || Boolean(text) || Boolean(cached) || !url;
-  const [precheckPhase, setPrecheckPhase] = useState<PrecheckPhase>(
-    skipPrecheck ? "ready" : "idle",
+  type PreAnalysisState =
+    | { status: "ready"; overrides: PreAnalysisOverrides }
+    | { status: "fetching" }
+    | { status: "needs-input"; missing: { epc: boolean; sqft: boolean } };
+  const shouldRunPreAnalysis = Boolean(url) && !text && !saved_id && !cached;
+  const [preAnalysis, setPreAnalysis] = useState<PreAnalysisState>(
+    shouldRunPreAnalysis ? { status: "fetching" } : { status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES },
   );
-  const [precheckMissing, setPrecheckMissing] = useState<{ epc: boolean; sqft: boolean }>(
-    { epc: false, sqft: false },
-  );
-  const [overrides, setOverrides] = useState<{ userEpc: string | null; userSqft: number | null }>(
-    { userEpc: null, userSqft: null },
-  );
+  const analysisReady = preAnalysis.status === "ready";
+  const analysisOverrides = analysisReady ? preAnalysis.overrides : EMPTY_PRE_ANALYSIS_OVERRIDES;
+  const preAnalysisKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (skipPrecheck || precheckPhase !== "idle") return;
+    if (!shouldRunPreAnalysis) {
+      preAnalysisKeyRef.current = null;
+      setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
+      return;
+    }
+    if (preAnalysisKeyRef.current === url) return;
+    preAnalysisKeyRef.current = url ?? null;
+
     let cancelled = false;
-    setPrecheckPhase("checking");
-    console.log("[precheck] starting scan for EPC + sqft", { url, hasText: Boolean(text) });
+    setPreAnalysis({ status: "fetching" });
+    console.log("[pre-analysis] fetching listing page content before analysis", { url });
+
     (async () => {
       try {
-        const r = await precheckFn({ data: { url, text } });
+        const result = await precheckFn({ data: { url } });
         if (cancelled) return;
-        console.log("[precheck] result", r);
-        if (r.skipped || (r.epcFound && r.sqftFound)) {
-          console.log("[precheck] proceeding directly to analysis (no modal needed)");
-          setPrecheckPhase("ready");
-        } else {
-          console.log("[precheck] missing data, showing modal", {
-            epcMissing: !r.epcFound,
-            sqftMissing: !r.sqftFound,
-          });
-          setPrecheckMissing({ epc: !r.epcFound, sqft: !r.sqftFound });
-          setPrecheckPhase("needs-input");
+
+        const missing = { epc: !result.epcFound, sqft: !result.sqftFound };
+        console.log("[pre-analysis] scanned fetched listing text", {
+          url,
+          textLength: "textLength" in result ? result.textLength : undefined,
+          epcFound: result.epcFound,
+          sqftFound: result.sqftFound,
+          epcRating: result.epcRating,
+          missing,
+        });
+
+        if (!missing.epc && !missing.sqft) {
+          setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
+          return;
         }
+
+        setPreAnalysis({ status: "needs-input", missing });
       } catch (err) {
-        console.warn("[results] precheck failed, proceeding without it:", (err as Error)?.message);
-        if (!cancelled) setPrecheckPhase("ready");
+        console.warn("[pre-analysis] failed; starting analysis without pre-analysis modal", (err as Error)?.message);
+        if (!cancelled) setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
       }
     })();
+
     return () => { cancelled = true; };
-  }, [skipPrecheck, precheckPhase, precheckFn, url, text]);
+  }, [shouldRunPreAnalysis, precheckFn, url]);
 
   const POLL_INTERVAL_MS = 2000;
   // Long timeout to tolerate mobile screen-locks suspending JS for minutes.
@@ -322,7 +336,15 @@ function ResultsPage() {
   type QueryResult = { analysis: AnalysisResult; savedOwnerEmail?: string | null; savedListingUrl?: string | null };
 
   const query = useQuery<QueryResult>({
-    queryKey: ["analysis", url ?? "", text ?? "", token ?? "", saved_id ?? ""],
+    queryKey: [
+      "analysis",
+      url ?? "",
+      text ?? "",
+      token ?? "",
+      saved_id ?? "",
+      analysisOverrides.userEpc ?? "",
+      analysisOverrides.userSqft ?? "",
+    ],
     queryFn: async ({ signal }): Promise<QueryResult> => {
       if (saved_id) {
         // Wait for auth session to hydrate so the bearer token is attached.
@@ -361,7 +383,8 @@ function ResultsPage() {
       const { data: sess } = await supabase.auth.getSession();
       const sessionJwt = sess.session?.access_token ?? null;
 
-      let jobId = recallJobId(url);
+      const hasAnalysisOverrides = Boolean(analysisOverrides.userEpc || analysisOverrides.userSqft);
+      let jobId = hasAnalysisOverrides ? undefined : recallJobId(url);
       // Verify any existing jobId is still known to the server before reusing.
       // Only discard the jobId on an explicit "not found" — transient
       // network errors (mobile screen-lock, flaky connection) must NOT
@@ -384,14 +407,19 @@ function ResultsPage() {
         }
       }
       if (!jobId) {
+        console.log("[results] starting analysis job", {
+          url,
+          hasUserEpc: Boolean(analysisOverrides.userEpc),
+          hasUserSqft: Boolean(analysisOverrides.userSqft),
+        });
         const started = await startJobFn({
           data: {
             url,
             text,
             accessToken: token ?? null,
             sessionJwt,
-            userEpc: overrides.userEpc,
-            userSqft: overrides.userSqft,
+            userEpc: analysisOverrides.userEpc,
+            userSqft: analysisOverrides.userSqft,
           },
         });
         jobId = started.jobId;
@@ -434,7 +462,7 @@ function ResultsPage() {
         }
       }
     },
-    enabled: hasInput && precheckPhase === "ready",
+    enabled: hasInput && analysisReady,
     retry: false,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
@@ -499,6 +527,44 @@ function ResultsPage() {
     );
   }
 
+  if (preAnalysis.status === "fetching" || preAnalysis.status === "needs-input") {
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <SiteHeader />
+        <main className="mx-auto flex max-w-xl flex-1 items-center px-6 py-16 text-center">
+          <div className="w-full rounded-3xl border border-border bg-card p-6 shadow-card sm:p-8">
+            <Loader2 className="mx-auto h-5 w-5 animate-spin" style={{ color: CORAL }} />
+            <h1 className="mt-4 text-xl font-semibold tracking-tight">Checking listing details</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We’re reading the listing first so any missing EPC or sq ft details can be added before analysis starts.
+            </p>
+          </div>
+        </main>
+        {preAnalysis.status === "needs-input" && (
+          <PrecheckModal
+            missing={preAnalysis.missing}
+            onSubmit={(vals: { epc: string | null; sqft: number | null }) => {
+              console.log("[pre-analysis] user confirmed missing details; starting analysis", vals);
+              setPreAnalysis({
+                status: "ready",
+                overrides: {
+                userEpc: vals.epc ? vals.epc.toUpperCase() : null,
+                userSqft: vals.sqft && vals.sqft > 0 ? vals.sqft : null,
+                },
+              });
+            }}
+            onSkip={() => {
+              console.log("[pre-analysis] user skipped missing details; starting analysis");
+              setPreAnalysis({ status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES });
+            }}
+          />
+        )}
+        <DisclaimerBar />
+        <SiteFooter />
+      </div>
+    );
+  }
+
   // While recovering from a screen-lock / background tab, prefer the
   // loading view over any stale error state — the poll has been restarted.
   if (query.isPending || (showResumeBanner && (query.isFetching || query.isError))) {
@@ -515,22 +581,6 @@ function ResultsPage() {
           </div>
         )}
         <LoadingState url={url} />
-        {precheckPhase === "needs-input" && (
-          <PrecheckModal
-            missing={precheckMissing}
-            onSubmit={(vals) => {
-              setOverrides({
-                userEpc: vals.epc ? vals.epc.toUpperCase() : null,
-                userSqft: vals.sqft && vals.sqft > 0 ? vals.sqft : null,
-              });
-              setPrecheckPhase("ready");
-            }}
-            onSkip={() => {
-              setOverrides({ userEpc: null, userSqft: null });
-              setPrecheckPhase("ready");
-            }}
-          />
-        )}
         <DisclaimerBar />
         <SiteFooter />
       </div>
@@ -5273,11 +5323,11 @@ function PrecheckModal({
   const [epc, setEpc] = useState<string>("");
   const [sqft, setSqft] = useState<string>("");
   const sqftNum = Number(sqft);
-  const sqftValid = !missing.sqft || (Number.isFinite(sqftNum) && sqftNum >= 50 && sqftNum <= 50000);
-  const epcValid = !missing.epc || /^[A-G]$/.test(epc);
-  const canSubmit = (missing.epc ? epcValid : true) && (missing.sqft ? sqftValid : true) && (
-    (missing.epc && epcValid) || (missing.sqft && sqftValid)
-  );
+  const hasSqft = missing.sqft && sqft.trim().length > 0;
+  const hasEpc = missing.epc && epc.trim().length > 0;
+  const sqftValid = !hasSqft || (Number.isFinite(sqftNum) && sqftNum >= 50 && sqftNum <= 50000);
+  const epcValid = !hasEpc || /^[A-G]$/.test(epc);
+  const canSubmit = (hasEpc || hasSqft) && epcValid && sqftValid;
 
   return (
     <div
@@ -5313,9 +5363,8 @@ function PrecheckModal({
           Help us give you the most accurate report
         </h2>
         <p style={{ marginTop: 10, fontSize: 14, color: "#5F5E5A", lineHeight: 1.55 }}>
-          We couldn't find the following details in the listing text — they're usually on the floor plan
-          or EPC certificate attached to the listing. Adding them now means your report will include
-          accurate price per sq ft analysis and energy cost estimates.
+          We couldn't find the following in the listing — they're usually on the floor plan or EPC
+          certificate. Adding them now means your report will be more accurate from the start.
         </p>
 
         <div style={{ marginTop: 20, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -5390,8 +5439,8 @@ function PrecheckModal({
             disabled={!canSubmit}
             onClick={() =>
               onSubmit({
-                epc: missing.epc && epc ? epc : null,
-                sqft: missing.sqft && sqftValid && sqftNum > 0 ? sqftNum : null,
+                epc: hasEpc && epcValid ? epc : null,
+                sqft: hasSqft && sqftValid && sqftNum > 0 ? sqftNum : null,
               })
             }
             style={{
@@ -5406,7 +5455,7 @@ function PrecheckModal({
               transition: "background 120ms",
             }}
           >
-            Run analysis with these details →
+            Run analysis →
           </button>
           <button
             type="button"

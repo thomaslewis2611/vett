@@ -3304,10 +3304,10 @@ function detectSqftInText(text: string): boolean {
 function detectEpcInText(text: string): string | null {
   if (!text) return null;
   const patterns: RegExp[] = [
-    /EPC\s+rating[:\s]+([A-G])\b/i,
-    /EPC\s+band[:\s]+([A-G])\b/i,
-    /energy\s+(?:rating|efficiency\s+rating)[:\s]+([A-G])\b/i,
-    /EPC[\s:_-]+([A-G])\b/i,
+    /\bEPC\b(?:\s+(?:rating|band|certificate))?\s*[:\-–—]?\s*([A-G])\b/i,
+    /\benergy\s+(?:performance\s+)?(?:rating|band|efficiency\s+rating)\b\s*[:\-–—]?\s*([A-G])\b/i,
+    /\b(?:EPC|energy)\b[^.]{0,80}\b(?:rating|band)\b[^.]{0,24}\b([A-G])\b/i,
+    /\b(?:rating|band)\b\s*[:\-–—]?\s*([A-G])\b[^.]{0,60}\b(?:EPC|energy)\b/i,
   ];
   for (const re of patterns) {
     const m = text.match(re);
@@ -3327,49 +3327,35 @@ export const precheckListing = createServerFn({ method: "POST" })
     epcFound: boolean;
     sqftFound: boolean;
     epcRating: string | null;
+    textLength: number;
     skipped: boolean;
   }> => {
     const url = data.url?.trim() ?? "";
     const pastedText = data.text?.trim() ?? "";
     console.log("[precheckListing] invoked", { hasUrl: Boolean(url), hasPastedText: Boolean(pastedText) });
-    // Pasted-text submissions skip precheck — user already controls the input.
-    if (pastedText || !url) {
-      console.log("[precheckListing] skipping (pasted text or no url)");
-      return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+    if (!url && !pastedText) {
+      return { epcFound: false, sqftFound: false, epcRating: null, textLength: 0, skipped: false };
+    }
+    if (pastedText) {
+      const epcRating = detectEpcInText(pastedText);
+      const sqftFound = detectSqftInText(pastedText);
+      return { epcFound: Boolean(epcRating), sqftFound, epcRating, textLength: pastedText.length, skipped: false };
     }
     try {
       validateListingUrl(url);
     } catch {
-      console.log("[precheckListing] skipping (invalid url)");
-      return { epcFound: true, sqftFound: true, epcRating: null, skipped: true };
+      console.log("[precheckListing] invalid url, treating details as missing");
+      return { epcFound: false, sqftFound: false, epcRating: null, textLength: 0, skipped: false };
     }
-
-    // Try cache first.
-    let cachedText: string | null = null;
-    try {
-      const { data: cached } = await supabaseAdmin
-        .from("listing_cache")
-        .select("text_content, fetched_at")
-        .eq("url", url)
-        .maybeSingle();
-      if (
-        cached?.text_content &&
-        Date.now() - new Date(cached.fetched_at).getTime() < CACHE_TTL_MS
-      ) {
-        cachedText = cached.text_content;
-      }
-    } catch { /* ignore */ }
 
     let html = "";
-    if (!cachedText) {
-      try {
-        html = await basicFetchListingHtml(url);
-      } catch (err) {
-        console.warn("[precheckListing] fetch threw, treating as both-missing:", (err as Error)?.message);
-      }
+    try {
+      html = await basicFetchListingHtml(url);
+    } catch (err) {
+      console.warn("[precheckListing] fetch threw, treating as both-missing:", (err as Error)?.message);
     }
 
-    const textForScan = cachedText ?? (html ? htmlToCleanText(html) : "");
+    const textForScan = html ? htmlToCleanText(html) : "";
     let epcRating: string | null = null;
     if (html) {
       epcRating = extractEpcAndCouncilTax(html).epc;
@@ -3385,13 +3371,14 @@ export const precheckListing = createServerFn({ method: "POST" })
       epcFound: Boolean(epcRating),
       epcRating,
       sqftFound,
-      source: cachedText ? "cache" : (html ? "fetch" : "none"),
+      source: html ? "fetch" : "none",
     });
 
     return {
       epcFound: Boolean(epcRating),
       sqftFound,
       epcRating,
+      textLength: textForScan.length,
       skipped: false,
     };
   });
