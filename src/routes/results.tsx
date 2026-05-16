@@ -2759,23 +2759,41 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
     }
   };
 
+  const HEADING = "'Playfair Display', Georgia, serif";
   return (
-    <div className="p-6 sm:p-8" style={{ background: "#FFFDF9", borderRadius: 12, border: "0.5px solid rgba(26,17,8,0.12)" }}>
+    <div
+      className="p-8 sm:p-10"
+      style={{ background: "#1A1108", borderRadius: 16, color: "#FFFDF9" }}
+    >
       <UpsellPassModal
         open={upsellOpen}
         onClose={() => { setUpsellOpen(false); setLoadingTier(null); }}
         onChoosePass={() => { setUpsellOpen(false); startCheckout("pass"); }}
         onChooseSingle={() => { setUpsellOpen(false); startCheckout("single"); }}
       />
-      <div className="inline-flex items-center gap-2" style={{ background: "#FAECE7", color: "#993C1D", borderRadius: 100, padding: "4px 10px", fontSize: 11, fontWeight: 500, letterSpacing: "0.04em" }}>
-        <Sparkles className="h-3 w-3" /> UNLOCK THE FULL REPORT
+      <div
+        className="inline-flex items-center gap-2"
+        style={{
+          color: "#2D6A4F",
+          fontSize: 11,
+          fontWeight: 500,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+        }}
+      >
+        <Sparkles className="h-3 w-3" /> Unlock the full report
       </div>
-      <h3 className="mt-4 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+      <h3
+        className="mt-3"
+        style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 32, color: "#FFFDF9", letterSpacing: "-0.5px", lineHeight: 1.15 }}
+      >
         See every red flag, the true cost and how to negotiate
       </h3>
-      <p className="mt-2 text-sm" style={{ color: "#5F5E5A" }}>Pick the option that suits you.</p>
+      <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>
+        Pick the option that suits you.
+      </p>
 
-      <div className="mt-6 grid gap-4 md:grid-cols-2">
+      <div className="mt-7 grid gap-4 md:grid-cols-2">
         <PlanCard
           title="Single report"
           price="£4.99"
@@ -2828,21 +2846,23 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         />
       </div>
 
-      {err && <p className="mt-4 text-sm" style={{ color: "#993C1D" }}>{err}</p>}
+      {err && <p className="mt-4" style={{ fontSize: 13, color: "#FCA5A5" }}>{err}</p>}
 
-      <div className="mt-6 text-center">
+      <div className="mt-7 text-center">
         {!showRestore ? (
           <button
             type="button"
             onClick={() => setShowRestore(true)}
             className="text-xs underline-offset-4 hover:underline"
-            style={{ color: "#5F5E5A" }}
+            style={{ color: "rgba(255,253,249,0.7)", fontWeight: 300 }}
           >
             Already purchased? Restore your access →
           </button>
         ) : (
           <form onSubmit={handleRestore} className="mx-auto mt-2 max-w-sm text-left">
-            <label className="block text-xs" style={{ color: "#5F5E5A" }}>Enter your email</label>
+            <label className="block" style={{ fontSize: 12, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>
+              Enter your email
+            </label>
             <div className="mt-2 flex gap-2">
               <input
                 type="email"
@@ -2850,17 +2870,17 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
                 value={restoreEmail}
                 onChange={(e) => setRestoreEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="flex-1 px-3 py-2 outline-none"
-                style={{ background: "#F1EFE8", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(26,17,8,0.12)" }}
+                className="flex-1 px-4 py-2 outline-none"
+                style={{ background: "rgba(255,253,249,0.08)", color: "#FFFDF9", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(255,253,249,0.18)" }}
               />
               <button
                 type="submit"
-                style={{ background: "#1A1108", color: "#FFFDF9", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "8px 18px" }}
+                style={{ background: "#2D6A4F", color: "#FFFDF9", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "9px 18px" }}
               >
                 Send access link
               </button>
             </div>
-            {restoreMsg && <p className="mt-2 text-xs" style={{ color: "#5F5E5A" }}>{restoreMsg}</p>}
+            {restoreMsg && <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>{restoreMsg}</p>}
           </form>
         )}
       </div>
