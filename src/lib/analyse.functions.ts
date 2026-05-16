@@ -2464,79 +2464,75 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     }
 
     const jobId = row.id as string;
-    console.log(`[startAnalysisJob] Invoking analyse-listing Edge Function for jobId:`, jobId);
-    console.log(`[startAnalysisJob] env present:`, {
-      hasSupabaseUrl: !!process.env.SUPABASE_URL,
-      hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    });
+    console.log(`[startAnalysisJob] scheduled jobId:`, jobId);
 
-    // Try invoking the Edge Function. We await the result so we observe
-    // network/auth failures synchronously. The Edge Function itself updates
-    // the analysis_jobs row when it finishes.
-    let invokeFailed = false;
-    let invokeErrorMessage = "";
-    try {
-      const result = await supabaseAdmin.functions.invoke("analyse-listing", {
-        body: { jobId, url, pastedText, userEpc: overrides.userEpc, userSqft: overrides.userSqft },
-      });
-      console.log(`[startAnalysisJob] Edge Function invoke result:`, JSON.stringify({
-        hasData: !!result.data,
-        error: result.error ? String(result.error?.message ?? result.error) : null,
-      }));
-      if (result.error) {
-        invokeFailed = true;
-        invokeErrorMessage = String(result.error?.message ?? result.error);
-      }
-    } catch (err) {
-      invokeFailed = true;
-      invokeErrorMessage = err instanceof Error ? err.message : String(err);
-      console.error(`[startAnalysisJob] Edge Function invoke failed:`, invokeErrorMessage);
-    }
-
-    // Reliability check: even if the invoke call returned ok, the Edge
-    // Function may not actually be running (silent failure). Wait 2s and
-    // verify the job has moved off `pending`. If not, fall back to running
-    // the analysis in-process.
-    let needsFallback = invokeFailed;
-    if (!invokeFailed) {
-      await new Promise((r) => setTimeout(r, 2000));
+    // Fire-and-forget: dispatch the Edge Function invoke + fallback to
+    // background work via scheduleBackground (Cloudflare waitUntil) so the
+    // client gets the jobId immediately and can begin polling. Awaiting the
+    // invoke here previously meant a slow/cancelled client request could
+    // discard the jobId before it was returned, even though the job row
+    // already existed server-side.
+    scheduleBackground((async () => {
+      let invokeFailed = false;
+      let invokeErrorMessage = "";
       try {
-        const { data: statusRow } = await supabaseAdmin
-          .from("analysis_jobs")
-          .select("status")
-          .eq("id", jobId)
-          .maybeSingle();
-        const currentStatus = (statusRow?.status as string | undefined) ?? "pending";
-        console.log(`[startAnalysisJob] post-invoke status check for ${jobId}: ${currentStatus}`);
-        if (currentStatus === "pending") {
-          console.warn(`[startAnalysisJob] Edge Function did not pick up job ${jobId}; falling back in-process`);
-          needsFallback = true;
-          invokeErrorMessage = invokeErrorMessage || "Edge Function did not start within 2s";
+        const result = await supabaseAdmin.functions.invoke("analyse-listing", {
+          body: { jobId, url, pastedText, userEpc: overrides.userEpc, userSqft: overrides.userSqft },
+        });
+        console.log(`[startAnalysisJob:bg] invoke result`, JSON.stringify({
+          hasData: !!result.data,
+          error: result.error ? String(result.error?.message ?? result.error) : null,
+        }));
+        if (result.error) {
+          invokeFailed = true;
+          invokeErrorMessage = String(result.error?.message ?? result.error);
         }
       } catch (err) {
-        console.error(`[startAnalysisJob] post-invoke status check failed:`, err);
-        needsFallback = true;
-        invokeErrorMessage = invokeErrorMessage || (err instanceof Error ? err.message : String(err));
+        invokeFailed = true;
+        invokeErrorMessage = err instanceof Error ? err.message : String(err);
+        console.error(`[startAnalysisJob:bg] invoke failed:`, invokeErrorMessage);
       }
-    }
 
-    if (needsFallback) {
-      console.warn(`[startAnalysisJob] Falling back to in-process analysis for ${jobId}`);
-      try {
-        await processAnalysisJob(jobId, url, pastedText, overrides);
-      } catch (fallbackErr) {
-        const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-        console.error(`[startAnalysisJob] fallback analysis failed for ${jobId}:`, msg);
-        await supabaseAdmin
-          .from("analysis_jobs")
-          .update({
-            status: "error",
-            error: `Failed to start analysis: ${invokeErrorMessage}; fallback failed: ${msg}`,
-            updated_at: new Date().toISOString(),
-          })
-          .eq("id", jobId);
+      let needsFallback = invokeFailed;
+      if (!invokeFailed) {
+        await new Promise((r) => setTimeout(r, 2000));
+        try {
+          const { data: statusRow } = await supabaseAdmin
+            .from("analysis_jobs")
+            .select("status")
+            .eq("id", jobId)
+            .maybeSingle();
+          const currentStatus = (statusRow?.status as string | undefined) ?? "pending";
+          if (currentStatus === "pending") {
+            console.warn(`[startAnalysisJob:bg] Edge Function did not pick up ${jobId}; falling back`);
+            needsFallback = true;
+            invokeErrorMessage = invokeErrorMessage || "Edge Function did not start within 2s";
+          }
+        } catch (err) {
+          console.error(`[startAnalysisJob:bg] post-invoke check failed:`, err);
+          needsFallback = true;
+          invokeErrorMessage = invokeErrorMessage || (err instanceof Error ? err.message : String(err));
+        }
       }
-    }
+
+      if (needsFallback) {
+        console.warn(`[startAnalysisJob:bg] in-process fallback for ${jobId}`);
+        try {
+          await processAnalysisJob(jobId, url, pastedText, overrides);
+        } catch (fallbackErr) {
+          const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+          console.error(`[startAnalysisJob:bg] fallback failed for ${jobId}:`, msg);
+          await supabaseAdmin
+            .from("analysis_jobs")
+            .update({
+              status: "error",
+              error: `Failed to start analysis: ${invokeErrorMessage}; fallback failed: ${msg}`,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", jobId);
+        }
+      }
+    })());
 
     return { jobId };
   });
