@@ -1063,7 +1063,9 @@ async function runJob(
     if (!listingContent && url) {
       validateUrl(url);
       console.log(`[analyse-listing] fetching ${url}`);
+      const htmlStart = Date.now();
       const html = await fetchListingHtml(url);
+      console.log(`[analyse-listing] HTML fetch complete: ${Date.now() - htmlStart}ms`);
       if (detectFloorPlan(html)) floorPlanFlag = "yes";
       listingContent = htmlToListingText(html);
       console.log(`[analyse-listing] listing length: ${listingContent.length}, floor plan: ${floorPlanFlag}`);
@@ -1089,27 +1091,14 @@ async function runJob(
       );
     }
 
-    // PropertyData fetches in parallel (Promise.allSettled inside fetchPropertyDataAll)
-    // typically resolve in a few seconds, so we await them before calling Claude in
-    // order to feed conservation-area / planning-applications / growth context into
-    // the prompt. Claude is by far the slowest step (~30–60s) so total wall time is
-    // dominated by it and stays well under the 90s target.
     let postcode = extractPostcode(listingContent);
     let inferredPostcode = false;
     let partialPostcode: string | null = null;
-    if (!postcode) {
-      partialPostcode = extractPartialPostcode(listingContent);
-      // Ask Claude to guess the full postcode from the address before falling
-      // back to the manual input prompt in the UI.
-      const guess = await inferPostcodeFromAddress(listingContent, partialPostcode);
-      if (guess) {
-        console.log(`[analyse-listing] inferred postcode ${guess} (partial hint: ${partialPostcode ?? "none"})`);
-        postcode = guess;
-        inferredPostcode = true;
-      }
-    }
     let pd: PdResults = {};
+
     if (postcode) {
+      // Have postcode — fetch PD directly.
+      const pdStart = Date.now();
       const cached = await getCachedPropertyData(supabase, postcode);
       if (cached) {
         console.log(`[analyse-listing] propertydata cache hit ${postcode}`);
@@ -1122,6 +1111,33 @@ async function runJob(
           console.warn("[analyse-listing] propertydata fetch failed", e);
           pd = {};
         }
+      }
+      console.log(`[analyse-listing] PropertyData complete: ${Date.now() - pdStart}ms`);
+    } else {
+      // No full postcode — run Claude inference in parallel with a cache probe
+      // on the partial postcode (best-effort). Once inference resolves, fetch PD.
+      partialPostcode = extractPartialPostcode(listingContent);
+      const inferStart = Date.now();
+      const guess = await inferPostcodeFromAddress(listingContent, partialPostcode);
+      console.log(`[analyse-listing] Postcode inference complete: ${Date.now() - inferStart}ms`);
+      if (guess) {
+        console.log(`[analyse-listing] inferred postcode ${guess} (partial hint: ${partialPostcode ?? "none"})`);
+        postcode = guess;
+        inferredPostcode = true;
+        const pdStart = Date.now();
+        const cached = await getCachedPropertyData(supabase, postcode);
+        if (cached) {
+          pd = cached;
+        } else {
+          try {
+            pd = await fetchPropertyDataAll(postcode);
+            await setCachedPropertyData(supabase, postcode, pd);
+          } catch (e) {
+            console.warn("[analyse-listing] propertydata fetch failed", e);
+            pd = {};
+          }
+        }
+        console.log(`[analyse-listing] PropertyData complete: ${Date.now() - pdStart}ms`);
       }
     }
 
@@ -1140,19 +1156,23 @@ async function runJob(
     let parsed: Record<string, unknown> = {};
     try {
       console.log(`[analyse-listing] calling Claude (primary)`);
+      const claudeStart = Date.now();
       const text = await callClaude(systemPrompt, userContent, 4000);
-      console.log(`[analyse-listing] Claude response length: ${text.length}`);
+      console.log(`[analyse-listing] Claude complete: ${Date.now() - claudeStart}ms (response length ${text.length})`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
     } catch (primaryErr) {
       console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
       const simplified =
         systemPrompt +
         "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+      const claudeStart = Date.now();
       const text = await callClaude(simplified, userContent, 4000);
+      console.log(`[analyse-listing] Claude complete (retry): ${Date.now() - claudeStart}ms`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
       parsed.renovationCosts = null;
     }
 
+    const mappingStart = Date.now();
     // Make sure listingUrl is set on the property block.
     const property = (parsed.property ?? {}) as Record<string, unknown>;
     if (!property.listingUrl) property.listingUrl = url || "";
