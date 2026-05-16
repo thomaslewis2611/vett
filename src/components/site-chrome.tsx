@@ -244,11 +244,7 @@ export function SiteHeader() {
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-8" style={{ height: 56 }}>
         <Link to="/" className="flex items-center gap-2">
-          <span
-            aria-hidden
-            className="inline-block"
-            style={{ width: 8, height: 8, borderRadius: 9999, background: "#1B4332" }}
-          />
+          <RoovrMark size={28} />
           <span style={{ fontSize: 20, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.3px" }}>
             Roovr
           </span>
