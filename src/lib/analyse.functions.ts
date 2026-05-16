@@ -246,6 +246,7 @@ You must:
 - IMPORTANT: Only identify a property as an auction listing if the listing text explicitly contains one or more of these exact terms: auction, auctioneer, lot number, reserve price, unconditional exchange, sold prior to auction, online auction. Do NOT infer auction status from: guide price, offers over, offers in excess of, or any other pricing language. These are standard estate agent terms used on normal listings and must never be interpreted as auction indicators. Never generate an auction-related red flag (e.g. "Auction Property", "Cash Buyers Only", "Bridging Finance Required") unless one of those explicit auction terms appears in the listing text. If you incorrectly flag a non-auction property as an auction listing, this causes serious harm to users who may make incorrect financial decisions. When in doubt, do not flag as auction.
 - IMPORTANT: "Guide Price" is standard, widely-used UK estate agent terminology — particularly common in Bath, Bristol, the South West and across many private treaty sales. It is NOT inherently an indicator of auction, distress or unusual sale conditions. Rules: (a) If the listing uses "Guide Price" with NO other supporting signals of distress or auction, do NOT generate a red flag for it at all. (b) If you do mention it, the maximum severity is LOW, and the tone must be neutral/informational — note that it is common terminology and the buyer should simply confirm the sale method (private treaty vs auction vs informal tender) with the agent. (c) Only escalate Guide Price to MEDIUM or HIGH severity if it is combined with other genuine warning signs such as explicit auction terms (see auction list above), very long days on market, multiple price reductions, or unusual completion timeframes (e.g. 28-day completion required). Never flag Guide Price as HIGH on its own.
 - IMPORTANT: Only flag missing internal photos if the listing content explicitly states there are no photos, or if the listing description contains zero photo references and no photo count is mentioned. Do NOT flag missing photos based on the presence of a virtual tour, 360 tour, or video tour — these are additional features, not replacements for photos. A listing can have both photos AND a virtual tour simultaneously. Never generate a red flag about missing photos (e.g. "Virtual Tour Only — No Internal Photos Visible", "No Interior Photos") unless you are certain from the listing content that photos are genuinely absent. When in doubt, do not flag this — a false positive on photos is more harmful than missing a genuine case.
+- IMPORTANT: Floor plans. If the listing content begins with or contains a line like "FLOOR PLAN PRESENT: yes" (injected by our scraper after detecting a floor plan image, a "Floorplan" tab, or a floorplan asset on the listing page), the listing HAS a floor plan — do NOT generate any "no floor plan provided", "missing floor plan", or similar red flag under any circumstances. Only flag a missing floor plan if the line "FLOOR PLAN PRESENT: no" is explicitly present, or if there is no FLOOR PLAN PRESENT line at all AND the listing description itself gives no indication of a floor plan. When in doubt, do not flag — floor plan images are not passed to you as text, so absence of mention in the listing description is not evidence of absence.
 - Tailor the 8 viewing questions to specific things in this listing, not generic boilerplate.
 - EPC: Look for the pattern "EPC RATING EXTRACTED: [letter]" at the top of the listing content — this is the confirmed EPC rating, always use it as epc.rating. Also look for variations like "EPC rating D", "EPC Rating: D", or "* EPC rating D" in the description text. If the listing content begins with a line like "EXTRACTED FROM PAGE HTML — EPC rating: X", trust that value. If the listing content contains council tax band information, look in the same section for an EPC rating — on Rightmove they appear together (common format: "Council Tax band X" alongside "EPC rating Y", often in an "Additional Property Information" bullet list). Do NOT guess or invent an EPC rating. If the listing genuinely does not show one, return epc: null. If you find one, populate rating, score, potentialRating and estimatedAnnualEnergyCost where visible (otherwise null), and ALWAYS write a 2-3 sentence commentary tailored to THIS property's size and rating: typical annual energy bills for a property this size at this rating, the cost and saving of upgrading to the next band, and mortgage lender implications if rated below D.
 - PRICE HISTORY: Always set priceHistory to null. Do not include any historical sale data.
@@ -449,6 +450,18 @@ function extractEpcAndCouncilTax(html: string): { epc: string | null; councilTax
     if (m?.[1]) { councilTax = m[1].toUpperCase(); break; }
   }
   return { epc, councilTax };
+}
+
+function detectFloorPlan(html: string): boolean {
+  if (!html) return false;
+  const patterns: RegExp[] = [
+    /\bfloorplans?\b/i,
+    /["']floorplans?["']\s*:/i,
+    /\/floorplans?\//i,
+    /_FLP_\d+/i,
+    /floor[\s-]*plan/i,
+  ];
+  return patterns.some((p) => p.test(html));
 }
 
 function extractListedDate(html: string): { dateStr: string; daysOnMarket: number } | null {
@@ -1729,7 +1742,10 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
     transportPromise,
   ]);
 
+  const hasFloorPlan = html ? detectFloorPlan(html) : false;
+
   const notes: string[] = [];
+  notes.push(`FLOOR PLAN PRESENT: ${hasFloorPlan ? "yes" : "unknown"}`);
   if (listed) {
     notes.push(`LISTING DATE: ${listed.dateStr} — ${listed.daysOnMarket} days on market as of today`);
     notes.push(`Date listed: ${listed.dateStr} (${listed.daysOnMarket} days on market)`);

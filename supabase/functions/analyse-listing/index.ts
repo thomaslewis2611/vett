@@ -116,6 +116,18 @@ function htmlToListingText(html: string): string {
   return text;
 }
 
+function detectFloorPlan(html: string): boolean {
+  if (!html) return false;
+  const patterns: RegExp[] = [
+    /\bfloorplans?\b/i,
+    /["']floorplans?["']\s*:/i,
+    /\/floorplans?\//i,
+    /_FLP_\d+/i,
+    /floor[\s-]*plan/i,
+  ];
+  return patterns.some((p) => p.test(html));
+}
+
 async function fetchListingHtml(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: {
@@ -147,6 +159,7 @@ You must:
 - For AUCTION listings, set negotiation.isAuction true, negotiation.maxBid as a single GBP number, recommendedOffer.low and high BOTH equal to maxBid. Otherwise normal recommended offer range (usually 2-8% under asking).
 - IMPORTANT: Only identify a property as an auction listing if the listing text explicitly contains one or more of these exact terms: auction, auctioneer, lot number, reserve price, unconditional exchange, sold prior to auction, online auction. Do NOT infer auction status from: guide price, offers over, offers in excess of, or any other pricing language. These are standard estate agent terms used on normal listings and must never be interpreted as auction indicators. If you incorrectly flag a non-auction property as an auction listing, this causes serious harm to users who may make incorrect financial decisions. When in doubt, do not flag as auction.
 - IMPORTANT: "Guide Price" is standard, widely-used UK estate agent terminology — particularly common in Bath, Bristol, the South West and across many private treaty sales. It is NOT inherently an indicator of auction, distress or unusual sale conditions. Rules: (a) If the listing uses "Guide Price" with NO other supporting signals of distress or auction, do NOT generate a red flag for it at all. (b) If you do mention it, the maximum severity is LOW, and the tone must be neutral/informational — note that it is common terminology and the buyer should simply confirm the sale method (private treaty vs auction vs informal tender) with the agent. (c) Only escalate Guide Price to MEDIUM or HIGH severity if it is combined with other genuine warning signs such as explicit auction terms (see auction list above), very long days on market, multiple price reductions, or unusual completion timeframes (e.g. 28-day completion required). Never flag Guide Price as HIGH on its own.
+- IMPORTANT: Floor plans. If the listing content begins with or contains a line like "FLOOR PLAN PRESENT: yes" (injected by our scraper after detecting a floor plan image, a "Floorplan" tab, or a floorplan asset on the listing page), the listing HAS a floor plan — do NOT generate any "no floor plan provided", "missing floor plan", or similar red flag under any circumstances. Only flag a missing floor plan if the line "FLOOR PLAN PRESENT: no" is explicitly present, or if there is no FLOOR PLAN PRESENT line at all AND the listing description itself gives no indication of a floor plan. Floor plan images are not passed to you as text, so absence of mention in the listing description is not evidence of absence.
 - Tailor 8 viewing questions to specific things in this listing.
 - EPC: extract a rating from the listing if present ("EPC rating D" / "EPC Rating: D"). Otherwise return epc: null. If found, populate rating, score, potentialRating, estimatedAnnualEnergyCost where visible (else null) and ALWAYS write a 2-3 sentence commentary tailored to size and rating.
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
@@ -840,12 +853,17 @@ async function runJob(jobId: string, url: string, pastedText: string) {
 
   try {
     let listingContent = pastedText?.trim() ?? "";
+    let floorPlanFlag: "yes" | "unknown" = "unknown";
     if (!listingContent && url) {
       validateUrl(url);
       console.log(`[analyse-listing] fetching ${url}`);
       const html = await fetchListingHtml(url);
+      if (detectFloorPlan(html)) floorPlanFlag = "yes";
       listingContent = htmlToListingText(html);
-      console.log(`[analyse-listing] listing length: ${listingContent.length}`);
+      console.log(`[analyse-listing] listing length: ${listingContent.length}, floor plan: ${floorPlanFlag}`);
+    }
+    if (listingContent) {
+      listingContent = `FLOOR PLAN PRESENT: ${floorPlanFlag}\n\n${listingContent}`;
     }
     if (!listingContent || listingContent.length < 100) {
       throw new Error(
