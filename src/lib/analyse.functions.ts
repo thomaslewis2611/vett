@@ -2472,64 +2472,43 @@ export const startAnalysisJob = createServerFn({ method: "POST" })
     // invoke here previously meant a slow/cancelled client request could
     // discard the jobId before it was returned, even though the job row
     // already existed server-side.
+    // Invoke the Supabase Edge Function which has a longer execution budget
+    // than Cloudflare Workers' waitUntil(). The Worker must NOT run the full
+    // analysis itself — waitUntil() will cancel long-running tasks (60-90s)
+    // before Claude finishes. If the invoke fails, mark the job as error.
     scheduleBackground((async () => {
-      let invokeFailed = false;
-      let invokeErrorMessage = "";
       try {
         const result = await supabaseAdmin.functions.invoke("analyse-listing", {
           body: { jobId, url, pastedText, userEpc: overrides.userEpc, userSqft: overrides.userSqft },
         });
-        console.log(`[startAnalysisJob:bg] invoke result`, JSON.stringify({
-          hasData: !!result.data,
-          error: result.error ? String(result.error?.message ?? result.error) : null,
-        }));
         if (result.error) {
-          invokeFailed = true;
-          invokeErrorMessage = String(result.error?.message ?? result.error);
-        }
-      } catch (err) {
-        invokeFailed = true;
-        invokeErrorMessage = err instanceof Error ? err.message : String(err);
-        console.error(`[startAnalysisJob:bg] invoke failed:`, invokeErrorMessage);
-      }
-
-      let needsFallback = invokeFailed;
-      if (!invokeFailed) {
-        await new Promise((r) => setTimeout(r, 2000));
-        try {
-          const { data: statusRow } = await supabaseAdmin
-            .from("analysis_jobs")
-            .select("status")
-            .eq("id", jobId)
-            .maybeSingle();
-          const currentStatus = (statusRow?.status as string | undefined) ?? "pending";
-          if (currentStatus === "pending") {
-            console.warn(`[startAnalysisJob:bg] Edge Function did not pick up ${jobId}; falling back`);
-            needsFallback = true;
-            invokeErrorMessage = invokeErrorMessage || "Edge Function did not start within 2s";
-          }
-        } catch (err) {
-          console.error(`[startAnalysisJob:bg] post-invoke check failed:`, err);
-          needsFallback = true;
-          invokeErrorMessage = invokeErrorMessage || (err instanceof Error ? err.message : String(err));
-        }
-      }
-
-      if (needsFallback) {
-        console.warn(`[startAnalysisJob:bg] in-process fallback for ${jobId}`);
-        try {
-          await processAnalysisJob(jobId, url, pastedText, overrides);
-        } catch (fallbackErr) {
-          const msg = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-          console.error(`[startAnalysisJob:bg] fallback failed for ${jobId}:`, msg);
+          const msg = String(result.error?.message ?? result.error);
+          console.error(`[startAnalysisJob:bg] invoke error for ${jobId}:`, msg);
           await supabaseAdmin
             .from("analysis_jobs")
             .update({
               status: "error",
-              error: `Failed to start analysis: ${invokeErrorMessage}; fallback failed: ${msg}`,
+              error: `Failed to start analysis: ${msg}`,
               updated_at: new Date().toISOString(),
             })
             .eq("id", jobId);
+          return;
+        }
+        console.log(`[startAnalysisJob:bg] invoke dispatched for ${jobId}`);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[startAnalysisJob:bg] invoke threw for ${jobId}:`, msg);
+        try {
+          await supabaseAdmin
+            .from("analysis_jobs")
+            .update({
+              status: "error",
+              error: `Failed to start analysis: ${msg}`,
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", jobId);
+        } catch (updateErr) {
+          console.error(`[startAnalysisJob:bg] failed to mark error for ${jobId}:`, updateErr);
         }
       }
     })());
