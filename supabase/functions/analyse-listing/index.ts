@@ -323,17 +323,14 @@ async function callClaude(
 
 async function runStageWithRetry<T>(
   stageName: string,
-  fn: (signal: AbortSignal) => Promise<T>,
-  timeoutMs: number,
+  fn: () => Promise<T>,
 ): Promise<T> {
   let lastError: unknown;
   for (let attempt = 1; attempt <= 2; attempt += 1) {
-    const ac = new AbortController();
-    const timer = setTimeout(() => ac.abort(), timeoutMs);
     const started = Date.now();
     try {
-      console.log(`[analyse-listing] stage ${stageName} start (attempt ${attempt}/2, timeout ${timeoutMs}ms)`);
-      const result = await fn(ac.signal);
+      console.log(`[analyse-listing] stage ${stageName} start (attempt ${attempt}/2)`);
+      const result = await fn();
       console.log(`[analyse-listing] stage ${stageName} complete in ${Date.now() - started}ms (attempt ${attempt}/2)`);
       return result;
     } catch (err) {
@@ -344,8 +341,6 @@ async function runStageWithRetry<T>(
         console.log(`[analyse-listing] stage ${stageName} retrying once`);
         await new Promise((resolve) => setTimeout(resolve, 750));
       }
-    } finally {
-      clearTimeout(timer);
     }
   }
   throw lastError instanceof Error ? lastError : new Error(String(lastError ?? `${stageName} failed`));
