@@ -36,8 +36,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
-  --font-display: system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --shadow-soft: none;
   --shadow-card: none;
   --shadow-glow: none;
