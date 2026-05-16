@@ -664,25 +664,7 @@ function ResultsPage() {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
-        {showResumeBanner && (
-          <div
-            role="status"
-            aria-live="polite"
-            className="mx-auto mt-4 flex max-w-xl items-center gap-2 rounded-xl border border-border bg-accent px-4 py-3 text-sm text-accent-foreground"
-          >
-            <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden="true" />
-            <span className="flex-1">Welcome back — we kept analysing while you were away…</span>
-            <button
-              type="button"
-              onClick={() => setShowResumeBanner(false)}
-              aria-label="Dismiss"
-              className="shrink-0 rounded p-1 text-accent-foreground/70 hover:bg-accent-foreground/10 hover:text-accent-foreground"
-            >
-              <X className="h-4 w-4" aria-hidden="true" />
-            </button>
-          </div>
-        )}
-        <LoadingState url={url} />
+        <LoadingState url={url} showResumeBanner={showResumeBanner} />
         <DisclaimerBar />
         <SiteFooter />
       </div>
@@ -940,7 +922,7 @@ function prettyUrl(url?: string): string | null {
   }
 }
 
-function LoadingState({ url }: { url?: string }) {
+function LoadingState({ url, showResumeBanner = false }: { url?: string; showResumeBanner?: boolean }) {
   const [elapsed, setElapsed] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
 
@@ -983,6 +965,22 @@ function LoadingState({ url }: { url?: string }) {
               style={{ width: `${progress}%`, background: ACCENT, borderRadius: 999 }}
             />
           </div>
+
+          {showResumeBanner && (
+            <p
+              role="status"
+              aria-live="polite"
+              style={{
+                fontSize: 11,
+                fontWeight: 500,
+                color: ACCENT,
+                textAlign: "center",
+                padding: "6px 0",
+              }}
+            >
+              Welcome back — we kept your analysis running.
+            </p>
+          )}
 
           {/* Anchor: property URL */}
           {anchor && (
