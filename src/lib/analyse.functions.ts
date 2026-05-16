@@ -146,7 +146,19 @@ const analysisSchema = z.object({
     legalFees: z.number().describe("Typical UK conveyancing fees ~ £1,500-£2,500"),
     surveyFees: z.number().describe("Homebuyer survey ~ £600-£1,200"),
     mortgageFees: z.number().describe("Arrangement fee ~ £999-£1,500"),
-    totalUpfront: z.number().describe("Sum of all upfront costs"),
+    valuationFee: z.number().optional().default(0).describe("Mortgage lender's valuation fee ~£150-£1,500; 0 for cash/remortgage"),
+    landRegistryFee: z.number().optional().default(0).describe("Land Registry registration fee per HMLR scale"),
+    electronicTransferFee: z.number().optional().default(0).describe("CHAPS/bank transfer fee, typically £25-£50"),
+    removalCosts: z.number().optional().default(0).describe("Estimated removals: £500 flat, £800 3-bed, £1200 larger"),
+    indemnityInsurance: z.number().optional().default(0).describe("£150 if planning/extension/conversion mentioned, else 0"),
+    buildingsInsurance: z.number().optional().default(0).describe("Annual buildings insurance estimate (first year)"),
+    serviceCharge: z.number().optional().default(0).describe("Annual service charge (leasehold only, 0 for freehold)"),
+    groundRent: z.number().optional().default(0).describe("Annual ground rent (leasehold only)"),
+    leaseholdYears: z.number().optional().default(0).describe("Years remaining on lease, 0 for freehold"),
+    councilTaxMonthly: z.number().optional().default(0).describe("Monthly council tax estimate"),
+    buildingsInsuranceMonthly: z.number().optional().default(0).describe("Monthly buildings insurance"),
+    serviceChargeMonthly: z.number().optional().default(0).describe("Monthly service charge (leasehold only)"),
+    totalUpfront: z.number().describe("Sum of all upfront one-off costs"),
     monthlyMortgage: z.number().describe("Monthly mortgage on 15% deposit, 25-year term, 4.8% fixed"),
     mortgageAssumptions: z.string(),
   }),
@@ -254,6 +266,20 @@ You must:
 - EPC: Look for the pattern "EPC RATING EXTRACTED: [letter]" at the top of the listing content — this is the confirmed EPC rating, always use it as epc.rating. Also look for variations like "EPC rating D", "EPC Rating: D", or "* EPC rating D" in the description text. If the listing content begins with a line like "EXTRACTED FROM PAGE HTML — EPC rating: X", trust that value. If the listing content contains council tax band information, look in the same section for an EPC rating — on Rightmove they appear together (common format: "Council Tax band X" alongside "EPC rating Y", often in an "Additional Property Information" bullet list). Do NOT guess or invent an EPC rating. If the listing genuinely does not show one, return epc: null. If you find one, populate rating, score, potentialRating and estimatedAnnualEnergyCost where visible (otherwise null), and ALWAYS write a 2-3 sentence commentary tailored to THIS property's size and rating: typical annual energy bills for a property this size at this rating, the cost and saving of upgrading to the next band, and mortgage lender implications if rated below D.
 - PRICE HISTORY: Always set priceHistory to null. Do not include any historical sale data.
 - FLOOD RISK: If "ENVIRONMENT AGENCY FLOOD RISK" data is provided in the listing content, populate floodRisk with EXACTLY those values for riversAndSea, surfaceWater, reservoir, groundwater and overallRisk. Set autoRedFlag=true ONLY if Rivers/Sea risk is "High". Write a 2-3 sentence commentary explaining the practical implications: buildings insurance cost, mortgage lender concerns, what the buyer should do. For High risk specifically mention that some insurers refuse cover or charge 3-5x standard premiums and that some mortgage lenders require flood resilience measures as a condition of lending. If no flood data is provided, set floodRisk to null.
+- COSTS — generate a comprehensive cost breakdown. Populate every field in the costs object:
+  • valuationFee: mortgage lender's valuation, £150–£1,500 depending on price (use ~£250 up to £250k, ~£400 up to £500k, ~£700 up to £1m, ~£1,200 above). Use 0 if listing implies cash purchase or remortgage.
+  • landRegistryFee: HMLR scale 1 — under £80k=£20; £80k–£100k=£40; £100k–£200k=£95; £200k–£500k=£135; £500k–£1m=£270; over £1m=£455.
+  • electronicTransferFee: default 40 (CHAPS).
+  • removalCosts: £500 for a flat/small property, £800 for a 3-bed house, £1,200 for larger properties. Add ~£300 if the property is described as long-distance/relocation.
+  • indemnityInsurance: 150 if the listing mentions any planning permission, extension, conversion, loft, dormer, garage conversion, side return or similar work; otherwise 0.
+  • buildingsInsurance: first-year annual estimate. £200 for a flat (note in mortgageAssumptions if this is usually included in service charge), £350–£600 for a house depending on size/rebuild value.
+  • serviceCharge (LEASEHOLD ONLY): 0 for freehold. For leasehold flats estimate £1,500–£4,000/yr based on building size and location; extract from listing if stated; otherwise estimate and say so in mortgageAssumptions.
+  • groundRent (LEASEHOLD ONLY): extract from listing if stated, else estimate (0 for post-2022 leases under the Leasehold Reform Act). If listing mentions ground rent above £0 on a new lease, raise a red flag.
+  • leaseholdYears: years remaining on lease if stated. If under 80 years, add a red flag about un-mortgageability / lease extension cost.
+  • councilTaxMonthly: derive from metrics.councilTaxBand using England averages (A≈£1,500, B≈£1,750, C≈£2,000, D≈£2,250, E≈£2,750, F≈£3,250, G≈£3,750, H≈£4,500) divided by 12 — round to nearest pound.
+  • buildingsInsuranceMonthly: buildingsInsurance / 12, rounded.
+  • serviceChargeMonthly: serviceCharge / 12, rounded (0 for freehold).
+  • totalUpfront: SUM of purchasePrice + stampDuty + legalFees + surveyFees + mortgageFees + valuationFee + landRegistryFee + electronicTransferFee + removalCosts + indemnityInsurance + buildingsInsurance.
 - Be direct and useful — this buyer is about to spend hundreds of thousands of pounds.
 
 - Populate sellerMotivation based on: days on market, number of price reductions, chain status, reason for sale if mentioned, listing language urgency, and time of year. Score 1-3 = low motivation (recently listed, no reductions, strong market), 4-6 = moderate, 7-8 = high (30+ days, reduced, or chain free with emphasis), 9-10 = very high (multiple reductions, long time on market, vacant, urgent language). Signals must be short concrete strings drawn from the listing (e.g. "35 days on market", "Price reduced twice", "No onward chain", "Vacant possession"). Commentary is 2-3 sentences explaining what the motivation level means for the buyer's negotiating position.
@@ -274,7 +300,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "floodRisk": { "riversAndSea": "Very Low"|"Low"|"Medium"|"High"|null, "surfaceWater": "Very Low"|"Low"|"Medium"|"High"|null, "reservoir": boolean|null, "groundwater": "Very Low"|"Low"|"Medium"|"High"|null, "overallRisk": "Very Low"|"Low"|"Medium"|"High"|null, "commentary": string, "autoRedFlag": boolean } | null,
   "areaContext": { "avgPricePerSqFtArea": number|null, "avgSoldPriceArea": number|null, "priceVsAreaPercent": number|null, "areaDescription": string, "comparableNote": string },
   "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ] (3-8 items),
-  "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
+  "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "valuationFee": number, "landRegistryFee": number, "electronicTransferFee": number, "removalCosts": number, "indemnityInsurance": number, "buildingsInsurance": number, "serviceCharge": number, "groundRent": number, "leaseholdYears": number, "councilTaxMonthly": number, "buildingsInsuranceMonthly": number, "serviceChargeMonthly": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
   "viewingQuestions": string[] (exactly 8),
   "negotiation": { "isAuction": boolean (optional), "maxBid": number (optional, auction only), "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] (3-6) },
   "sellerMotivation": { "score": number (1-10), "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },

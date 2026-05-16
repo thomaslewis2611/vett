@@ -2515,52 +2515,252 @@ function CostBreakdown({
 }) {
   const c = analysis.costs;
   const sd = typeof stampDuty === "number" ? stampDuty : c.stampDuty;
-  const totalUpfront = c.purchasePrice + sd + c.legalFees + c.surveyFees + c.mortgageFees;
   const sdLabel = stampDutyMode ? `Stamp duty (${STAMP_DUTY_LABELS[stampDutyMode]})` : "Stamp duty";
+
+  const valuationFee = c.valuationFee ?? 0;
+  const landRegistryFee = c.landRegistryFee ?? 0;
+  const electronicTransferFee = c.electronicTransferFee ?? 0;
+  const removalCosts = c.removalCosts ?? 0;
+  const indemnityInsurance = c.indemnityInsurance ?? 0;
+  const buildingsInsurance = c.buildingsInsurance ?? 0;
+  const serviceCharge = c.serviceCharge ?? 0;
+  const groundRent = c.groundRent ?? 0;
+  const leaseholdYears = c.leaseholdYears ?? 0;
+
+  const totalUpfront =
+    c.purchasePrice +
+    sd +
+    c.legalFees +
+    c.surveyFees +
+    c.mortgageFees +
+    valuationFee +
+    landRegistryFee +
+    electronicTransferFee +
+    removalCosts +
+    indemnityInsurance +
+    buildingsInsurance;
+
   const annualCouncilTax = annualCouncilTaxFor(analysis.metrics?.councilTaxBand);
-  const rows = [
-    ["Purchase price", c.purchasePrice],
-    [sdLabel, sd],
-    ["Legal fees", c.legalFees],
-    ["Survey", c.surveyFees],
-    ["Mortgage arrangement", c.mortgageFees],
-  ] as const;
+  const councilTaxMonthly =
+    c.councilTaxMonthly && c.councilTaxMonthly > 0
+      ? c.councilTaxMonthly
+      : annualCouncilTax != null
+        ? Math.round(annualCouncilTax / 12)
+        : 0;
+  const buildingsInsuranceMonthly =
+    c.buildingsInsuranceMonthly && c.buildingsInsuranceMonthly > 0
+      ? c.buildingsInsuranceMonthly
+      : buildingsInsurance > 0
+        ? Math.round(buildingsInsurance / 12)
+        : 0;
+  const serviceChargeMonthly =
+    c.serviceChargeMonthly && c.serviceChargeMonthly > 0
+      ? c.serviceChargeMonthly
+      : serviceCharge > 0
+        ? Math.round(serviceCharge / 12)
+        : 0;
+
+  const hasLeasehold = serviceCharge > 0 || groundRent > 0 || leaseholdYears > 0;
+  const monthlyMortgage = Math.round(c.monthlyMortgage || 0);
+  const totalMonthly =
+    monthlyMortgage + councilTaxMonthly + buildingsInsuranceMonthly + serviceChargeMonthly;
+
+  const upfrontRows: Array<{ label: string; sub?: string; val: number }> = [
+    { label: "Purchase price", val: c.purchasePrice },
+    { label: sdLabel, val: sd },
+    { label: "Solicitor / conveyancing fees", val: c.legalFees },
+    { label: "Mortgage arrangement fee", val: c.mortgageFees },
+    { label: "Mortgage valuation fee", val: valuationFee },
+    {
+      label: "Survey",
+      sub: "RICS Level 1 £300+ · Level 2 £400–£600 · Level 3 £600+",
+      val: c.surveyFees,
+    },
+    { label: "Land Registry fee", val: landRegistryFee },
+    { label: "Bank transfer / CHAPS fee", val: electronicTransferFee },
+    { label: "Removal costs", val: removalCosts },
+    { label: "Buildings insurance (first year)", val: buildingsInsurance },
+  ];
+  if (indemnityInsurance > 0) {
+    upfrontRows.push({ label: "Indemnity insurance", val: indemnityInsurance });
+  }
+
+  const monthlyRows: Array<{ label: string; val: number }> = [
+    { label: "Monthly mortgage payment", val: monthlyMortgage },
+    { label: "Council tax", val: councilTaxMonthly },
+    { label: "Buildings insurance", val: buildingsInsuranceMonthly },
+  ];
+  if (hasLeasehold) {
+    monthlyRows.push({ label: "Service charge", val: serviceChargeMonthly });
+  }
+
+  const eyebrow: CSSProperties = {
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    color: "#2D6A4F",
+  };
+  const sectionCard: CSSProperties = {
+    background: "#FFFDF9",
+    border: "0.5px solid rgba(26,17,8,0.12)",
+    borderRadius: 16,
+    padding: 24,
+  };
+
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <div>
-        <div className="text-xs uppercase tracking-wider text-muted-foreground">
-          Total upfront
-        </div>
-        <div className="mt-1 text-3xl font-semibold tracking-tight">
-          {formatGBP(totalUpfront)}
-        </div>
-        <ul className="mt-4 divide-y divide-border text-sm">
-          {rows.map(([label, val]) => (
-            <li key={label} className="flex justify-between py-2">
-              <span className="text-muted-foreground">{label}</span>
-              <span className="font-medium">{formatGBP(val as number)}</span>
+    <div className="space-y-6">
+      {/* Section 1 — one-off costs */}
+      <div style={sectionCard}>
+        <div style={eyebrow}>Section 1</div>
+        <h4
+          className="mt-1 mb-4"
+          style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)", fontSize: 22, color: "#1A1108" }}
+        >
+          One-off costs to budget for
+        </h4>
+        <ul className="divide-y" style={{ borderColor: "rgba(26,17,8,0.08)" }}>
+          {upfrontRows.map((r) => (
+            <li key={r.label} className="py-2.5">
+              <div className="flex justify-between gap-4">
+                <span className="text-sm" style={{ color: "#1A1108" }}>{r.label}</span>
+                <span className="text-sm font-medium tabular-nums" style={{ color: "#1A1108" }}>
+                  {formatGBP(r.val)}
+                </span>
+              </div>
+              {r.sub && (
+                <div className="mt-0.5 text-[11px]" style={{ color: "#888780" }}>{r.sub}</div>
+              )}
             </li>
           ))}
         </ul>
-        {annualCouncilTax != null && (
-          <div className="mt-4 rounded-xl p-4" style={{ background: "#F1EFE8" }}>
-            <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-              Annual council tax (Band {String(analysis.metrics.councilTaxBand).trim().toUpperCase()})
-            </div>
-            <div className="mt-1 text-lg font-semibold tracking-tight" style={{ color: "#1A1108" }}>
-              {formatGBP(annualCouncilTax)}/yr
-              <span className="ml-2 text-xs font-normal" style={{ color: "#5F5E5A" }}>
-                ≈ {formatGBP(Math.round(annualCouncilTax / 12))}/mo
-              </span>
-            </div>
-            <div className="mt-1 text-[11px]" style={{ color: "#888780" }}>
-              England average — actual rate varies by local authority.
-            </div>
-          </div>
-        )}
+        <div
+          className="mt-4 flex justify-between items-baseline pt-4"
+          style={{ borderTop: "0.5px solid rgba(26,17,8,0.18)" }}
+        >
+          <span className="text-sm font-semibold" style={{ color: "#1A1108" }}>
+            Total one-off costs
+          </span>
+          <span
+            className="font-semibold tabular-nums"
+            style={{ fontSize: 22, color: "#2D6A4F" }}
+          >
+            {formatGBP(totalUpfront)}
+          </span>
+        </div>
       </div>
+
+      {/* Section 2 — leasehold (conditional) */}
+      {hasLeasehold && (
+        <div style={sectionCard}>
+          <div style={eyebrow}>Section 2</div>
+          <h4
+            className="mt-1 mb-4"
+            style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)", fontSize: 22, color: "#1A1108" }}
+          >
+            Leasehold costs
+          </h4>
+          <ul className="space-y-3 text-sm" style={{ color: "#1A1108" }}>
+            {serviceCharge > 0 && (
+              <li>
+                <div className="flex justify-between gap-4">
+                  <span>Annual service charge</span>
+                  <span className="font-medium tabular-nums">{formatGBP(serviceCharge)}/yr</span>
+                </div>
+                <div className="mt-0.5 text-[12px]" style={{ color: "#5F5E5A" }}>
+                  Covers building maintenance, communal areas, buildings insurance.
+                </div>
+              </li>
+            )}
+            {groundRent > 0 && (
+              <li>
+                <div className="flex justify-between gap-4">
+                  <span>Annual ground rent</span>
+                  <span className="font-medium tabular-nums">{formatGBP(groundRent)}/yr</span>
+                </div>
+                <div className="mt-0.5 text-[12px]" style={{ color: "#B45309" }}>
+                  Ground rent on post-2022 leases should be zero under the Leasehold Reform Act —
+                  confirm the lease date with the seller's solicitor.
+                </div>
+              </li>
+            )}
+            {leaseholdYears > 0 && (
+              <li>
+                <div className="flex justify-between gap-4">
+                  <span>Lease years remaining</span>
+                  <span className="font-medium tabular-nums">{leaseholdYears} years</span>
+                </div>
+                {leaseholdYears < 80 && (
+                  <div className="mt-0.5 text-[12px]" style={{ color: "#B91C1C" }}>
+                    Warning: leases under 80 years are difficult to mortgage and expensive to
+                    extend. Factor in lease-extension cost before offering.
+                  </div>
+                )}
+              </li>
+            )}
+          </ul>
+          <div
+            className="mt-4 rounded-xl p-3 text-[12px]"
+            style={{ background: "#F1EFE8", color: "#5F5E5A" }}
+          >
+            Always request a full breakdown of service charge history from the seller's solicitor.
+          </div>
+        </div>
+      )}
+
+      {/* Section 3 — monthly */}
+      <div style={sectionCard}>
+        <div style={eyebrow}>Section {hasLeasehold ? "3" : "2"}</div>
+        <h4
+          className="mt-1 mb-4"
+          style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)", fontSize: 22, color: "#1A1108" }}
+        >
+          Estimated monthly costs
+        </h4>
+        <ul className="divide-y" style={{ borderColor: "rgba(26,17,8,0.08)" }}>
+          {monthlyRows.map((r) => (
+            <li key={r.label} className="flex justify-between py-2.5 text-sm" style={{ color: "#1A1108" }}>
+              <span>{r.label}</span>
+              <span className="font-medium tabular-nums">{formatGBP(r.val)}/mo</span>
+            </li>
+          ))}
+        </ul>
+        <div
+          className="mt-4 flex justify-between items-baseline pt-4"
+          style={{ borderTop: "0.5px solid rgba(26,17,8,0.18)" }}
+        >
+          <span className="text-sm font-semibold" style={{ color: "#1A1108" }}>
+            Total estimated monthly cost
+          </span>
+          <span
+            className="font-semibold tabular-nums"
+            style={{ fontSize: 22, color: "#2D6A4F" }}
+          >
+            {formatGBP(totalMonthly)}/mo
+          </span>
+        </div>
+      </div>
+
+      {/* Mortgage calculator (unchanged) */}
       <div className="rounded-xl bg-primary-soft p-5">
         <MortgageCalculator purchasePrice={c.purchasePrice} />
+      </div>
+
+      <div className="space-y-1 text-[11px]" style={{ color: "#888780" }}>
+        <p>
+          Cost estimates are indicative. Always confirm exact figures with your solicitor, mortgage
+          broker and insurer before exchanging contracts. Source: MoneyHelper, RICS, Land Registry.
+        </p>
+        <p>
+          <a
+            href="https://www.moneyhelper.org.uk/en/homes/buying-a-home"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#2D6A4F", textDecoration: "underline" }}
+          >
+            Full cost guide at moneyhelper.org.uk →
+          </a>
+        </p>
       </div>
     </div>
   );
