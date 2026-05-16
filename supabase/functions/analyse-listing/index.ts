@@ -1017,7 +1017,10 @@ async function runJob(
     // nearbySchools / crime / broadband / ptal. Only set when we have real data so
     // the UI can fall back to its "data unavailable" state otherwise.
     const mappedSchools = mapPdSchools(pd["schools"]);
-    const enrichedSchools = await enrichSchoolsWithGias(mappedSchools, postcode);
+    // Skip Ofsted scraping if we're already past the deadline or tight on budget.
+    const enrichedSchools = remaining() > 8000 && !claudeTimedOut
+      ? await enrichSchoolsWithGias(mappedSchools, postcode)
+      : mappedSchools;
     if (enrichedSchools) parsed.nearbySchools = enrichedSchools;
     const mappedCrime = mapPdCrime(pd["crime"]);
     if (mappedCrime) parsed.crime = mappedCrime;
