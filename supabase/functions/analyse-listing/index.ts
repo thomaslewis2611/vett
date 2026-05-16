@@ -297,7 +297,6 @@ async function callClaude(
   system: string,
   userContent: string,
   maxTokens: number,
-  signal?: AbortSignal,
 ): Promise<string> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -312,7 +311,6 @@ async function callClaude(
       system,
       messages: [{ role: "user", content: userContent }],
     }),
-    signal,
   });
   if (!res.ok) {
     const body = await res.text();
