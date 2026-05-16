@@ -1259,6 +1259,16 @@ async function runJob(
         updated_at: new Date().toISOString(),
       })
       .eq("id", jobId);
+    try {
+      await supabase.from("error_logs").insert({
+        job_id: jobId,
+        listing_url: url,
+        error_message: message,
+        error_stage: "runJob",
+      });
+    } catch (logErr) {
+      console.error("[analyse-listing] failed to write error_logs:", logErr);
+    }
   }
 }
 
