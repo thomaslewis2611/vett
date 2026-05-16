@@ -5,7 +5,7 @@ import { z } from "zod";
 import { ArrowLeft, Mail, Check } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { supabase } from "@/integrations/supabase/client";
-import { formatGBP } from "@/lib/mock-analysis";
+import { formatGBP } from "@/lib/analysis.types";
 import { getComparisonVerdict, emailComparison } from "@/lib/compare.functions";
 
 const searchSchema = z.object({

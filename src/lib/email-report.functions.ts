@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import type { AnalysisResult } from "@/lib/mock-analysis";
+import type { AnalysisResult } from "@/lib/analysis.types";
 
 const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
 

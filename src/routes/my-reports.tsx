@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowRight, LogOut, FileText } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { supabase } from "@/integrations/supabase/client";
-import { formatGBP } from "@/lib/mock-analysis";
+import { formatGBP } from "@/lib/analysis.types";
 
 export const Route = createFileRoute("/my-reports")({
   head: () => ({ meta: [{ title: "My Reports — Roovr" }] }),
