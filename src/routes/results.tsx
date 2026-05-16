@@ -1493,7 +1493,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           // For free users (not paid), always render the section so its
           // locked placeholder card is shown — this gives the score breakdown
           // sub-scores visible context and makes the upgrade value clear.
-          const showFlood = !isPaid || !(noPostcode && floodMissing);
+          const showFlood = !(noPostcode && floodMissing);
           const showSchools = !isPaid || !(noPostcode && schoolsMissing);
           const showCrime = !isPaid || !(noPostcode && crimeMissing);
           const showBroadband = !isPaid || !(noPostcode && broadbandMissing);
