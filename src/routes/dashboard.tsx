@@ -334,13 +334,13 @@ function DashboardPage() {
           <div
             className="mt-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
             style={{
-              background: "#FEF3C7",
-              border: "1px solid #F59E0B",
+              background: "#FAEEDA",
+              border: "0.5px solid rgba(133,79,11,0.25)",
               borderRadius: 12,
               boxSizing: "border-box",
             }}
           >
-            <div className="flex items-start gap-2" style={{ color: "#92400E", fontSize: 14 }}>
+            <div className="flex items-start gap-2" style={{ color: "#854F0B", fontSize: 14, fontWeight: 300 }}>
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>
                 Your Buyer Pass expires on {expiryDateLong} — renew now to keep
@@ -351,7 +351,7 @@ function DashboardPage() {
               type="button"
               onClick={onRenew}
               disabled={renewing}
-              className="inline-flex w-full items-center justify-center sm:w-auto"
+              className="inline-flex w-full items-center justify-center sm:w-auto transition-opacity hover:opacity-90"
               style={{
                 background: "#2D6A4F",
                 color: "#FFFDF9",
@@ -370,13 +370,13 @@ function DashboardPage() {
           <div
             className="mt-6 flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"
             style={{
-              background: "#FEE2E2",
-              border: "1px solid #DC2626",
+              background: "#FAECE7",
+              border: "0.5px solid rgba(153,60,29,0.25)",
               borderRadius: 12,
               boxSizing: "border-box",
             }}
           >
-            <div className="flex items-start gap-2" style={{ color: "#991B1B", fontSize: 14 }}>
+            <div className="flex items-start gap-2" style={{ color: "#993C1D", fontSize: 14, fontWeight: 300 }}>
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <span>Your Buyer Pass expired on {expiryDateLong}.</span>
             </div>
@@ -384,7 +384,7 @@ function DashboardPage() {
               type="button"
               onClick={onRenew}
               disabled={renewing}
-              className="inline-flex w-full items-center justify-center sm:w-auto"
+              className="inline-flex w-full items-center justify-center sm:w-auto transition-opacity hover:opacity-90"
               style={{
                 background: "#2D6A4F",
                 color: "#FFFDF9",
