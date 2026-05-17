@@ -572,9 +572,6 @@ function ResultsPage() {
         if (query.isFetching || query.isPending || query.isError) setWasHidden(true);
       } else {
         const stillRunning = query.isFetching || query.isPending || query.isError;
-        if (wasHidden && stillRunning) {
-          setShowResumeBanner(true);
-        }
         if (stillRunning) {
           // Cancel any in-flight (possibly dead) request and refetch fresh.
           query.refetch();
