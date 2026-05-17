@@ -1507,7 +1507,7 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
             const sorted = [...filtered].sort(
               (a, b) => (severityRank[a.severity] ?? 3) - (severityRank[b.severity] ?? 3),
             );
-            const previewCount = unlocked ? sorted.length : Math.min(3, sorted.length);
+            const previewCount = unlocked ? sorted.length : Math.min(2, sorted.length);
             const previewList = sorted.slice(0, previewCount);
             const hiddenList = sorted.slice(previewCount);
             const hiddenCount = hiddenList.length;
