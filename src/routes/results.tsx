@@ -1738,23 +1738,30 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
           />
         )}
 
+        {/* Share report button — paid users only, above next steps */}
+        {!shareMode && unlocked && (
+          <div className="mt-10 no-print">
+            <ShareReportButton analysis={a} />
+          </div>
+        )}
+
         {/* Your next steps — render above the inline upgrade for single users, or at bottom for pass users */}
         {unlocked && <NextStepsSection analysis={a} />}
 
         {/* AI chat — Buyer Pass only; hidden entirely on free and single */}
-        {access.level === "pass" && (
+        {!shareMode && access.level === "pass" && (
           <section className="mt-10">
             <PropertyChat analysis={a} />
           </section>
         )}
 
         {/* Inline Buyer Pass upgrade — Single Report users only */}
-        {access.level === "single" && (
+        {!shareMode && access.level === "single" && (
           <InlineBuyerPassUpgrade listingUrl={listingUrl} />
         )}
 
 
-        {unlocked && access.level === "pass" && (
+        {!shareMode && unlocked && access.level === "pass" && (
           <div className="mt-10 text-center">
             <Link to="/dashboard" style={{ fontSize: 13, color: "#2D6A4F" }}>
               Go to your dashboard →
@@ -1764,7 +1771,7 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
       </main>
 
       <DisclaimerBar />
-        <SiteFooter />
+        {!shareMode && <SiteFooter />}
     </div>
   );
 }
