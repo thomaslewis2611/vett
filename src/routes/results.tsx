@@ -418,7 +418,6 @@ function ResultsPage() {
   // Long timeout to tolerate mobile screen-locks suspending JS for minutes.
   const POLL_TIMEOUT_MS = 10 * 60_000;
   const [wasHidden, setWasHidden] = useState(false);
-  const [showResumeBanner, setShowResumeBanner] = useState(false);
   const [forceRestart, setForceRestart] = useState(0);
 
   type QueryResult = { analysis: AnalysisResult; savedOwnerEmail?: string | null; savedListingUrl?: string | null };
@@ -573,9 +572,6 @@ function ResultsPage() {
         if (query.isFetching || query.isPending || query.isError) setWasHidden(true);
       } else {
         const stillRunning = query.isFetching || query.isPending || query.isError;
-        if (wasHidden && stillRunning) {
-          setShowResumeBanner(true);
-        }
         if (stillRunning) {
           // Cancel any in-flight (possibly dead) request and refetch fresh.
           query.refetch();
@@ -593,7 +589,6 @@ function ResultsPage() {
   // would land on /my-reports and the user would have to re-analyse.
   useEffect(() => {
     if (query.isSuccess) {
-      setShowResumeBanner(false);
       setWasHidden(false);
     }
   }, [query.isSuccess]);
@@ -660,11 +655,11 @@ function ResultsPage() {
 
   // While recovering from a screen-lock / background tab, prefer the
   // loading view over any stale error state — the poll has been restarted.
-  if (query.isPending || (showResumeBanner && (query.isFetching || query.isError))) {
+  if (query.isPending) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
-        <LoadingState url={url} showResumeBanner={showResumeBanner} />
+        <LoadingState url={url} />
         <DisclaimerBar />
         <SiteFooter />
       </div>
@@ -922,7 +917,7 @@ function prettyUrl(url?: string): string | null {
   }
 }
 
-function LoadingState({ url, showResumeBanner = false }: { url?: string; showResumeBanner?: boolean }) {
+function LoadingState({ url }: { url?: string }) {
   const [elapsed, setElapsed] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
 
@@ -966,21 +961,8 @@ function LoadingState({ url, showResumeBanner = false }: { url?: string; showRes
             />
           </div>
 
-          {showResumeBanner && (
-            <p
-              role="status"
-              aria-live="polite"
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                color: ACCENT,
-                textAlign: "center",
-                padding: "6px 0",
-              }}
-            >
-              Welcome back — we kept your analysis running.
-            </p>
-          )}
+
+
 
           {/* Anchor: property URL */}
           {anchor && (
@@ -1508,8 +1490,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         {/* Paywall (free users only) — sits between preview sections and the paid sections */}
         {!unlocked && (
           <section className="mt-10">
-            <LockedFeaturesGrid />
-            <div className="mt-8">
+            <div>
               {access.level === "expired" ? (
                 <ExpiredPassGate expiresAt={access.expiresAt} listingUrl={listingUrl} />
               ) : (
@@ -3589,29 +3570,52 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
       : null;
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-semibold tracking-tight">Area Pricing Analysis</h2>
-      <div className="mt-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-        {(hasAreaPpsf || ppsfText) && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {hasAreaPpsf && (
-              <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
-                <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-                  Area avg price / sq ft (sold)
-                </div>
-                <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
-                  {avgSqFt}
-                </div>
-                {askingAvg && soldAvg && (
-                  <div className="mt-2 text-[11px]" style={{ color: "#5F5E5A", lineHeight: 1.5 }}>
-                    Current asking £{askingAvg.toLocaleString()}/sqft vs sold £{soldAvg.toLocaleString()}/sqft
-                  </div>
-                )}
+      <h2
+        style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontWeight: 400,
+          fontSize: 24,
+          color: "#1A1108",
+        }}
+      >
+        Area Pricing Analysis
+      </h2>
+      <div
+        className="mt-4 p-6"
+        style={{
+          background: "#FFFDF9",
+          border: "0.5px solid rgba(26,17,8,0.1)",
+          borderRadius: 20,
+        }}
+      >
+        {hasAreaPpsf && typeof propPpsf === "number" && propPpsf > 0 && (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
+              <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+                This property
               </div>
-            )}
+              <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+                £{Math.round(propPpsf).toLocaleString()}
+              </div>
+              <div className="mt-1 text-[11px]" style={{ color: "#5F5E5A" }}>
+                per sq ft
+              </div>
+            </div>
+            <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
+              <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+                Area average
+              </div>
+              <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+                {avgSqFt}
+              </div>
+              <div className="mt-1 text-[11px]" style={{ color: "#5F5E5A" }}>
+                per sq ft
+              </div>
+            </div>
             {ppsfText && (
               <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
                 <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-                  <span>Price per sq ft vs area avg</span>
+                  <span>Vs area avg</span>
                   <ScoreInfoTooltip text="Compares this property's price per sq ft against the local sold £/sqft average from Land Registry data. A negative % means better value per sq ft than typical sold prices." />
                 </div>
                 <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: ppsfColor }}>
