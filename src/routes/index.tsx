@@ -467,6 +467,17 @@ function Index() {
             See exactly what you get.
           </h2>
         </div>
+        <p style={{ fontSize: 13, color: "#5F5E5A", marginTop: -24, marginBottom: 16, textAlign: "center" }}>
+          Condensed previews shown below.{" "}
+          <a
+            href="https://roovr.co/report/c462872f03a8353e41cd696c791d0a4a"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: "#2D6A4F", textDecoration: "underline" }}
+          >
+            View a full example report →
+          </a>
+        </p>
         <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 24 }}>
           <SampleReportCard data={SAMPLE_A} />
           <SampleReportCard data={SAMPLE_B} />
