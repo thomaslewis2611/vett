@@ -10,6 +10,14 @@ import {
   Droplets,
   GraduationCap,
   BarChart3,
+  Zap,
+  ClipboardCheck,
+  Wrench,
+  UserCheck,
+  Shield,
+  Wifi,
+  Train,
+  MessageCircle,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 
