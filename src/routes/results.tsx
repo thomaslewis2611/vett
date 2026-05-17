@@ -1714,12 +1714,14 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         />
 
         {/* Capital growth (PropertyData) — headline for free/single, full breakdown for pass */}
-        <CapitalGrowthSection
-          analysis={a}
-          tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
-          onUpgradeSingle={() => upgradeToSingle(listingUrl)}
-          onUpgradePass={() => upgradeToPass(listingUrl)}
-        />
+        {(access.level === "single" || access.level === "pass") && (
+          <CapitalGrowthSection
+            analysis={a}
+            tier={access.level === "pass" ? "pass" : "single"}
+            onUpgradeSingle={() => upgradeToSingle(listingUrl)}
+            onUpgradePass={() => upgradeToPass(listingUrl)}
+          />
+        )}
 
         {/* AI chat — Buyer Pass only; hidden entirely on free and single */}
         {access.level === "pass" && (
