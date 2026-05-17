@@ -272,38 +272,6 @@ function Index() {
               </p>
             )}
 
-            {/* Example chips */}
-            <div className="mt-5">
-              <div style={{ fontSize: 11, color: COLORS.veryMuted, marginBottom: 6 }}>
-                Try an example:
-              </div>
-              <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
-                {[
-                  { label: "SW11 flat →", url: "https://www.rightmove.co.uk/properties/example-sw11" },
-                  { label: "Bristol house →", url: "https://www.rightmove.co.uk/properties/example-bristol" },
-                  { label: "Bath terrace →", url: "https://www.rightmove.co.uk/properties/example-bath" },
-                ].map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => setUrl(chip.url)}
-                    style={{
-                      background: "#fff",
-                      border: "0.5px solid rgba(26,17,8,0.15)",
-                      borderRadius: 100,
-                      fontSize: 11,
-                      color: COLORS.muted,
-                      padding: "5px 12px",
-                      cursor: "pointer",
-                      fontFamily: BODY_FONT,
-                    }}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             <p className="mt-3" style={{ fontSize: 11, color: COLORS.veryMuted }}>
               Works best with Rightmove · More sites coming soon · UK properties only
             </p>
