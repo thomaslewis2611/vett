@@ -657,6 +657,8 @@ function Index() {
         </div>
       </section>
 
+      <hr style={{ border: "none", borderTop: "0.5px solid rgba(26,17,8,0.1)", margin: 0 }} />
+
       {/* 7. PRICING */}
       <section style={{ background: COLORS.dark, padding: "80px 24px" }}>
         <div className="mx-auto text-center" style={{ maxWidth: 800 }}>
@@ -890,6 +892,8 @@ function Index() {
           </div>
         </div>
       </section>
+
+      <hr style={{ border: "none", borderTop: "0.5px solid rgba(26,17,8,0.1)", margin: 0 }} />
 
       {/* 8. FOOTER CTA */}
       <section style={{ background: COLORS.bg, padding: "100px 24px" }}>
