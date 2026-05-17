@@ -254,6 +254,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ],
   "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "valuationFee": number, "landRegistryFee": number, "electronicTransferFee": number, "removalCosts": number, "indemnityInsurance": number, "buildingsInsurance": number, "serviceCharge": number, "groundRent": number, "leaseholdYears": number, "councilTaxMonthly": number, "buildingsInsuranceMonthly": number, "serviceChargeMonthly": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
   "negotiation": { "isAuction": boolean, "maxBid": number, "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] },
+  "nextSteps": string[],
   "sellerMotivation": { "score": number, "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
   "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] },
   "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "High priority"|"Medium priority"|"Low priority", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
