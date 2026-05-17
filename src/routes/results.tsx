@@ -1307,7 +1307,8 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
               </div>
             </div>
             <div className="w-full flex justify-center sm:block sm:w-auto sm:row-start-1 sm:col-start-2 shrink-0">
-              <ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} compact />
+              <div className="sm:hidden"><ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} compact /></div>
+              <div className="hidden sm:block"><ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} /></div>
             </div>
             <div className="flex sm:hidden flex-wrap items-center" style={{ gap: 8 }}>
               <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
