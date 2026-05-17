@@ -2900,7 +2900,14 @@ function CostBreakdown({
 
       {/* Mortgage calculator (unchanged) */}
       <div className="rounded-xl bg-primary-soft p-5">
-        <MortgageCalculator purchasePrice={c.purchasePrice} />
+        <MortgageCalculator
+          purchasePrice={c.purchasePrice}
+          term={mortgageTerm}
+          rate={mortgageRate}
+          onTermChange={setMortgageTerm}
+          onRateChange={setMortgageRate}
+          defaultRate={DEFAULT_MORTGAGE_RATE}
+        />
       </div>
 
       <div className="space-y-1 text-[11px]" style={{ color: "#888780" }}>
