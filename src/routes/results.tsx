@@ -5192,8 +5192,28 @@ function FloodRiskSection({
   onFloodRiskUpdate?: (fr: NonNullable<AnalysisResult["floodRisk"]>) => void;
 }) {
   try {
-    const fr = analysis.floodRisk;
-    console.log("[FloodRiskSection]", { isBuyerPass, hasData: !!fr, unavailable: fr?.unavailable });
+    // Synthesize floodRisk from PropertyData /flood-risk raw payload when the
+    // analysis didn't capture it (the endpoint returns `{flood_risk: "Very Low"}`
+    // flat, so it never reached Claude's structured output).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdFlood: any = analysis.propertyData?.floodRisk ?? null;
+    const pdFloodLevel: string | null =
+      pdFlood && typeof pdFlood === "object"
+        ? (pdFlood.flood_risk ?? pdFlood.data?.flood_risk ?? null)
+        : null;
+    let fr = analysis.floodRisk;
+    if ((!fr || fr.unavailable) && pdFloodLevel) {
+      fr = {
+        riversAndSea: pdFloodLevel,
+        surfaceWater: null,
+        reservoir: null,
+        groundwater: null,
+        overallRisk: pdFloodLevel,
+        commentary: "",
+        autoRedFlag: /high/i.test(pdFloodLevel),
+      } as AnalysisResult["floodRisk"];
+    }
+    console.log("[FloodRiskSection]", { isBuyerPass, hasData: !!fr, unavailable: fr?.unavailable, pdFloodLevel });
 
     const cardStyle: CSSProperties = {
       background: "#FFFDF9",
