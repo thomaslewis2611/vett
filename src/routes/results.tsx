@@ -666,7 +666,11 @@ function ResultsPage() {
     );
   }
 
-  if (query.isError) {
+  // If the user pressed "Try again" we bump forceRestart which changes the
+  // queryKey — react-query then shows isFetching while the new run is in
+  // flight. Prefer the loading view over the stale error UI so the report
+  // doesn't flash-then-revert when the new job completes.
+  if (query.isError && !query.isFetching) {
     const rawMsg = (query.error as Error)?.message || "Something went wrong while analysing this listing.";
     const isBlocked = rawMsg.startsWith("FETCH_BLOCKED");
     const isSavedMissing = rawMsg === "SAVED_NOT_FOUND" || Boolean(saved_id);
