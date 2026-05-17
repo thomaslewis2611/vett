@@ -2523,20 +2523,19 @@ function LockedFeatureCard({
 
 const FULL_REPORT_FEATURES: { title: string; sub: string; note?: string }[] = [
   { title: "All red flags", sub: "See every issue we found" },
-  { title: "True cost breakdown", sub: "Total upfront + monthly costs" },
+  { title: "EPC analysis", sub: "Energy rating and improvement costs" },
+  { title: "Area pricing analysis", sub: "Local £/sqft and market comparison" },
+  { title: "True cost breakdown", sub: "Total upfront and monthly costs" },
   { title: "Negotiation strategy", sub: "Recommended offer and your leverage" },
-  { title: "Flood risk", sub: "Environment Agency data — insurance and mortgage implications" },
+  { title: "Viewing checklist", sub: "What to check on the day" },
+  { title: "Renovation cost estimate", sub: "What it would cost" },
+  { title: "Seller motivation score", sub: "How urgently they need to move" },
+  { title: "Flood risk assessment", sub: "Environment Agency data for this postcode" },
   { title: "Nearby schools", sub: "Ofsted ratings within 5 miles" },
   { title: "Crime statistics", sub: "Local crime data by category" },
   { title: "Broadband & connectivity", sub: "Real download speeds for this postcode" },
-  { title: "Transport links", sub: "Nearest stations, buses and commute times", note: "London properties only" },
-  { title: "EPC analysis", sub: "Energy rating and improvement costs" },
-  { title: "Stamp duty calculator", sub: "First-time buyer, main residence and additional property" },
-  { title: "Viewing checklist", sub: "What to check on the day" },
-  { title: "Renovation cost estimate", sub: "What it would cost to improve" },
-  { title: "Seller motivation score", sub: "How motivated is the vendor to sell?" },
-  { title: "Area pricing analysis", sub: "Local comparables and price per sq ft" },
-  { title: "Planning & restrictions", sub: "Nearby planning applications and conservation area status", note: "Only shown where applicable" },
+  { title: "Transport links", sub: "London properties only" },
+  { title: "Recommended next steps", sub: "Exactly what to do next" },
 ];
 
 function LockedFeaturesGrid() {
