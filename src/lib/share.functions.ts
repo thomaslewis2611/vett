@@ -46,7 +46,7 @@ export const getSharedReport = createServerFn({ method: "POST" })
       }
       return {
         found: true,
-        analysis: (row as { analysis_data: AnalysisResult }).analysis_data,
+        analysis: (row as unknown as { analysis_data: AnalysisResult }).analysis_data,
         propertyAddress: (row as { property_address: string | null }).property_address,
       };
     }
