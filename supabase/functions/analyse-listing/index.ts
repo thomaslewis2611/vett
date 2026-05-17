@@ -1021,7 +1021,7 @@ ${JSON.stringify(pdData(pd["schools"]) || [])}
 LIVE LOCAL ASKING £/SQFT (current market — use as secondary reference):
 ${JSON.stringify(mapPdPpsf(pd["prices-per-sqf"]) || null)}
 
-LOCAL SOLD £/SQFT (most recent sold transactions — USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this):
+LOCAL SOLD £/SQFT (most recent sold transactions — USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this). If this is null but the SOLD PRICES array above has entries, estimate avgPricePerSqFtArea yourself by dividing the average of those recent sold prices by a sensible typical sqft for the property type (flats ~850, terraced ~1100, semi-detached ~1300, detached ~1600) and explain in comparableNote that it is estimated from sold prices because exact £/sqft data wasn't available:
 ${JSON.stringify(mapPdPpsf(pd["sold-prices-per-sqf"]) || null)}
 `;
 }
