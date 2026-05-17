@@ -3654,6 +3654,95 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
           );
         })()}
         {(() => {
+          // Pricing insight block — compares asking price to implied market value
+          if (!hasAreaPpsf || typeof propPpsf !== "number" || propPpsf <= 0) return null;
+          const sqft = analysis.manualSqftAnalysis?.sqft ?? analysis.property?.sqft ?? 0;
+          const askingPrice = analysis.property?.price ?? 0;
+          if (!askingPrice || askingPrice <= 0) return null;
+          if (!sqft || sqft <= 0) {
+            return (
+              <div
+                className="mt-5"
+                style={{
+                  background: "#F1EFE8",
+                  border: "0.5px solid rgba(26,17,8,0.08)",
+                  borderRadius: 12,
+                  padding: "14px 18px",
+                  fontFamily: "Inter, system-ui, sans-serif",
+                  fontSize: 12,
+                  fontWeight: 300,
+                  color: "#5F5E5A",
+                  lineHeight: 1.6,
+                }}
+              >
+                Enter the square footage above to see how this property's asking price compares to local market value.
+              </div>
+            );
+          }
+          const impliedValue = Math.round(((areaPpsf as number) * sqft) / 1000) * 1000;
+          const premium = askingPrice - impliedValue;
+          const above = premium > 0;
+          const propPpsfRounded = Math.round(propPpsf as number);
+          const areaPpsfRounded = Math.round(areaPpsf as number);
+          const fmt = (n: number) => n.toLocaleString();
+
+          if (above) {
+            const epcRating = analysis.epc?.rating ?? null;
+            const efficient = epcRating && /^[ABC]$/i.test(epcRating);
+            const areaDesc = (ac.areaDescription ?? "").toLowerCase();
+            const premiumLocation = /(premium|sought[- ]after|desirable|prime|prestigious|conservation)/i.test(areaDesc);
+            const reasons: string[] = [];
+            if (efficient) reasons.push(`Energy efficient rating (${epcRating}) may justify a modest premium`);
+            if (premiumLocation) reasons.push("Premium street or location within the postcode");
+            reasons.push("Agent pricing strategy — 'offers in excess of' pricing is common in this market");
+            reasons.push("Recent renovation or modernisation may not be reflected in area averages");
+            return (
+              <div
+                className="mt-5"
+                style={{
+                  background: "#FAEEDA",
+                  border: "0.5px solid rgba(186,117,23,0.2)",
+                  borderRadius: 12,
+                  padding: "16px 20px",
+                  fontFamily: "Inter, system-ui, sans-serif",
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 500, color: "#854F0B", lineHeight: 1.4 }}>
+                  Based on local £/sqft data, this property is priced approximately £{fmt(premium)} above implied market value
+                </div>
+                <div className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: "#854F0B", lineHeight: 1.6 }}>
+                  The asking price implies £{fmt(propPpsfRounded)}/sqft against a local sold average of £{fmt(areaPpsfRounded)}/sqft. Possible reasons this property commands a premium:
+                </div>
+                <ul className="mt-2 list-disc pl-5" style={{ fontSize: 12, fontWeight: 300, color: "#854F0B", lineHeight: 1.6 }}>
+                  {reasons.map((r) => <li key={r}>{r}</li>)}
+                </ul>
+                <div className="mt-3" style={{ fontSize: 11, color: "#BA7517", fontWeight: 400 }}>
+                  We factor this into your negotiation strategy below →
+                </div>
+              </div>
+            );
+          }
+          return (
+            <div
+              className="mt-5"
+              style={{
+                background: "#EAF3DE",
+                border: "0.5px solid rgba(45,106,79,0.2)",
+                borderRadius: 12,
+                padding: "16px 20px",
+                fontFamily: "Inter, system-ui, sans-serif",
+              }}
+            >
+              <div style={{ fontSize: 14, fontWeight: 500, color: "#2D6A4F", lineHeight: 1.4 }}>
+                Based on local £/sqft data, this property appears competitively priced — approximately £{fmt(Math.abs(premium))} below implied market value
+              </div>
+              <div className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: "#2D6A4F", lineHeight: 1.6 }}>
+                At £{fmt(propPpsfRounded)}/sqft against a local average of £{fmt(areaPpsfRounded)}/sqft, this suggests reasonable value. We factor this into your negotiation strategy below →
+              </div>
+            </div>
+          );
+        })()}
+        {(() => {
           const manualActive = typeof manualPpsf === "number" && manualPpsf > 0;
           const rewriteNarrative = (text: string | null | undefined): string | null => {
             if (!text) return null;
