@@ -293,6 +293,16 @@ function ComparePage() {
   return <ComparisonView a={a} b={b} verdict={verdict} verdictLoading={verdictLoading} onEmail={onEmail} emailing={emailing} emailSent={emailSent} />;
 }
 
+function renderVerdictText(text: string): React.ReactNode[] {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return <span key={i}>{part}</span>;
+  });
+}
+
 function ComparisonView({
   a,
   b,
