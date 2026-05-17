@@ -2565,7 +2565,7 @@ const FULL_REPORT_FEATURES: { title: string; sub: string; note?: string }[] = [
   { title: "Nearby schools", sub: "Ofsted ratings within 5 miles" },
   { title: "Crime statistics", sub: "Local crime data by category" },
   { title: "Broadband & connectivity", sub: "Real download speeds for this postcode" },
-  { title: "Transport links", sub: "London properties only" },
+  { title: "Transport links", sub: "London properties only", note: "London properties only" },
   { title: "Recommended next steps", sub: "Exactly what to do next" },
 ];
 
