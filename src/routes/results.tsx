@@ -6327,6 +6327,18 @@ function PrecheckModal({
           )}
         </div>
 
+        <p
+          style={{
+            marginTop: 14,
+            fontSize: 12,
+            color: "#888780",
+            lineHeight: 1.5,
+            fontStyle: "italic",
+          }}
+        >
+          This takes under 2 minutes — we'll start as soon as you continue.
+        </p>
+
         <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 12 }}>
           <button
             type="button"
