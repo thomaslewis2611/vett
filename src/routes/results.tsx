@@ -1725,15 +1725,15 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           />
         )}
 
+        {/* Your next steps — render above the inline upgrade for single users, or at bottom for pass users */}
+        {unlocked && <NextStepsSection analysis={a} />}
+
         {/* AI chat — Buyer Pass only; hidden entirely on free and single */}
         {access.level === "pass" && (
           <section className="mt-10">
             <PropertyChat analysis={a} />
           </section>
         )}
-
-        {/* Your next steps — render above the inline upgrade for single users, or at bottom for pass users */}
-        {unlocked && <NextStepsSection analysis={a} />}
 
         {/* Inline Buyer Pass upgrade — Single Report users only */}
         {access.level === "single" && (
