@@ -1259,7 +1259,7 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
           <div className="flex flex-wrap items-center justify-start gap-4 no-print">
             <Link
               to="/"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
             >
               ← Analyse another property
             </Link>
@@ -4612,11 +4612,11 @@ function EmailReportButton({
           type="button"
           onClick={onClick}
           disabled={status === "sending"}
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors bg-transparent border-0 p-0"
+          className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
         >
           {status === "sending" ? (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
               Sending...
             </>
           ) : (
