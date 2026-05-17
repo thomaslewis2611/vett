@@ -1245,7 +1245,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           }}
         >
           <div className="flex flex-col gap-6 sm:grid sm:items-start sm:gap-10" style={{ gridTemplateColumns: "minmax(0,1fr) auto" }}>
-            <div className="min-w-0">
+            <div className="min-w-0 sm:row-start-1 sm:col-start-1">
               <div
                 style={{
                   fontSize: 11,
@@ -1292,24 +1292,24 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
               >
                 {formatGBP(a.property.price)}
               </div>
+              <div className="hidden sm:flex flex-wrap items-center" style={{ gap: 8 }}>
+                <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
+                <PropertyPill>{a.property.baths} bath{a.property.baths === 1 ? "" : "s"}</PropertyPill>
+                {(a.property.sqft > 0 || a.manualSqftAnalysis?.sqft) && (
+                  <PropertyPill>
+                    {(a.manualSqftAnalysis?.sqft ?? a.property.sqft).toLocaleString()} sq ft
+                    {a.manualSqftAnalysis?.sqft && !a.property.sqft && (
+                      <span style={{ marginLeft: 4, opacity: 0.7 }}>(estimated)</span>
+                    )}
+                  </PropertyPill>
+                )}
+                {a.property.type && <PropertyPill>{a.property.type}</PropertyPill>}
+              </div>
             </div>
-            <div className="order-last sm:order-none w-full sm:w-auto flex justify-center sm:block shrink-0">
-              <ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} />
+            <div className="w-full flex justify-center sm:block sm:w-auto sm:row-start-1 sm:col-start-2 shrink-0">
+              <ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} compact />
             </div>
-            <div className="flex flex-wrap items-center sm:hidden" style={{ gap: 8 }}>
-              <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
-              <PropertyPill>{a.property.baths} bath{a.property.baths === 1 ? "" : "s"}</PropertyPill>
-              {(a.property.sqft > 0 || a.manualSqftAnalysis?.sqft) && (
-                <PropertyPill>
-                  {(a.manualSqftAnalysis?.sqft ?? a.property.sqft).toLocaleString()} sq ft
-                  {a.manualSqftAnalysis?.sqft && !a.property.sqft && (
-                    <span style={{ marginLeft: 4, opacity: 0.7 }}>(estimated)</span>
-                  )}
-                </PropertyPill>
-              )}
-              {a.property.type && <PropertyPill>{a.property.type}</PropertyPill>}
-            </div>
-            <div className="hidden sm:flex flex-wrap items-center sm:-mt-4 sm:col-span-1" style={{ gap: 8 }}>
+            <div className="flex sm:hidden flex-wrap items-center" style={{ gap: 8 }}>
               <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
               <PropertyPill>{a.property.baths} bath{a.property.baths === 1 ? "" : "s"}</PropertyPill>
               {(a.property.sqft > 0 || a.manualSqftAnalysis?.sqft) && (
