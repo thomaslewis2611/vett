@@ -161,6 +161,17 @@ function Index() {
         @media (min-width: 768px) {
           .roovr-hero-left { margin-left: 0; margin-right: 0; }
         }
+        .roovr-example-scroll {
+          height: 400px;
+          overflow-y: scroll;
+          scrollbar-width: thin;
+        }
+        .roovr-example-scroll::-webkit-scrollbar { width: 8px; }
+        .roovr-example-scroll::-webkit-scrollbar-track { background: transparent; }
+        .roovr-example-scroll::-webkit-scrollbar-thumb { background: rgba(26,17,8,0.2); border-radius: 4px; }
+        @media (min-width: 768px) {
+          .roovr-example-scroll { height: 600px; }
+        }
       `}</style>
 
       <section style={{ padding: "80px 24px 48px" }}>
