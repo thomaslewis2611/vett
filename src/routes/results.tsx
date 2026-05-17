@@ -1208,6 +1208,8 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
     await startSingleCheckout(lurl);
   };
 
+  console.log('[debug] access level:', access.level, 'unlocked:', unlocked);
+
   return (
     <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-hidden bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
       <SiteHeader />
