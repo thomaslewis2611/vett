@@ -1266,9 +1266,11 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
             <EmailReportButton
               analysis={a}
               tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
-            userEmail={access.email}
-          />
-        </div>
+              userEmail={access.email}
+            />
+            <ShareReportButton analysis={a} />
+          </div>
+        )}
 
         {/* Property header */}
         <section
