@@ -76,6 +76,7 @@ function PricingPage() {
                 "Full analysis with all red flags",
                 "EPC analysis",
                 "Area pricing analysis",
+                "Capital growth data",
                 "True cost breakdown and stamp duty",
                 "Negotiation strategy and recommended offer",
                 "Viewing checklist — specific to this property",
@@ -86,6 +87,7 @@ function PricingPage() {
                 "Crime statistics",
                 "Broadband and internet speed",
                 "Transport links",
+                "Recommended next steps",
                 "Report saved to your account",
                 "Email your report to you",
               ]}
