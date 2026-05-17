@@ -730,6 +730,7 @@ function Index() {
                 "Full analysis with all red flags",
                 "EPC analysis",
                 "Area pricing analysis",
+                "Capital growth data",
                 "True cost breakdown and stamp duty",
                 "Negotiation strategy and recommended offer",
                 "Viewing checklist — specific to this property",
