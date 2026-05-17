@@ -1490,8 +1490,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         {/* Paywall (free users only) — sits between preview sections and the paid sections */}
         {!unlocked && (
           <section className="mt-10">
-            <LockedFeaturesGrid />
-            <div className="mt-8">
+            <div>
               {access.level === "expired" ? (
                 <ExpiredPassGate expiresAt={access.expiresAt} listingUrl={listingUrl} />
               ) : (
