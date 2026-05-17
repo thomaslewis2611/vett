@@ -219,6 +219,7 @@ BREVITY RULES (follow strictly to keep response compact):
 - areaContext.areaDescription: maximum 2 sentences
 - areaContext.comparableNote: maximum 1 sentence
 - mortgageAssumptions: maximum 1 sentence
+- viewingQuestions: exactly 5 questions (not 8), each under 20 words
 - leverage: maximum 4 points (not 6), each under 15 words
 
 These limits are hard constraints — do not exceed them under any circumstances.
