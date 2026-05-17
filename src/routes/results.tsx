@@ -960,7 +960,7 @@ function LoadingState({ url }: { url?: string }) {
   }, []);
 
   // Progress 0 → 95% over 75 seconds, capped.
-  const progress = Math.min(95, (elapsed / 75) * 95);
+  const progress = Math.min(95, (elapsed / 100) * 95);
   const finalising = elapsed >= 60;
   const anchor = prettyUrl(url);
 
