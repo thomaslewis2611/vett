@@ -5354,14 +5354,14 @@ function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisRes
     // This guarantees the checklist always sits ABOVE the paywall in the DOM, matching JSX order.
     return (
       <section className="mt-10" style={debugBorder} data-section="viewing-checklist-empty">
-        <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+        <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400, fontSize: 24, color: "#1A1108" }}>
           Viewing checklist
         </h2>
-        <p className="mt-1 text-sm" style={{ color: "#5F5E5A" }}>
+        <p className="mt-1 text-sm" style={{ color: "#5F5E5A", fontWeight: 300 }}>
           Specific to this property — take this to your viewing
         </p>
-        <div className="mt-4" style={CARD_STYLE}>
-          <p className="text-sm" style={{ color: "#5F5E5A" }}>
+        <div className="mt-4" style={{ ...CARD_STYLE, borderRadius: 20 }}>
+          <p className="text-sm" style={{ color: "#5F5E5A", fontWeight: 300 }}>
             Your viewing checklist is being prepared. Refresh in a moment, or unlock the full report below to see every item.
           </p>
         </div>
@@ -5400,13 +5400,13 @@ function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisRes
 
   return (
     <section className="mt-10" style={debugBorder} data-section="viewing-checklist">
-      <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+      <h2 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400, fontSize: 24, color: "#1A1108" }}>
         Viewing checklist
       </h2>
-      <p className="mt-1 text-sm" style={{ color: "#5F5E5A" }}>
+      <p className="mt-1 text-sm" style={{ color: "#5F5E5A", fontWeight: 300 }}>
         Specific to this property — take this to your viewing
       </p>
-      <div className="mt-4" style={CARD_STYLE}>
+      <div className="mt-4" style={{ ...CARD_STYLE, borderRadius: 20 }}>
         {unlocked ? (
           renderCategoryGroups(vc.items)
         ) : (
@@ -5423,7 +5423,7 @@ function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisRes
                 </div>
                 <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6">
                   <Lock className="h-5 w-5 mb-2" style={{ color: "#2D6A4F" }} />
-                  <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
+                  <p style={{ fontSize: 13, color: "#1A1108", maxWidth: 320, fontWeight: 300 }}>
                     Unlock full viewing checklist with Single Report or Buyer Pass
                   </p>
                 </div>
