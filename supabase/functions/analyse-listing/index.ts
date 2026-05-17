@@ -663,12 +663,12 @@ function mapPdSchools(raw: any) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const readOfsted = (s: any): number | null => {
     const candidates = [
+      s.rating,
       s.ofsted_rating,
       s.ofstedRating,
       s.ofsted,
       s.ofsted_overall_effectiveness,
       s.overall_effectiveness,
-      s.rating,
       s?.ofsted_report?.overall_effectiveness,
       s?.ofsted_report?.rating,
       s?.ofsted_report?.outcome,
@@ -790,100 +790,72 @@ function fuzzyNameMatch(query: string, candidate: string): boolean {
   return q.every((w) => cSet.has(w));
 }
 
-// Scrapes the Ofsted reports site (reports.ofsted.gov.uk) — the official
-// public source of Ofsted ratings. The DfE GIAS JSON APIs do not expose
-// inspection outcomes publicly, but the reports site does and is stable.
+// Look up an Ofsted rating via the DfE Establishments open data API
+// (fast, no key required). Falls back to the Ofsted public API on miss.
 async function lookupGiasOfsted(name: string, urn: string | null, postcode: string | null): Promise<number | null> {
   const cacheKey = urn ? `urn:${urn}` : `name:${normaliseSchoolName(name)}|${(postcode ?? "").toLowerCase()}`;
   if (giasCache.has(cacheKey)) return giasCache.get(cacheKey) ?? null;
-
-  const ua = "Mozilla/5.0 (compatible; RoovrBot/1.0)";
-  const fetchText = async (url: string): Promise<string | null> => {
-    try {
-      const r = await fetch(url, {
-        headers: { "User-Agent": ua, "Accept": "text/html,application/xhtml+xml" },
-        redirect: "follow",
-        signal: AbortSignal.timeout(7000),
-      });
-      if (!r.ok) return null;
-      return await r.text();
-    } catch {
+  try {
+    let url: string;
+    if (urn) {
+      url = `https://ea-edubase-api-prod.azurewebsites.net/edubase/api/establishment/${urn}`;
+    } else {
+      const encoded = encodeURIComponent(name);
+      url = `https://ea-edubase-api-prod.azurewebsites.net/edubase/api/establishments?name=${encoded}&limit=5`;
+    }
+    const r = await fetch(url, {
+      headers: { "Accept": "application/json" },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!r.ok) {
+      giasCache.set(cacheKey, null);
       return null;
     }
-  };
+    const data = await r.json();
 
-  // Parse search-result HTML into { providerPath, name } entries so we can
-  // fuzzy-match candidate names rather than blindly taking the first hit.
-  const parseSearchResults = (html: string): { providerPath: string; name: string; urn: string }[] => {
-    const out: { providerPath: string; name: string; urn: string }[] = [];
-    const re = /<a[^>]+href="(\/provider\/(\d+)\/(\d+))"[^>]*>([\s\S]*?)<\/a>/gi;
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(html)) !== null) {
-      const text = m[4].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-      if (!text) continue;
-      out.push({ providerPath: m[1], urn: m[3], name: text });
-    }
-    return out;
-  };
-
-  let rating: number | null = null;
-  let providerPath: string | null = null;
-  try {
-    // 1. URN-first lookup — most reliable, no name matching needed.
-    if (urn) {
-      const html = await fetchText(`https://reports.ofsted.gov.uk/search?q=${encodeURIComponent(urn)}&start=0&rows=10`);
-      if (html) {
-        const results = parseSearchResults(html);
-        const hit = results.find((r) => r.urn === String(urn));
-        if (hit) providerPath = hit.providerPath;
-      }
+    if (urn && data?.ofstedRating) {
+      const rating = giasRatingToNumber(data.ofstedRating);
+      giasCache.set(cacheKey, rating);
+      return rating;
     }
 
-    // 2. Fall back to name search with fuzzy matching against result titles.
-    if (!providerPath && name) {
-      const term = postcode ? `${name} ${postcode}` : name;
-      const html = await fetchText(`https://reports.ofsted.gov.uk/search?q=${encodeURIComponent(term)}&start=0&rows=10`);
-      if (html) {
-        const results = parseSearchResults(html);
-        // Prefer a result whose name contains all significant words from the query.
-        const hit = results.find((r) => fuzzyNameMatch(name, r.name))
-          // Or vice versa (PropertyData name is a longer variant of GIAS name).
-          ?? results.find((r) => fuzzyNameMatch(r.name, name));
-        if (hit) providerPath = hit.providerPath;
-        else if (results.length) {
-          console.log(`[gias] no fuzzy match for "${name}" (${postcode ?? "no pc"}); top results:`,
-            results.slice(0, 3).map((r) => r.name));
-        } else {
-          console.log(`[gias] no search results for "${name}" (${postcode ?? "no pc"})`);
-        }
-      }
-    }
-
-    if (providerPath) {
-      const html = await fetchText(`https://reports.ofsted.gov.uk${providerPath}`);
-      if (html) {
-        const sel = html.match(/rating--selected[^>]*>\s*<span>([^<]+)<\/span>/i);
-        if (sel) rating = giasRatingToNumber(sel[1]);
-        if (rating == null) {
-          const alt = html.match(/aria-current="true"[^>]*>\s*<span>([^<]+)<\/span>/i);
-          if (alt) rating = giasRatingToNumber(alt[1]);
-        }
-        if (rating == null) {
-          console.log(`[gias] provider page found but no rating parsed: ${providerPath} (school "${name}")`);
-        }
-      }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const establishments: any[] = Array.isArray(data) ? data : (data?.establishments ?? data?.data ?? []);
+    if (establishments.length > 0) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const match = establishments.find((e: any) => fuzzyNameMatch(name, e.name ?? e.establishmentName ?? ""))
+        ?? establishments[0];
+      const rating = giasRatingToNumber(match?.ofstedRating ?? match?.ofsted_rating ?? match?.OfstedRating);
+      giasCache.set(cacheKey, rating);
+      return rating;
     }
   } catch (e) {
-    console.log(`[gias] lookup error for "${name}":`, (e as Error).message);
-    rating = null;
+    console.log(`[gias] DfE API error for "${name}":`, (e as Error).message);
   }
 
-  if (rating == null) {
-    console.log(`[gias] unmatched: name="${name}" urn=${urn ?? "n/a"} postcode=${postcode ?? "n/a"}`);
-  }
+  // Fallback: Ofsted public API
+  try {
+    const encoded = encodeURIComponent(name);
+    const r = await fetch(
+      `https://api.ofsted.gov.uk/v1/search?type=1&name=${encoded}&rows=5`,
+      { headers: { "Accept": "application/json" }, signal: AbortSignal.timeout(4000) }
+    );
+    if (r.ok) {
+      const data = await r.json();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const results: any[] = data?.results ?? data?.items ?? [];
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const match = results.find((e: any) => fuzzyNameMatch(name, e.name ?? "")) ?? results[0];
+      if (match) {
+        const rating = giasRatingToNumber(match.overallEffectiveness ?? match.overall_effectiveness ?? match.rating);
+        giasCache.set(cacheKey, rating);
+        return rating;
+      }
+    }
+  } catch { /* ignore */ }
 
-  giasCache.set(cacheKey, rating);
-  return rating;
+  giasCache.set(cacheKey, null);
+  return null;
 }
 
 // Enrich the mapped schools with Ofsted ratings from GIAS in parallel.
@@ -1265,7 +1237,14 @@ async function runJob(
     // deadline. PropertyData already returns basic school info; Ofsted
     // ratings can be lazy-loaded later from the schools section.
     const mappedSchools = mapPdSchools(pd["schools"]);
-    if (mappedSchools) parsed.nearbySchools = mappedSchools;
+    if (mappedSchools) {
+      // Enrich with Ofsted ratings from DfE API — parallel calls with 8s total budget
+      const enriched = await Promise.race([
+        enrichSchoolsWithGias(mappedSchools, postcode),
+        new Promise<typeof mappedSchools>((resolve) => setTimeout(() => resolve(mappedSchools), 8000)),
+      ]);
+      parsed.nearbySchools = enriched ?? mappedSchools;
+    }
     const mappedCrime = mapPdCrime(pd["crime"]);
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
