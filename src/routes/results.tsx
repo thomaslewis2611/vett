@@ -1022,7 +1022,7 @@ function LoadingState({ url }: { url?: string }) {
           </h1>
           <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.65 }}>
             Decoding agent jargon, estimating true costs and drafting your negotiation
-            strategy. This usually takes 60–90 seconds.
+            strategy. This usually takes under 2 minutes.
           </p>
 
           {/* Step indicators */}
