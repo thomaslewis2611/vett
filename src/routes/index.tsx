@@ -522,6 +522,7 @@ function Index() {
             { icon: AlertTriangle, title: "Full red flag analysis", body: "Every risk identified and explained, ranked by severity" },
             { icon: Zap, title: "EPC analysis", body: "Energy rating, estimated annual costs and upgrade recommendations" },
             { icon: BarChart3, title: "Area pricing analysis", body: "Local £/sqft data so you know if the price is fair" },
+            { icon: TrendingUp, title: "Capital growth", body: "1yr, 3yr and 5yr price growth data for the local area" },
             { icon: PoundSterling, title: "True cost breakdown", body: "Every cost including stamp duty, surveys and legal fees" },
             { icon: MessageSquare, title: "Negotiation strategy", body: "A recommended offer range with specific leverage points" },
             { icon: ClipboardCheck, title: "Viewing checklist", body: "Property-specific questions and checks for the day" },
