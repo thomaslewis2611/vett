@@ -1211,7 +1211,19 @@ async function runJob(
       const text = await callClaude(simplified, userContent, 5000);
       console.log("[timing] claude complete", Date.now(), `(+${Date.now() - claudeStart}ms, retry)`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
+      console.log("[renovation] CASE 3: primary parse failed — renovationCosts dropped in fallback retry. Check response length in timing log above.");
       parsed.renovationCosts = null;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const rcItems = (parsed?.renovationCosts as any)?.items;
+    if (parsed.renovationCosts === null) {
+      // already logged as CASE 3 above
+    } else if (!rcItems || rcItems.length === 0) {
+      console.log("[renovation] CASE 2: primary parse succeeded — Claude returned empty items (no renovation issues identified in listing).");
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.log(`[renovation] CASE 1: primary parse succeeded — Claude returned ${rcItems.length} renovation item(s). Total min: ${(parsed?.renovationCosts as any)?.totalEstimatedMin}, max: ${(parsed?.renovationCosts as any)?.totalEstimatedMax}`);
     }
 
     const mappingStart = Date.now();
