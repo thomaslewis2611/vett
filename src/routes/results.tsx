@@ -4565,10 +4565,29 @@ function shortMoney(n: number): string {
 function TransportSection({ analysis, isBuyerPass, fetching: _fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
   void _fetching;
   const ptal = analysis.ptal;
+  console.log("[TransportSection]", { isBuyerPass, hasPtal: !!ptal });
 
-  // Hide the entire section when there is no PTAL data (e.g. postcode outside
-  // London, or PropertyData returned nothing). No "unavailable" placeholder.
-  if (isBuyerPass && !ptal) return null;
+  // For paid users with no PTAL data (postcode outside London or no data),
+  // show an "unavailable" placeholder rather than silently hiding the section.
+  if (isBuyerPass && !ptal) {
+    return (
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+          Transport links
+        </h2>
+        <div className="mt-4" style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)", borderRadius: 12, padding: 20 }}>
+          <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            PTAL (Public Transport Accessibility Level) data is only available for London postcodes. For transport links in this area, check{" "}
+            <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" style={{ color: "#2D6A4F" }} className="hover:underline">
+              Google Maps
+            </a>{" "}
+            or local transport operator websites.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
 
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
@@ -4701,6 +4720,7 @@ function SchoolRow({ s }: { s: NonNullable<AnalysisResult["nearbySchools"]>["sch
 }
 
 function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
+  console.log("[NearbySchoolsSection]", { isBuyerPass, hasData: !!analysis?.nearbySchools, schools: analysis?.nearbySchools?.schools?.length, unavailable: analysis?.nearbySchools?.unavailable });
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -4817,6 +4837,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUp
 }
 
 function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
+  console.log("[CrimeSection]", { isBuyerPass, hasData: !!analysis?.crime, unavailable: analysis?.crime?.unavailable });
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -4974,6 +4995,7 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
 }
 
 function BroadbandSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
+  console.log("[BroadbandSection]", { isBuyerPass, hasData: !!analysis?.broadband, unavailable: analysis?.broadband?.unavailable });
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -5160,6 +5182,7 @@ function FloodRiskSection({
 }) {
   try {
     const fr = analysis.floodRisk;
+    console.log("[FloodRiskSection]", { isBuyerPass, hasData: !!fr, unavailable: fr?.unavailable });
 
     const cardStyle: CSSProperties = {
       background: "#FFFDF9",
@@ -5454,7 +5477,22 @@ function FloodRiskSection({
     );
   } catch (err) {
     console.error("[FloodRiskSection] render failed:", err);
-    return null;
+    return (
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+          Flood risk
+        </h2>
+        <div className="mt-4" style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)", borderRadius: 12, padding: 20 }}>
+          <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            Flood risk data could not be rendered. Check the official Environment Agency tool at{" "}
+            <a href="https://check-long-term-flood-risk.service.gov.uk" target="_blank" rel="noopener noreferrer" style={{ color: "#2D6A4F" }} className="hover:underline">
+              check-long-term-flood-risk.service.gov.uk
+            </a>
+            .
+          </p>
+        </div>
+      </section>
+    );
   }
 }
 
@@ -5803,6 +5841,7 @@ function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisRes
 }
 
 function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResult; unlocked: boolean }) {
+  console.log("[RenovationCostsSection]", { unlocked, hasData: !!analysis?.renovationCosts, items: analysis?.renovationCosts?.items?.length });
   if (!unlocked) {
     return (
       <section className="mt-10">
@@ -5835,7 +5874,20 @@ function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResu
   }
 
   const rc = analysis.renovationCosts;
-  if (!rc || rc.items.length === 0) return null;
+  if (!rc || rc.items.length === 0) {
+    return (
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+          Renovation estimate
+        </h2>
+        <div className="mt-4" style={CARD_STYLE}>
+          <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            No renovation issues identified in this listing. If the property requires work, get quotes from local tradespeople for a tailored estimate.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   const priorityStyle = (p: string): CSSProperties => {
     const n = (p || "").toLowerCase();
