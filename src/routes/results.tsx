@@ -961,21 +961,8 @@ function LoadingState({ url }: { url?: string }) {
             />
           </div>
 
-          {showResumeBanner && (
-            <p
-              role="status"
-              aria-live="polite"
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                color: ACCENT,
-                textAlign: "center",
-                padding: "6px 0",
-              }}
-            >
-              Welcome back — we kept your analysis running.
-            </p>
-          )}
+
+
 
           {/* Anchor: property URL */}
           {anchor && (
