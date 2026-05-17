@@ -1132,6 +1132,7 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
   const [fetchingExtras, setFetchingExtras] = useState(false);
   const extrasRef = useRef(false);
   useEffect(() => {
+    if (shareMode) return;
     if (extrasRef.current) return;
     if (access.level !== "pass" || !access.email || !listingUrl) return;
     const needsFlood = a.floodRisk == null;
