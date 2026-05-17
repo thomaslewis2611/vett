@@ -1533,7 +1533,12 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
               {access.level === "expired" ? (
                 <ExpiredPassGate expiresAt={access.expiresAt} listingUrl={listingUrl} />
               ) : (
-                <PaywallGate listingUrl={listingUrl} />
+                <>
+                  <div className="mb-6">
+                    <LockedFeaturesGrid />
+                  </div>
+                  <PaywallGate listingUrl={listingUrl} />
+                </>
               )}
             </div>
           </section>
