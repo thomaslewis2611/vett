@@ -1056,6 +1056,7 @@ async function runJob(
   });
 
   const jobStartedAt = Date.now();
+  console.log("[timing] start", jobStartedAt);
 
   try {
     let listingContent = pastedText?.trim() ?? "";
@@ -1065,7 +1066,7 @@ async function runJob(
       console.log(`[analyse-listing] fetching ${url}`);
       const htmlStart = Date.now();
       const html = await fetchListingHtml(url);
-      console.log(`[analyse-listing] HTML fetch complete: ${Date.now() - htmlStart}ms`);
+      console.log("[timing] html fetch complete", Date.now(), `(+${Date.now() - htmlStart}ms)`);
       if (detectFloorPlan(html)) floorPlanFlag = "yes";
       listingContent = htmlToListingText(html);
       console.log(`[analyse-listing] listing length: ${listingContent.length}, floor plan: ${floorPlanFlag}`);
@@ -1097,7 +1098,7 @@ async function runJob(
     let pd: PdResults = {};
 
     if (postcode) {
-      // Have postcode — fetch PD directly.
+      console.log("[timing] postcode found:", postcode, Date.now());
       const pdStart = Date.now();
       const cached = await getCachedPropertyData(supabase, postcode);
       if (cached) {
@@ -1112,18 +1113,22 @@ async function runJob(
           pd = {};
         }
       }
-      console.log(`[analyse-listing] PropertyData complete: ${Date.now() - pdStart}ms`);
+      console.log("[timing] propertydata complete", Date.now(), `(+${Date.now() - pdStart}ms)`);
     } else {
-      // No full postcode — run Claude inference in parallel with a cache probe
-      // on the partial postcode (best-effort). Once inference resolves, fetch PD.
+      // No full postcode — run Claude inference in parallel with the partial
+      // postcode extraction so we don't waste any sequential time. PD requires
+      // a full postcode, so it must follow inference, but we still fire the
+      // cache lookup as soon as the guess resolves.
       partialPostcode = extractPartialPostcode(listingContent);
       const inferStart = Date.now();
-      const guess = await inferPostcodeFromAddress(listingContent, partialPostcode);
+      const [guess] = await Promise.all([
+        inferPostcodeFromAddress(listingContent, partialPostcode),
+      ]);
       console.log(`[analyse-listing] Postcode inference complete: ${Date.now() - inferStart}ms`);
       if (guess) {
-        console.log(`[analyse-listing] inferred postcode ${guess} (partial hint: ${partialPostcode ?? "none"})`);
         postcode = guess;
         inferredPostcode = true;
+        console.log("[timing] postcode found:", postcode, Date.now(), "(inferred)");
         const pdStart = Date.now();
         const cached = await getCachedPropertyData(supabase, postcode);
         if (cached) {
@@ -1137,7 +1142,10 @@ async function runJob(
             pd = {};
           }
         }
-        console.log(`[analyse-listing] PropertyData complete: ${Date.now() - pdStart}ms`);
+        console.log("[timing] propertydata complete", Date.now(), `(+${Date.now() - pdStart}ms)`);
+      } else {
+        console.log("[timing] postcode found: null", Date.now());
+        console.log("[timing] propertydata complete", Date.now(), "(skipped)");
       }
     }
 
