@@ -2578,6 +2578,7 @@ const FULL_REPORT_FEATURES: { title: string; sub: string; note?: string }[] = [
   { title: "All red flags", sub: "See every issue we found" },
   { title: "EPC analysis", sub: "Energy rating and improvement costs" },
   { title: "Area pricing analysis", sub: "Local £/sqft and market comparison" },
+  { title: "Capital growth", sub: "1yr, 3yr and 5yr local price growth data" },
   { title: "True cost breakdown", sub: "Total upfront and monthly costs" },
   { title: "Negotiation strategy", sub: "Recommended offer and your leverage" },
   { title: "Viewing checklist", sub: "What to check on the day" },
