@@ -515,7 +515,7 @@ function Index() {
         </div>
 
         <div
-          className="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
+          className="mt-12 grid grid-cols-2 md:grid-cols-4"
           style={{ gap: 16 }}
         >
           {[
@@ -542,7 +542,7 @@ function Index() {
                 background: "#FFFDF9",
                 border: `0.5px solid ${COLORS.border}`,
                 borderRadius: 20,
-                padding: 24,
+                padding: 16,
               }}
             >
               <div
