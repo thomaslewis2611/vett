@@ -589,7 +589,6 @@ function ResultsPage() {
   // would land on /my-reports and the user would have to re-analyse.
   useEffect(() => {
     if (query.isSuccess) {
-      setShowResumeBanner(false);
       setWasHidden(false);
     }
   }, [query.isSuccess]);
