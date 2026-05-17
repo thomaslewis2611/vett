@@ -632,7 +632,6 @@ async function fetchPropertyDataAll(postcode: string): Promise<PdResults> {
     return {};
   }
   console.log(`[analyse-listing] PROPERTYDATA fetch start postcode=${postcode} keyLen=${PROPERTYDATA_API_KEY.length}`);
-　
   const london = isLondonPostcode(postcode);
   const settled = await Promise.allSettled(
     PD_ENDPOINTS.map((ep) => {
