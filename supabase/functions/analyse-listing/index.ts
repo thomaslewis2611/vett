@@ -589,8 +589,20 @@ async function fetchPdEndpoint(ep: string, postcode: string): Promise<unknown> {
     const r = await fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`, {
       signal: ctl.signal,
     });
-    const json = await r.json();
-    console.log(`[analyse-listing] pd ${ep} ${Date.now() - started}ms`);
+    const httpStatus = r.status;
+    const rawText = await r.text();
+    let json: unknown = null;
+    try { json = JSON.parse(rawText); } catch { /* non-JSON */ }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const apiStatus = (json as any)?.status ?? "unknown";
+    console.log(`[analyse-listing] pd ${ep} http=${httpStatus} apiStatus=${apiStatus} ${Date.now() - started}ms postcode=${postcode}`);
+    if (ep === "schools") {
+      console.log(`[analyse-listing] pd schools RAW (${postcode}): ${rawText.slice(0, 2000)}`);
+    }
+    if (apiStatus === "error") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      console.warn(`[analyse-listing] pd ${ep} error: ${(json as any)?.message ?? "(no message)"}`);
+    }
     return json;
   } catch (err) {
     console.warn(`[analyse-listing] pd ${ep} failed/timeout after ${Date.now() - started}ms`, err);
@@ -602,8 +614,25 @@ async function fetchPdEndpoint(ep: string, postcode: string): Promise<unknown> {
 
 async function fetchPropertyDataAll(postcode: string): Promise<PdResults> {
   if (!PROPERTYDATA_API_KEY) {
-    console.warn("[analyse-listing] PROPERTYDATA_API_KEY missing");
+    console.warn("[analyse-listing] PROPERTYDATA API KEY INVALID OR MISSING (env var not set)");
     return {};
+  }
+  console.log(`[analyse-listing] PROPERTYDATA fetch start postcode=${postcode} keyLen=${PROPERTYDATA_API_KEY.length}`);
+  // Health check: single flood-risk call to verify the key works
+  try {
+    const hcUrl = `${PD_BASE}/flood-risk?key=${PROPERTYDATA_API_KEY}&postcode=${encodeURIComponent(postcode)}`;
+    const hc = await fetch(hcUrl);
+    const hcText = await hc.text();
+    console.log(`[analyse-listing] PROPERTYDATA health check http=${hc.status} body=${hcText.slice(0, 500)}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let hcJson: any = null;
+    try { hcJson = JSON.parse(hcText); } catch { /* */ }
+    const msg = String(hcJson?.message ?? "");
+    if (hcJson?.status === "error" && /invalid|missing|key|auth/i.test(msg)) {
+      console.warn("[analyse-listing] PROPERTYDATA API KEY INVALID OR MISSING");
+    }
+  } catch (err) {
+    console.warn("[analyse-listing] PROPERTYDATA health check threw", err);
   }
   const london = isLondonPostcode(postcode);
   const settled = await Promise.allSettled(
