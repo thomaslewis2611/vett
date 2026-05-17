@@ -1450,6 +1450,16 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
         {/* Area Pricing Analysis */}
         <AreaContextSection analysis={a} unlocked={unlocked} />
 
+        {/* Capital growth (PropertyData) — headline for free/single, full breakdown for pass */}
+        {(access.level === "single" || access.level === "pass") && (
+          <CapitalGrowthSection
+            analysis={a}
+            tier={access.level === "pass" ? "pass" : "single"}
+            onUpgradeSingle={() => upgradeToSingle(listingUrl)}
+            onUpgradePass={() => upgradeToPass(listingUrl)}
+          />
+        )}
+
         {/* Planning reference (factual, all tiers) */}
         <PlanningReferenceSection analysis={a} />
 
@@ -1725,16 +1735,6 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
             analysis={a}
             unlocked={true}
             onUpgrade={() => upgradeToSingle(listingUrl)}
-          />
-        )}
-
-        {/* Capital growth (PropertyData) — headline for free/single, full breakdown for pass */}
-        {(access.level === "single" || access.level === "pass") && (
-          <CapitalGrowthSection
-            analysis={a}
-            tier={access.level === "pass" ? "pass" : "single"}
-            onUpgradeSingle={() => upgradeToSingle(listingUrl)}
-            onUpgradePass={() => upgradeToPass(listingUrl)}
           />
         )}
 
