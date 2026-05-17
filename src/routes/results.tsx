@@ -3228,9 +3228,19 @@ function PlanCard({
           <li
             key={f}
             className="flex items-start gap-2.5"
-            style={{ fontSize: 14, fontWeight: 300, color: isFeatured ? "#FFFDF9" : "#1A1108" }}
+            style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 300, color: isFeatured ? "#FFFDF9" : "#1A1108" }}
           >
-            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: isFeatured ? "#FFFDF9" : "#2D6A4F" }} />
+            <span
+              className="mt-0.5 inline-flex items-center justify-center shrink-0"
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 999,
+                background: isFeatured ? "rgba(255,253,249,0.18)" : "#EAF3DE",
+              }}
+            >
+              <Check className="h-3 w-3" style={{ color: isFeatured ? "#FFFDF9" : "#2D6A4F" }} />
+            </span>
             <span>
               {f}
               {/^transport links/i.test(f) && (
