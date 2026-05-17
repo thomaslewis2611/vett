@@ -917,7 +917,7 @@ function prettyUrl(url?: string): string | null {
   }
 }
 
-function LoadingState({ url, showResumeBanner = false }: { url?: string; showResumeBanner?: boolean }) {
+function LoadingState({ url }: { url?: string }) {
   const [elapsed, setElapsed] = useState(0);
   const [tipIdx, setTipIdx] = useState(0);
 
