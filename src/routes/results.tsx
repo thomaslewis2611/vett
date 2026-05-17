@@ -1102,6 +1102,7 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
   const saveFn = useServerFn(saveAnalysisForUser);
   const savedRef = useRef(false);
   useEffect(() => {
+    if (shareMode) return;
     const eligible = access.level === "pass" || access.level === "single";
     if (!fromSaved && eligible && access.email && !savedRef.current && listingUrl) {
       savedRef.current = true;
