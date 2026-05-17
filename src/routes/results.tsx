@@ -2643,7 +2643,18 @@ function CostBreakdown({
         : 0;
 
   const hasLeasehold = serviceCharge > 0 || groundRent > 0 || leaseholdYears > 0;
-  const monthlyMortgage = Math.round(c.monthlyMortgage || 0);
+  const DEFAULT_MORTGAGE_RATE = 4.8;
+  const [mortgageTerm, setMortgageTerm] = useState(30);
+  const [mortgageRate, setMortgageRate] = useState(DEFAULT_MORTGAGE_RATE);
+  const monthlyMortgage = (() => {
+    const loan = c.purchasePrice * 0.85;
+    const r = mortgageRate / 100 / 12;
+    const n = mortgageTerm * 12;
+    if (n <= 0) return 0;
+    if (r === 0) return Math.round(loan / n);
+    const pow = Math.pow(1 + r, n);
+    return Math.round((loan * (r * pow)) / (pow - 1));
+  })();
   const totalMonthly =
     monthlyMortgage + councilTaxMonthly + buildingsInsuranceMonthly + serviceChargeMonthly;
 
