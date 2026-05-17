@@ -1028,6 +1028,9 @@ ${JSON.stringify(slice(pdData(pd["sold-prices"]), 10) || [])}
 CAPITAL GROWTH (area — use for area pricing analysis commentary and resale potential scoring):
 ${JSON.stringify(pdData(pd["growth"]) || null)}
 
+CAPITAL GROWTH PER SQ FT (year-on-year £/sqft growth — use to enrich local price trends commentary and areaDescription):
+${JSON.stringify(pdData(pd["growth-psf"]) || null)}
+
 FLOOD RISK:
 ${JSON.stringify(pdData(pd["flood-risk"]) || null)}
 
