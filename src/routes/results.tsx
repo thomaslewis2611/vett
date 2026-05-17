@@ -1701,6 +1701,9 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           </section>
         )}
 
+        {/* Your next steps — render above the inline upgrade for single users, or at bottom for pass users */}
+        {unlocked && <NextStepsSection analysis={a} />}
+
         {/* Inline Buyer Pass upgrade — Single Report users only */}
         {access.level === "single" && (
           <InlineBuyerPassUpgrade listingUrl={listingUrl} />
