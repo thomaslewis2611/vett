@@ -17,6 +17,8 @@ import {
   Signal,
   X,
   Share2,
+  Home,
+  Mail,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { DisclaimerBar } from "@/components/disclaimer-bar";
@@ -1261,7 +1263,8 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
               to="/"
               className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
             >
-              ← Analyse another property
+              <Home className="h-4 w-4" />
+              Analyse another property
             </Link>
             <EmailReportButton
               analysis={a}
@@ -4620,7 +4623,10 @@ function EmailReportButton({
               Sending...
             </>
           ) : (
-            <>Email me my report →</>
+            <>
+              <Mail className="h-4 w-4" />
+              Email me my report
+            </>
           )}
         </button>
       )}
