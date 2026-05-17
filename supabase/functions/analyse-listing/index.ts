@@ -1050,7 +1050,8 @@ ${JSON.stringify(mapPdPpsf(pd["sold-prices-per-sqf"]) || null)}
 `;
 }
 
-const PD_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const PD_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const PD_CACHE_VERSION = "v3";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getCachedPropertyData(supabase: any, postcode: string): Promise<PdResults | null> {
@@ -1063,6 +1064,11 @@ async function getCachedPropertyData(supabase: any, postcode: string): Promise<P
     if (error || !data) return null;
     const age = Date.now() - new Date(data.fetched_at).getTime();
     if (age > PD_CACHE_TTL_MS) return null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if ((data.data as any)?.__cacheVersion !== PD_CACHE_VERSION) {
+      console.log(`[analyse-listing] pd cache version mismatch for ${postcode} — refetching`);
+      return null;
+    }
     return data.data as PdResults;
   } catch (e) {
     console.warn("[analyse-listing] pd cache read failed", e);
@@ -1073,9 +1079,10 @@ async function getCachedPropertyData(supabase: any, postcode: string): Promise<P
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function setCachedPropertyData(supabase: any, postcode: string, pd: PdResults) {
   try {
+    const pdWithVersion = { ...pd, __cacheVersion: PD_CACHE_VERSION };
     await supabase
       .from("property_data_cache")
-      .upsert({ postcode, data: pd, fetched_at: new Date().toISOString() }, { onConflict: "postcode" });
+      .upsert({ postcode, data: pdWithVersion, fetched_at: new Date().toISOString() }, { onConflict: "postcode" });
   } catch (e) {
     console.warn("[analyse-listing] pd cache write failed", e);
   }
