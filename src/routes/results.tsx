@@ -5182,6 +5182,7 @@ function FloodRiskSection({
 }) {
   try {
     const fr = analysis.floodRisk;
+    console.log("[FloodRiskSection]", { isBuyerPass, hasData: !!fr, unavailable: fr?.unavailable });
 
     const cardStyle: CSSProperties = {
       background: "#FFFDF9",
