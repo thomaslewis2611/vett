@@ -2643,7 +2643,18 @@ function CostBreakdown({
         : 0;
 
   const hasLeasehold = serviceCharge > 0 || groundRent > 0 || leaseholdYears > 0;
-  const monthlyMortgage = Math.round(c.monthlyMortgage || 0);
+  const DEFAULT_MORTGAGE_RATE = 4.8;
+  const [mortgageTerm, setMortgageTerm] = useState(30);
+  const [mortgageRate, setMortgageRate] = useState(DEFAULT_MORTGAGE_RATE);
+  const monthlyMortgage = (() => {
+    const loan = c.purchasePrice * 0.85;
+    const r = mortgageRate / 100 / 12;
+    const n = mortgageTerm * 12;
+    if (n <= 0) return 0;
+    if (r === 0) return Math.round(loan / n);
+    const pow = Math.pow(1 + r, n);
+    return Math.round((loan * (r * pow)) / (pow - 1));
+  })();
   const totalMonthly =
     monthlyMortgage + councilTaxMonthly + buildingsInsuranceMonthly + serviceChargeMonthly;
 
@@ -2889,7 +2900,14 @@ function CostBreakdown({
 
       {/* Mortgage calculator (unchanged) */}
       <div className="rounded-xl bg-primary-soft p-5">
-        <MortgageCalculator purchasePrice={c.purchasePrice} />
+        <MortgageCalculator
+          purchasePrice={c.purchasePrice}
+          term={mortgageTerm}
+          rate={mortgageRate}
+          onTermChange={setMortgageTerm}
+          onRateChange={setMortgageRate}
+          defaultRate={DEFAULT_MORTGAGE_RATE}
+        />
       </div>
 
       <div className="space-y-1 text-[11px]" style={{ color: "#888780" }}>
@@ -2912,11 +2930,25 @@ function CostBreakdown({
   );
 }
 
-function MortgageCalculator({ purchasePrice }: { purchasePrice: number }) {
-  const DEFAULT_RATE = 4.8;
-  const [term, setTerm] = useState(30);
-  const [rate, setRate] = useState(DEFAULT_RATE);
-  const [rateInput, setRateInput] = useState(String(DEFAULT_RATE));
+function MortgageCalculator({
+  purchasePrice,
+  term,
+  rate,
+  onTermChange,
+  onRateChange,
+  defaultRate,
+}: {
+  purchasePrice: number;
+  term: number;
+  rate: number;
+  onTermChange: (v: number) => void;
+  onRateChange: (v: number) => void;
+  defaultRate: number;
+}) {
+  const DEFAULT_RATE = defaultRate;
+  const setTerm = onTermChange;
+  const setRate = onRateChange;
+  const [rateInput, setRateInput] = useState(String(rate));
   const depositPct = 0.15;
   const loan = purchasePrice * (1 - depositPct);
   const monthly = (() => {
