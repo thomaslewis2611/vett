@@ -1500,6 +1500,9 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           <ViewingChecklistSection analysis={a} unlocked={unlocked} />
         </SafeSection>
 
+        {/* Your next steps — render above the paywall for free users */}
+        {!unlocked && <NextStepsSection analysis={a} />}
+
         {/* Paywall (free users only) — sits between preview sections and the paid sections */}
         {!unlocked && (
           <section className="mt-10">
