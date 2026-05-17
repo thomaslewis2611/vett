@@ -1163,19 +1163,20 @@ async function runJob(
 
     let parsed: Record<string, unknown> = {};
     try {
-      console.log(`[analyse-listing] calling Claude (primary)`);
+      console.log("[timing] claude start", Date.now());
       const claudeStart = Date.now();
       const text = await callClaude(systemPrompt, userContent, 4000);
-      console.log(`[analyse-listing] Claude complete: ${Date.now() - claudeStart}ms (response length ${text.length})`);
+      console.log("[timing] claude complete", Date.now(), `(+${Date.now() - claudeStart}ms, response length ${text.length})`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
     } catch (primaryErr) {
       console.error("[analyse-listing] primary parse failed, retrying simplified", primaryErr);
       const simplified =
         systemPrompt +
         "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
+      console.log("[timing] claude start", Date.now(), "(retry)");
       const claudeStart = Date.now();
       const text = await callClaude(simplified, userContent, 4000);
-      console.log(`[analyse-listing] Claude complete (retry): ${Date.now() - claudeStart}ms`);
+      console.log("[timing] claude complete", Date.now(), `(+${Date.now() - claudeStart}ms, retry)`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
       parsed.renovationCosts = null;
     }
