@@ -3689,15 +3689,15 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
               const areaPpsf = analysis.areaContext?.avgPricePerSqFtArea ?? 0;
               const isPlaceholder = summary && /Square footage is typically shown/i.test(summary);
               if (manualPpsf > 0 && areaPpsf > 0 && isPlaceholder) {
-                const pct = ((manualPpsf - areaPpsf) / areaPpsf) * 100;
+                const vsPct = ((manualPpsf - areaPpsf) / areaPpsf) * 100;
                 const beds = analysis.property?.beds;
                 const ptype = (analysis.property?.type ?? "property").toLowerCase();
                 const lead = `At £${Math.round(manualPpsf).toLocaleString()}/sqft for this ${beds ? `${beds}-bed ` : ""}${ptype}`;
                 let comparison: string;
-                if (pct > 5) {
-                  comparison = `this is ${pct.toFixed(1)}% above the local sold average of £${Math.round(areaPpsf).toLocaleString()}/sqft — above market rate`;
-                } else if (pct < -5) {
-                  comparison = `this is ${Math.abs(pct).toFixed(1)}% below the local sold average of £${Math.round(areaPpsf).toLocaleString()}/sqft — competitively priced`;
+                if (vsPct > 5) {
+                  comparison = `this is ${vsPct.toFixed(1)}% above the local sold average of £${Math.round(areaPpsf).toLocaleString()}/sqft — above market rate`;
+                } else if (vsPct < -5) {
+                  comparison = `this is ${Math.abs(vsPct).toFixed(1)}% below the local sold average of £${Math.round(areaPpsf).toLocaleString()}/sqft — competitively priced`;
                 } else {
                   comparison = `broadly in line with the local sold average of £${Math.round(areaPpsf).toLocaleString()}/sqft`;
                 }
