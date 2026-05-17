@@ -1155,8 +1155,8 @@ function Index() {
               maxWidth: 520,
             }}
           >
-            You wouldn't make a £400,000 decision without doing your research. Roovr does it
-            in two minutes, for £4.99.
+            You wouldn't make a decision involving hundreds of thousands of pounds without doing
+            your research. Roovr does it in two minutes, for £4.99.
           </p>
           <button
             type="button"
