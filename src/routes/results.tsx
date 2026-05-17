@@ -2594,7 +2594,12 @@ function CostBreakdown({
   const sd = typeof stampDuty === "number" ? stampDuty : c.stampDuty;
   const sdLabel = stampDutyMode ? `Stamp duty (${STAMP_DUTY_LABELS[stampDutyMode]})` : "Stamp duty";
 
-  const valuationFee = c.valuationFee ?? 0;
+  const mortgageFeesRaw = c.mortgageFees ?? 0;
+  const mortgageFees = mortgageFeesRaw > 0 ? mortgageFeesRaw : 999;
+  const mortgageFeesFallback = !(mortgageFeesRaw > 0);
+  const valuationFeeRaw = c.valuationFee ?? 0;
+  const valuationFee = valuationFeeRaw > 0 ? valuationFeeRaw : 400;
+  const valuationFeeFallback = !(valuationFeeRaw > 0);
   const landRegistryFee = c.landRegistryFee ?? 0;
   const electronicTransferFee = c.electronicTransferFee ?? 0;
   const removalCosts = c.removalCosts ?? 0;
@@ -2604,18 +2609,18 @@ function CostBreakdown({
   const groundRent = c.groundRent ?? 0;
   const leaseholdYears = c.leaseholdYears ?? 0;
 
-  const totalUpfront =
-    c.purchasePrice +
+  const additionalCosts =
     sd +
     c.legalFees +
     c.surveyFees +
-    c.mortgageFees +
+    mortgageFees +
     valuationFee +
     landRegistryFee +
     electronicTransferFee +
     removalCosts +
     indemnityInsurance +
     buildingsInsurance;
+  const totalFundsRequired = c.purchasePrice + additionalCosts;
 
   const annualCouncilTax = annualCouncilTaxFor(analysis.metrics?.councilTaxBand);
   const councilTaxMonthly =
@@ -2642,12 +2647,20 @@ function CostBreakdown({
   const totalMonthly =
     monthlyMortgage + councilTaxMonthly + buildingsInsuranceMonthly + serviceChargeMonthly;
 
+  const FALLBACK_NOTE = "(typical — confirm with your lender)";
   const upfrontRows: Array<{ label: string; sub?: string; val: number }> = [
-    { label: "Purchase price", val: c.purchasePrice },
     { label: sdLabel, val: sd },
     { label: "Solicitor / conveyancing fees", val: c.legalFees },
-    { label: "Mortgage arrangement fee", val: c.mortgageFees },
-    { label: "Mortgage valuation fee", val: valuationFee },
+    {
+      label: "Mortgage arrangement fee",
+      val: mortgageFees,
+      ...(mortgageFeesFallback ? { sub: FALLBACK_NOTE } : {}),
+    },
+    {
+      label: "Mortgage valuation fee",
+      val: valuationFee,
+      ...(valuationFeeFallback ? { sub: FALLBACK_NOTE } : {}),
+    },
     {
       label: "Survey",
       sub: "RICS Level 1 £300+ · Level 2 £400–£600 · Level 3 £600+",
@@ -2678,6 +2691,13 @@ function CostBreakdown({
     textTransform: "uppercase",
     color: "#2D6A4F",
   };
+  const subEyebrow: CSSProperties = {
+    fontSize: 11,
+    fontWeight: 500,
+    letterSpacing: "0.1em",
+    textTransform: "uppercase",
+    color: "#888780",
+  };
   const sectionCard: CSSProperties = {
     background: "#FFFDF9",
     border: "0.5px solid rgba(26,17,8,0.12)",
@@ -2687,15 +2707,39 @@ function CostBreakdown({
 
   return (
     <div className="space-y-6">
-      {/* Section 1 — one-off costs */}
+      {/* Section 1 — purchasing costs */}
       <div style={sectionCard}>
         <div style={eyebrow}>Section 1</div>
         <h4
-          className="mt-1 mb-4"
+          className="mt-1 mb-5"
           style={{ fontFamily: "var(--font-display, 'Playfair Display', serif)", fontSize: 22, color: "#1A1108" }}
         >
-          One-off costs to budget for
+          Purchasing costs
         </h4>
+
+        {/* Purchase price block */}
+        <div>
+          <div style={subEyebrow}>Purchase price</div>
+          <div
+            className="mt-2 tabular-nums"
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 36,
+              fontWeight: 400,
+              color: "#1A1108",
+              lineHeight: 1.1,
+            }}
+          >
+            {formatGBP(c.purchasePrice)}
+          </div>
+        </div>
+
+        <div className="mt-5" style={{ borderTop: "0.5px solid rgba(26,17,8,0.12)" }} />
+
+        {/* Additional purchasing costs */}
+        <div style={{ ...subEyebrow, marginTop: 24, marginBottom: 12 }}>
+          Additional purchasing costs
+        </div>
         <ul className="divide-y" style={{ borderColor: "rgba(26,17,8,0.08)" }}>
           {upfrontRows.map((r) => (
             <li key={r.label} className="py-2.5">
@@ -2716,13 +2760,38 @@ function CostBreakdown({
           style={{ borderTop: "0.5px solid rgba(26,17,8,0.18)" }}
         >
           <span className="text-sm font-semibold" style={{ color: "#1A1108" }}>
-            Total one-off costs
+            Total purchasing costs
           </span>
           <span
             className="font-semibold tabular-nums"
-            style={{ fontSize: 22, color: "#2D6A4F" }}
+            style={{ fontSize: 18, color: "#1A1108" }}
           >
-            {formatGBP(totalUpfront)}
+            {formatGBP(additionalCosts)}
+          </span>
+        </div>
+        <div
+          className="mt-2 flex justify-between items-baseline pt-3"
+          style={{ borderTop: "0.5px solid rgba(26,17,8,0.12)" }}
+        >
+          <span
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 16,
+              color: "#1A1108",
+            }}
+          >
+            Total funds required
+          </span>
+          <span
+            className="tabular-nums"
+            style={{
+              fontFamily: "var(--font-display, 'Playfair Display', serif)",
+              fontSize: 20,
+              fontWeight: 400,
+              color: "#2D6A4F",
+            }}
+          >
+            {formatGBP(totalFundsRequired)}
           </span>
         </div>
       </div>
