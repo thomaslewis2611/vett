@@ -178,6 +178,7 @@ export type AnalysisResult = {
     mortgageAssumptions: string;
   };
   viewingQuestions: string[];
+  nextSteps?: string[] | null;
   sellerMotivation?: {
     score: number;
     label: "Low" | "Moderate" | "High" | "Very High";
