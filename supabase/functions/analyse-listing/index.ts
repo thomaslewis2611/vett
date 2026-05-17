@@ -1306,7 +1306,7 @@ async function runJob(
     // Note: enrichSchoolsWithGias is intentionally not called here — PropertyData's
     // rating field is sufficient for post-2024 reporting. May re-enable for pre-2024
     // schools only in future.
-    const mappedCrime = mapPdCrime(pd["crime"]);
+    const mappedCrime = mapPdCrime(pd["crime"], postcode);
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
     if (mappedBroadband) parsed.broadband = mappedBroadband;
