@@ -168,28 +168,7 @@ function Index() {
           gap: 48px;
           align-items: start;
         }
-        @media (min-width: 768px) {
-          .roovr-hero-grid {
-            grid-template-columns: minmax(0,480px) minmax(0,1fr);
-            gap: 64px;
-          }
-          .roovr-hero-right { transform: translateY(-20px); }
-        }
-        .roovr-hero-left { max-width: 480px; margin-left: auto; margin-right: auto; }
-        @media (min-width: 768px) {
-          .roovr-hero-left { margin-left: 0; margin-right: 0; }
-        }
-        .roovr-example-scroll {
-          height: 400px;
-          overflow-y: scroll;
-          scrollbar-width: thin;
-        }
-        .roovr-example-scroll::-webkit-scrollbar { width: 8px; }
-        .roovr-example-scroll::-webkit-scrollbar-track { background: transparent; }
-        .roovr-example-scroll::-webkit-scrollbar-thumb { background: rgba(26,17,8,0.2); border-radius: 4px; }
-        @media (min-width: 768px) {
-          .roovr-example-scroll { height: 600px; }
-        }
+        .roovr-hero-left { max-width: 640px; margin-left: auto; margin-right: auto; }
       `}</style>
 
       <section style={{ padding: "80px 24px 48px" }}>
