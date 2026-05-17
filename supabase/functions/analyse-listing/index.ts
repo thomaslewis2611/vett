@@ -482,7 +482,8 @@ ${JSON.stringify({ facts, redFlags: redFlagsStage.redFlags, costs: costsStage.co
 
 Return ONLY JSON matching:
 {
-  "negotiation": { "isAuction": boolean, "maxBid": number, "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] }
+  "negotiation": { "isAuction": boolean, "maxBid": number, "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] },
+  "nextSteps": string[]
 }`;
     const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 1800);
     return parseStageJson(text, "build-negotiation-strategy");
