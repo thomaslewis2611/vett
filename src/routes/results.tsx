@@ -1728,16 +1728,6 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
           />
         )}
 
-        {/* Capital growth (PropertyData) — headline for free/single, full breakdown for pass */}
-        {(access.level === "single" || access.level === "pass") && (
-          <CapitalGrowthSection
-            analysis={a}
-            tier={access.level === "pass" ? "pass" : "single"}
-            onUpgradeSingle={() => upgradeToSingle(listingUrl)}
-            onUpgradePass={() => upgradeToPass(listingUrl)}
-          />
-        )}
-
         {/* Share report button — paid users only, above next steps */}
         {!shareMode && unlocked && (
           <div className="mt-10 no-print">
