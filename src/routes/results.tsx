@@ -3068,6 +3068,11 @@ function CostBreakdown({
             {formatGBP(totalMonthly)}/mo
           </span>
         </div>
+        {energyMonthly > 0 && (
+          <p className="mt-2 text-[11px]" style={{ color: "#888780" }}>
+            Energy estimate based on EPC rating. Actual costs vary.
+          </p>
+        )}
       </div>
 
       {/* Mortgage calculator (unchanged) */}
