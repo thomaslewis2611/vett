@@ -3681,7 +3681,29 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
             const pct = Math.max(0, Math.min(100, (v / 10) * 100));
             const barColor = v >= 7 ? "#2D6A4F" : v >= 5 ? "#BA7517" : "#A32D2D";
             const reason = reasons[key];
-            const summary = reason && reason.trim().length > 0 ? reason.trim() : null;
+            let summary = reason && reason.trim().length > 0 ? reason.trim() : null;
+            // Reactively rewrite the value-for-money placeholder once the user
+            // supplies a square footage via the precheck/manual sq ft input.
+            if (key === "valueForMoney") {
+              const manualPpsf = analysis.manualSqftAnalysis?.pricePerSqFt ?? 0;
+              const areaPpsf = analysis.areaContext?.avgPricePerSqFtArea ?? 0;
+              const isPlaceholder = summary && /Square footage is typically shown/i.test(summary);
+              if (manualPpsf > 0 && areaPpsf > 0 && isPlaceholder) {
+                const pct = ((manualPpsf - areaPpsf) / areaPpsf) * 100;
+                const beds = analysis.property?.beds;
+                const ptype = (analysis.property?.type ?? "property").toLowerCase();
+                const lead = `At £${Math.round(manualPpsf).toLocaleString()}/sqft for this ${beds ? `${beds}-bed ` : ""}${ptype}`;
+                let comparison: string;
+                if (pct > 5) {
+                  comparison = `this is ${pct.toFixed(1)}% above the local sold average of £${Math.round(areaPpsf).toLocaleString()}/sqft — above market rate`;
+                } else if (pct < -5) {
+                  comparison = `this is ${Math.abs(pct).toFixed(1)}% below the local sold average of £${Math.round(areaPpsf).toLocaleString()}/sqft — competitively priced`;
+                } else {
+                  comparison = `broadly in line with the local sold average of £${Math.round(areaPpsf).toLocaleString()}/sqft`;
+                }
+                summary = `${lead}, ${comparison}.`;
+              }
+            }
             return (
               <div
                 key={key}
