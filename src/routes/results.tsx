@@ -24,6 +24,7 @@ import { formatGBP, type AnalysisResult } from "@/lib/analysis.types";
 import { startAnalysisJob, getAnalysisJob, fetchBuyerPassExtras, analyseEpcRating, analyseFloodZone, analyseManualSqft, refetchLocalDataForPostcode, precheckListing } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
 import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser, getSavedAnalysis } from "@/lib/checkout.functions";
+import { createSharedReport } from "@/lib/share.functions";
 import { sendReportEmail } from "@/lib/email-report.functions";
 import { validateSingleReportToken, checkBuyerPassByEmail, getSingleReportByEmail } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
