@@ -185,6 +185,7 @@ Rules:
 - AUCTION: set negotiation.isAuction true ONLY if listing explicitly contains: auction, auctioneer, lot number, reserve price, unconditional exchange, sold prior to auction, online auction. NEVER infer from "guide price", "offers over", "offers in excess of". When auction: maxBid = single GBP number, recommendedOffer.low=high=maxBid. Otherwise normal offer range (2-8% under asking).
 - "Guide Price" is standard UK terminology (esp. Bath/Bristol/South West). With no other distress signals: do NOT generate a red flag for it. If mentioned, max severity LOW, neutral tone, suggest buyer confirm sale method with agent. Only escalate to MEDIUM/HIGH if combined with explicit auction terms, very long days on market, multiple reductions, or unusual completion (e.g. 28-day).
 - SQUARE FOOTAGE: only use a figure if EXPLICITLY stated in listing text (e.g. "1,180 sq ft", "110 sqm") or in PropertyData FLOOR AREAS for this exact property. NEVER estimate from beds/type/room dims. If unknown: property.sqft=0, metrics.pricePerSqFt=0, areaContext.priceVsAreaPercent=null, and wherever £/sqft would appear (comparableNote, scoreReasons.valueForMoney, redFlags detail) insert this EXACT sentence verbatim instead: "Square footage is typically shown on the listing's floor plan. Please enter it in the sq ft input field below for accurate price per sq ft analysis. If no floor plan is available, ensure you request accurate square footage data from the agent — this is a key part of any property analysis and essential for assessing whether you are buying at the right price per square foot."
+- If PROPERTYDATA FLOOR AREA data is present in the PropertyData context, use that sqm value converted to sqft (multiply sqm × 10.764, round to nearest whole number) as property.sqft. Only use it if no sqft is explicitly stated in the listing text. If both listing text sqft and PropertyData floor area exist and differ by more than 20%, prefer the listing text value and note the discrepancy in comparableNote.
 - MISSING SQ FT IS NOT A RED FLAG and must not lower listingTransparency. Sq ft is normally on the floorplan only. Only treat as a transparency issue if the agent literally answers "Ask agent" for size OR "FLOOR PLAN PRESENT: no" is explicit.
 - FLOOR PLAN: if "FLOOR PLAN PRESENT: yes" appears, the listing HAS one — never flag missing floor plan. Only flag missing if "FLOOR PLAN PRESENT: no" is explicit, or no FLOOR PLAN PRESENT line AND the description gives no indication.
 - EPC: extract rating if listed ("EPC rating D"); else epc:null. If found, populate rating/score/potentialRating/estimatedAnnualEnergyCost (null where missing) and 2-3 sentence commentary tailored to size+rating.
@@ -577,6 +578,7 @@ const PD_ENDPOINTS = [
   "prices-per-sqf",
   "sold-prices-per-sqf",
   "growth-psf",
+  "floor-areas",
 ] as const;
 
 const LONDON_POSTCODE_AREAS = new Set([
@@ -1031,6 +1033,9 @@ ${JSON.stringify(pdData(pd["growth"]) || null)}
 CAPITAL GROWTH PER SQ FT (year-on-year £/sqft growth — use to enrich local price trends commentary and areaDescription):
 ${JSON.stringify(pdData(pd["growth-psf"]) || null)}
 
+FLOOR AREA FROM EPC RECORDS (if present, use as the confirmed sqft for this property — treat as EXPLICITLY stated in the listing; compute property.sqft and metrics.pricePerSqFt from it; do NOT output the square footage placeholder sentence):
+${JSON.stringify(pdData(pd["floor-areas"]) || null)}
+
 FLOOD RISK:
 ${JSON.stringify(pdData(pd["flood-risk"]) || null)}
 
@@ -1265,6 +1270,7 @@ async function runJob(
       pricesPerSqf: mappedPricesPerSqf,
       soldPricesPerSqf: mappedSoldPricesPerSqf,
       growthPsf: pdData(pd["growth-psf"]),
+      floorAreas: pdData(pd["floor-areas"]),
     };
 
     // Map PropertyData payloads into the shapes the frontend renders for
@@ -1313,6 +1319,7 @@ async function runJob(
     console.log('[diagnostic] sold-prices raw status:', pd["sold-prices"]?.status, '| count:', Array.isArray(pd["sold-prices"]?.data) ? pd["sold-prices"].data.length : 'not array');
     console.log('[diagnostic] growth raw status:', pd["growth"]?.status, '| data present:', !!pd["growth"]?.data);
     console.log('[diagnostic] growth-psf raw:', JSON.stringify(pd["growth-psf"])?.slice(0, 200));
+    console.log('[diagnostic] floor-areas raw:', JSON.stringify(pd["floor-areas"])?.slice(0, 200));
     console.log(`[analyse-listing] Data mapping complete: ${Date.now() - mappingStart}ms`);
 
     // Override areaContext.avgPricePerSqFtArea with the PropertyData sold £/sqft
