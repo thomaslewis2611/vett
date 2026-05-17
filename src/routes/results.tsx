@@ -6351,7 +6351,7 @@ function CapitalGrowthSection({
         <div style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", lineHeight: 1.1 }}>
           {fmt(headlineNum)} <span style={{ fontSize: 14, color: "#5F5E5A", fontWeight: 400 }}>over {headlineWindow}</span>
         </div>
-        {tier === "pass" ? (
+        {(tier === "pass" || tier === "single") ? (
           <div className="mt-4 grid grid-cols-3 gap-3">
             {[
               { label: "1 year", v: g1 },
