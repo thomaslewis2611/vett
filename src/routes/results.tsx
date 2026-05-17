@@ -1530,7 +1530,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
             - Partial postcode only ("BA1"): show inline prompt above sections so
               user can supply the full postcode and trigger a refetch.
             - No postcode at all: hide entirely when the section has no data. */}
-        {(() => {
+        {unlocked && (() => {
           const isPaid = access.level === "single" || access.level === "pass";
           const fullPcRe = /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i;
           const hasFullPostcode = fullPcRe.test(a.property?.address ?? "");
