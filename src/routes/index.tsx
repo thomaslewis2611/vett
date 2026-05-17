@@ -844,7 +844,7 @@ function Index() {
                 "Everything in Single Report",
                 "Unlimited analyses for 90 days",
                 "AI chat on every property",
-                "Compare your shortlist",
+                "Side-by-side property comparison with AI verdict",
                 "All reports saved to dashboard",
               ].map((f) => (
                 <li
