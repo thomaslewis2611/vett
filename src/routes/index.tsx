@@ -433,6 +433,40 @@ function Index() {
         </div>
       </section>
 
+      {/* 3b. EXAMPLE REPORTS */}
+      <section className="mx-auto px-6" style={{ maxWidth: 1100, padding: "80px 24px" }}>
+        <div className="text-center" style={{ marginBottom: 40 }}>
+          <div
+            className="uppercase"
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              color: COLORS.green,
+              marginBottom: 12,
+            }}
+          >
+            Example reports
+          </div>
+          <h2
+            style={{
+              fontFamily: HEADING_FONT,
+              fontSize: 36,
+              fontWeight: 400,
+              color: COLORS.dark,
+              letterSpacing: "-1px",
+              lineHeight: 1.1,
+            }}
+          >
+            See exactly what you get.
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 24 }}>
+          <SampleReportCard data={SAMPLE_A} />
+          <SampleReportCard data={SAMPLE_B} />
+        </div>
+      </section>
+
       {/* 4. WHAT'S INCLUDED */}
       <section className="mx-auto px-6" style={{ maxWidth: 960, padding: "80px 24px" }}>
         <div className="text-center">
