@@ -1220,21 +1220,23 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
 
   return (
     <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-hidden bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
-      <SiteHeader />
-      <UpsellPassModal
-        open={upsellOpen}
-        onClose={() => setUpsellOpen(false)}
-        onChoosePass={() => {
-          setUpsellOpen(false);
-          upgradeToPass(pendingSingleUrl ?? undefined, { forceDiscount: true });
-        }}
-        onChooseSingle={() => {
-          setUpsellOpen(false);
-          startSingleCheckout(pendingSingleUrl ?? undefined);
-        }}
-      />
+      {shareMode ? <SharedReportBanner /> : <SiteHeader />}
+      {!shareMode && (
+        <UpsellPassModal
+          open={upsellOpen}
+          onClose={() => setUpsellOpen(false)}
+          onChoosePass={() => {
+            setUpsellOpen(false);
+            upgradeToPass(pendingSingleUrl ?? undefined, { forceDiscount: true });
+          }}
+          onChooseSingle={() => {
+            setUpsellOpen(false);
+            startSingleCheckout(pendingSingleUrl ?? undefined);
+          }}
+        />
+      )}
 
-      {access.level === "pass" && (
+      {!shareMode && access.level === "pass" && (
         <div
           className="no-print w-full max-w-full overflow-x-hidden"
           style={{
@@ -1253,16 +1255,17 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
 
       <main className="mx-auto w-full max-w-5xl overflow-x-hidden px-4 py-10 sm:px-6">
 
-        <div className="flex flex-wrap items-center justify-start gap-4 no-print">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ← Analyse another property
-          </Link>
-          <EmailReportButton
-            analysis={a}
-            tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
+        {!shareMode && (
+          <div className="flex flex-wrap items-center justify-start gap-4 no-print">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Analyse another property
+            </Link>
+            <EmailReportButton
+              analysis={a}
+              tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
             userEmail={access.email}
           />
         </div>
