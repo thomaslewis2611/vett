@@ -1261,17 +1261,21 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
           <div className="flex flex-wrap items-center justify-start gap-4 no-print">
             <Link
               to="/"
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary sm:w-auto sm:justify-start"
             >
               <Home className="h-4 w-4" />
               Analyse another property
             </Link>
-            <EmailReportButton
-              analysis={a}
-              tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
-              userEmail={access.email}
-            />
-            <ShareReportButton analysis={a} />
+            <div className="flex flex-1 basis-0 sm:flex-initial sm:basis-auto [&>*]:w-full sm:[&>*]:w-auto">
+              <EmailReportButton
+                analysis={a}
+                tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
+                userEmail={access.email}
+              />
+            </div>
+            <div className="flex flex-1 basis-0 sm:flex-initial sm:basis-auto [&>*]:w-full sm:[&>*]:w-auto">
+              <ShareReportButton analysis={a} />
+            </div>
           </div>
         )}
 
