@@ -1170,25 +1170,26 @@ const SAMPLE_A: SampleData = {
 };
 
 const SAMPLE_B: SampleData = {
-  meta: "4 bed · Semi-detached · Epping CM16",
-  address: "24 Tower Road, Epping",
-  price: "£825,000",
+  meta: "3 bed · Terraced · Walthamstow E17",
+  address: "Guildford Road, Walthamstow",
+  price: "£550,000",
   score: 7.4,
-  ppsfThis: "£524",
-  ppsfArea: "£648",
-  vsArea: "−19.1%",
+  ppsfThis: "£419",
+  ppsfArea: "£467",
+  vsArea: "−10.3%",
   vsAreaPositive: false,
-  barFill: 58,
-  barCompare: 74,
+  barFill: 62,
+  barCompare: 70,
   pricingNote:
-    "At 1,573 sq ft, this property sits 19.1% below the local sold average — strong value for a fully extended four-bed semi on a desirable road.",
+    "At 1,314 sq ft, this property sits 10.3% below the local sold average — good value for a Victorian terrace with large garden and extension potential.",
   flags: [
-    { sev: "LOW", text: "Guide price terminology used — confirm sale method with agent" },
+    { sev: "LOW", text: "Loft room documentation not confirmed — request building regs certificate" },
+    { sev: "LOW", text: "Guide price format — confirm standard sale not auction" },
   ],
   metrics: [
-    { label: "Stamp duty", val: "£31,250" },
+    { label: "Stamp duty", val: "£17,500" },
     { label: "Flood risk", val: "Low", positive: true },
-    { label: "Monthly est.", val: "£3,912" },
+    { label: "Monthly est.", val: "£2,620" },
   ],
-  footnote: "Based on a real CM16 listing · Area data from Land Registry",
+  footnote: "Based on a real E17 listing · Area data from Land Registry",
 };
