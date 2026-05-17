@@ -272,6 +272,30 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_reports: {
+        Row: {
+          analysis_data: Json
+          created_at: string
+          id: string
+          property_address: string | null
+          token: string
+        }
+        Insert: {
+          analysis_data: Json
+          created_at?: string
+          id?: string
+          property_address?: string | null
+          token?: string
+        }
+        Update: {
+          analysis_data?: Json
+          created_at?: string
+          id?: string
+          property_address?: string | null
+          token?: string
+        }
+        Relationships: []
+      }
       single_report_tokens: {
         Row: {
           analysis_json: Json | null

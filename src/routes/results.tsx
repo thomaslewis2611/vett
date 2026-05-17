@@ -16,6 +16,7 @@ import {
   Wifi,
   Signal,
   X,
+  Share2,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { DisclaimerBar } from "@/components/disclaimer-bar";
@@ -23,6 +24,7 @@ import { formatGBP, type AnalysisResult } from "@/lib/analysis.types";
 import { startAnalysisJob, getAnalysisJob, fetchBuyerPassExtras, analyseEpcRating, analyseFloodZone, analyseManualSqft, refetchLocalDataForPostcode, precheckListing } from "@/lib/analyse.functions";
 import { PropertyChat } from "@/components/property-chat";
 import { createCheckoutSession, sendBuyerPassMagicLink, saveAnalysisForUser, getSavedAnalysis } from "@/lib/checkout.functions";
+import { createSharedReport } from "@/lib/share.functions";
 import { sendReportEmail } from "@/lib/email-report.functions";
 import { validateSingleReportToken, checkBuyerPassByEmail, getSingleReportByEmail } from "@/lib/access.functions";
 import { supabase } from "@/integrations/supabase/client";
@@ -1083,8 +1085,11 @@ function LoadingState({ url }: { url?: string }) {
   );
 }
 
-function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId, savedOwnerEmail }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean; savedId?: string; savedOwnerEmail?: string | null }) {
-  const access = useAccess(listingUrl, token, savedId, savedOwnerEmail);
+export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId, savedOwnerEmail, shareMode = false }: { analysis: AnalysisResult; listingUrl?: string; token?: string; fromSaved?: boolean; savedId?: string; savedOwnerEmail?: string | null; shareMode?: boolean }) {
+  const realAccess = useAccess(listingUrl, token, savedId, savedOwnerEmail);
+  const access = shareMode
+    ? { level: "single" as const, email: null, expiresAt: null, loading: false }
+    : realAccess;
   const unlocked = access.level !== "none";
   const showChat = access.level === "pass";
 
@@ -1097,6 +1102,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
   const saveFn = useServerFn(saveAnalysisForUser);
   const savedRef = useRef(false);
   useEffect(() => {
+    if (shareMode) return;
     const eligible = access.level === "pass" || access.level === "single";
     if (!fromSaved && eligible && access.email && !savedRef.current && listingUrl) {
       savedRef.current = true;
@@ -1126,6 +1132,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
   const [fetchingExtras, setFetchingExtras] = useState(false);
   const extrasRef = useRef(false);
   useEffect(() => {
+    if (shareMode) return;
     if (extrasRef.current) return;
     if (access.level !== "pass" || !access.email || !listingUrl) return;
     const needsFlood = a.floodRisk == null;
@@ -1213,21 +1220,23 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 
   return (
     <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-hidden bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
-      <SiteHeader />
-      <UpsellPassModal
-        open={upsellOpen}
-        onClose={() => setUpsellOpen(false)}
-        onChoosePass={() => {
-          setUpsellOpen(false);
-          upgradeToPass(pendingSingleUrl ?? undefined, { forceDiscount: true });
-        }}
-        onChooseSingle={() => {
-          setUpsellOpen(false);
-          startSingleCheckout(pendingSingleUrl ?? undefined);
-        }}
-      />
+      {shareMode ? <SharedReportBanner /> : <SiteHeader />}
+      {!shareMode && (
+        <UpsellPassModal
+          open={upsellOpen}
+          onClose={() => setUpsellOpen(false)}
+          onChoosePass={() => {
+            setUpsellOpen(false);
+            upgradeToPass(pendingSingleUrl ?? undefined, { forceDiscount: true });
+          }}
+          onChooseSingle={() => {
+            setUpsellOpen(false);
+            startSingleCheckout(pendingSingleUrl ?? undefined);
+          }}
+        />
+      )}
 
-      {access.level === "pass" && (
+      {!shareMode && access.level === "pass" && (
         <div
           className="no-print w-full max-w-full overflow-x-hidden"
           style={{
@@ -1246,19 +1255,22 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 
       <main className="mx-auto w-full max-w-5xl overflow-x-hidden px-4 py-10 sm:px-6">
 
-        <div className="flex flex-wrap items-center justify-start gap-4 no-print">
-          <Link
-            to="/"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
-          >
-            ← Analyse another property
-          </Link>
-          <EmailReportButton
-            analysis={a}
-            tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
-            userEmail={access.email}
-          />
-        </div>
+        {!shareMode && (
+          <div className="flex flex-wrap items-center justify-start gap-4 no-print">
+            <Link
+              to="/"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              ← Analyse another property
+            </Link>
+            <EmailReportButton
+              analysis={a}
+              tier={access.level === "pass" ? "pass" : access.level === "single" ? "single" : "free"}
+              userEmail={access.email}
+            />
+            <ShareReportButton analysis={a} />
+          </div>
+        )}
 
         {/* Property header */}
         <section
@@ -1726,23 +1738,30 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           />
         )}
 
+        {/* Share report button — paid users only, above next steps */}
+        {!shareMode && unlocked && (
+          <div className="mt-10 no-print">
+            <ShareReportButton analysis={a} />
+          </div>
+        )}
+
         {/* Your next steps — render above the inline upgrade for single users, or at bottom for pass users */}
         {unlocked && <NextStepsSection analysis={a} />}
 
         {/* AI chat — Buyer Pass only; hidden entirely on free and single */}
-        {access.level === "pass" && (
+        {!shareMode && access.level === "pass" && (
           <section className="mt-10">
             <PropertyChat analysis={a} />
           </section>
         )}
 
         {/* Inline Buyer Pass upgrade — Single Report users only */}
-        {access.level === "single" && (
+        {!shareMode && access.level === "single" && (
           <InlineBuyerPassUpgrade listingUrl={listingUrl} />
         )}
 
 
-        {unlocked && access.level === "pass" && (
+        {!shareMode && unlocked && access.level === "pass" && (
           <div className="mt-10 text-center">
             <Link to="/dashboard" style={{ fontSize: 13, color: "#2D6A4F" }}>
               Go to your dashboard →
@@ -1752,7 +1771,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
       </main>
 
       <DisclaimerBar />
-        <SiteFooter />
+        {!shareMode && <SiteFooter />}
     </div>
   );
 }
@@ -6567,5 +6586,114 @@ function PrecheckModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function SharedReportBanner() {
+  return (
+    <div
+      className="w-full"
+      style={{
+        background: "#2D6A4F",
+        color: "#FFFDF9",
+        borderBottom: "0.5px solid rgba(0,0,0,0.1)",
+      }}
+    >
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-8" style={{ fontSize: 13 }}>
+        <span className="truncate">
+          Shared report — powered by Roovr
+        </span>
+        <a
+          href="https://roovr.co"
+          style={{ color: "#FFFDF9", fontWeight: 500 }}
+          className="shrink-0 hover:underline"
+        >
+          roovr.co →
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function ShareReportButton({ analysis }: { analysis: AnalysisResult }) {
+  const shareFn = useServerFn(createSharedReport);
+  const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [url, setUrl] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+
+  async function handleClick() {
+    if (state === "loading") return;
+    setState("loading");
+    try {
+      const { token } = await shareFn({
+        data: {
+          analysisData: analysis as unknown,
+          propertyAddress: analysis.property?.address ?? null,
+        },
+      });
+      setUrl(`https://roovr.co/report/${token}`);
+      setState("ready");
+    } catch (e) {
+      console.error("[ShareReportButton] failed", e);
+      setState("error");
+    }
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (state === "ready") {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          readOnly
+          value={url}
+          onFocus={(e) => e.currentTarget.select()}
+          className="rounded-lg border border-border bg-background px-3 py-2 text-xs sm:text-sm"
+          style={{ minWidth: 240, color: "#1A1108" }}
+        />
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-opacity hover:opacity-90"
+          style={{ background: "#2D6A4F", color: "#FFFDF9" }}
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={state === "loading"}
+      className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+    >
+      {state === "loading" ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Generating link…
+        </>
+      ) : state === "error" ? (
+        <>
+          <Share2 className="h-4 w-4" />
+          Couldn't generate link. Try again.
+        </>
+      ) : (
+        <>
+          <Share2 className="h-4 w-4" />
+          Share report
+        </>
+      )}
+    </button>
   );
 }

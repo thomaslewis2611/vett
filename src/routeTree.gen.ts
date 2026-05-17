@@ -23,6 +23,7 @@ import { Route as CompareRouteImport } from './routes/compare'
 import { Route as BuyerLoginRouteImport } from './routes/buyer-login'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ReportTokenRouteImport } from './routes/report.$token'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -98,6 +99,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ReportTokenRoute = ReportTokenRouteImport.update({
+  id: '/report/$token',
+  path: '/report/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -136,6 +142,7 @@ export interface FileRoutesByFullPath {
   '/results': typeof ResultsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/report/$token': typeof ReportTokenRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -156,6 +163,7 @@ export interface FileRoutesByTo {
   '/results': typeof ResultsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/report/$token': typeof ReportTokenRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/results': typeof ResultsRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/report/$token': typeof ReportTokenRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/sitemap.xml'
     | '/terms'
+    | '/report/$token'
     | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -219,6 +229,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/sitemap.xml'
     | '/terms'
+    | '/report/$token'
     | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -239,6 +250,7 @@ export interface FileRouteTypes {
     | '/results'
     | '/sitemap.xml'
     | '/terms'
+    | '/report/$token'
     | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -260,6 +272,7 @@ export interface RootRouteChildren {
   ResultsRoute: typeof ResultsRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
+  ReportTokenRoute: typeof ReportTokenRoute
   ApiPublicCronCheckExpiryRemindersRoute: typeof ApiPublicCronCheckExpiryRemindersRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -366,6 +379,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/report/$token': {
+      id: '/report/$token'
+      path: '/report/$token'
+      fullPath: '/report/$token'
+      preLoaderRoute: typeof ReportTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lovable/email/queue/process': {
       id: '/lovable/email/queue/process'
       path: '/lovable/email/queue/process'
@@ -412,6 +432,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResultsRoute: ResultsRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
+  ReportTokenRoute: ReportTokenRoute,
   ApiPublicCronCheckExpiryRemindersRoute:
     ApiPublicCronCheckExpiryRemindersRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
