@@ -3111,7 +3111,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         />
       </div>
 
-      {err && <p className="mt-4" style={{ fontSize: 13, color: "#FCA5A5" }}>{err}</p>}
+      {err && <p className="mt-4" style={{ fontSize: 13, color: "#A32D2D" }}>{err}</p>}
 
       <div className="mt-7 text-center">
         {!showRestore ? (
@@ -3119,13 +3119,13 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
             type="button"
             onClick={() => setShowRestore(true)}
             className="text-xs underline-offset-4 hover:underline"
-            style={{ color: "rgba(255,253,249,0.7)", fontWeight: 300 }}
+            style={{ color: "#5F5E5A", fontWeight: 300 }}
           >
             Already purchased? Restore your access →
           </button>
         ) : (
           <form onSubmit={handleRestore} className="mx-auto mt-2 max-w-sm text-left">
-            <label className="block" style={{ fontSize: 12, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>
+            <label className="block" style={{ fontSize: 12, fontWeight: 300, color: "#5F5E5A" }}>
               Enter your email
             </label>
             <div className="mt-2 flex gap-2">
@@ -3136,7 +3136,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
                 onChange={(e) => setRestoreEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="flex-1 px-4 py-2 outline-none"
-                style={{ background: "rgba(255,253,249,0.08)", color: "#FFFDF9", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(255,253,249,0.18)" }}
+                style={{ background: "#F1EFE8", color: "#1A1108", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(26,17,8,0.1)" }}
               />
               <button
                 type="submit"
@@ -3145,7 +3145,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
                 Send access link
               </button>
             </div>
-            {restoreMsg && <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>{restoreMsg}</p>}
+            {restoreMsg && <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: "#5F5E5A" }}>{restoreMsg}</p>}
           </form>
         )}
       </div>
