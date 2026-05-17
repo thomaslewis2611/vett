@@ -1500,6 +1500,9 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           <ViewingChecklistSection analysis={a} unlocked={unlocked} />
         </SafeSection>
 
+        {/* Your next steps — render above the paywall for free users */}
+        {!unlocked && <NextStepsSection analysis={a} />}
+
         {/* Paywall (free users only) — sits between preview sections and the paid sections */}
         {!unlocked && (
           <section className="mt-10">
@@ -1698,6 +1701,9 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           </section>
         )}
 
+        {/* Your next steps — render above the inline upgrade for single users, or at bottom for pass users */}
+        {unlocked && <NextStepsSection analysis={a} />}
+
         {/* Inline Buyer Pass upgrade — Single Report users only */}
         {access.level === "single" && (
           <InlineBuyerPassUpgrade listingUrl={listingUrl} />
@@ -1716,6 +1722,85 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
       <DisclaimerBar />
         <SiteFooter />
     </div>
+  );
+}
+
+function NextStepsSection({ analysis }: { analysis: AnalysisResult }) {
+  const steps = Array.isArray(analysis?.nextSteps)
+    ? analysis.nextSteps.filter((s) => typeof s === "string" && s.trim().length > 0)
+    : [];
+  if (steps.length === 0) return null;
+  return (
+    <section className="mt-10">
+      <div
+        style={{
+          background: "#FFFDF9",
+          border: "0.5px solid rgba(26,17,8,0.1)",
+          borderRadius: 20,
+          padding: "clamp(20px, 5vw, 32px)",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 500,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#2D6A4F",
+            marginBottom: 12,
+          }}
+        >
+          What to do next
+        </div>
+        <h2
+          style={{
+            fontFamily: '"Playfair Display", serif',
+            fontWeight: 400,
+            fontSize: "clamp(24px, 4vw, 32px)",
+            color: "#1A1108",
+            margin: "0 0 20px 0",
+            lineHeight: 1.2,
+          }}
+        >
+          Your next steps
+        </h2>
+        <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+          {steps.map((step, i) => (
+            <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <span
+                aria-hidden="true"
+                style={{
+                  flex: "0 0 22px",
+                  width: 22,
+                  height: 22,
+                  borderRadius: "50%",
+                  background: "#EAF3DE",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: 2,
+                }}
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M2.5 6.5L5 9L10 3.5" stroke="#2D6A4F" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <span
+                style={{
+                  fontFamily: "Inter, sans-serif",
+                  fontSize: 15,
+                  fontWeight: 400,
+                  lineHeight: 1.55,
+                  color: "#1A1108",
+                }}
+              >
+                {step}
+              </span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   );
 }
 
