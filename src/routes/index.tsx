@@ -931,8 +931,14 @@ function Index() {
               lineHeight: 1.15,
             }}
           >
-            One-off. No subscription. No surprises.
+            Simple, honest pricing
           </h2>
+          <p
+            className="mx-auto mt-5"
+            style={{ fontSize: 15, fontWeight: 300, color: "rgba(241,239,232,0.7)", lineHeight: 1.6 }}
+          >
+            One-time payments. No auto-renewals, no hidden fees.
+          </p>
         </div>
 
         <div
