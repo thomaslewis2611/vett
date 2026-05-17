@@ -551,8 +551,8 @@ function ComparisonView({
         {/* Verdict */}
         <div className="mt-10 p-6" style={{ background: "#FAECE7", borderRadius: 16, border: "1px solid #F4D5CB" }}>
           <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1108", margin: 0 }}>Roovr verdict</h2>
-          <p style={{ fontSize: 14, color: "#1A1108", lineHeight: 1.6, margin: "12px 0 0", whiteSpace: "pre-wrap" }}>
-            {verdictLoading ? "Generating verdict…" : verdict || "No verdict available."}
+          <p style={{ fontSize: 14, color: "#1A1108", lineHeight: 1.6, margin: "12px 0 0" }}>
+            {verdictLoading ? "Generating verdict…" : renderVerdictText(verdict || "No verdict available.")}
           </p>
           <p style={{ fontSize: 11, color: "#888780", margin: "16px 0 0" }}>
             AI-generated comparison based on listing data. Always verify independently.
