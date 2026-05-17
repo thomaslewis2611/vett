@@ -854,19 +854,19 @@ function Index() {
         >
           {[
             { icon: AlertTriangle, title: "Full red flag analysis", body: "Every risk identified and explained, ranked by severity" },
-            { icon: Zap, title: "EPC analysis", body: "Energy rating, estimated costs and upgrade recommendations" },
+            { icon: Zap, title: "EPC analysis", body: "Energy rating, estimated annual costs and upgrade recommendations" },
             { icon: BarChart3, title: "Area pricing analysis", body: "Local £/sqft data so you know if the price is fair" },
-            { icon: PoundSterling, title: "True cost breakdown", body: "Every purchasing cost including stamp duty, surveys and legal fees" },
+            { icon: PoundSterling, title: "True cost breakdown", body: "Every cost including stamp duty, surveys and legal fees" },
             { icon: MessageSquare, title: "Negotiation strategy", body: "A recommended offer range with specific leverage points" },
-            { icon: ClipboardCheck, title: "Viewing checklist", body: "Property-specific questions to ask on the day" },
+            { icon: ClipboardCheck, title: "Viewing checklist", body: "Property-specific questions and checks for the day" },
             { icon: Wrench, title: "Renovation cost estimator", body: "Estimated costs for any work identified in the listing" },
             { icon: UserCheck, title: "Seller motivation score", body: "How urgently the seller needs to move" },
             { icon: Droplets, title: "Flood risk assessment", body: "Environment Agency data for this exact postcode" },
-            { icon: GraduationCap, title: "Nearby schools", body: "Local primary and secondary schools and Ofsted ratings" },
-            { icon: Shield, title: "Crime statistics", body: "Crime levels within 1 mile of the property" },
+            { icon: GraduationCap, title: "Nearby schools", body: "Local primary and secondary schools with Ofsted ratings" },
+            { icon: Shield, title: "Crime statistics", body: "Crime levels recorded within 1 mile of the property" },
             { icon: Wifi, title: "Broadband & connectivity", body: "Download speeds and full fibre availability" },
-            { icon: Train, title: "Transport links", body: "PTAL score for London properties" },
-            { icon: MessageCircle, title: "AI chat", body: "Ask anything about the property (Buyer Pass only)" },
+            { icon: Train, title: "Transport links", body: "PTAL accessibility score for London properties" },
+            { icon: MessageCircle, title: "AI chat", body: "Ask anything about the property — Buyer Pass only" },
           ].map((f) => (
             <div
               key={f.title}
