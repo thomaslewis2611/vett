@@ -1450,7 +1450,7 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
         {/* Area Pricing Analysis */}
         <AreaContextSection analysis={a} unlocked={unlocked} />
 
-        {/* Capital growth (PropertyData) — headline for free/single, full breakdown for pass */}
+        {/* Local price trends (PropertyData) — full breakdown for single/pass */}
         {(access.level === "single" || access.level === "pass") && (
           <CapitalGrowthSection
             analysis={a}
@@ -2578,7 +2578,7 @@ const FULL_REPORT_FEATURES: { title: string; sub: string; note?: string }[] = [
   { title: "All red flags", sub: "See every issue we found" },
   { title: "EPC analysis", sub: "Energy rating and improvement costs" },
   { title: "Area pricing analysis", sub: "Local £/sqft and market comparison" },
-  { title: "Capital growth", sub: "1yr, 3yr and 5yr local price growth data" },
+  { title: "Local price trends", sub: "1yr, 3yr and 5yr price movement in this area" },
   { title: "True cost breakdown", sub: "Total upfront and monthly costs" },
   { title: "Negotiation strategy", sub: "Recommended offer and your leverage" },
   { title: "Viewing checklist", sub: "What to check on the day" },
@@ -6362,7 +6362,7 @@ function CapitalGrowthSection({
   return (
     <section className="mt-10">
       <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
-        Capital growth
+        Local price trends
       </h2>
       <div className="mt-4" style={card}>
         <div style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", lineHeight: 1.1 }}>
@@ -6405,7 +6405,7 @@ function CapitalGrowthSection({
           </div>
         )}
         <p style={{ marginTop: 12, fontSize: 11, color: "#888780" }}>
-          Source: PropertyData area capital growth. Past performance is not a guarantee of future returns.
+          Source: PropertyData local price data. Past performance is not a guarantee of future returns.
         </p>
       </div>
     </section>
