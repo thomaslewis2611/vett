@@ -941,7 +941,7 @@ function Index() {
               {
                 n: "01",
                 title: "Paste the listing URL",
-                body: "Copy the Rightmove link and paste it into Roovr. We fetch the listing, read every word of the agent copy, and check local data sources.",
+                body: "Copy the listing URL and paste it into Roovr. We fetch the listing, read every word of the agent description, and check local data sources.",
               },
               {
                 n: "02",
