@@ -188,6 +188,15 @@ Rules:
 - MISSING SQ FT IS NOT A RED FLAG and must not lower listingTransparency. Sq ft is normally on the floorplan only. Only treat as a transparency issue if the agent literally answers "Ask agent" for size OR "FLOOR PLAN PRESENT: no" is explicit.
 - FLOOR PLAN: if "FLOOR PLAN PRESENT: yes" appears, the listing HAS one — never flag missing floor plan. Only flag missing if "FLOOR PLAN PRESENT: no" is explicit, or no FLOOR PLAN PRESENT line AND the description gives no indication.
 - EPC: extract rating if listed ("EPC rating D"); else epc:null. If found, populate rating/score/potentialRating/estimatedAnnualEnergyCost (null where missing) and 2-3 sentence commentary tailored to size+rating.
+- estimatedAnnualEnergyCost: ALWAYS populate this field — never return null. Use the EPC rating and property size to estimate annual energy costs using these 2026 UK benchmarks:
+  • EPC A: £400–£700/yr
+  • EPC B: £700–£1,000/yr
+  • EPC C: £1,000–£1,500/yr
+  • EPC D: £1,500–£2,500/yr (adjust up for larger properties: add £200–400 for every 500 sqft above 1,000 sqft)
+  • EPC E: £2,500–£3,500/yr
+  • EPC F: £3,500–£5,000/yr
+  • EPC G: £5,000+/yr
+  Format as a range string e.g. '£1,800 – £2,400 per year'. If no EPC rating is available, estimate based on property type and size with a note that it is an estimate.
 - DATES: accept dates in current/future year as written; only flag if logically impossible.
 - sellerMotivation: score 1-10, label Low/Moderate/High/Very High, signals (short strings), 2-3 sentence commentary.
 - viewingChecklist: 8-15 items, category Structure|Legal|Running costs|Negotiation|Practical, plus one-sentence "why".
