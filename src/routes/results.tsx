@@ -1209,6 +1209,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
   };
 
   console.log('[debug] access level:', access.level, 'unlocked:', unlocked);
+  console.log('[diagnostic] crime section:', access.level, !!a?.crime);
 
   return (
     <div className="flex min-h-screen w-full max-w-full flex-col overflow-x-hidden bg-background animate-in fade-in slide-in-from-bottom-2 duration-700">
