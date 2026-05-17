@@ -1706,12 +1706,14 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           />
         )}
 
-        {/* Sold price history (PropertyData / Land Registry) */}
-        <PriceHistorySection
-          analysis={a}
-          unlocked={access.level === "single" || access.level === "pass"}
-          onUpgrade={() => upgradeToSingle(listingUrl)}
-        />
+        {/* Sold price history — paid users only */}
+        {(access.level === "single" || access.level === "pass") && (
+          <PriceHistorySection
+            analysis={a}
+            unlocked={true}
+            onUpgrade={() => upgradeToSingle(listingUrl)}
+          />
+        )}
 
         {/* Capital growth (PropertyData) — headline for free/single, full breakdown for pass */}
         {(access.level === "single" || access.level === "pass") && (
