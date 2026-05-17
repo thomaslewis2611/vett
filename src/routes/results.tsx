@@ -5836,7 +5836,20 @@ function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResu
   }
 
   const rc = analysis.renovationCosts;
-  if (!rc || rc.items.length === 0) return null;
+  if (!rc || rc.items.length === 0) {
+    return (
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+          Renovation estimate
+        </h2>
+        <div className="mt-4" style={CARD_STYLE}>
+          <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            No renovation issues identified in this listing. If the property requires work, get quotes from local tradespeople for a tailored estimate.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   const priorityStyle = (p: string): CSSProperties => {
     const n = (p || "").toLowerCase();
