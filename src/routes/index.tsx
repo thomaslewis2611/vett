@@ -176,7 +176,7 @@ function Index() {
       <section style={{ padding: "80px 24px 48px" }}>
         <div className="mx-auto roovr-hero-grid" style={{ maxWidth: 1100 }}>
           {/* LEFT */}
-          <div className="roovr-hero-left text-center md:text-left">
+          <div className="roovr-hero-left text-center">
             <span
               className="inline-flex items-center gap-2"
               style={{
