@@ -1266,7 +1266,7 @@ async function runJob(
       })
       .eq("id", jobId);
     if (updErr) throw updErr;
-    console.log(`[analyse-listing] job ${jobId} complete in ${Date.now() - jobStartedAt}ms`);
+    console.log("[timing] job complete", Date.now(), `(+${Date.now() - jobStartedAt}ms total)`);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[analyse-listing] job ${jobId} failed:`, message, err);
