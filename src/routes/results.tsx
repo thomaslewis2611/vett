@@ -5192,8 +5192,28 @@ function FloodRiskSection({
   onFloodRiskUpdate?: (fr: NonNullable<AnalysisResult["floodRisk"]>) => void;
 }) {
   try {
-    const fr = analysis.floodRisk;
-    console.log("[FloodRiskSection]", { isBuyerPass, hasData: !!fr, unavailable: fr?.unavailable });
+    // Synthesize floodRisk from PropertyData /flood-risk raw payload when the
+    // analysis didn't capture it (the endpoint returns `{flood_risk: "Very Low"}`
+    // flat, so it never reached Claude's structured output).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const pdFlood: any = analysis.propertyData?.floodRisk ?? null;
+    const pdFloodLevel: string | null =
+      pdFlood && typeof pdFlood === "object"
+        ? (pdFlood.flood_risk ?? pdFlood.data?.flood_risk ?? null)
+        : null;
+    let fr = analysis.floodRisk;
+    if ((!fr || fr.unavailable) && pdFloodLevel) {
+      fr = {
+        riversAndSea: pdFloodLevel,
+        surfaceWater: null,
+        reservoir: null,
+        groundwater: null,
+        overallRisk: pdFloodLevel,
+        commentary: "",
+        autoRedFlag: /high/i.test(pdFloodLevel),
+      } as AnalysisResult["floodRisk"];
+    }
+    console.log("[FloodRiskSection]", { isBuyerPass, hasData: !!fr, unavailable: fr?.unavailable, pdFloodLevel });
 
     const cardStyle: CSSProperties = {
       background: "#FFFDF9",
@@ -6120,7 +6140,19 @@ function PriceHistorySection({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = (analysis.propertyData?.soldPrices as any) ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const list: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : Array.isArray(raw?.transactions) ? raw.transactions : [];
+  const list: any[] = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw?.raw_data)
+      ? raw.raw_data
+      : Array.isArray(raw?.data?.raw_data)
+        ? raw.data.raw_data
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw?.transactions)
+            ? raw.transactions
+            : Array.isArray(raw?.properties)
+              ? raw.properties
+              : [];
   if (!list.length) return null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -6214,9 +6246,28 @@ function CapitalGrowthSection({
   const data: any = raw?.data ?? raw;
   const num = (v: unknown) => (typeof v === "number" ? v : typeof v === "string" ? parseFloat(v) : NaN);
 
-  const g1 = num(data?.["1yr"] ?? data?.year_1 ?? data?.oneYear);
-  const g3 = num(data?.["3yr"] ?? data?.year_3 ?? data?.threeYear);
-  const g5 = num(data?.["5yr"] ?? data?.year_5 ?? data?.fiveYear);
+  // Try object shape first (legacy / future PropertyData responses)
+  let g1 = num(data?.["1yr"] ?? data?.year_1 ?? data?.oneYear);
+  let g3 = num(data?.["3yr"] ?? data?.year_3 ?? data?.threeYear);
+  let g5 = num(data?.["5yr"] ?? data?.year_5 ?? data?.fiveYear);
+
+  // PropertyData /growth currently returns an array of [label, price, yoy%]
+  // tuples (one per year). Derive 1yr / 3yr / 5yr cumulative growth from prices.
+  if (isNaN(g1) && isNaN(g3) && isNaN(g5) && Array.isArray(data)) {
+    const prices: number[] = data
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((row: any) => (Array.isArray(row) ? num(row[1]) : NaN))
+      .filter((p: number) => !isNaN(p) && p > 0);
+    const n = prices.length;
+    if (n >= 2) {
+      const latest = prices[n - 1];
+      const pct = (oldVal: number) => ((latest - oldVal) / oldVal) * 100;
+      if (n >= 2) g1 = pct(prices[n - 2]);
+      if (n >= 4) g3 = pct(prices[n - 4]);
+      if (n >= 6) g5 = pct(prices[n - 6]);
+    }
+  }
+
   const headlineNum = !isNaN(g5) ? g5 : !isNaN(g3) ? g3 : !isNaN(g1) ? g1 : NaN;
   const headlineWindow = !isNaN(g5) ? "5 years" : !isNaN(g3) ? "3 years" : "1 year";
   if (isNaN(headlineNum)) return null;

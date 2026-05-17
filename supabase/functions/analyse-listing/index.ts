@@ -1238,7 +1238,9 @@ async function runJob(
     const mappedSoldPricesPerSqf = mapPdPpsf(pd["sold-prices-per-sqf"]);
     parsed.propertyData = {
       soldPrices: pdData(pd["sold-prices"]),
-      floodRisk: pdData(pd["flood-risk"]),
+      // /flood-risk returns its result flat ({status, flood_risk, ...}) with no `.data` wrapper.
+      // Preserve the full raw payload so the FE can read `.flood_risk`.
+      floodRisk: pd["flood-risk"] && typeof pd["flood-risk"] === "object" ? pd["flood-risk"] : null,
       schools: pdData(pd["schools"]),
       crime: pdData(pd["crime"]),
       internetSpeed: pdData(pd["internet-speed"]),
