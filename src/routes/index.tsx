@@ -69,6 +69,24 @@ const COLORS = {
   border: "rgba(26,17,8,0.12)",
 };
 
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      style={{
+        fontSize: 10,
+        fontWeight: 500,
+        textTransform: "uppercase",
+        letterSpacing: "0.08em",
+        color: COLORS.veryMuted,
+        marginTop: 20,
+        marginBottom: 10,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 function Index() {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
