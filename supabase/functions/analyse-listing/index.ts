@@ -219,6 +219,7 @@ Rules:
 BREVITY RULES (follow strictly to keep response compact):
 
 - scoreReasons: maximum 2 sentences each, under 60 words each
+- IMPORTANT: Never reference specific Ofsted inspection years, ratings, or outcomes in scoreReasons or any other generated text unless the data is explicitly provided in the PropertyData schools payload. Do not infer or assume Ofsted ratings from school names or reputation. If Ofsted data is unavailable, refer to schools by proximity and type only (e.g. 'Epping Primary School 0.3 miles').
 - redFlags detail: maximum 2 sentences, under 50 words each
 - negotiation.rationale: maximum 3 sentences, under 80 words
 - sellerMotivation.commentary: maximum 2 sentences, under 60 words
