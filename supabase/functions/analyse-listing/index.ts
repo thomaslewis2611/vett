@@ -1032,6 +1032,9 @@ ${JSON.stringify(pdData(pd["growth"]) || null)}
 CAPITAL GROWTH PER SQ FT (year-on-year £/sqft growth — use to enrich local price trends commentary and areaDescription):
 ${JSON.stringify(pdData(pd["growth-psf"]) || null)}
 
+FLOOR AREA FROM EPC RECORDS (if present, use as the confirmed sqft for this property — treat as EXPLICITLY stated in the listing; compute property.sqft and metrics.pricePerSqFt from it; do NOT output the square footage placeholder sentence):
+${JSON.stringify(pdData(pd["floor-areas"]) || null)}
+
 FLOOD RISK:
 ${JSON.stringify(pdData(pd["flood-risk"]) || null)}
 
