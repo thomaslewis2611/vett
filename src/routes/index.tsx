@@ -709,11 +709,22 @@ function Index() {
             </div>
             <ul className="mt-6 flex flex-col gap-3">
               {[
-                "Full red flag analysis",
-                "True cost breakdown",
-                "Negotiation strategy",
-                "Flood risk, schools, crime",
-                "Saved to your account",
+                "Full analysis with all red flags",
+                "EPC analysis",
+                "Area pricing analysis",
+                "True cost breakdown and stamp duty",
+                "Negotiation strategy and recommended offer",
+                "Viewing checklist — specific to this property",
+                "Renovation cost estimator",
+                "Seller motivation score",
+                "Flood risk assessment",
+                "Nearby schools with Ofsted ratings",
+                "Crime statistics",
+                "Broadband and internet speed",
+                "Transport links (London properties only)",
+                "Recommended next steps",
+                "Report saved to your account",
+                "Email your report to you",
               ].map((f) => (
                 <li
                   key={f}
