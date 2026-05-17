@@ -317,6 +317,7 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ] (3-8 items),
   "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "valuationFee": number, "landRegistryFee": number, "electronicTransferFee": number, "removalCosts": number, "indemnityInsurance": number, "buildingsInsurance": number, "serviceCharge": number, "groundRent": number, "leaseholdYears": number, "councilTaxMonthly": number, "buildingsInsuranceMonthly": number, "serviceChargeMonthly": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
   "viewingQuestions": string[] (exactly 8),
+  "nextSteps": string[] (3-4 items, each <20 words, in priority order),
   "negotiation": { "isAuction": boolean (optional), "maxBid": number (optional, auction only), "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] (3-6) },
   "sellerMotivation": { "score": number (1-10), "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
   "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] (8-15) },
