@@ -5803,6 +5803,7 @@ function ViewingChecklistSection({ analysis, unlocked }: { analysis: AnalysisRes
 }
 
 function RenovationCostsSection({ analysis, unlocked }: { analysis: AnalysisResult; unlocked: boolean }) {
+  console.log("[RenovationCostsSection]", { unlocked, hasData: !!analysis?.renovationCosts, items: analysis?.renovationCosts?.items?.length });
   if (!unlocked) {
     return (
       <section className="mt-10">
