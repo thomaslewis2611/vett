@@ -3022,8 +3022,13 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
   const HEADING = "'Playfair Display', Georgia, serif";
   return (
     <div
-      className="p-8 sm:p-10"
-      style={{ background: "#1A1108", borderRadius: 16, color: "#FFFDF9" }}
+      style={{
+        background: "#FFFDF9",
+        border: "0.5px solid rgba(26,17,8,0.1)",
+        borderRadius: 20,
+        padding: 32,
+        color: "#1A1108",
+      }}
     >
       <UpsellPassModal
         open={upsellOpen}
@@ -3032,8 +3037,8 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         onChooseSingle={() => { setUpsellOpen(false); startCheckout("single"); }}
       />
       <div
-        className="inline-flex items-center gap-2"
         style={{
+          fontFamily: "'Inter', system-ui, sans-serif",
           color: "#2D6A4F",
           fontSize: 11,
           fontWeight: 500,
@@ -3041,15 +3046,15 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           textTransform: "uppercase",
         }}
       >
-        <Sparkles className="h-3 w-3" /> Unlock the full report
+        Unlock the full report
       </div>
       <h3
         className="mt-3"
-        style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 32, color: "#FFFDF9", letterSpacing: "-0.5px", lineHeight: 1.15 }}
+        style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 32, color: "#1A1108", letterSpacing: "-0.5px", lineHeight: 1.15 }}
       >
         See every red flag, the true cost and how to negotiate
       </h3>
-      <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>
+      <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>
         Pick the option that suits you.
       </p>
 
