@@ -195,7 +195,7 @@ function Index() {
                 letterSpacing: "-0.5px",
               }}
             >
-              You're about to spend £400,000.{" "}
+              They market the dream.{" "}
               <em
                 style={{
                   fontStyle: "italic",
@@ -203,7 +203,7 @@ function Index() {
                   color: COLORS.green,
                 }}
               >
-                Know what you're buying.
+                We analyse the reality.
               </em>
             </h1>
 
@@ -217,8 +217,9 @@ function Index() {
                 lineHeight: 1.6,
               }}
             >
-              Paste any Rightmove listing. Get red flags, true costs, a negotiation strategy,
-              flood risk, local schools and more — in under 2 minutes.
+              Make your most important financial decision with confidence. Roovr gives you an
+              independent analysis of any property listing — red flags, true costs, negotiation
+              strategy and more — in under 2 minutes.
             </p>
 
             <form
@@ -270,38 +271,6 @@ function Index() {
                 {notice}
               </p>
             )}
-
-            {/* Example chips */}
-            <div className="mt-5">
-              <div style={{ fontSize: 11, color: COLORS.veryMuted, marginBottom: 6 }}>
-                Try an example:
-              </div>
-              <div className="flex flex-wrap items-center gap-2 justify-center md:justify-start">
-                {[
-                  { label: "SW11 flat →", url: "https://www.rightmove.co.uk/properties/example-sw11" },
-                  { label: "Bristol house →", url: "https://www.rightmove.co.uk/properties/example-bristol" },
-                  { label: "Bath terrace →", url: "https://www.rightmove.co.uk/properties/example-bath" },
-                ].map((chip) => (
-                  <button
-                    key={chip.label}
-                    type="button"
-                    onClick={() => setUrl(chip.url)}
-                    style={{
-                      background: "#fff",
-                      border: "0.5px solid rgba(26,17,8,0.15)",
-                      borderRadius: 100,
-                      fontSize: 11,
-                      color: COLORS.muted,
-                      padding: "5px 12px",
-                      cursor: "pointer",
-                      fontFamily: BODY_FONT,
-                    }}
-                  >
-                    {chip.label}
-                  </button>
-                ))}
-              </div>
-            </div>
 
             <p className="mt-3" style={{ fontSize: 11, color: COLORS.veryMuted }}>
               Works best with Rightmove · More sites coming soon · UK properties only
@@ -706,7 +675,7 @@ function Index() {
               lineHeight: 1.15,
             }}
           >
-            Everything your estate agent won't tell you
+            Everything you need to know before you offer.
           </h2>
         </div>
 
@@ -962,8 +931,14 @@ function Index() {
               lineHeight: 1.15,
             }}
           >
-            One-off. No subscription. No surprises.
+            Simple, honest pricing
           </h2>
+          <p
+            className="mx-auto mt-5"
+            style={{ fontSize: 15, fontWeight: 300, color: "rgba(241,239,232,0.7)", lineHeight: 1.6 }}
+          >
+            One-time payments. No auto-renewals, no hidden fees.
+          </p>
         </div>
 
         <div
@@ -1180,8 +1155,8 @@ function Index() {
               maxWidth: 520,
             }}
           >
-            You wouldn't make a £400,000 decision without doing your research. Roovr does it
-            in two minutes, for £4.99.
+            You wouldn't make a decision involving hundreds of thousands of pounds without doing
+            your research. Roovr does it in two minutes, for £4.99.
           </p>
           <button
             type="button"
