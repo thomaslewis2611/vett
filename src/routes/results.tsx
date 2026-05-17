@@ -1652,14 +1652,16 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           );
         })()}
 
-        {/* Transport links — locked placeholder for free, full data for Single/Pass */}
-        <TransportSection
-          analysis={a}
-          isBuyerPass={access.level === "single" || access.level === "pass"}
-          fetching={access.level === "pass" && fetchingExtras && a.transport == null}
-          onUpgrade={() => upgradeToSingle(listingUrl)}
-          onUpgradePass={() => upgradeToPass(listingUrl)}
-        />
+        {/* Transport links — paid users only */}
+        {unlocked && (
+          <TransportSection
+            analysis={a}
+            isBuyerPass={access.level === "single" || access.level === "pass"}
+            fetching={access.level === "pass" && fetchingExtras && a.transport == null}
+            onUpgrade={() => upgradeToSingle(listingUrl)}
+            onUpgradePass={() => upgradeToPass(listingUrl)}
+          />
+        )}
 
         {/* Sold price history (PropertyData / Land Registry) */}
         <PriceHistorySection
