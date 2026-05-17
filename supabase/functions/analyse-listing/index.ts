@@ -660,6 +660,8 @@ function mapPdSchools(raw: any) {
   if (!raw || raw.status !== "success" || !raw.data) return null;
   // PropertyData /schools returns ofsted rating under a few possible keys
   // depending on the school type. Try them all and normalise to a label.
+  // ofstedRating values: 1–4 = Outstanding/Good/RI/Inadequate;
+  // -1 = historic data gap (PropertyData returned "Unknown"); null = no data.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const readOfsted = (s: any): number | null => {
     const candidates = [
@@ -699,6 +701,12 @@ function mapPdSchools(raw: any) {
         if (key.includes(k)) return v;
       }
     }
+    // If PropertyData explicitly returned "Unknown", surface as -1 so the UI
+    // can distinguish historic-data-gap from no-data-at-all.
+    for (const c of candidates) {
+      if (c == null) continue;
+      if (/^unknown$/i.test(String(c).trim())) return -1;
+    }
     return null;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -714,6 +722,7 @@ function mapPdSchools(raw: any) {
       return {
         name: String(s.name ?? "Unknown"),
         ofstedRating: readOfsted(s),
+        ratingLabel: s.rating ?? s.ofsted_rating ?? null,
         schoolType: indep ? "Independent" : (s.type ?? null),
         phase,
         distanceMiles: Number(s.distance ?? 0) || 0,
@@ -1237,14 +1246,10 @@ async function runJob(
     // deadline. PropertyData already returns basic school info; Ofsted
     // ratings can be lazy-loaded later from the schools section.
     const mappedSchools = mapPdSchools(pd["schools"]);
-    if (mappedSchools) {
-      // Enrich with Ofsted ratings from DfE API — parallel calls with 8s total budget
-      const enriched = await Promise.race([
-        enrichSchoolsWithGias(mappedSchools, postcode),
-        new Promise<typeof mappedSchools>((resolve) => setTimeout(() => resolve(mappedSchools), 8000)),
-      ]);
-      parsed.nearbySchools = enriched ?? mappedSchools;
-    }
+    if (mappedSchools) parsed.nearbySchools = mappedSchools;
+    // Note: enrichSchoolsWithGias is intentionally not called here — PropertyData's
+    // rating field is sufficient for post-2024 reporting. May re-enable for pre-2024
+    // schools only in future.
     const mappedCrime = mapPdCrime(pd["crime"]);
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
