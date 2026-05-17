@@ -192,6 +192,14 @@ Rules:
 - sellerMotivation: score 1-10, label Low/Moderate/High/Very High, signals (short strings), 2-3 sentence commentary.
 - viewingChecklist: 8-15 items, category Structure|Legal|Running costs|Negotiation|Practical, plus one-sentence "why".
 - renovationCosts: only for identified issues. estimatedCost like "£15,000 – £25,000". priority: "High priority" (safety/mortgageability/habitability), "Medium priority" (comfort/efficiency/5-yr resale), "Low priority" (cosmetic/deferrable). Never "Essential". Sum totalEstimatedMin/Max. 2-3 sentence commentary. If none: items:[], totals:0.
+- SCORE/VERDICT ALIGNMENT: scoreLabel MUST match the overall score using these bands exactly: 8.5–10="Strong Buy", 7.5–8.4="Good Buy", 6.5–7.4="Solid with Caveats", 5.5–6.4="Proceed Carefully", 4.5–5.4="Significant Concerns", 3.5–4.4="Proceed with Caution", <3.5="Proceed with Extreme Caution". Never use "Extreme Caution" for any score above 5.0.
+- RED FLAG CALIBRATION (hard rules):
+  • Loft conversion documentation missing → ALWAYS LOW severity, framed as a conveyancing action item. Detail must include verbatim: "Request building regulations completion certificate from the seller's solicitor — this is standard practice and rarely a dealbreaker."
+  • Solar panel ownership undisclosed → ALWAYS LOW severity, never MEDIUM. Framed as a conveyancing checklist item.
+  • EPC D rating on a Victorian property → NEVER a red flag. Only flag EPC if rating is F or G.
+  • "Guide Price" → NEVER a red flag unless combined with explicit auction terms.
+- NEGOTIATION STRATEGY (hard rules): recommendedOffer range must be 2–5% below asking when daysOnMarket < 30, 3–7% below for 30–60 days, 5–10% below for >60 days. Only recommend >10% below asking if multiple HIGH severity red flags AND daysOnMarket > 90. Always justify the specific discount in negotiation.rationale.
+- NEXT STEPS: populate nextSteps as an array of 3–4 short actionable strings telling the buyer what to do next, in priority order. Each under 20 words. Tailor to this listing's red flags (e.g. "Book a RICS Level 2 survey before making an offer", "Request building regs certificate for the loft conversion from the seller", "Confirm solar panel ownership/lease terms with solicitor", "Check comparable sales on Rightmove for similar properties on this street").
 - COSTS — produce a comprehensive cost breakdown. Populate every field in costs:
   • valuationFee: lender's valuation £150–£1,500 by price (~£250 to £250k, ~£400 to £500k, ~£700 to £1m, ~£1,200 above). 0 if cash/remortgage.
   • landRegistryFee: HMLR scale 1 — <£80k=£20; £80k–£100k=£40; £100k–£200k=£95; £200k–£500k=£135; £500k–£1m=£270; >£1m=£455.
