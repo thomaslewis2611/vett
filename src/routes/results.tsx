@@ -2816,8 +2816,16 @@ function CostBreakdown({
     const pow = Math.pow(1 + r, n);
     return Math.round((loan * (r * pow)) / (pow - 1));
   })();
+  const annualEnergyStr = analysis?.epc?.estimatedAnnualEnergyCost ?? null;
+  const energyMonthly = (() => {
+    if (!annualEnergyStr) return 0;
+    const nums = annualEnergyStr.match(/[\d,]+/g)?.map(n => parseInt(n.replace(/,/g, ''), 10)).filter(n => !isNaN(n)) ?? [];
+    if (nums.length === 0) return 0;
+    const avg = nums.reduce((a, b) => a + b, 0) / nums.length;
+    return Math.round(avg / 12);
+  })();
   const totalMonthly =
-    monthlyMortgage + councilTaxMonthly + buildingsInsuranceMonthly + serviceChargeMonthly;
+    monthlyMortgage + councilTaxMonthly + buildingsInsuranceMonthly + serviceChargeMonthly + energyMonthly;
 
   const FALLBACK_NOTE = "(typical — confirm with your lender)";
   const upfrontRows: Array<{ label: string; sub?: string; val: number }> = [
@@ -2852,6 +2860,9 @@ function CostBreakdown({
     { label: "Council tax", val: councilTaxMonthly },
     { label: "Buildings insurance", val: buildingsInsuranceMonthly },
   ];
+  if (energyMonthly > 0) {
+    monthlyRows.push({ label: "Estimated energy costs", val: energyMonthly });
+  }
   if (hasLeasehold) {
     monthlyRows.push({ label: "Service charge", val: serviceChargeMonthly });
   }
