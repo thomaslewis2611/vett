@@ -303,7 +303,7 @@ function Index() {
               Works best with Rightmove · More sites coming soon · UK properties only
             </p>
 
-            <ul className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 justify-center md:justify-start">
+            <ul className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 justify-center">
               {[
                 "From £4.99 · one-off",
                 "No subscription",
