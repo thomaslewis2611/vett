@@ -3274,7 +3274,8 @@ function PlanCard({
         style={{
           background: isFeatured ? "#FFFDF9" : "#2D6A4F",
           color: isFeatured ? "#1A1108" : "#FFFDF9",
-          fontSize: 14,
+          fontFamily: "'Inter', system-ui, sans-serif",
+          fontSize: 13,
           fontWeight: 500,
           borderRadius: 100,
           padding: "13px 24px",
