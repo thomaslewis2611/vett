@@ -1745,13 +1745,6 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
           />
         )}
 
-        {/* Share report button — paid users only, above next steps */}
-        {!shareMode && unlocked && (
-          <div className="mt-10 no-print">
-            <ShareReportButton analysis={a} />
-          </div>
-        )}
-
         {/* Your next steps — render above the inline upgrade for single users, or at bottom for pass users */}
         {unlocked && <NextStepsSection analysis={a} />}
 
