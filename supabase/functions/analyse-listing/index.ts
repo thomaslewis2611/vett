@@ -559,7 +559,7 @@ type PdResults = Partial<Record<PdKey, unknown>>;
 
 async function fetchPdEndpoint(ep: string, postcode: string): Promise<unknown> {
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 15000);
+  const timer = setTimeout(() => ctl.abort(), 10000);
   const started = Date.now();
   try {
     const pc = encodeURIComponent(postcode);
