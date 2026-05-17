@@ -655,11 +655,11 @@ function ResultsPage() {
 
   // While recovering from a screen-lock / background tab, prefer the
   // loading view over any stale error state — the poll has been restarted.
-  if (query.isPending || (showResumeBanner && (query.isFetching || query.isError))) {
+  if (query.isPending) {
     return (
       <div className="flex min-h-screen flex-col bg-background">
         <SiteHeader />
-        <LoadingState url={url} showResumeBanner={showResumeBanner} />
+        <LoadingState url={url} />
         <DisclaimerBar />
         <SiteFooter />
       </div>
