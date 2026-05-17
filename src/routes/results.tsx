@@ -5420,14 +5420,11 @@ function FloodRiskSection({
     if (hasNoData) {
       return (
         <section className="mt-10">
-          {headingNode}
-          <div className="mt-4" style={cardStyle}>
-            <FloodRiskNoDataCard
-              analysis={analysis}
-              listingUrl={listingUrl}
-              userEmail={userEmail}
-              onFloodRiskUpdate={onFloodRiskUpdate}
-            />
+          <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>Flood risk</h2>
+          <div className="mt-4" style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)", borderRadius: 12, padding: 20 }}>
+            <p style={{ fontSize: 14, color: "#5F5E5A" }}>
+              Flood risk data could not be retrieved for this postcode. Check the Environment Agency flood map directly at <a href="https://check-long-term-flood-risk.service.gov.uk" target="_blank" rel="noopener noreferrer" style={{ color: "#2D6A4F" }}>check-long-term-flood-risk.service.gov.uk</a>.
+            </p>
           </div>
         </section>
       );
