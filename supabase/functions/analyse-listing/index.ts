@@ -615,6 +615,7 @@ async function fetchPdEndpoint(ep: string, postcode: string): Promise<unknown> {
     if (apiStatus === "error") {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       console.warn(`[analyse-listing] pd ${ep} error: ${(json as any)?.message ?? "(no message)"}`);
+      console.log(`[analyse-listing] pd ${ep} full response: ${rawText.slice(0, 500)}`);
     }
     return json;
   } catch (err) {
@@ -631,22 +632,7 @@ async function fetchPropertyDataAll(postcode: string): Promise<PdResults> {
     return {};
   }
   console.log(`[analyse-listing] PROPERTYDATA fetch start postcode=${postcode} keyLen=${PROPERTYDATA_API_KEY.length}`);
-  // Health check: single flood-risk call to verify the key works
-  try {
-    const hcUrl = `${PD_BASE}/flood-risk?key=${PROPERTYDATA_API_KEY}&postcode=${encodeURIComponent(postcode)}`;
-    const hc = await fetch(hcUrl);
-    const hcText = await hc.text();
-    console.log(`[analyse-listing] PROPERTYDATA health check http=${hc.status} body=${hcText.slice(0, 500)}`);
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let hcJson: any = null;
-    try { hcJson = JSON.parse(hcText); } catch { /* */ }
-    const msg = String(hcJson?.message ?? "");
-    if (hcJson?.status === "error" && /invalid|missing|key|auth/i.test(msg)) {
-      console.warn("[analyse-listing] PROPERTYDATA API KEY INVALID OR MISSING");
-    }
-  } catch (err) {
-    console.warn("[analyse-listing] PROPERTYDATA health check threw", err);
-  }
+　
   const london = isLondonPostcode(postcode);
   const settled = await Promise.allSettled(
     PD_ENDPOINTS.map((ep) => {
