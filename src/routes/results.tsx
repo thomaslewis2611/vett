@@ -1435,7 +1435,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 
 
         {/* Area Pricing Analysis */}
-        <AreaContextSection analysis={a} />
+        <AreaContextSection analysis={a} unlocked={unlocked} />
 
         {/* Planning reference (factual, all tiers) */}
         <PlanningReferenceSection analysis={a} />
