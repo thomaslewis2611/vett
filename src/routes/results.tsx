@@ -6351,7 +6351,7 @@ function CapitalGrowthSection({
         <div style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", lineHeight: 1.1 }}>
           {fmt(headlineNum)} <span style={{ fontSize: 14, color: "#5F5E5A", fontWeight: 400 }}>over {headlineWindow}</span>
         </div>
-        {tier === "pass" ? (
+        {(tier === "pass" || tier === "single") ? (
           <div className="mt-4 grid grid-cols-3 gap-3">
             {[
               { label: "1 year", v: g1 },
@@ -6377,16 +6377,9 @@ function CapitalGrowthSection({
             </div>
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
               <p style={{ fontSize: 13, color: "#1A1108", margin: 0 }}>
-                {tier === "single"
-                  ? "Upgrade to Buyer Pass for the full 1yr / 3yr / 5yr breakdown"
-                  : "Buyer Pass unlocks the full 1yr / 3yr / 5yr breakdown"}
+                Buyer Pass unlocks the full 1yr / 3yr / 5yr breakdown
               </p>
-              {tier === "single" && onUpgradePass && (
-                <button type="button" onClick={onUpgradePass} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#2D6A4F", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
-                  Upgrade to Buyer Pass — £24.99 →
-                </button>
-              )}
-              {tier === "free" && onUpgradeSingle && (
+              {onUpgradeSingle && (
                 <button type="button" onClick={onUpgradeSingle} className="mt-2 hover:underline" style={{ fontSize: 13, color: "#2D6A4F", background: "transparent", border: 0, cursor: "pointer", fontWeight: 500 }}>
                   Get Single Report — £4.99 →
                 </button>
