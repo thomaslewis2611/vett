@@ -278,6 +278,15 @@ function Index() {
               </button>
             </form>
 
+            <a
+              href="https://roovr.co/report/c462872f03a8353e41cd696c791d0a4a"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: 13, color: "#2D6A4F", textDecoration: "underline", marginTop: 8, display: "inline-block" }}
+            >
+              View an example report →
+            </a>
+
             {error && (
               <p role="alert" className="mt-3" style={{ fontSize: 12, color: "#993C1D" }}>
                 {error}
