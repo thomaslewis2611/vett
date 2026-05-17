@@ -499,21 +499,33 @@ function ResultsPage() {
       if (!jobId) {
         console.log("[results] starting analysis job", {
           url,
-          hasUserEpc: Boolean(analysisOverrides.userEpc),
-          hasUserSqft: Boolean(analysisOverrides.userSqft),
+          hasText: Boolean(text),
+          hasToken: Boolean(token),
+          hasSessionJwt: Boolean(sessionJwt),
+          userEpc: analysisOverrides.userEpc,
+          userSqft: analysisOverrides.userSqft,
         });
-        const started = await startJobFn({
-          data: {
+        try {
+          const started = await startJobFn({
+            data: {
+              url,
+              text,
+              accessToken: token ?? null,
+              sessionJwt,
+              userEpc: analysisOverrides.userEpc,
+              userSqft: analysisOverrides.userSqft,
+            },
+          });
+          jobId = started.jobId;
+          rememberJobId(url, jobId);
+          console.log("[results] analysis job started", { jobId });
+        } catch (err) {
+          console.error("[results] startAnalysisJob failed", {
             url,
-            text,
-            accessToken: token ?? null,
-            sessionJwt,
-            userEpc: analysisOverrides.userEpc,
-            userSqft: analysisOverrides.userSqft,
-          },
-        });
-        jobId = started.jobId;
-        rememberJobId(url, jobId);
+            error: (err as Error)?.message,
+          });
+          throw err;
+        }
       }
 
       const startedAt = Date.now();
