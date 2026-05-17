@@ -6362,7 +6362,7 @@ function CapitalGrowthSection({
   return (
     <section className="mt-10">
       <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
-        Capital growth
+        Local price trends
       </h2>
       <div className="mt-4" style={card}>
         <div style={{ fontSize: 28, fontWeight: 500, color: "#1A1108", lineHeight: 1.1 }}>
