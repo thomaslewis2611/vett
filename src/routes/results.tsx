@@ -1524,7 +1524,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         </SafeSection>
 
         {/* Your next steps — render above the paywall for free users */}
-        {!unlocked && <NextStepsSection analysis={a} />}
+        {!unlocked && <NextStepsSection analysis={a} locked />}
 
         {/* Paywall (free users only) — sits between preview sections and the paid sections */}
         {!unlocked && (
