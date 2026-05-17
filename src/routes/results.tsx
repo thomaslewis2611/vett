@@ -6588,3 +6588,112 @@ function PrecheckModal({
     </div>
   );
 }
+
+function SharedReportBanner() {
+  return (
+    <div
+      className="w-full"
+      style={{
+        background: "#2D6A4F",
+        color: "#FFFDF9",
+        borderBottom: "0.5px solid rgba(0,0,0,0.1)",
+      }}
+    >
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-8" style={{ fontSize: 13 }}>
+        <span className="truncate">
+          Shared report — powered by Roovr
+        </span>
+        <a
+          href="https://roovr.co"
+          style={{ color: "#FFFDF9", fontWeight: 500 }}
+          className="shrink-0 hover:underline"
+        >
+          roovr.co →
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function ShareReportButton({ analysis }: { analysis: AnalysisResult }) {
+  const shareFn = useServerFn(createSharedReport);
+  const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [url, setUrl] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+
+  async function handleClick() {
+    if (state === "loading") return;
+    setState("loading");
+    try {
+      const { token } = await shareFn({
+        data: {
+          analysisData: analysis as unknown,
+          propertyAddress: analysis.property?.address ?? null,
+        },
+      });
+      setUrl(`https://roovr.co/report/${token}`);
+      setState("ready");
+    } catch (e) {
+      console.error("[ShareReportButton] failed", e);
+      setState("error");
+    }
+  }
+
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (state === "ready") {
+    return (
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          readOnly
+          value={url}
+          onFocus={(e) => e.currentTarget.select()}
+          className="rounded-lg border border-border bg-background px-3 py-2 text-xs sm:text-sm"
+          style={{ minWidth: 240, color: "#1A1108" }}
+        />
+        <button
+          type="button"
+          onClick={handleCopy}
+          className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-medium transition-opacity hover:opacity-90"
+          style={{ background: "#2D6A4F", color: "#FFFDF9" }}
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={state === "loading"}
+      className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium text-foreground transition-colors hover:border-primary hover:text-primary disabled:opacity-60"
+    >
+      {state === "loading" ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Generating link…
+        </>
+      ) : state === "error" ? (
+        <>
+          <Share2 className="h-4 w-4" />
+          Couldn't generate link. Try again.
+        </>
+      ) : (
+        <>
+          <Share2 className="h-4 w-4" />
+          Share report
+        </>
+      )}
+    </button>
+  );
+}
