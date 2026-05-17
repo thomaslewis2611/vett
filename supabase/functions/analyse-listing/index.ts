@@ -663,12 +663,12 @@ function mapPdSchools(raw: any) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const readOfsted = (s: any): number | null => {
     const candidates = [
+      s.rating,
       s.ofsted_rating,
       s.ofstedRating,
       s.ofsted,
       s.ofsted_overall_effectiveness,
       s.overall_effectiveness,
-      s.rating,
       s?.ofsted_report?.overall_effectiveness,
       s?.ofsted_report?.rating,
       s?.ofsted_report?.outcome,
