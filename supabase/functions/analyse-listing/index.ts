@@ -1260,6 +1260,7 @@ async function runJob(
     // ratings can be lazy-loaded later from the schools section.
     const mappedSchools = mapPdSchools(pd["schools"]);
     if (mappedSchools) parsed.nearbySchools = mappedSchools;
+    console.log('[diagnostic] schools raw status:', pd["schools"]?.status, '| mapped:', mappedSchools ? `${mappedSchools.schools.length} schools` : 'null');
     // Note: enrichSchoolsWithGias is intentionally not called here — PropertyData's
     // rating field is sufficient for post-2024 reporting. May re-enable for pre-2024
     // schools only in future.
@@ -1267,8 +1268,13 @@ async function runJob(
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
     if (mappedBroadband) parsed.broadband = mappedBroadband;
+    console.log('[diagnostic] broadband raw status:', pd["internet-speed"]?.status, '| mapped:', mappedBroadband ? 'ok' : 'null', '| raw keys:', pd["internet-speed"] ? Object.keys(pd["internet-speed"]).join(',') : 'no data');
     const mappedPtal = mapPdPtal(pd["ptal"]);
     if (mappedPtal) parsed.ptal = mappedPtal;
+    console.log('[diagnostic] ptal raw status:', pd["ptal"]?.status, '| mapped:', mappedPtal ? 'ok' : 'null');
+    console.log('[diagnostic] flood-risk raw status:', pd["flood-risk"]?.status, '| data present:', !!pd["flood-risk"]?.data);
+    console.log('[diagnostic] sold-prices raw status:', pd["sold-prices"]?.status, '| count:', Array.isArray(pd["sold-prices"]?.data) ? pd["sold-prices"].data.length : 'not array');
+    console.log('[diagnostic] growth raw status:', pd["growth"]?.status, '| data present:', !!pd["growth"]?.data);
     console.log(`[analyse-listing] Data mapping complete: ${Date.now() - mappingStart}ms`);
 
     // Override areaContext.avgPricePerSqFtArea with the PropertyData sold £/sqft
