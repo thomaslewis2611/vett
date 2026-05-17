@@ -1261,7 +1261,25 @@ async function runJob(
     // deadline. PropertyData already returns basic school info; Ofsted
     // ratings can be lazy-loaded later from the schools section.
     const mappedSchools = mapPdSchools(pd["schools"]);
-    if (mappedSchools) parsed.nearbySchools = mappedSchools;
+    if (mappedSchools) {
+      // Enrich with Ofsted ratings - run in parallel with 8s budget
+      try {
+        const enriched = await Promise.race([
+          enrichSchoolsWithGias(mappedSchools, postcode),
+          new Promise<typeof mappedSchools>((resolve) =>
+            setTimeout(() => {
+              console.log('[schools] Ofsted enrichment timed out after 8s');
+              resolve(mappedSchools);
+            }, 8000)
+          ),
+        ]);
+        parsed.nearbySchools = enriched ?? mappedSchools;
+        console.log('[schools] enrichment complete:', enriched?.schools?.map(s => `${s.name}: ${s.ofstedRating}`).join(', '));
+      } catch (e) {
+        console.log('[schools] enrichment error:', (e as Error).message);
+        parsed.nearbySchools = mappedSchools;
+      }
+    }
     console.log('[diagnostic] schools raw status:', pd["schools"]?.status, '| mapped:', mappedSchools ? `${mappedSchools.schools.length} schools` : 'null');
     // Note: enrichSchoolsWithGias is intentionally not called here — PropertyData's
     // rating field is sufficient for post-2024 reporting. May re-enable for pre-2024
