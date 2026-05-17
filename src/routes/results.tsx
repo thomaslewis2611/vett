@@ -6140,7 +6140,19 @@ function PriceHistorySection({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const raw = (analysis.propertyData?.soldPrices as any) ?? null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const list: any[] = Array.isArray(raw) ? raw : Array.isArray(raw?.data) ? raw.data : Array.isArray(raw?.transactions) ? raw.transactions : [];
+  const list: any[] = Array.isArray(raw)
+    ? raw
+    : Array.isArray(raw?.raw_data)
+      ? raw.raw_data
+      : Array.isArray(raw?.data?.raw_data)
+        ? raw.data.raw_data
+        : Array.isArray(raw?.data)
+          ? raw.data
+          : Array.isArray(raw?.transactions)
+            ? raw.transactions
+            : Array.isArray(raw?.properties)
+              ? raw.properties
+              : [];
   if (!list.length) return null;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
