@@ -1246,14 +1246,10 @@ async function runJob(
     // deadline. PropertyData already returns basic school info; Ofsted
     // ratings can be lazy-loaded later from the schools section.
     const mappedSchools = mapPdSchools(pd["schools"]);
-    if (mappedSchools) {
-      // Enrich with Ofsted ratings from DfE API — parallel calls with 8s total budget
-      const enriched = await Promise.race([
-        enrichSchoolsWithGias(mappedSchools, postcode),
-        new Promise<typeof mappedSchools>((resolve) => setTimeout(() => resolve(mappedSchools), 8000)),
-      ]);
-      parsed.nearbySchools = enriched ?? mappedSchools;
-    }
+    if (mappedSchools) parsed.nearbySchools = mappedSchools;
+    // Note: enrichSchoolsWithGias is intentionally not called here — PropertyData's
+    // rating field is sufficient for post-2024 reporting. May re-enable for pre-2024
+    // schools only in future.
     const mappedCrime = mapPdCrime(pd["crime"]);
     if (mappedCrime) parsed.crime = mappedCrime;
     const mappedBroadband = mapPdBroadband(pd["internet-speed"]);
