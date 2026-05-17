@@ -511,6 +511,7 @@ function Index() {
             { icon: Shield, title: "Crime statistics", body: "Crime levels recorded within 1 mile of the property" },
             { icon: Wifi, title: "Broadband & connectivity", body: "Download speeds and full fibre availability" },
             { icon: Train, title: "Transport links", body: "PTAL accessibility score for London properties" },
+            { icon: ListChecks, title: "Recommended next steps", body: "Exactly what to do next, in priority order" },
             { icon: MessageCircle, title: "AI chat", body: "Ask anything about the property — Buyer Pass only" },
           ].map((f) => (
             <div
