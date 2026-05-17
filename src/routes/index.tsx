@@ -18,6 +18,7 @@ import {
   Wifi,
   Train,
   MessageCircle,
+  ListChecks,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 
