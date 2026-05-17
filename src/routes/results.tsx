@@ -3822,7 +3822,7 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
 }
 
 
-function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
+function AreaContextSection({ analysis, unlocked = true }: { analysis: AnalysisResult; unlocked?: boolean }) {
   const ac = analysis.areaContext;
   if (!ac) return null;
   // Prefer manual sqft analysis when present so the Area Pricing Analysis card
