@@ -660,6 +660,8 @@ function mapPdSchools(raw: any) {
   if (!raw || raw.status !== "success" || !raw.data) return null;
   // PropertyData /schools returns ofsted rating under a few possible keys
   // depending on the school type. Try them all and normalise to a label.
+  // ofstedRating values: 1–4 = Outstanding/Good/RI/Inadequate;
+  // -1 = historic data gap (PropertyData returned "Unknown"); null = no data.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const readOfsted = (s: any): number | null => {
     const candidates = [
@@ -699,6 +701,12 @@ function mapPdSchools(raw: any) {
         if (key.includes(k)) return v;
       }
     }
+    // If PropertyData explicitly returned "Unknown", surface as -1 so the UI
+    // can distinguish historic-data-gap from no-data-at-all.
+    for (const c of candidates) {
+      if (c == null) continue;
+      if (/^unknown$/i.test(String(c).trim())) return -1;
+    }
     return null;
   };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -714,6 +722,7 @@ function mapPdSchools(raw: any) {
       return {
         name: String(s.name ?? "Unknown"),
         ofstedRating: readOfsted(s),
+        ratingLabel: s.rating ?? s.ofsted_rating ?? null,
         schoolType: indep ? "Independent" : (s.type ?? null),
         phase,
         distanceMiles: Number(s.distance ?? 0) || 0,
