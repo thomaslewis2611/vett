@@ -1171,7 +1171,7 @@ async function runJob(
     try {
       console.log("[timing] claude start", Date.now());
       const claudeStart = Date.now();
-      const text = await callClaude(systemPrompt, userContent, 4000);
+      const text = await callClaude(systemPrompt, userContent, 5000);
       console.log("[timing] claude complete", Date.now(), `(+${Date.now() - claudeStart}ms, response length ${text.length})`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
     } catch (primaryErr) {
@@ -1181,7 +1181,7 @@ async function runJob(
         "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
       console.log("[timing] claude start", Date.now(), "(retry)");
       const claudeStart = Date.now();
-      const text = await callClaude(simplified, userContent, 4000);
+      const text = await callClaude(simplified, userContent, 5000);
       console.log("[timing] claude complete", Date.now(), `(+${Date.now() - claudeStart}ms, retry)`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
       parsed.renovationCosts = null;
