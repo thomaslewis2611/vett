@@ -195,7 +195,7 @@ function Index() {
                 letterSpacing: "-0.5px",
               }}
             >
-              You're about to spend £400,000.{" "}
+              They market the dream.{" "}
               <em
                 style={{
                   fontStyle: "italic",
@@ -203,7 +203,7 @@ function Index() {
                   color: COLORS.green,
                 }}
               >
-                Know what you're buying.
+                We analyse the reality.
               </em>
             </h1>
 
@@ -217,8 +217,9 @@ function Index() {
                 lineHeight: 1.6,
               }}
             >
-              Paste any Rightmove listing. Get red flags, true costs, a negotiation strategy,
-              flood risk, local schools and more — in under 2 minutes.
+              Make your most important financial decision with confidence. Roovr gives you an
+              independent analysis of any property listing — red flags, true costs, negotiation
+              strategy and more — in under 2 minutes.
             </p>
 
             <form
