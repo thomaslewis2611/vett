@@ -689,51 +689,31 @@ function Index() {
 
         <div
           className="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3"
-          style={{
-            background: COLORS.card,
-            borderRadius: 16,
-            overflow: "hidden",
-            border: `0.5px solid ${COLORS.border}`,
-          }}
+          style={{ gap: 16 }}
         >
           {[
-            {
-              icon: AlertTriangle,
-              title: "Red flags",
-              body: "We translate agent jargon into honest issues. \u201CScope to modernise\u201D means dated. We say so.",
-            },
-            {
-              icon: PoundSterling,
-              title: "True cost breakdown",
-              body: "Purchase price, stamp duty, legal fees, monthly mortgage — what you'll actually pay.",
-            },
-            {
-              icon: MessageSquare,
-              title: "Negotiation strategy",
-              body: "Recommended offer range, your leverage points, and exactly what to say to the agent.",
-            },
-            {
-              icon: Droplets,
-              title: "Flood risk",
-              body: "Environment Agency data — insurance implications, mortgage risks, and what to check.",
-            },
-            {
-              icon: GraduationCap,
-              title: "Nearby schools",
-              body: "Ofsted ratings for primary and secondary schools within 5 miles of the property.",
-            },
-            {
-              icon: BarChart3,
-              title: "Area pricing analysis",
-              body: "Local sold £/sqft, capital growth, and how this property compares to recent sales.",
-            },
+            { icon: AlertTriangle, title: "Full red flag analysis", body: "Every risk identified and explained, ranked by severity" },
+            { icon: Zap, title: "EPC analysis", body: "Energy rating, estimated costs and upgrade recommendations" },
+            { icon: BarChart3, title: "Area pricing analysis", body: "Local £/sqft data so you know if the price is fair" },
+            { icon: PoundSterling, title: "True cost breakdown", body: "Every purchasing cost including stamp duty, surveys and legal fees" },
+            { icon: MessageSquare, title: "Negotiation strategy", body: "A recommended offer range with specific leverage points" },
+            { icon: ClipboardCheck, title: "Viewing checklist", body: "Property-specific questions to ask on the day" },
+            { icon: Wrench, title: "Renovation cost estimator", body: "Estimated costs for any work identified in the listing" },
+            { icon: UserCheck, title: "Seller motivation score", body: "How urgently the seller needs to move" },
+            { icon: Droplets, title: "Flood risk assessment", body: "Environment Agency data for this exact postcode" },
+            { icon: GraduationCap, title: "Nearby schools", body: "Local primary and secondary schools and Ofsted ratings" },
+            { icon: Shield, title: "Crime statistics", body: "Crime levels within 1 mile of the property" },
+            { icon: Wifi, title: "Broadband & connectivity", body: "Download speeds and full fibre availability" },
+            { icon: Train, title: "Transport links", body: "PTAL score for London properties" },
+            { icon: MessageCircle, title: "AI chat", body: "Ask anything about the property (Buyer Pass only)" },
           ].map((f) => (
             <div
               key={f.title}
               style={{
-                padding: 28,
-                borderRight: `0.5px solid ${COLORS.border}`,
-                borderBottom: `0.5px solid ${COLORS.border}`,
+                background: "#FFFDF9",
+                border: `0.5px solid ${COLORS.border}`,
+                borderRadius: 20,
+                padding: 24,
               }}
             >
               <div
