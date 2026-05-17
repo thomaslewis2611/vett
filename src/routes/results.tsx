@@ -3588,46 +3588,53 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
           borderRadius: 20,
         }}
       >
-        {hasAreaPpsf && typeof propPpsf === "number" && propPpsf > 0 && (
-          <div className="grid gap-4 sm:grid-cols-3">
-            <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
-              <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-                This property
-              </div>
-              <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
-                £{Math.round(propPpsf).toLocaleString()}
-              </div>
-              <div className="mt-1 text-[11px]" style={{ color: "#5F5E5A" }}>
-                per sq ft
-              </div>
-            </div>
-            <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
-              <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-                Area average
-              </div>
-              <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
-                {avgSqFt}
-              </div>
-              <div className="mt-1 text-[11px]" style={{ color: "#5F5E5A" }}>
-                per sq ft
-              </div>
-            </div>
-            {ppsfText && (
-              <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
-                <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-                  <span>Vs area avg</span>
-                  <ScoreInfoTooltip text="Compares this property's price per sq ft against the local sold £/sqft average from Land Registry data. A negative % means better value per sq ft than typical sold prices." />
+        {hasAreaPpsf && typeof propPpsf === "number" && propPpsf > 0 && (() => {
+          const above = ppsfPct !== null && ppsfPct > 0;
+          const vsColor = ppsfPct === null ? "#5F5E5A" : above ? "#A32D2D" : "#2D6A4F";
+          const labelStyle = { color: "#888780", fontSize: 10, fontFamily: "Inter, sans-serif", fontWeight: 400 } as const;
+          const valueStyle = { color: "#1A1108", fontFamily: "'Playfair Display', Georgia, serif", fontSize: 20, fontWeight: 400 } as const;
+          const cardStyle = { background: "#F1EFE8", borderRadius: 10, padding: 14 } as const;
+          const maxPpsf = Math.max(propPpsf as number, areaPpsf as number);
+          const areaPct = Math.min(100, ((areaPpsf as number) / maxPpsf) * 100);
+          const propPct = Math.min(100, ((propPpsf as number) / maxPpsf) * 100);
+          const propBarColor = above ? "#A32D2D" : "#A36A1F";
+          return (
+            <>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div style={cardStyle}>
+                  <div className="uppercase tracking-wider" style={labelStyle}>This property</div>
+                  <div className="mt-1.5" style={valueStyle}>£{Math.round(propPpsf as number).toLocaleString()}</div>
+                  <div className="mt-1" style={labelStyle}>per sq ft</div>
                 </div>
-                <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: ppsfColor }}>
-                  {ppsfText}
+                <div style={cardStyle}>
+                  <div className="uppercase tracking-wider" style={labelStyle}>Area average</div>
+                  <div className="mt-1.5" style={valueStyle}>{avgSqFt}</div>
+                  <div className="mt-1" style={labelStyle}>per sq ft</div>
                 </div>
-                <div className="mt-1 text-[11px]" style={{ color: "#5F5E5A" }}>
-                  {ppsfPct !== null && ppsfPct > 0 ? "above" : "below"} area avg
+                {ppsfText && (
+                  <div style={cardStyle}>
+                    <div className="flex items-center gap-1 uppercase tracking-wider" style={labelStyle}>
+                      <span>Vs area avg</span>
+                      <ScoreInfoTooltip text="Compares this property's price per sq ft against the local sold £/sqft average from Land Registry data. A negative % means better value per sq ft than typical sold prices." />
+                    </div>
+                    <div className="mt-1.5" style={{ ...valueStyle, color: vsColor }}>{ppsfText}</div>
+                    <div className="mt-1" style={labelStyle}>{above ? "above" : "below"}</div>
+                  </div>
+                )}
+              </div>
+              <div className="mt-5">
+                <div style={{ position: "relative", height: 10, background: "#E5E3DB", borderRadius: 999, overflow: "hidden" }}>
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${areaPct}%`, background: "#2D6A4F", opacity: 0.7 }} />
+                  <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${propPct}%`, background: propBarColor, opacity: 0.55 }} />
+                </div>
+                <div className="mt-2 flex items-center gap-4" style={{ fontSize: 10, color: "#888780", fontFamily: "Inter, sans-serif" }}>
+                  <span className="inline-flex items-center gap-1.5"><span style={{ width: 8, height: 8, background: "#2D6A4F", borderRadius: 2, display: "inline-block" }} />Area avg</span>
+                  <span className="inline-flex items-center gap-1.5"><span style={{ width: 8, height: 8, background: propBarColor, borderRadius: 2, display: "inline-block" }} />This property</span>
                 </div>
               </div>
-            )}
-          </div>
-        )}
+            </>
+          );
+        })()}
         {(() => {
           const manualActive = typeof manualPpsf === "number" && manualPpsf > 0;
           const rewriteNarrative = (text: string | null | undefined): string | null => {

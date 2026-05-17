@@ -1021,7 +1021,7 @@ ${JSON.stringify(pdData(pd["schools"]) || [])}
 LIVE LOCAL ASKING £/SQFT (current market — use as secondary reference):
 ${JSON.stringify(mapPdPpsf(pd["prices-per-sqf"]) || null)}
 
-LOCAL SOLD £/SQFT (most recent sold transactions — USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this):
+LOCAL SOLD £/SQFT (most recent sold transactions — USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this). If this is null but the SOLD PRICES array above has entries, estimate avgPricePerSqFtArea yourself by dividing the average of those recent sold prices by a sensible typical sqft for the property type (flats ~850, terraced ~1100, semi-detached ~1300, detached ~1600) and explain in comparableNote that it is estimated from sold prices because exact £/sqft data wasn't available:
 ${JSON.stringify(mapPdPpsf(pd["sold-prices-per-sqf"]) || null)}
 `;
 }
@@ -1249,6 +1249,44 @@ async function runJob(
         ) / 10;
       }
       parsed.areaContext = ac;
+    } else {
+      // Fallback: derive an approximate £/sqft from /sold-prices when the
+      // /sold-prices-per-sqf endpoint returned nothing (typically partial or
+      // inferred postcode). Use median sqft assumptions per property type.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const soldRaw: any = pdData(pd["sold-prices"]);
+      const soldList: Array<Record<string, unknown>> = Array.isArray(soldRaw)
+        ? soldRaw
+        : Array.isArray(soldRaw?.transactions) ? soldRaw.transactions
+        : Array.isArray(soldRaw?.prices) ? soldRaw.prices
+        : [];
+      const prices = soldList
+        .slice(0, 5)
+        .map((t) => Number(t.price ?? t.sale_price ?? t.amount))
+        .filter((n) => isFinite(n) && n > 0);
+      if (prices.length > 0) {
+        const avgSoldPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+        const propTypeRaw = String(((parsed.property ?? {}) as Record<string, unknown>).type ?? "").toLowerCase();
+        const medianSqft =
+          /flat|apartment|maisonette/.test(propTypeRaw) ? 850
+          : /terrac/.test(propTypeRaw) ? 1100
+          : /semi/.test(propTypeRaw) ? 1300
+          : /detach|bungalow|house/.test(propTypeRaw) ? 1600
+          : 1100;
+        const estimatedPpsf = Math.round(avgSoldPrice / medianSqft);
+        const ac = (parsed.areaContext ?? {}) as Record<string, unknown>;
+        ac.avgPricePerSqFtArea = estimatedPpsf;
+        ac.avgSoldPriceArea = Math.round(avgSoldPrice);
+        const metrics = (parsed.metrics ?? {}) as Record<string, unknown>;
+        const propPpsf = Number(metrics.pricePerSqFt);
+        if (isFinite(propPpsf) && propPpsf > 0) {
+          ac.priceVsAreaPercent = Math.round(((propPpsf - estimatedPpsf) / estimatedPpsf) * 1000) / 10;
+        }
+        const existingNote = typeof ac.comparableNote === "string" ? ac.comparableNote : "";
+        const estNote = `Area £/sqft estimated from ${prices.length} recent sold prices (avg £${Math.round(avgSoldPrice).toLocaleString()}) using a typical ${medianSqft} sq ft for this property type — exact £/sqft data wasn't available for this postcode.`;
+        ac.comparableNote = existingNote ? `${existingNote} ${estNote}` : estNote;
+        parsed.areaContext = ac;
+      }
     }
 
     // Track partial / inferred postcode state so the UI can prompt the user
