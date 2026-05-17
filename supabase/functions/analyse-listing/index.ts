@@ -881,7 +881,7 @@ async function enrichSchoolsWithGias(
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapPdCrime(raw: any) {
+function mapPdCrime(raw: any, postcode?: string | null) {
   if (!raw || raw.status !== "success") return null;
   const total = Number(raw.crimes_last_12m ?? 0) || 0;
   const types = (raw.types && typeof raw.types === "object") ? raw.types : {};
@@ -902,12 +902,22 @@ function mapPdCrime(raw: any) {
   const perThousand = Number(raw.crimes_per_thousand ?? 0) || 0;
   const now = new Date();
   const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+
+  const isHighCrime = /very high|high/i.test(raw.crime_rating ?? "");
+  const isCityCentre = /^(BA1|BS1|BN1|GL50|GL51|OX1|CB1|CB2|GU1|RG1|HP1|HP2|ME1|CT1|TN1|SO14|SO15|PO1|EX1|EX2|PL1|TQ1|TR1|SA1|CF10|NE1|SR1|TS1|HU1|LS1|LS2|S1|S2|B1|B2|M1|M2|L1|L2|E1|EC|WC|W1|SW1|SE1|N1|NW1)/i.test(postcode?.replace(/\s/g, "") ?? "");
+  let commentary = `${total.toLocaleString("en-GB")} crimes recorded in the last 12 months around this postcode (${perThousand} per 1,000 residents). PropertyData rates this area as "${raw.crime_rating ?? "Unknown"} crime".`;
+  if (isHighCrime && isCityCentre) {
+    commentary += ` Note: this postcode covers a city or town centre where higher crime counts are typical due to footfall, retail, and late-night activity — this does not necessarily reflect the residential character of the area. Compare with nearby residential postcodes for a more representative picture.`;
+  } else if (isHighCrime) {
+    commentary += ` Crime rates vary significantly by street — always check local knowledge and visit the area at different times of day before making an offer.`;
+  }
+
   return {
     totalCrimes: total,
     month,
     topCategories,
     riskLevel,
-    commentary: `${total.toLocaleString("en-GB")} crimes recorded in the last 12 months around this postcode (${perThousand} per 1,000 residents). PropertyData rates this area as "${raw.crime_rating ?? "Unknown"}".`,
+    commentary,
     autoRedFlag: riskLevel === "High" || riskLevel === "Very High",
     coordinates: null,
     unavailable: false,
