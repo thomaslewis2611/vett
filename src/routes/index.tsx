@@ -440,6 +440,8 @@ function Index() {
         </div>
       </section>
 
+      <hr style={{ border: "none", borderTop: "0.5px solid rgba(26,17,8,0.1)", margin: 0 }} />
+
       {/* 3b. EXAMPLE REPORTS */}
       <section className="mx-auto px-6" style={{ maxWidth: 1100, padding: "80px 24px" }}>
         <div className="text-center" style={{ marginBottom: 40 }}>
@@ -484,6 +486,8 @@ function Index() {
           <SampleReportCard data={SAMPLE_B} />
         </div>
       </section>
+
+      <hr style={{ border: "none", borderTop: "0.5px solid rgba(26,17,8,0.1)", margin: 0 }} />
 
       {/* 4. WHAT'S INCLUDED */}
       <section className="mx-auto px-6" style={{ maxWidth: 960, padding: "80px 24px" }}>
@@ -573,6 +577,7 @@ function Index() {
         </div>
       </section>
 
+      <hr style={{ border: "none", borderTop: "0.5px solid rgba(26,17,8,0.1)", margin: 0 }} />
 
       {/* 6. HOW IT WORKS */}
       <section style={{ background: COLORS.bg, padding: "80px 24px" }}>
