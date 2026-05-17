@@ -1530,7 +1530,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
             - Partial postcode only ("BA1"): show inline prompt above sections so
               user can supply the full postcode and trigger a refetch.
             - No postcode at all: hide entirely when the section has no data. */}
-        {(() => {
+        {unlocked && (() => {
           const isPaid = access.level === "single" || access.level === "pass";
           const fullPcRe = /\b[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}\b/i;
           const hasFullPostcode = fullPcRe.test(a.property?.address ?? "");
@@ -1652,14 +1652,16 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
           );
         })()}
 
-        {/* Transport links — locked placeholder for free, full data for Single/Pass */}
-        <TransportSection
-          analysis={a}
-          isBuyerPass={access.level === "single" || access.level === "pass"}
-          fetching={access.level === "pass" && fetchingExtras && a.transport == null}
-          onUpgrade={() => upgradeToSingle(listingUrl)}
-          onUpgradePass={() => upgradeToPass(listingUrl)}
-        />
+        {/* Transport links — paid users only */}
+        {unlocked && (
+          <TransportSection
+            analysis={a}
+            isBuyerPass={access.level === "single" || access.level === "pass"}
+            fetching={access.level === "pass" && fetchingExtras && a.transport == null}
+            onUpgrade={() => upgradeToSingle(listingUrl)}
+            onUpgradePass={() => upgradeToPass(listingUrl)}
+          />
+        )}
 
         {/* Sold price history (PropertyData / Land Registry) */}
         <PriceHistorySection
@@ -3020,8 +3022,13 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
   const HEADING = "'Playfair Display', Georgia, serif";
   return (
     <div
-      className="p-8 sm:p-10"
-      style={{ background: "#1A1108", borderRadius: 16, color: "#FFFDF9" }}
+      style={{
+        background: "#FFFDF9",
+        border: "0.5px solid rgba(26,17,8,0.1)",
+        borderRadius: 20,
+        padding: 32,
+        color: "#1A1108",
+      }}
     >
       <UpsellPassModal
         open={upsellOpen}
@@ -3030,8 +3037,8 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         onChooseSingle={() => { setUpsellOpen(false); startCheckout("single"); }}
       />
       <div
-        className="inline-flex items-center gap-2"
         style={{
+          fontFamily: "'Inter', system-ui, sans-serif",
           color: "#2D6A4F",
           fontSize: 11,
           fontWeight: 500,
@@ -3039,15 +3046,15 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
           textTransform: "uppercase",
         }}
       >
-        <Sparkles className="h-3 w-3" /> Unlock the full report
+        Unlock the full report
       </div>
       <h3
         className="mt-3"
-        style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 32, color: "#FFFDF9", letterSpacing: "-0.5px", lineHeight: 1.15 }}
+        style={{ fontFamily: HEADING, fontWeight: 400, fontSize: 32, color: "#1A1108", letterSpacing: "-0.5px", lineHeight: 1.15 }}
       >
         See every red flag, the true cost and how to negotiate
       </h3>
-      <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>
+      <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>
         Pick the option that suits you.
       </p>
 
@@ -3104,7 +3111,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
         />
       </div>
 
-      {err && <p className="mt-4" style={{ fontSize: 13, color: "#FCA5A5" }}>{err}</p>}
+      {err && <p className="mt-4" style={{ fontSize: 13, color: "#A32D2D" }}>{err}</p>}
 
       <div className="mt-7 text-center">
         {!showRestore ? (
@@ -3112,13 +3119,13 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
             type="button"
             onClick={() => setShowRestore(true)}
             className="text-xs underline-offset-4 hover:underline"
-            style={{ color: "rgba(255,253,249,0.7)", fontWeight: 300 }}
+            style={{ color: "#5F5E5A", fontWeight: 300 }}
           >
             Already purchased? Restore your access →
           </button>
         ) : (
           <form onSubmit={handleRestore} className="mx-auto mt-2 max-w-sm text-left">
-            <label className="block" style={{ fontSize: 12, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>
+            <label className="block" style={{ fontSize: 12, fontWeight: 300, color: "#5F5E5A" }}>
               Enter your email
             </label>
             <div className="mt-2 flex gap-2">
@@ -3129,7 +3136,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
                 onChange={(e) => setRestoreEmail(e.target.value)}
                 placeholder="you@example.com"
                 className="flex-1 px-4 py-2 outline-none"
-                style={{ background: "rgba(255,253,249,0.08)", color: "#FFFDF9", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(255,253,249,0.18)" }}
+                style={{ background: "#F1EFE8", color: "#1A1108", borderRadius: 100, fontSize: 13, border: "0.5px solid rgba(26,17,8,0.1)" }}
               />
               <button
                 type="submit"
@@ -3138,7 +3145,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
                 Send access link
               </button>
             </div>
-            {restoreMsg && <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: "rgba(255,253,249,0.7)" }}>{restoreMsg}</p>}
+            {restoreMsg && <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: "#5F5E5A" }}>{restoreMsg}</p>}
           </form>
         )}
       </div>
@@ -3221,9 +3228,19 @@ function PlanCard({
           <li
             key={f}
             className="flex items-start gap-2.5"
-            style={{ fontSize: 14, fontWeight: 300, color: isFeatured ? "#FFFDF9" : "#1A1108" }}
+            style={{ fontFamily: "'Inter', system-ui, sans-serif", fontSize: 13, fontWeight: 300, color: isFeatured ? "#FFFDF9" : "#1A1108" }}
           >
-            <Check className="mt-0.5 h-4 w-4 shrink-0" style={{ color: isFeatured ? "#FFFDF9" : "#2D6A4F" }} />
+            <span
+              className="mt-0.5 inline-flex items-center justify-center shrink-0"
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: 999,
+                background: isFeatured ? "rgba(255,253,249,0.18)" : "#EAF3DE",
+              }}
+            >
+              <Check className="h-3 w-3" style={{ color: isFeatured ? "#FFFDF9" : "#2D6A4F" }} />
+            </span>
             <span>
               {f}
               {/^transport links/i.test(f) && (
@@ -3257,7 +3274,8 @@ function PlanCard({
         style={{
           background: isFeatured ? "#FFFDF9" : "#2D6A4F",
           color: isFeatured ? "#1A1108" : "#FFFDF9",
-          fontSize: 14,
+          fontFamily: "'Inter', system-ui, sans-serif",
+          fontSize: 13,
           fontWeight: 500,
           borderRadius: 100,
           padding: "13px 24px",
