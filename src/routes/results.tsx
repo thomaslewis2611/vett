@@ -1524,7 +1524,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
         </SafeSection>
 
         {/* Your next steps — render above the paywall for free users */}
-        {!unlocked && <NextStepsSection analysis={a} />}
+        {!unlocked && <NextStepsSection analysis={a} locked />}
 
         {/* Paywall (free users only) — sits between preview sections and the paid sections */}
         {!unlocked && (
@@ -1753,11 +1753,46 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
   );
 }
 
-function NextStepsSection({ analysis }: { analysis: AnalysisResult }) {
+function NextStepsSection({ analysis, locked = false }: { analysis: AnalysisResult; locked?: boolean }) {
   const steps = Array.isArray(analysis?.nextSteps)
     ? analysis.nextSteps.filter((s) => typeof s === "string" && s.trim().length > 0)
     : [];
   if (steps.length === 0) return null;
+  const visibleSteps = locked ? steps.slice(0, 2) : steps;
+  const blurredSteps = locked ? steps.slice(2, 4) : [];
+  const renderItem = (step: string, i: number) => (
+    <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+      <span
+        aria-hidden="true"
+        style={{
+          flex: "0 0 22px",
+          width: 22,
+          height: 22,
+          borderRadius: "50%",
+          background: "#EAF3DE",
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginTop: 2,
+        }}
+      >
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M2.5 6.5L5 9L10 3.5" stroke="#2D6A4F" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      </span>
+      <span
+        style={{
+          fontFamily: "Inter, sans-serif",
+          fontSize: 15,
+          fontWeight: 400,
+          lineHeight: 1.55,
+          color: "#1A1108",
+        }}
+      >
+        {step}
+      </span>
+    </li>
+  );
   return (
     <section className="mt-10">
       <div
@@ -1793,40 +1828,30 @@ function NextStepsSection({ analysis }: { analysis: AnalysisResult }) {
           Your next steps
         </h2>
         <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
-          {steps.map((step, i) => (
-            <li key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-              <span
-                aria-hidden="true"
-                style={{
-                  flex: "0 0 22px",
-                  width: 22,
-                  height: 22,
-                  borderRadius: "50%",
-                  background: "#EAF3DE",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginTop: 2,
-                }}
-              >
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                  <path d="M2.5 6.5L5 9L10 3.5" stroke="#2D6A4F" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-              <span
-                style={{
-                  fontFamily: "Inter, sans-serif",
-                  fontSize: 15,
-                  fontWeight: 400,
-                  lineHeight: 1.55,
-                  color: "#1A1108",
-                }}
-              >
-                {step}
-              </span>
-            </li>
-          ))}
+          {visibleSteps.map((step, i) => renderItem(step, i))}
         </ul>
+        {locked && blurredSteps.length > 0 && (
+          <>
+            <div
+              aria-hidden="true"
+              style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none", marginTop: 14 }}
+            >
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 14 }}>
+                {blurredSteps.map((step, i) => renderItem(step, i + visibleSteps.length))}
+              </ul>
+            </div>
+            <p
+              style={{
+                marginTop: 16,
+                fontFamily: "Inter, sans-serif",
+                fontSize: 13,
+                color: "#5F5E5A",
+              }}
+            >
+              Unlock all next steps with a Single Report or Buyer Pass
+            </p>
+          </>
+        )}
       </div>
     </section>
   );
