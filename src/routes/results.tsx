@@ -1435,7 +1435,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 
 
         {/* Area Pricing Analysis */}
-        <AreaContextSection analysis={a} />
+        <AreaContextSection analysis={a} unlocked={unlocked} />
 
         {/* Planning reference (factual, all tiers) */}
         <PlanningReferenceSection analysis={a} />
@@ -3822,7 +3822,7 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
 }
 
 
-function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
+function AreaContextSection({ analysis, unlocked = true }: { analysis: AnalysisResult; unlocked?: boolean }) {
   const ac = analysis.areaContext;
   if (!ac) return null;
   // Prefer manual sqft analysis when present so the Area Pricing Analysis card
@@ -4039,11 +4039,26 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
           const note = sanitiseText(rewriteNarrative(ac.comparableNote));
           return (
             <>
-              {desc && (
-                <p className="mt-4 text-sm" style={{ color: "#1A1108" }}>{desc}</p>
-              )}
-              {note && (
-                <p className="mt-2 text-sm" style={{ color: "#1A1108" }}>{note}</p>
+              {unlocked ? (
+                <>
+                  {desc && (
+                    <p className="mt-4 text-sm" style={{ color: "#1A1108" }}>{desc}</p>
+                  )}
+                  {note && (
+                    <p className="mt-2 text-sm" style={{ color: "#1A1108" }}>{note}</p>
+                  )}
+                </>
+              ) : (
+                (desc || note) && (
+                  <div style={{ filter: "blur(4px)", userSelect: "none", pointerEvents: "none", position: "relative" }}>
+                    {desc && (
+                      <p className="mt-4 text-sm" style={{ color: "#1A1108" }}>{desc}</p>
+                    )}
+                    {note && (
+                      <p className="mt-2 text-sm" style={{ color: "#1A1108" }}>{note}</p>
+                    )}
+                  </div>
+                )
               )}
               {manualActive && (
                 <p className="mt-2 text-xs italic" style={{ color: "#888780" }}>
