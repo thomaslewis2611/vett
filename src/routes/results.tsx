@@ -499,21 +499,33 @@ function ResultsPage() {
       if (!jobId) {
         console.log("[results] starting analysis job", {
           url,
-          hasUserEpc: Boolean(analysisOverrides.userEpc),
-          hasUserSqft: Boolean(analysisOverrides.userSqft),
+          hasText: Boolean(text),
+          hasToken: Boolean(token),
+          hasSessionJwt: Boolean(sessionJwt),
+          userEpc: analysisOverrides.userEpc,
+          userSqft: analysisOverrides.userSqft,
         });
-        const started = await startJobFn({
-          data: {
+        try {
+          const started = await startJobFn({
+            data: {
+              url,
+              text,
+              accessToken: token ?? null,
+              sessionJwt,
+              userEpc: analysisOverrides.userEpc,
+              userSqft: analysisOverrides.userSqft,
+            },
+          });
+          jobId = started.jobId;
+          rememberJobId(url, jobId);
+          console.log("[results] analysis job started", { jobId });
+        } catch (err) {
+          console.error("[results] startAnalysisJob failed", {
             url,
-            text,
-            accessToken: token ?? null,
-            sessionJwt,
-            userEpc: analysisOverrides.userEpc,
-            userSqft: analysisOverrides.userSqft,
-          },
-        });
-        jobId = started.jobId;
-        rememberJobId(url, jobId);
+            error: (err as Error)?.message,
+          });
+          throw err;
+        }
       }
 
       const startedAt = Date.now();
@@ -666,7 +678,11 @@ function ResultsPage() {
     );
   }
 
-  if (query.isError) {
+  // If the user pressed "Try again" we bump forceRestart which changes the
+  // queryKey — react-query then shows isFetching while the new run is in
+  // flight. Prefer the loading view over the stale error UI so the report
+  // doesn't flash-then-revert when the new job completes.
+  if (query.isError && !query.isFetching) {
     const rawMsg = (query.error as Error)?.message || "Something went wrong while analysing this listing.";
     const isBlocked = rawMsg.startsWith("FETCH_BLOCKED");
     const isSavedMissing = rawMsg === "SAVED_NOT_FOUND" || Boolean(saved_id);
@@ -704,9 +720,16 @@ function ResultsPage() {
                   onClick={() => {
                     // Drop any stored jobId for this URL so the next run of
                     // the query starts a brand-new analysis job instead of
-                    // re-attaching to the failed one.
+                    // re-attaching to the failed one. Bump forceRestart so
+                    // the queryKey changes — this discards the cached error
+                    // and gives us a fresh query instance whose polling can
+                    // only ever resolve against the new jobId.
                     forgetJobId(url);
-                    query.refetch();
+                    try {
+                      sessionStorage.removeItem(analysisCacheKey(url, text, token));
+                    } catch { /* ignore */ }
+                    setWasHidden(false);
+                    setForceRestart((n) => n + 1);
                   }}
                   className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
