@@ -2930,11 +2930,25 @@ function CostBreakdown({
   );
 }
 
-function MortgageCalculator({ purchasePrice }: { purchasePrice: number }) {
-  const DEFAULT_RATE = 4.8;
-  const [term, setTerm] = useState(30);
-  const [rate, setRate] = useState(DEFAULT_RATE);
-  const [rateInput, setRateInput] = useState(String(DEFAULT_RATE));
+function MortgageCalculator({
+  purchasePrice,
+  term,
+  rate,
+  onTermChange,
+  onRateChange,
+  defaultRate,
+}: {
+  purchasePrice: number;
+  term: number;
+  rate: number;
+  onTermChange: (v: number) => void;
+  onRateChange: (v: number) => void;
+  defaultRate: number;
+}) {
+  const DEFAULT_RATE = defaultRate;
+  const setTerm = onTermChange;
+  const setRate = onRateChange;
+  const [rateInput, setRateInput] = useState(String(rate));
   const depositPct = 0.15;
   const loan = purchasePrice * (1 - depositPct);
   const monthly = (() => {
