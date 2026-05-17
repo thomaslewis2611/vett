@@ -1264,6 +1264,7 @@ async function runJob(
       ptal: pdData(pd["ptal"]),
       pricesPerSqf: mappedPricesPerSqf,
       soldPricesPerSqf: mappedSoldPricesPerSqf,
+      growthPsf: pdData(pd["growth-psf"]),
     };
 
     // Map PropertyData payloads into the shapes the frontend renders for
