@@ -224,6 +224,13 @@ BREVITY RULES (follow strictly to keep response compact):
 
 These limits are hard constraints — do not exceed them under any circumstances.
 
+OUTPUT CAPS:
+- redFlags: maximum 4 items; only include material buyer risks
+- sellerMotivation.signals: maximum 4 signals, each under 8 words
+- renovationCosts.items: maximum 4 items; combine related cosmetic issues
+- epc.commentary and planningReference.commentary: maximum 1 sentence each
+- Do not repeat the same evidence in multiple fields; keep each string concise and non-overlapping.
+
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
   "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "listingUrl": string },
