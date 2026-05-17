@@ -19,6 +19,7 @@ import {
   Train,
   MessageCircle,
   ListChecks,
+  TrendingUp,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 
