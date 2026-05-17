@@ -275,7 +275,7 @@ function Index() {
                   id="url-input"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="Paste a Rightmove listing URL…"
+                  placeholder="Paste a property listing URL…"
                   className="w-full bg-transparent py-2.5 outline-none"
                   style={{ fontSize: 14, color: COLORS.dark, fontFamily: BODY_FONT }}
                   aria-label="Property listing URL"
@@ -941,7 +941,7 @@ function Index() {
               {
                 n: "01",
                 title: "Paste the listing URL",
-                body: "Copy the Rightmove link and paste it into Roovr. We fetch the listing, read every word of the agent copy, and check local data sources.",
+                body: "Copy the listing URL and paste it into Roovr. We fetch the listing, read every word of the agent description, and check local data sources.",
               },
               {
                 n: "02",
