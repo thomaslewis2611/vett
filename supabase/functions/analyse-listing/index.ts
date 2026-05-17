@@ -576,6 +576,7 @@ const PD_ENDPOINTS = [
   "ptal",
   "prices-per-sqf",
   "sold-prices-per-sqf",
+  "growth-psf",
 ] as const;
 
 const LONDON_POSTCODE_AREAS = new Set([
@@ -1027,6 +1028,9 @@ ${JSON.stringify(slice(pdData(pd["sold-prices"]), 10) || [])}
 CAPITAL GROWTH (area — use for area pricing analysis commentary and resale potential scoring):
 ${JSON.stringify(pdData(pd["growth"]) || null)}
 
+CAPITAL GROWTH PER SQ FT (year-on-year £/sqft growth — use to enrich local price trends commentary and areaDescription):
+${JSON.stringify(pdData(pd["growth-psf"]) || null)}
+
 FLOOD RISK:
 ${JSON.stringify(pdData(pd["flood-risk"]) || null)}
 
@@ -1260,6 +1264,7 @@ async function runJob(
       ptal: pdData(pd["ptal"]),
       pricesPerSqf: mappedPricesPerSqf,
       soldPricesPerSqf: mappedSoldPricesPerSqf,
+      growthPsf: pdData(pd["growth-psf"]),
     };
 
     // Map PropertyData payloads into the shapes the frontend renders for
@@ -1307,6 +1312,7 @@ async function runJob(
     console.log('[diagnostic] mappedPtal result:', JSON.stringify(mappedPtal)?.slice(0, 200));
     console.log('[diagnostic] sold-prices raw status:', pd["sold-prices"]?.status, '| count:', Array.isArray(pd["sold-prices"]?.data) ? pd["sold-prices"].data.length : 'not array');
     console.log('[diagnostic] growth raw status:', pd["growth"]?.status, '| data present:', !!pd["growth"]?.data);
+    console.log('[diagnostic] growth-psf raw:', JSON.stringify(pd["growth-psf"])?.slice(0, 200));
     console.log(`[analyse-listing] Data mapping complete: ${Date.now() - mappingStart}ms`);
 
     // Override areaContext.avgPricePerSqFtArea with the PropertyData sold £/sqft
