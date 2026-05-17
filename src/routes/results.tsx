@@ -1241,14 +1241,11 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
             background: "#FFFDF9",
             borderRadius: 20,
             border: "0.5px solid rgba(26,17,8,0.1)",
-            padding: "36px 40px",
+            padding: "clamp(20px, 5vw, 36px) clamp(20px, 5vw, 40px)",
           }}
         >
-          <div
-            className="grid items-start gap-6 sm:gap-10"
-            style={{ gridTemplateColumns: "minmax(0,1fr) auto" }}
-          >
-            <div className="min-w-0">
+          <div className="flex flex-col gap-6 sm:grid sm:items-start sm:gap-10" style={{ gridTemplateColumns: "minmax(0,1fr) auto" }}>
+            <div className="min-w-0 sm:row-start-1 sm:col-start-1">
               <div
                 style={{
                   fontSize: 11,
@@ -1276,6 +1273,8 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                   color: "#1A1108",
                   lineHeight: 1.2,
                   marginBottom: 16,
+                  wordBreak: "break-word",
+                  overflowWrap: "anywhere",
                 }}
               >
                 {sanitiseText(a.property.address)}
@@ -1293,7 +1292,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
               >
                 {formatGBP(a.property.price)}
               </div>
-              <div className="flex flex-wrap items-center" style={{ gap: 8 }}>
+              <div className="hidden sm:flex flex-wrap items-center" style={{ gap: 8 }}>
                 <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
                 <PropertyPill>{a.property.baths} bath{a.property.baths === 1 ? "" : "s"}</PropertyPill>
                 {(a.property.sqft > 0 || a.manualSqftAnalysis?.sqft) && (
@@ -1307,8 +1306,22 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
                 {a.property.type && <PropertyPill>{a.property.type}</PropertyPill>}
               </div>
             </div>
-            <div className="shrink-0">
-              <ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} />
+            <div className="w-full flex justify-center sm:block sm:w-auto sm:row-start-1 sm:col-start-2 shrink-0">
+              <div className="sm:hidden"><ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} compact /></div>
+              <div className="hidden sm:block"><ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} /></div>
+            </div>
+            <div className="flex sm:hidden flex-wrap items-center" style={{ gap: 8 }}>
+              <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
+              <PropertyPill>{a.property.baths} bath{a.property.baths === 1 ? "" : "s"}</PropertyPill>
+              {(a.property.sqft > 0 || a.manualSqftAnalysis?.sqft) && (
+                <PropertyPill>
+                  {(a.manualSqftAnalysis?.sqft ?? a.property.sqft).toLocaleString()} sq ft
+                  {a.manualSqftAnalysis?.sqft && !a.property.sqft && (
+                    <span style={{ marginLeft: 4, opacity: 0.7 }}>(estimated)</span>
+                  )}
+                </PropertyPill>
+              )}
+              {a.property.type && <PropertyPill>{a.property.type}</PropertyPill>}
             </div>
           </div>
         </section>
@@ -1709,7 +1722,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 function PropertyPill({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center"
+      className="inline-flex items-center shrink-0"
       style={{
         background: "#F1EFE8",
         color: "#5F5E5A",
@@ -1718,6 +1731,10 @@ function PropertyPill({ children }: { children: React.ReactNode }) {
         padding: "5px 12px",
         borderRadius: 100,
         border: "0.5px solid rgba(26,17,8,0.1)",
+        whiteSpace: "nowrap",
+        width: "auto",
+        minWidth: 0,
+        lineHeight: 1.4,
       }}
     >
       {children}
@@ -1725,16 +1742,16 @@ function PropertyPill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ScoreBadge({ score, label }: { score: number; label: string }) {
+function ScoreBadge({ score, label, compact }: { score: number; label: string; compact?: boolean }) {
   return (
     <div
       style={{
         background: "#FFFDF9",
         border: "0.5px solid rgba(26,17,8,0.12)",
         borderRadius: 16,
-        padding: "20px 24px",
+        padding: compact ? "16px 20px" : "20px 24px",
         textAlign: "center",
-        minWidth: 130,
+        minWidth: compact ? 110 : 130,
       }}
     >
       <div
@@ -1752,7 +1769,7 @@ function ScoreBadge({ score, label }: { score: number; label: string }) {
       <div
         style={{
           fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 48,
+          fontSize: compact ? 36 : 48,
           fontWeight: 400,
           color: "#2D6A4F",
           lineHeight: 1,
