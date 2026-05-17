@@ -3570,29 +3570,52 @@ function AreaContextSection({ analysis }: { analysis: AnalysisResult }) {
       : null;
   return (
     <section className="mt-10">
-      <h2 className="text-xl font-semibold tracking-tight">Area Pricing Analysis</h2>
-      <div className="mt-4 rounded-2xl border border-border bg-card p-6 shadow-soft">
-        {(hasAreaPpsf || ppsfText) && (
-          <div className="grid gap-4 sm:grid-cols-2">
-            {hasAreaPpsf && (
-              <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
-                <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-                  Area avg price / sq ft (sold)
-                </div>
-                <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
-                  {avgSqFt}
-                </div>
-                {askingAvg && soldAvg && (
-                  <div className="mt-2 text-[11px]" style={{ color: "#5F5E5A", lineHeight: 1.5 }}>
-                    Current asking £{askingAvg.toLocaleString()}/sqft vs sold £{soldAvg.toLocaleString()}/sqft
-                  </div>
-                )}
+      <h2
+        style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontWeight: 400,
+          fontSize: 24,
+          color: "#1A1108",
+        }}
+      >
+        Area Pricing Analysis
+      </h2>
+      <div
+        className="mt-4 p-6"
+        style={{
+          background: "#FFFDF9",
+          border: "0.5px solid rgba(26,17,8,0.1)",
+          borderRadius: 20,
+        }}
+      >
+        {hasAreaPpsf && typeof propPpsf === "number" && propPpsf > 0 && (
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
+              <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+                This property
               </div>
-            )}
+              <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+                £{Math.round(propPpsf).toLocaleString()}
+              </div>
+              <div className="mt-1 text-[11px]" style={{ color: "#5F5E5A" }}>
+                per sq ft
+              </div>
+            </div>
+            <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
+              <div className="text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
+                Area average
+              </div>
+              <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+                {avgSqFt}
+              </div>
+              <div className="mt-1 text-[11px]" style={{ color: "#5F5E5A" }}>
+                per sq ft
+              </div>
+            </div>
             {ppsfText && (
               <div className="rounded-xl p-5" style={{ background: "#F1EFE8" }}>
                 <div className="flex items-center gap-1.5 text-xs uppercase tracking-wider" style={{ color: "#5F5E5A" }}>
-                  <span>Price per sq ft vs area avg</span>
+                  <span>Vs area avg</span>
                   <ScoreInfoTooltip text="Compares this property's price per sq ft against the local sold £/sqft average from Land Registry data. A negative % means better value per sq ft than typical sold prices." />
                 </div>
                 <div className="mt-2 text-2xl font-semibold tracking-tight" style={{ color: ppsfColor }}>
