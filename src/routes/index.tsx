@@ -176,7 +176,7 @@ function Index() {
       <section style={{ padding: "80px 24px 48px" }}>
         <div className="mx-auto roovr-hero-grid" style={{ maxWidth: 1100 }}>
           {/* LEFT */}
-          <div className="roovr-hero-left text-center md:text-left">
+          <div className="roovr-hero-left text-center">
             <span
               className="inline-flex items-center gap-2"
               style={{
@@ -303,7 +303,7 @@ function Index() {
               Works best with Rightmove · More sites coming soon · UK properties only
             </p>
 
-            <ul className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 justify-center md:justify-start">
+            <ul className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 justify-center">
               {[
                 "From £4.99 · one-off",
                 "No subscription",
