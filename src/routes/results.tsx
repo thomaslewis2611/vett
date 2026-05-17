@@ -4565,10 +4565,29 @@ function shortMoney(n: number): string {
 function TransportSection({ analysis, isBuyerPass, fetching: _fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
   void _fetching;
   const ptal = analysis.ptal;
+  console.log("[TransportSection]", { isBuyerPass, hasPtal: !!ptal });
 
-  // Hide the entire section when there is no PTAL data (e.g. postcode outside
-  // London, or PropertyData returned nothing). No "unavailable" placeholder.
-  if (isBuyerPass && !ptal) return null;
+  // For paid users with no PTAL data (postcode outside London or no data),
+  // show an "unavailable" placeholder rather than silently hiding the section.
+  if (isBuyerPass && !ptal) {
+    return (
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>
+          Transport links
+        </h2>
+        <div className="mt-4" style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)", borderRadius: 12, padding: 20 }}>
+          <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
+            PTAL (Public Transport Accessibility Level) data is only available for London postcodes. For transport links in this area, check{" "}
+            <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" style={{ color: "#2D6A4F" }} className="hover:underline">
+              Google Maps
+            </a>{" "}
+            or local transport operator websites.
+          </p>
+        </div>
+      </section>
+    );
+  }
+
 
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
