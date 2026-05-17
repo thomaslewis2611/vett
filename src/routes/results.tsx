@@ -2592,7 +2592,7 @@ const FULL_REPORT_FEATURES: { title: string; sub: string; note?: string }[] = [
   { title: "Renovation cost estimate", sub: "What it would cost" },
   { title: "Seller motivation score", sub: "How urgently they need to move" },
   { title: "Flood risk assessment", sub: "Environment Agency data for this postcode" },
-  { title: "Nearby schools", sub: "Ofsted ratings within 5 miles" },
+  { title: "Nearby schools", sub: "Ofsted ratings within 3 miles" },
   { title: "Crime statistics", sub: "Local crime data by category" },
   { title: "Broadband & connectivity", sub: "Real download speeds for this postcode" },
   { title: "Transport links", sub: "London properties only", note: "London properties only" },
@@ -4887,29 +4887,9 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUp
     <section className="mt-10">
       {heading}
       <div className="mt-4" style={cardStyle}>
-        {ns?.unavailable || empty ? (() => {
-          const addr = analysis.property?.address ?? "";
-          const pcMatch = addr.match(/[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}/i);
-          const pc = pcMatch ? pcMatch[0].toUpperCase() : "";
-          const giasUrl = pc
-            ? `https://www.get-information-schools.service.gov.uk/Search?SelectedTab=Establishments&Searchtext=${encodeURIComponent(pc)}`
-            : "https://www.get-information-schools.service.gov.uk";
-          return (
-            <p style={{ fontSize: 13, color: "#5F5E5A", lineHeight: 1.6 }}>
-              No schools found within 5 miles{pc ? ` of ${pc}` : ""}. Search schools{pc ? ` near ${pc}` : ""} at{" "}
-              <a
-                href={giasUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "#2D6A4F" }}
-                className="hover:underline"
-              >
-                get-information-schools.service.gov.uk
-              </a>
-              .
-            </p>
-          );
-        })() : (
+        {ns?.unavailable || empty ? (
+          <p style={{ fontSize: 14, color: "#5F5E5A" }}>No schools found within 3 miles of this property.</p>
+        ) : (
           <div className="flex flex-col gap-6">
             {primary.length > 0 && (
               <div>
