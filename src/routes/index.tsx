@@ -168,28 +168,7 @@ function Index() {
           gap: 48px;
           align-items: start;
         }
-        @media (min-width: 768px) {
-          .roovr-hero-grid {
-            grid-template-columns: minmax(0,480px) minmax(0,1fr);
-            gap: 64px;
-          }
-          .roovr-hero-right { transform: translateY(-20px); }
-        }
-        .roovr-hero-left { max-width: 480px; margin-left: auto; margin-right: auto; }
-        @media (min-width: 768px) {
-          .roovr-hero-left { margin-left: 0; margin-right: 0; }
-        }
-        .roovr-example-scroll {
-          height: 400px;
-          overflow-y: scroll;
-          scrollbar-width: thin;
-        }
-        .roovr-example-scroll::-webkit-scrollbar { width: 8px; }
-        .roovr-example-scroll::-webkit-scrollbar-track { background: transparent; }
-        .roovr-example-scroll::-webkit-scrollbar-thumb { background: rgba(26,17,8,0.2); border-radius: 4px; }
-        @media (min-width: 768px) {
-          .roovr-example-scroll { height: 600px; }
-        }
+        .roovr-hero-left { max-width: 640px; margin-left: auto; margin-right: auto; }
       `}</style>
 
       <section style={{ padding: "80px 24px 48px" }}>
@@ -340,371 +319,6 @@ function Index() {
               ))}
             </ul>
           </div>
-
-          {/* RIGHT — scrollable example report */}
-          <div className="roovr-hero-right">
-            <div
-              style={{
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                textTransform: "uppercase",
-                color: COLORS.green,
-                marginBottom: 8,
-              }}
-            >
-              Example report — 33 Upper Swaines, Epping CM16 · £695,000
-            </div>
-            <div
-              className="roovr-example-scroll relative"
-              style={{
-                background: "#FFFDF9",
-                border: "0.5px solid rgba(26,17,8,0.1)",
-                borderRadius: 20,
-              }}
-            >
-              <div style={{ padding: 24 }}>
-                {/* Property header */}
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div style={{ fontSize: 11, color: COLORS.veryMuted }}>
-                      End of Terrace · 4 bed · 1 bath · 1,347 sq ft · Epping, CM16
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: HEADING_FONT,
-                        fontSize: 24,
-                        color: COLORS.dark,
-                        marginTop: 2,
-                        letterSpacing: "-0.5px",
-                      }}
-                    >
-                      33 Upper Swaines
-                    </div>
-                    <div
-                      style={{
-                        fontFamily: HEADING_FONT,
-                        fontSize: 20,
-                        color: COLORS.dark,
-                        marginTop: 2,
-                      }}
-                    >
-                      £695,000
-                    </div>
-                  </div>
-                  <div
-                    style={{
-                      width: 64,
-                      height: 64,
-                      borderRadius: "50%",
-                      background: "conic-gradient(#2D6A4F 0% 80%, #EAF3DE 80% 100%)",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <div
-                      style={{
-                        width: 50,
-                        height: 50,
-                        borderRadius: "50%",
-                        background: "#FFFDF9",
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <span style={{ fontSize: 15, fontWeight: 500, color: COLORS.dark, lineHeight: 1 }}>
-                        8.0
-                      </span>
-                      <span style={{ fontSize: 8, color: COLORS.veryMuted, marginTop: 1 }}>/10</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "inline-block",
-                    marginTop: 10,
-                    background: COLORS.greenTint,
-                    color: COLORS.green,
-                    fontSize: 11,
-                    fontWeight: 500,
-                    padding: "4px 10px",
-                    borderRadius: 100,
-                  }}
-                >
-                  Good Buy
-                </div>
-
-                {/* Score breakdown */}
-                <SectionHeading>Roovr score breakdown</SectionHeading>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {[
-                    { label: "Value for money", score: 7.8 },
-                    { label: "Condition", score: 8.4 },
-                    { label: "Location", score: 8.6 },
-                    { label: "Risk profile", score: 7.5 },
-                    { label: "Negotiation leverage", score: 7.9 },
-                  ].map((b) => (
-                    <div key={b.label}>
-                      <div className="flex items-center justify-between" style={{ fontSize: 11 }}>
-                        <span style={{ color: COLORS.dark }}>{b.label}</span>
-                        <span style={{ color: COLORS.muted, fontWeight: 500 }}>{b.score}</span>
-                      </div>
-                      <div
-                        style={{
-                          height: 4,
-                          background: "rgba(26,17,8,0.08)",
-                          borderRadius: 3,
-                          marginTop: 4,
-                          overflow: "hidden",
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: `${b.score * 10}%`,
-                            height: "100%",
-                            background: COLORS.green,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Key metrics */}
-                <SectionHeading>Key metrics</SectionHeading>
-                <div
-                  className="grid grid-cols-2 gap-2"
-                  style={{ background: "#F1EFE8", borderRadius: 10, padding: 12 }}
-                >
-                  {[
-                    { label: "Stamp duty", value: "£24,750" },
-                    { label: "Legal & survey", value: "£2,400" },
-                    { label: "Monthly mortgage", value: "£3,180" },
-                    { label: "True total cost", value: "£722,150" },
-                    { label: "£/sq ft", value: "£516" },
-                    { label: "Area avg £/sq ft", value: "£498" },
-                  ].map((m) => (
-                    <div key={m.label}>
-                      <div
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 500,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.06em",
-                          color: COLORS.veryMuted,
-                        }}
-                      >
-                        {m.label}
-                      </div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: COLORS.dark, marginTop: 2 }}>
-                        {m.value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Red flags */}
-                <SectionHeading>Red flags</SectionHeading>
-                <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {[
-                    {
-                      sev: "MEDIUM",
-                      bg: "#FAEEDA",
-                      fg: "#854F0B",
-                      title: "EPC rating D",
-                      body: "Estimated £180/month above a C-rated home. Upgrade to C est. £6,800.",
-                    },
-                    {
-                      sev: "MEDIUM",
-                      bg: "#FAEEDA",
-                      fg: "#854F0B",
-                      title: "Single bathroom for a 4-bed",
-                      body: "Resale ceiling — most 4-bed buyers expect 2+. Adding an en-suite est. £8,500.",
-                    },
-                    {
-                      sev: "LOW",
-                      bg: "#F1EFE8",
-                      fg: "#5F5E5A",
-                      title: '"Recently refurbished" — verify finish quality',
-                      body: "Agent copy is vague. Check kitchen units, boiler age, and rewire certificate at viewing.",
-                    },
-                    {
-                      sev: "LOW",
-                      bg: "#F1EFE8",
-                      fg: "#5F5E5A",
-                      title: "On market 38 days",
-                      body: "Slightly above local average of 31 days — modest leverage on offer.",
-                    },
-                  ].map((f) => (
-                    <li
-                      key={f.title}
-                      style={{
-                        border: "0.5px solid rgba(26,17,8,0.1)",
-                        borderRadius: 10,
-                        padding: 12,
-                      }}
-                    >
-                      <div className="flex items-center gap-2">
-                        <span
-                          style={{
-                            background: f.bg,
-                            color: f.fg,
-                            fontSize: 9,
-                            fontWeight: 600,
-                            textTransform: "uppercase",
-                            padding: "2px 6px",
-                            borderRadius: 100,
-                            letterSpacing: "0.04em",
-                          }}
-                        >
-                          {f.sev}
-                        </span>
-                        <span style={{ fontSize: 12, fontWeight: 500, color: COLORS.dark }}>
-                          {f.title}
-                        </span>
-                      </div>
-                      <p
-                        style={{
-                          fontSize: 11,
-                          color: COLORS.muted,
-                          marginTop: 6,
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {f.body}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Area pricing */}
-                <SectionHeading>Area pricing analysis</SectionHeading>
-                <div
-                  style={{
-                    background: "#F1EFE8",
-                    borderRadius: 10,
-                    padding: "12px 14px",
-                  }}
-                >
-                  <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { label: "This property", value: "£516", sub: "per sq ft" },
-                      { label: "CM16 average", value: "£498", sub: "per sq ft" },
-                      { label: "Vs avg", value: "+3.6%", sub: "above" },
-                    ].map((m) => (
-                      <div key={m.label}>
-                        <div style={{ fontSize: 9, color: COLORS.veryMuted }}>{m.label}</div>
-                        <div style={{ fontSize: 15, fontWeight: 500, color: COLORS.dark, marginTop: 2 }}>
-                          {m.value}
-                        </div>
-                        <div style={{ fontSize: 9, color: COLORS.veryMuted }}>{m.sub}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <p style={{ fontSize: 11, color: COLORS.muted, marginTop: 10, lineHeight: 1.5 }}>
-                    Priced modestly above CM16 average. Three comparable 4-bed end-of-terrace sales
-                    on Upper Swaines and Bury Lane completed between £665,000 and £682,000 in the
-                    last 12 months.
-                  </p>
-                </div>
-
-                {/* Negotiation strategy */}
-                <SectionHeading>Negotiation strategy</SectionHeading>
-                <div
-                  style={{
-                    background: COLORS.greenTint,
-                    borderRadius: 10,
-                    padding: 14,
-                  }}
-                >
-                  <div style={{ fontSize: 11, color: COLORS.muted }}>Recommended offer range</div>
-                  <div
-                    style={{
-                      fontFamily: HEADING_FONT,
-                      fontSize: 22,
-                      color: COLORS.green,
-                      marginTop: 2,
-                      letterSpacing: "-0.5px",
-                    }}
-                  >
-                    £670,000 – £680,000
-                  </div>
-                  <p style={{ fontSize: 11, color: COLORS.dark, marginTop: 10, lineHeight: 1.55 }}>
-                    Open at £670,000. Your leverage: EPC D will cost the next buyer too, single
-                    bathroom limits the audience, and the property has been on for 38 days. Stay
-                    polite but firm — comparable sales support £675,000 as fair.
-                  </p>
-                </div>
-
-                {/* Flood / schools / crime quick row */}
-                <SectionHeading>At a glance</SectionHeading>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { label: "Flood risk", value: "Very Low", color: COLORS.green },
-                    { label: "Nearest primary", value: "Epping Primary · Good", color: COLORS.dark },
-                    { label: "Crime (1 mile)", value: "Below national avg", color: COLORS.green },
-                    { label: "Broadband", value: "Full fibre · 1 Gbps", color: COLORS.dark },
-                  ].map((m) => (
-                    <div
-                      key={m.label}
-                      style={{
-                        border: "0.5px solid rgba(26,17,8,0.1)",
-                        borderRadius: 10,
-                        padding: 12,
-                      }}
-                    >
-                      <div
-                        style={{
-                          fontSize: 9,
-                          fontWeight: 500,
-                          textTransform: "uppercase",
-                          letterSpacing: "0.06em",
-                          color: COLORS.veryMuted,
-                        }}
-                      >
-                        {m.label}
-                      </div>
-                      <div style={{ fontSize: 12, fontWeight: 500, color: m.color, marginTop: 4 }}>
-                        {m.value}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div style={{ height: 40 }} />
-              </div>
-
-              {/* Fade gradient */}
-              <div
-                aria-hidden
-                style={{
-                  position: "sticky",
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  height: 80,
-                  marginTop: -80,
-                  background: "linear-gradient(to bottom, rgba(255,253,249,0) 0%, #FFFDF9 100%)",
-                  pointerEvents: "none",
-                }}
-              />
-            </div>
-            <p
-              style={{
-                fontSize: 11,
-                color: COLORS.veryMuted,
-                textAlign: "center",
-                marginTop: 10,
-              }}
-            >
-              Your report will look just like this. Generated in under 2 minutes.
-            </p>
-          </div>
         </div>
       </section>
 
@@ -816,6 +430,40 @@ function Index() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* 3b. EXAMPLE REPORTS */}
+      <section className="mx-auto px-6" style={{ maxWidth: 1100, padding: "80px 24px" }}>
+        <div className="text-center" style={{ marginBottom: 40 }}>
+          <div
+            className="uppercase"
+            style={{
+              fontSize: 11,
+              fontWeight: 500,
+              letterSpacing: "0.1em",
+              color: COLORS.green,
+              marginBottom: 12,
+            }}
+          >
+            Example reports
+          </div>
+          <h2
+            style={{
+              fontFamily: HEADING_FONT,
+              fontSize: 36,
+              fontWeight: 400,
+              color: COLORS.dark,
+              letterSpacing: "-1px",
+              lineHeight: 1.1,
+            }}
+          >
+            See exactly what you get.
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2" style={{ gap: 24 }}>
+          <SampleReportCard data={SAMPLE_A} />
+          <SampleReportCard data={SAMPLE_B} />
         </div>
       </section>
 
@@ -1487,53 +1135,51 @@ function SampleReportCard({ data }: { data: SampleData }) {
 }
 
 const SAMPLE_A: SampleData = {
-  meta: "3 bed · Flat · Clapham SW11",
-  address: "Lavender Hill, SW11",
-  price: "£625,000",
-  score: 7.4,
-  ppsfThis: "£694",
-  ppsfArea: "£641",
-  vsArea: "+8.3%",
-  vsAreaPositive: true,
-  barFill: 85,
-  barCompare: 92,
+  meta: "4 bed · End of terrace · Epping CM16",
+  address: "33 Upper Swaines, Epping",
+  price: "£695,000",
+  score: 8.0,
+  ppsfThis: "£516",
+  ppsfArea: "£559",
+  vsArea: "−7.7%",
+  vsAreaPositive: false,
+  barFill: 65,
+  barCompare: 72,
   pricingNote:
-    "At 900 sq ft, you're paying £48,600 more than the area average price per sq ft. Less outdoor space than comparable flats — worth negotiating.",
+    "At 1,347 sq ft, this property is priced 7.7% below the local sold average — competitive for an extended end-terrace with a 50ft garden.",
   flags: [
-    { sev: "HIGH", text: "Priced 8.3% above local £/sqft average — limited justification in listing" },
-    { sev: "MEDIUM", text: "42 days on market — above UK average, some negotiation leverage" },
-    { sev: "LOW", text: "Ground floor flat — noise, security and resale considerations" },
+    { sev: "LOW", text: "Single bathroom for four-bedroom family home" },
+    { sev: "LOW", text: "EPC D rating — future running costs and rental standards" },
+    { sev: "LOW", text: "Price reduction after 57 days indicates modest seller urgency" },
   ],
   metrics: [
-    { label: "Stamp duty", val: "£18,750" },
+    { label: "Stamp duty", val: "£24,750" },
     { label: "Flood risk", val: "Low", positive: true },
-    { label: "Monthly est.", val: "£2,840" },
+    { label: "Monthly est.", val: "£3,370" },
   ],
-  footnote: "Sample only · Based on a real SW11 listing · Area data from Land Registry",
+  footnote: "Based on a real CM16 listing · Area data from Land Registry",
 };
 
 const SAMPLE_B: SampleData = {
-  meta: "4 bed · Semi-detached · Chelmsford CM2",
-  address: "Beehive Lane, CM2",
-  price: "£485,000",
-  score: 8.2,
-  ppsfThis: "£362",
-  ppsfArea: "£391",
-  vsArea: "−7.4%",
+  meta: "4 bed · Semi-detached · Epping CM16",
+  address: "24 Tower Road, Epping",
+  price: "£825,000",
+  score: 7.4,
+  ppsfThis: "£524",
+  ppsfArea: "£648",
+  vsArea: "−19.1%",
   vsAreaPositive: false,
-  barFill: 78,
-  barCompare: 72,
+  barFill: 58,
+  barCompare: 74,
   pricingNote:
-    "At 1,340 sq ft, you're paying £38,860 less than the area average — strong value for the size. Garden and parking match comparable semis.",
+    "At 1,573 sq ft, this property sits 19.1% below the local sold average — strong value for a fully extended four-bed semi on a desirable road.",
   flags: [
-    { sev: "MEDIUM", text: "EPC rating D — budget for insulation upgrade in first 12 months" },
-    { sev: "MEDIUM", text: "Chain involved — vendor buying onwards, expect 12-16 week timeline" },
-    { sev: "LOW", text: "Bathroom last updated 2014 — cosmetic refresh likely within 5 years" },
+    { sev: "LOW", text: "Guide price terminology used — confirm sale method with agent" },
   ],
   metrics: [
-    { label: "Stamp duty", val: "£11,750" },
-    { label: "Flood risk", val: "Very low", positive: true },
-    { label: "Monthly est.", val: "£2,210" },
+    { label: "Stamp duty", val: "£31,250" },
+    { label: "Flood risk", val: "Low", positive: true },
+    { label: "Monthly est.", val: "£3,912" },
   ],
-  footnote: "Sample only · Based on a real CM2 listing · Area data from Land Registry",
+  footnote: "Based on a real CM16 listing · Area data from Land Registry",
 };
