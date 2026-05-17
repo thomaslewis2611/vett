@@ -675,7 +675,7 @@ function Index() {
               lineHeight: 1.15,
             }}
           >
-            Everything your estate agent won't tell you
+            Everything you need to know before you offer.
           </h2>
         </div>
 
