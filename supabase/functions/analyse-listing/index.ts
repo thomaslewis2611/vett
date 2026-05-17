@@ -445,16 +445,14 @@ ${excerpt}`;
   const costsStage = await runStageWithRetry("calculate-true-costs", async () => {
     const prompt = `${baseContent}
 
-Stage C — calculate true buying costs and viewing questions.
+Stage C — calculate true buying costs.
 Known facts from earlier stages:
 ${JSON.stringify({ facts, redFlags: redFlagsStage.redFlags, renovationCosts: redFlagsStage.renovationCosts })}
 
 Return ONLY JSON matching:
 {
-  "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "valuationFee": number, "landRegistryFee": number, "electronicTransferFee": number, "removalCosts": number, "indemnityInsurance": number, "buildingsInsurance": number, "serviceCharge": number, "groundRent": number, "leaseholdYears": number, "councilTaxMonthly": number, "buildingsInsuranceMonthly": number, "serviceChargeMonthly": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
-  "viewingQuestions": string[]
-}
-The viewingQuestions array must contain exactly 8 listing-specific questions.`;
+  "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "valuationFee": number, "landRegistryFee": number, "electronicTransferFee": number, "removalCosts": number, "indemnityInsurance": number, "buildingsInsurance": number, "serviceCharge": number, "groundRent": number, "leaseholdYears": number, "councilTaxMonthly": number, "buildingsInsuranceMonthly": number, "serviceChargeMonthly": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string }
+}`;
     const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 1600);
     return parseStageJson(text, "calculate-true-costs");
   });
@@ -462,16 +460,14 @@ The viewingQuestions array must contain exactly 8 listing-specific questions.`;
   const negotiationStage = await runStageWithRetry("build-negotiation-strategy", async () => {
     const prompt = `${baseContent}
 
-Stage D — build negotiation strategy and any Land Registry comparables.
+Stage D — build negotiation strategy.
 Known facts from earlier stages:
 ${JSON.stringify({ facts, redFlags: redFlagsStage.redFlags, costs: costsStage.costs, sellerMotivation: redFlagsStage.sellerMotivation })}
 
 Return ONLY JSON matching:
 {
-  "negotiation": { "isAuction": boolean, "maxBid": number, "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] },
-  "comparables": [ { "address": string, "soldPrice": number, "soldDate": string, "distance": string } ]
-}
-Never invent comparables; use real PropertyData sold prices from context if available, otherwise return [].`;
+  "negotiation": { "isAuction": boolean, "maxBid": number, "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] }
+}`;
     const text = await callClaude(systemPrompt + "\n\n" + STAGED_ANALYSIS_BASE_PROMPT, prompt, 1800);
     return parseStageJson(text, "build-negotiation-strategy");
   });
@@ -485,9 +481,7 @@ Never invent comparables; use real PropertyData sold prices from context if avai
   const property = { ...((merged.property as Record<string, unknown> | undefined) ?? {}) };
   property.listingUrl = String(property.listingUrl || url || "");
   merged.property = property;
-  if (!Array.isArray(merged.viewingQuestions)) merged.viewingQuestions = [];
   if (!Array.isArray(merged.redFlags)) merged.redFlags = [];
-  if (!Array.isArray(merged.comparables)) merged.comparables = [];
   return merged;
 }
 
