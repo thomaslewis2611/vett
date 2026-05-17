@@ -1721,7 +1721,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
 function PropertyPill({ children }: { children: React.ReactNode }) {
   return (
     <span
-      className="inline-flex items-center"
+      className="inline-flex items-center shrink-0"
       style={{
         background: "#F1EFE8",
         color: "#5F5E5A",
@@ -1730,6 +1730,10 @@ function PropertyPill({ children }: { children: React.ReactNode }) {
         padding: "5px 12px",
         borderRadius: 100,
         border: "0.5px solid rgba(26,17,8,0.1)",
+        whiteSpace: "nowrap",
+        width: "auto",
+        minWidth: 0,
+        lineHeight: 1.4,
       }}
     >
       {children}
@@ -1737,16 +1741,16 @@ function PropertyPill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ScoreBadge({ score, label }: { score: number; label: string }) {
+function ScoreBadge({ score, label, compact }: { score: number; label: string; compact?: boolean }) {
   return (
     <div
       style={{
         background: "#FFFDF9",
         border: "0.5px solid rgba(26,17,8,0.12)",
         borderRadius: 16,
-        padding: "20px 24px",
+        padding: compact ? "16px 20px" : "20px 24px",
         textAlign: "center",
-        minWidth: 130,
+        minWidth: compact ? 110 : 130,
       }}
     >
       <div
@@ -1764,7 +1768,7 @@ function ScoreBadge({ score, label }: { score: number; label: string }) {
       <div
         style={{
           fontFamily: "'Playfair Display', Georgia, serif",
-          fontSize: 48,
+          fontSize: compact ? 36 : 48,
           fontWeight: 400,
           color: "#2D6A4F",
           lineHeight: 1,
