@@ -708,9 +708,16 @@ function ResultsPage() {
                   onClick={() => {
                     // Drop any stored jobId for this URL so the next run of
                     // the query starts a brand-new analysis job instead of
-                    // re-attaching to the failed one.
+                    // re-attaching to the failed one. Bump forceRestart so
+                    // the queryKey changes — this discards the cached error
+                    // and gives us a fresh query instance whose polling can
+                    // only ever resolve against the new jobId.
                     forgetJobId(url);
-                    query.refetch();
+                    try {
+                      sessionStorage.removeItem(analysisCacheKey(url, text, token));
+                    } catch { /* ignore */ }
+                    setWasHidden(false);
+                    setForceRestart((n) => n + 1);
                   }}
                   className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-3 text-sm font-medium text-primary-foreground hover:opacity-90"
                 >
