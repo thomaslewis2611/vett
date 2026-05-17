@@ -576,6 +576,7 @@ const PD_ENDPOINTS = [
   "ptal",
   "prices-per-sqf",
   "sold-prices-per-sqf",
+  "growth-psf",
 ] as const;
 
 const LONDON_POSTCODE_AREAS = new Set([
