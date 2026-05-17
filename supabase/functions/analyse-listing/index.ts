@@ -187,7 +187,6 @@ Rules:
 - SQUARE FOOTAGE: only use a figure if EXPLICITLY stated in listing text (e.g. "1,180 sq ft", "110 sqm") or in PropertyData FLOOR AREAS for this exact property. NEVER estimate from beds/type/room dims. If unknown: property.sqft=0, metrics.pricePerSqFt=0, areaContext.priceVsAreaPercent=null, and wherever £/sqft would appear (comparableNote, scoreReasons.valueForMoney, redFlags detail) insert this EXACT sentence verbatim instead: "Square footage is typically shown on the listing's floor plan. Please enter it in the sq ft input field below for accurate price per sq ft analysis. If no floor plan is available, ensure you request accurate square footage data from the agent — this is a key part of any property analysis and essential for assessing whether you are buying at the right price per square foot."
 - MISSING SQ FT IS NOT A RED FLAG and must not lower listingTransparency. Sq ft is normally on the floorplan only. Only treat as a transparency issue if the agent literally answers "Ask agent" for size OR "FLOOR PLAN PRESENT: no" is explicit.
 - FLOOR PLAN: if "FLOOR PLAN PRESENT: yes" appears, the listing HAS one — never flag missing floor plan. Only flag missing if "FLOOR PLAN PRESENT: no" is explicit, or no FLOOR PLAN PRESENT line AND the description gives no indication.
-- 8 viewing questions tailored to specifics in this listing.
 - EPC: extract rating if listed ("EPC rating D"); else epc:null. If found, populate rating/score/potentialRating/estimatedAnnualEnergyCost (null where missing) and 2-3 sentence commentary tailored to size+rating.
 - DATES: accept dates in current/future year as written; only flag if logically impossible.
 - sellerMotivation: score 1-10, label Low/Moderate/High/Very High, signals (short strings), 2-3 sentence commentary.
@@ -209,6 +208,21 @@ Rules:
   • totalUpfront = purchasePrice + stampDuty + legalFees + surveyFees + mortgageFees + valuationFee + landRegistryFee + electronicTransferFee + removalCosts + indemnityInsurance + buildingsInsurance.
 - Be direct — this buyer is about to spend hundreds of thousands.
 
+BREVITY RULES (follow strictly to keep response compact):
+
+- scoreReasons: maximum 2 sentences each, under 60 words each
+- redFlags detail: maximum 2 sentences, under 50 words each
+- negotiation.rationale: maximum 3 sentences, under 80 words
+- sellerMotivation.commentary: maximum 2 sentences, under 60 words
+- viewingChecklist items: maximum 8 items total (not 15), why field under 20 words each
+- renovationCosts.commentary: maximum 2 sentences
+- areaContext.areaDescription: maximum 2 sentences
+- areaContext.comparableNote: maximum 1 sentence
+- mortgageAssumptions: maximum 1 sentence
+- leverage: maximum 4 points (not 6), each under 15 words
+
+These limits are hard constraints — do not exceed them under any circumstances.
+
 Always respond with ONLY a single valid JSON object matching this exact shape (no markdown, no commentary, no code fences):
 {
   "property": { "address": string, "price": number, "beds": number, "baths": number, "type": string, "sqft": number, "listingUrl": string },
@@ -218,25 +232,22 @@ Always respond with ONLY a single valid JSON object matching this exact shape (n
   "scoreReasons": { "valueForMoney": string, "locationQuality": string, "listingTransparency": string, "marketTiming": string, "riskLevel": string, "resalePotential": string },
   "metrics": { "pricePerSqFt": number, "daysOnMarket": number, "councilTaxBand": string, "estimatedStampDuty": number },
   "epc": { "rating": string|null, "score": number|null, "potentialRating": string|null, "estimatedAnnualEnergyCost": string|null, "commentary": string } | null,
-  "priceHistory": null,
 
   "floodRisk": null,
   "areaContext": { "avgPricePerSqFtArea": number|null, "avgSoldPriceArea": number|null, "priceVsAreaPercent": number|null, "areaDescription": string, "comparableNote": string },
   "redFlags": [ { "severity": "high"|"medium"|"low", "title": string, "detail": string } ],
   "costs": { "purchasePrice": number, "stampDuty": number, "legalFees": number, "surveyFees": number, "mortgageFees": number, "valuationFee": number, "landRegistryFee": number, "electronicTransferFee": number, "removalCosts": number, "indemnityInsurance": number, "buildingsInsurance": number, "serviceCharge": number, "groundRent": number, "leaseholdYears": number, "councilTaxMonthly": number, "buildingsInsuranceMonthly": number, "serviceChargeMonthly": number, "totalUpfront": number, "monthlyMortgage": number, "mortgageAssumptions": string },
-  "viewingQuestions": string[],
   "negotiation": { "isAuction": boolean, "maxBid": number, "recommendedOffer": { "low": number, "high": number }, "rationale": string, "leverage": string[] },
   "sellerMotivation": { "score": number, "label": "Low"|"Moderate"|"High"|"Very High", "signals": string[], "commentary": string },
   "viewingChecklist": { "items": [{ "category": "Structure"|"Legal"|"Running costs"|"Negotiation"|"Practical", "item": string, "why": string }] },
   "renovationCosts": { "items": [{ "issue": string, "estimatedCost": string, "priority": "High priority"|"Medium priority"|"Low priority", "notes": string }], "totalEstimatedMin": number, "totalEstimatedMax": number, "commentary": string },
-  "planningReference": { "found": boolean, "reference": string|null, "relatesTo": string|null, "applicationType": string|null, "isNeighbouring": boolean, "commentary": string|null } | null,
-  "comparables": []
+  "planningReference": { "found": boolean, "reference": string|null, "relatesTo": string|null, "applicationType": string|null, "isNeighbouring": boolean, "commentary": string|null } | null
 }
 
 PLANNING REFERENCE: detect UK planning refs (XX/XXXXX/XXX e.g. 24/01893/FUL, or older XXXX/XXXX) near words planning/permission/reference/application/consent/approval. If found populate planningReference with reference, relatesTo (e.g. "rear kitchen extension"), applicationType (Householder|Full Planning|Change of Use|Listed Building Consent|Unknown), isNeighbouring (true if on an adjacent property), and 2-3 sentences of commentary including docs to request (decision notice, approved drawings, building regs completion). If none: planningReference:null. Never invent a reference.
 
 PROPERTYDATA CONTEXT (treat as ground truth, override your estimates):
-- SOLD PRICES → price history + comparables (real Land Registry).
+- SOLD PRICES → use real Land Registry context where relevant.
 - FLOOR AREAS → use only for this exact property's sq ft.
 - CAPITAL GROWTH → quote actual % in area pricing/resale.
 - FLOOD RISK → quote actual risk level.
@@ -247,7 +258,7 @@ PROPERTYDATA CONTEXT (treat as ground truth, override your estimates):
 - INTERNET SPEED → quote actual speeds.
 - SCHOOLS → use actual data with Ofsted ratings.
 
-Unknown fields: 0 for numbers, "Unknown" for strings. Never invent comparables.`;
+Unknown fields: 0 for numbers, "Unknown" for strings. Do not include fields outside the exact JSON shape.`;
 
 // ---------- JSON repair ----------
 function cleanResponse(raw: string): string {
