@@ -1319,6 +1319,7 @@ async function runJob(
     console.log('[diagnostic] sold-prices raw status:', pd["sold-prices"]?.status, '| count:', Array.isArray(pd["sold-prices"]?.data) ? pd["sold-prices"].data.length : 'not array');
     console.log('[diagnostic] growth raw status:', pd["growth"]?.status, '| data present:', !!pd["growth"]?.data);
     console.log('[diagnostic] growth-psf raw:', JSON.stringify(pd["growth-psf"])?.slice(0, 200));
+    console.log('[diagnostic] floor-areas raw:', JSON.stringify(pd["floor-areas"])?.slice(0, 200));
     console.log(`[analyse-listing] Data mapping complete: ${Date.now() - mappingStart}ms`);
 
     // Override areaContext.avgPricePerSqFtArea with the PropertyData sold £/sqft
