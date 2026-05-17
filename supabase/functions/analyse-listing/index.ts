@@ -149,7 +149,7 @@ function detectFloorPlan(html: string): boolean {
 
 async function fetchListingHtml(url: string): Promise<string> {
   const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 5000);
+  const timer = setTimeout(() => ctl.abort(), 6000);
   try {
     const res = await fetch(url, {
       headers: {
