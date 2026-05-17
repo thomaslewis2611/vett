@@ -275,7 +275,7 @@ function Index() {
                   id="url-input"
                   value={url}
                   onChange={(e) => setUrl(e.target.value)}
-                  placeholder="Paste a Rightmove listing URL…"
+                  placeholder="Paste a property listing URL…"
                   className="w-full bg-transparent py-2.5 outline-none"
                   style={{ fontSize: 14, color: COLORS.dark, fontFamily: BODY_FONT }}
                   aria-label="Property listing URL"
