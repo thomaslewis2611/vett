@@ -1241,7 +1241,7 @@ function ReportView({ analysis: initialA, listingUrl, token, fromSaved, savedId,
             background: "#FFFDF9",
             borderRadius: 20,
             border: "0.5px solid rgba(26,17,8,0.1)",
-            padding: "36px 40px",
+            padding: "clamp(20px, 5vw, 36px) clamp(20px, 5vw, 40px)",
           }}
         >
           <div className="flex flex-col gap-6 sm:grid sm:items-start sm:gap-10" style={{ gridTemplateColumns: "minmax(0,1fr) auto" }}>
