@@ -356,18 +356,14 @@ function Index() {
               }}
             >
               {[
-                "Clapham SW11 · £694/sqft · +8.3% vs area avg",
-                "Bath BA1 · Guide price · 42 days on market",
-                "Manchester M15 · £389/sqft · Flood risk: Low",
-                "Bristol BS8 · 7.4/10 Roovr score",
-                "Leeds LS1 · £312/sqft · 3 red flags found",
-                "Oxford OX1 · £721/sqft · +12.1% vs area avg",
-                "Edinburgh EH3 · 8.1/10 Roovr score",
-                "Brighton BN1 · 56 days on market · strong leverage",
-                "Notting Hill W11 · £1,240/sqft · 2 high severity flags",
-                "Cambridge CB1 · £598/sqft · EPC rating D",
-                "Islington N1 · 8.6/10 Roovr score · Below area avg",
-                "Sheffield S1 · £287/sqft · Flood risk: Medium",
+                "Epping CM16 · £516/sqft · 7.7% below area avg",
+                "Woodford Green IG8 · £539/sqft · 79 days on market",
+                "Walthamstow E17 · £839/sqft · 10.4% above area avg",
+                "Epping CM16 · Score 8.0 · Good Buy",
+                "Woodford Green IG8 · Score 7.8 · Good Buy",
+                "Chingford E4 · £425/sqft · 3 red flags found",
+                "Epping CM16 · £524/sqft · 19.1% below area avg",
+                "Walthamstow E17 · Score 6.8 · Solid with Caveats",
               ].map((item, i) => (
                 <span
                   key={`${dup}-${i}`}
