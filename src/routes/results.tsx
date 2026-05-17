@@ -4732,7 +4732,18 @@ function TransportSection({ analysis, isBuyerPass, fetching: _fetching, onUpgrad
     );
   }
 
-  if (!ptal) return null;
+  if (!ptal) {
+    return (
+      <section className="mt-10">
+        <h2 className="text-xl font-semibold tracking-tight" style={{ color: "#1A1108" }}>Transport links</h2>
+        <div className="mt-4" style={{ background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.12)", borderRadius: 12, padding: 20 }}>
+          <p style={{ fontSize: 14, color: "#5F5E5A" }}>
+            PTAL (Public Transport Accessibility Level) data is only available for London postcodes. For transport links in this area, check Google Maps or local transport operator websites.
+          </p>
+        </div>
+      </section>
+    );
+  }
 
   const ratingBadge = (label: string): CSSProperties => {
     const v = label.toLowerCase();
