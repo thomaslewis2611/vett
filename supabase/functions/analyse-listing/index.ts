@@ -1275,6 +1275,9 @@ async function runJob(
     if (mappedPtal) parsed.ptal = mappedPtal;
     console.log('[diagnostic] ptal raw status:', pd["ptal"]?.status, '| mapped:', mappedPtal ? 'ok' : 'null');
     console.log('[diagnostic] flood-risk raw status:', pd["flood-risk"]?.status, '| data present:', !!pd["flood-risk"]?.data);
+    console.log('[diagnostic] ptal raw:', JSON.stringify(pd["ptal"])?.slice(0, 200));
+    console.log('[diagnostic] flood raw:', JSON.stringify(pd["flood-risk"])?.slice(0, 200));
+    console.log('[diagnostic] mappedPtal result:', JSON.stringify(mappedPtal)?.slice(0, 200));
     console.log('[diagnostic] sold-prices raw status:', pd["sold-prices"]?.status, '| count:', Array.isArray(pd["sold-prices"]?.data) ? pd["sold-prices"].data.length : 'not array');
     console.log('[diagnostic] growth raw status:', pd["growth"]?.status, '| data present:', !!pd["growth"]?.data);
     console.log(`[analyse-listing] Data mapping complete: ${Date.now() - mappingStart}ms`);
