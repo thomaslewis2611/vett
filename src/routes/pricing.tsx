@@ -141,7 +141,7 @@ function BuyerPassPlan() {
         features={[
           "Unlimited analyses for 90 days",
           "AI chat on every property",
-          "Compare your property scores",
+          "Compare your property scores and reports, with AI comparison analysis",
           "All reports saved to dashboard",
         ]}
         footnote="One-off payment. Access ends 90 days after purchase."
@@ -163,7 +163,7 @@ function BuyerPassPlan() {
       features={[
         "Unlimited analyses for 90 days",
         "AI chat on every property",
-        "Compare your property scores",
+        "Compare your property scores and reports, with AI comparison analysis",
         "All reports saved to dashboard",
       ]}
       footnote="One-off payment. Access ends 90 days after purchase."
