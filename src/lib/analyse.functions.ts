@@ -166,6 +166,13 @@ const analysisSchema = z.object({
     .array(z.string())
     .length(8)
     .describe("Exactly 8 specific questions tailored to this listing"),
+  nextSteps: z
+    .array(z.string())
+    .min(3)
+    .max(4)
+    .nullable()
+    .optional()
+    .describe("3-4 short actionable next steps (<20 words each), priority order"),
   negotiation: z.object({
     isAuction: z.boolean().optional().describe("True if this is an auction property"),
     maxBid: z.number().optional().describe("Single max bid figure for auction properties"),
