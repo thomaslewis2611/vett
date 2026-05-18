@@ -1,0 +1,1 @@
+DELETE FROM pgmq.q_auth_emails;
