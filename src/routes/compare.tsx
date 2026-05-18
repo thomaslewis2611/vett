@@ -437,7 +437,7 @@ function ComparisonView({
     { title: "Analysis", rows: analysis },
   ];
 
-  const winStyle = { background: "#E7F4EA" };
+  const winStyle = { background: "#EAF3DE", color: "#2D6A4F", fontWeight: 700 };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
