@@ -992,8 +992,8 @@ async function fetchNearbySchools(
 
   const headers = {
     "Accept": "application/json",
-    "User-Agent": "Mozilla/5.0 (compatible; Roovr/1.0; +https://roovr.co)",
-    "Referer": "https://roovr.co",
+    "User-Agent": "Mozilla/5.0 (compatible; vett/1.0; +https://vetthome.com)",
+    "Referer": "https://vetthome.com",
   };
 
   const tryFetch = async (url: string): Promise<SchoolEntry[]> => {
