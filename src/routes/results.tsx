@@ -5574,7 +5574,7 @@ function FloodRiskSection({
         <div className="mt-4" style={cardStyle}>
           <div className="flex items-center justify-between gap-3">
             <p style={{ fontSize: 14, color: "#1A1108", fontWeight: 500 }}>
-              Overall flood risk
+              Flood risk
             </p>
             <span
               style={{
@@ -5597,20 +5597,6 @@ function FloodRiskSection({
               )}
               {fr?.overallRisk ?? "Unknown"}
             </span>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            {[
-              { label: "Rivers and sea", value: fr?.riversAndSea ?? null },
-              { label: "Surface water", value: fr?.surfaceWater ?? null },
-              { label: "Reservoir", value: fr?.reservoir == null ? null : fr.reservoir ? "Yes" : "No" },
-              { label: "Groundwater", value: fr?.groundwater ?? null },
-            ].map((row) => (
-              <div key={row.label} className="flex items-center justify-between">
-                <span style={{ fontSize: 13, color: "#5F5E5A" }}>{row.label}</span>
-                <Pill value={row.value} />
-              </div>
-            ))}
           </div>
 
           {fr?.commentary && (
