@@ -1688,6 +1688,18 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
                   fetching={sectionFetching && a.crime == null}
                   onUpgrade={() => upgradeToSingle(listingUrl)}
                   onUpgradePass={() => upgradeToPass(listingUrl)}
+                  listingUrl={listingUrl}
+                  userEmail={access.email}
+                  onPostcodeSaved={(patch) =>
+                    setA((prev) => ({
+                      ...prev,
+                      crime: patch.crime ?? prev.crime,
+                      floodRisk: patch.floodRisk ?? prev.floodRisk,
+                      nearbySchools: patch.nearbySchools ?? prev.nearbySchools,
+                      broadband: patch.broadband ?? prev.broadband,
+                      partialPostcode: null,
+                    }))
+                  }
                 />
               )}
 
@@ -4937,7 +4949,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUp
   );
 }
 
-function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
+function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass, listingUrl, userEmail, onPostcodeSaved }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void; listingUrl?: string; userEmail?: string | null; onPostcodeSaved?: (patch: PostcodePromptPatch) => void }) {
   console.log("[CrimeSection]", { isBuyerPass, hasData: !!analysis?.crime, unavailable: analysis?.crime?.unavailable });
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
@@ -4992,6 +5004,34 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
   }
 
   const crime = analysis.crime;
+
+  const hasFullPostcode = Boolean(
+    analysis.postcode &&
+    analysis.postcode.trim().length > 4 &&
+    analysis.postcode.includes(' ')
+  );
+
+  if (isBuyerPass && !hasFullPostcode) {
+    return (
+      <section className="mt-10">
+        {heading}
+        <div className="mt-4" style={cardStyle}>
+          <p style={{ fontSize: 14, color: "#5F5E5A" }}>
+            Crime data requires a full postcode. Rightmove listings don't always include it — enter it below to load accurate local crime statistics.
+          </p>
+        </div>
+        {onPostcodeSaved && (
+          <PostcodePromptBanner
+            partial={analysis.partialPostcode ?? null}
+            email={userEmail ?? null}
+            listingUrl={listingUrl}
+            onSaved={onPostcodeSaved}
+          />
+        )}
+      </section>
+    );
+  }
+
 
   if (fetching && !crime) {
     return (
