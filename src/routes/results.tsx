@@ -5316,8 +5316,13 @@ function FloodRiskSection({
     const pdFlood: any = analysis.propertyData?.floodRisk ?? null;
     const pdFloodLevel: string | null =
       pdFlood && typeof pdFlood === "object"
-        ? (pdFlood.flood_risk ?? pdFlood.data?.flood_risk ?? null)
-        : null;
+        ? (pdFlood.flood_risk ??
+           pdFlood.data?.flood_risk ??
+           pdFlood.overall ??
+           pdFlood.overallRisk ??
+           (typeof pdFlood === "string" ? pdFlood : null))
+        : typeof pdFlood === "string" ? pdFlood : null;
+    console.log('[FloodRiskSection] pdFlood raw:', JSON.stringify(pdFlood)?.slice(0, 300), '| pdFloodLevel:', pdFloodLevel);
     let fr = analysis.floodRisk;
     if ((!fr || fr.unavailable) && pdFloodLevel) {
       fr = {
