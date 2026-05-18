@@ -250,7 +250,7 @@ export function SiteHeader() {
         <Link to="/" className="flex items-center gap-2">
           <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: "#2D6A4F", display: "inline-block" }} />
           <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 17, fontWeight: 500, color: "#1A1108", letterSpacing: "-0.3px" }}>
-            Roovr
+            vett
           </span>
         </Link>
         <nav className="flex items-center gap-4 sm:gap-6">
@@ -341,7 +341,7 @@ export function SiteFooter() {
           borderTop: "0.5px solid rgba(26,17,8,0.08)",
         }}
       >
-        Roovr reports are AI-generated and advisory only. Always verify information independently and seek professional advice from a solicitor, surveyor, and mortgage broker before making any offer.
+        vett reports are AI-generated and advisory only. Always verify information independently and seek professional advice from a solicitor, surveyor, and mortgage broker before making any offer.
       </div>
       <footer
         style={{
@@ -356,8 +356,8 @@ export function SiteFooter() {
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div className="flex items-center gap-2">
             <span aria-hidden style={{ width: 9, height: 9, borderRadius: 999, background: "#2D6A4F", display: "inline-block" }} />
-            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 17, fontWeight: 500, color: "#1A1108" }}>Roovr</span>
-            <span style={{ fontSize: 12, color: "#888780", marginLeft: 12 }}>© 2026 Roovr</span>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 17, fontWeight: 500, color: "#1A1108" }}>vett</span>
+            <span style={{ fontSize: 12, color: "#888780", marginLeft: 12 }}>© 2026 vett</span>
           </div>
           <div className="flex flex-wrap gap-6" style={{ fontSize: 12, color: "#888780" }}>
             <Link to="/pricing" className="hover:text-[#1A1108] transition-colors">Pricing</Link>

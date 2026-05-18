@@ -14,7 +14,7 @@ const searchSchema = z.object({
 });
 
 export const Route = createFileRoute("/compare")({
-  head: () => ({ meta: [{ title: "Compare properties — Roovr" }] }),
+  head: () => ({ meta: [{ title: "Compare properties — vett" }] }),
   validateSearch: searchSchema,
   component: ComparePage,
 });
@@ -345,7 +345,7 @@ function ComparisonView({
 
   const overview: RowDef[] = [
     {
-      label: "Roovr score",
+      label: "vett score",
       aVal: `${Number(A.score ?? 0).toFixed(1)} / 10`,
       bVal: `${Number(B.score ?? 0).toFixed(1)} / 10`,
       winner: cmpHigher(Number(A.score ?? 0), Number(B.score ?? 0)),
@@ -560,7 +560,7 @@ function ComparisonView({
 
         {/* Verdict */}
         <div className="mt-10 p-6" style={{ background: "#FAECE7", borderRadius: 16, border: "1px solid #F4D5CB" }}>
-          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1108", margin: 0 }}>Roovr verdict</h2>
+          <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1A1108", margin: 0 }}>vett verdict</h2>
           <p style={{ fontSize: 14, color: "#1A1108", lineHeight: 1.6, margin: "12px 0 0" }}>
             {verdictLoading ? "Generating verdict…" : renderVerdictText(verdict || "No verdict available.")}
           </p>

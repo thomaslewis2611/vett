@@ -4,10 +4,10 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 export const Route = createFileRoute("/privacy")({
   head: () => ({
     meta: [
-      { title: "Privacy Policy — Roovr" },
-      { name: "description", content: "How Roovr collects, uses, and stores your data. UK GDPR compliant." },
-      { property: "og:title", content: "Privacy Policy — Roovr" },
-      { property: "og:description", content: "How Roovr collects, uses, and stores your data. UK GDPR compliant." },
+      { title: "Privacy Policy — vett" },
+      { name: "description", content: "How vett collects, uses, and stores your data. UK GDPR compliant." },
+      { property: "og:title", content: "Privacy Policy — vett" },
+      { property: "og:description", content: "How vett collects, uses, and stores your data. UK GDPR compliant." },
     ],
   }),
   component: PrivacyPage,
@@ -81,7 +81,7 @@ function PrivacyPage() {
           <ul className="list-disc pl-5 space-y-1.5">
             <li>We use essential cookies only to maintain your session and authentication state</li>
             <li>We do not use advertising or tracking cookies</li>
-            <li>By using Roovr you consent to essential cookies</li>
+            <li>By using vett you consent to essential cookies</li>
           </ul>
         </Section>
         <Section n={6} title="Your rights">

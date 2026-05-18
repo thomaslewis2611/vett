@@ -14,7 +14,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 const SITE_URL = "https://roovr.co";
-const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@roovr.co>";
 
 type EmailVariant = "single" | "pass";
 
@@ -29,18 +29,18 @@ const EMAIL_COPY: Record<EmailVariant, {
   textIntro: string;
 }> = {
   single: {
-    subject: "Your Roovr report is ready",
+    subject: "Your vett report is ready",
     heading: "Your report is ready",
     body: "Your property analysis is saved to your account. Click below to access your full report.",
     button: "Access my report →",
-    textIntro: "Your Roovr report is ready",
+    textIntro: "Your vett report is ready",
   },
   pass: {
-    subject: "Activate your Roovr Buyer Pass",
+    subject: "Activate your vett Buyer Pass",
     heading: "Activate your Buyer Pass",
-    body: "Thanks for purchasing a Roovr Buyer Pass. Click below to activate your account and get unlimited property analyses for 90 days, including flood risk data, AI chat, and more.",
+    body: "Thanks for purchasing a vett Buyer Pass. Click below to activate your account and get unlimited property analyses for 90 days, including flood risk data, AI chat, and more.",
     button: "Activate my Buyer Pass →",
-    textIntro: "Activate your Roovr Buyer Pass",
+    textIntro: "Activate your vett Buyer Pass",
   },
 };
 
@@ -48,7 +48,7 @@ function buildMagicLinkHtml(actionLink: string, variant: EmailVariant): { html: 
   const c = EMAIL_COPY[variant];
   const html = `<!doctype html><html><body style="margin:0;padding:32px 0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:0 20px;">
-    <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#2D6A4F;letter-spacing:-0.01em;">● Roovr</div></div>
+    <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#2D6A4F;letter-spacing:-0.01em;">● vett</div></div>
     <div style="background:#FFFDF9;border:1px solid rgba(26,17,8,0.12);border-radius:12px;padding:32px;">
       <h1 style="font-size:24px;font-weight:700;color:#1A1108;margin:0 0 12px;line-height:1.3;">${c.heading}</h1>
       <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">${c.body}</p>
@@ -58,7 +58,7 @@ function buildMagicLinkHtml(actionLink: string, variant: EmailVariant): { html: 
       <a href="${actionLink}" style="font-size:13px;color:#2D6A4F;word-break:break-all;">${actionLink}</a>
       <p style="font-size:13px;color:#888780;line-height:1.5;margin:20px 0 0;">If you did not request this, you can safely ignore this email.</p>
     </div>
-    <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.</p></div>
+    <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 vett · roovr.co · Every listing. Analysed. Instantly.</p></div>
   </div>
 </body></html>`;
   const text = `${c.textIntro}\n\n${c.body}\n${actionLink}\n\nIf you did not request this, you can safely ignore this email.`;
@@ -149,8 +149,8 @@ async function resolveVariantFromSession(
 // const messageId = crypto.randomUUID();
 // await supabase.from("email_send_log").insert({ message_id: messageId, template_name: "magiclink", recipient_email: email, status: "pending" });
 // await supabase.rpc("enqueue_email", { queue_name: "auth_emails", payload: {
-//   message_id: messageId, to: email, from: "roovr <noreply@roovr.co>",
-//   sender_domain: "notify.roovr.co", subject: "Activate your Roovr Buyer Pass",
+//   message_id: messageId, to: email, from: "vett <noreply@roovr.co>",
+//   sender_domain: "notify.roovr.co", subject: "Activate your vett Buyer Pass",
 //   html, text, purpose: "transactional", label: "magiclink",
 //   queued_at: new Date().toISOString(), run_id: crypto.randomUUID(),
 // }});

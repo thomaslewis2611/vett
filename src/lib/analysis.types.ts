@@ -1,4 +1,4 @@
-// Mock analysis result for the Roovr MVP UI.
+// Mock analysis result for the vett MVP UI.
 // This will be replaced by a real Claude API call in a follow-up.
 
 export type AnalysisResult = {

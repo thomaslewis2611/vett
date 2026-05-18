@@ -26,13 +26,13 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Roovr — Every listing. Analysed. Instantly." },
+      { title: "vett — Every listing. Analysed. Instantly." },
       {
         name: "description",
         content:
           "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
       },
-      { property: "og:title", content: "Roovr — AI property analysis for smarter buyers" },
+      { property: "og:title", content: "vett — AI property analysis for smarter buyers" },
       {
         property: "og:description",
         content:
@@ -130,7 +130,7 @@ function Index() {
 
     const isRightmove = /(^|\.)rightmove\.co\.uk$/i.test(parsed.hostname);
     if (!isRightmove) {
-      setNotice("Roovr works best with Rightmove listings — other sites coming soon");
+      setNotice("vett works best with Rightmove listings — other sites coming soon");
     }
 
     navigate({ to: "/results", search: { url: trimmed } });
@@ -160,23 +160,23 @@ function Index() {
 
       {/* 2. HERO — split layout */}
       <style>{`
-        @keyframes roovrTickerScroll {
+        @keyframes vettTickerScroll {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
         }
-        .roovr-hero-grid {
+        .vett-hero-grid {
           display: grid;
           grid-template-columns: 1fr;
           gap: 48px;
           align-items: start;
         }
-        .roovr-hero-left { max-width: 640px; margin-left: auto; margin-right: auto; }
+        .vett-hero-left { max-width: 640px; margin-left: auto; margin-right: auto; }
       `}</style>
 
       <section style={{ padding: "80px 24px 48px" }}>
-        <div className="mx-auto roovr-hero-grid" style={{ maxWidth: 1100 }}>
+        <div className="mx-auto vett-hero-grid" style={{ maxWidth: 1100 }}>
           {/* LEFT */}
-          <div className="roovr-hero-left text-center">
+          <div className="vett-hero-left text-center">
             <span
               className="inline-flex items-center gap-2"
               style={{
@@ -235,7 +235,7 @@ function Index() {
                 lineHeight: 1.6,
               }}
             >
-              Make your most important financial decision with confidence. Roovr gives you an
+              Make your most important financial decision with confidence. vett gives you an
               independent analysis of any property listing — red flags, true costs, negotiation
               strategy and more — in under 2 minutes.
             </p>
@@ -352,7 +352,7 @@ function Index() {
           style={{
             display: "flex",
             width: "max-content",
-            animation: "roovrTickerScroll 35s linear infinite",
+            animation: "vettTickerScroll 35s linear infinite",
           }}
         >
           {[0, 1].map((dup) => (
@@ -614,7 +614,7 @@ function Index() {
               {
                 n: "01",
                 title: "Paste the listing URL",
-                body: "Copy the listing URL and paste it into Roovr. We fetch the listing, read every word of the agent description, and check local data sources.",
+                body: "Copy the listing URL and paste it into vett. We fetch the listing, read every word of the agent description, and check local data sources.",
               },
               {
                 n: "02",
@@ -624,7 +624,7 @@ function Index() {
               {
                 n: "03",
                 title: "Get your report",
-                body: "A full report with your Roovr score, red flags, true costs and negotiation strategy. Unlock it with a one-off £4.99 payment — no subscription.",
+                body: "A full report with your vett score, red flags, true costs and negotiation strategy. Unlock it with a one-off £4.99 payment — no subscription.",
               },
             ].map((s) => (
               <div key={s.n}>
@@ -923,7 +923,7 @@ function Index() {
             }}
           >
             You wouldn't make a decision involving hundreds of thousands of pounds without doing
-            your research. Roovr does it in two minutes, for £4.99.
+            your research. vett does it in two minutes, for £4.99.
           </p>
           <button
             type="button"
@@ -1031,7 +1031,7 @@ function SampleReportCard({ data }: { data: SampleData }) {
             className="uppercase"
             style={{ fontSize: 8, fontWeight: 500, letterSpacing: "0.12em", color: COLORS.veryMuted, marginBottom: 4 }}
           >
-            Roovr Score
+            vett Score
           </div>
           <div
             style={{

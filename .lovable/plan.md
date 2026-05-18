@@ -40,7 +40,7 @@ Roll out the new homepage design language (Playfair Display + Inter, cream `#F1E
 - Primary pill: `background: '#2D6A4F'; color: '#FFFDF9'; borderRadius: 100; padding: '12px 22px'; fontFamily: Inter; fontWeight: 500; fontSize: 14`.
 - Secondary pill: transparent, `border: '0.5px solid #1A1108'`, `color: '#1A1108'`, same radius/padding.
 - Dark pricing band: full-bleed section with `background: '#1A1108'`, paper cards inside, forest green featured tier (`#2D6A4F`).
-- Results loading screen rebuilt as cream full-height container with Playfair heading "Building your Roovr report" + Inter 300 subtext + existing progress text retained.
+- Results loading screen rebuilt as cream full-height container with Playfair heading "Building your vett report" + Inter 300 subtext + existing progress text retained.
 
 ## Verification
 

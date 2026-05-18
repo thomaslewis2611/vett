@@ -43,7 +43,7 @@ const ANALYSIS_CACHE_TTL_MS = 2 * 60 * 60 * 1000; // 2 hours
 // pass it through Stripe metadata. The webhook then copies the analysis
 // into saved_analyses for the new user's email.
 function jobIdKey(url?: string | null) {
-  return url ? `roovrJobId:${url}` : null;
+  return url ? `vettJobId:${url}` : null;
 }
 function rememberJobId(url: string | undefined | null, jobId: string) {
   if (typeof window === "undefined") return;
@@ -63,7 +63,7 @@ function forgetJobId(url: string | undefined | null) {
   if (!key) return;
   try { sessionStorage.removeItem(key); } catch { /* ignore */ }
 }
-const ANALYSIS_CACHE_PREFIX = "roovr:analysis:";
+const ANALYSIS_CACHE_PREFIX = "vett:analysis:";
 
 function analysisCacheKey(url?: string, text?: string, token?: string) {
   return `${ANALYSIS_CACHE_PREFIX}${url ?? ""}|${text ?? ""}|${token ?? ""}`;
@@ -259,7 +259,7 @@ export const Route = createFileRoute("/results")({
   validateSearch: searchSchema,
   head: () => ({
     meta: [
-      { title: "Property analysis — Roovr" },
+      { title: "Property analysis — vett" },
       {
         name: "description",
         content:
@@ -282,13 +282,13 @@ class ResultsErrorBoundary extends Component<
     console.error("[ResultsErrorBoundary] caught render error", error, info);
   }
   handleReset = () => {
-    // Clear all roovr-prefixed session keys for a clean retry.
+    // Clear all vett-prefixed session keys for a clean retry.
     if (typeof window !== "undefined") {
       try {
         const keys: string[] = [];
         for (let i = 0; i < sessionStorage.length; i++) {
           const k = sessionStorage.key(i);
-          if (k && k.startsWith("roovrJobId:")) keys.push(k);
+          if (k && k.startsWith("vettJobId:")) keys.push(k);
         }
         keys.forEach((k) => sessionStorage.removeItem(k));
       } catch { /* ignore */ }
@@ -1022,7 +1022,7 @@ function LoadingState({ url }: { url?: string }) {
               lineHeight: 1.15,
             }}
           >
-            Building your Roovr report
+            Building your vett report
           </h1>
           <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.65 }}>
             Decoding agent jargon, estimating true costs and drafting your negotiation
@@ -1925,7 +1925,7 @@ function ScoreBadge({ score, label, compact }: { score: number; label: string; c
           marginBottom: 6,
         }}
       >
-        Roovr Score
+        vett Score
       </div>
       <div
         style={{
@@ -3281,7 +3281,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
       try {
         if (typeof window !== "undefined") {
           window.history.replaceState(
-            { ...(window.history.state ?? {}), roovrListingUrl: listingUrl ?? null },
+            { ...(window.history.state ?? {}), vettListingUrl: listingUrl ?? null },
             "",
             window.location.href
           );
@@ -3737,9 +3737,9 @@ function SubScoreBreakdown({ analysis }: { analysis: AnalysisResult }) {
     if (typeof window === "undefined") return;
     if (window.innerWidth >= 768) return;
     try {
-      if (!sessionStorage.getItem("roovr:scoreTooltipHintSeen")) {
+      if (!sessionStorage.getItem("vett:scoreTooltipHintSeen")) {
         setShowHint(true);
-        sessionStorage.setItem("roovr:scoreTooltipHintSeen", "1");
+        sessionStorage.setItem("vett:scoreTooltipHintSeen", "1");
       }
     } catch { /* ignore */ }
   }, []);
@@ -4255,7 +4255,7 @@ const EPC_BANDS: { letter: string; bg: string; fg: string }[] = [
 
 type EpcData = NonNullable<AnalysisResult["epc"]>;
 
-const EPC_SESSION_PREFIX = "roovr:epc:";
+const EPC_SESSION_PREFIX = "vett:epc:";
 function epcSessionKey(listingUrl?: string) {
   return listingUrl ? `${EPC_SESSION_PREFIX}${listingUrl}` : null;
 }
@@ -6091,7 +6091,7 @@ function AIChatLockedTeaser({ onUpgrade }: { onUpgrade?: () => void }) {
         <div style={{ filter: "blur(5px)", userSelect: "none", pointerEvents: "none" }}>
           <p style={{ fontSize: 13, color: "#5F5E5A" }}>You: Is this fair value for the area?</p>
           <p className="mt-2" style={{ fontSize: 13, color: "#1A1108" }}>
-            Roovr: Based on comparable sales in SW18 over the last 12 months…
+            vett: Based on comparable sales in SW18 over the last 12 months…
           </p>
           <p className="mt-3" style={{ fontSize: 13, color: "#5F5E5A" }}>You: What should I ask at the viewing?</p>
         </div>
@@ -6634,7 +6634,7 @@ function SharedReportBanner() {
     >
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-2.5 sm:px-8" style={{ fontSize: 13 }}>
         <span className="truncate">
-          Shared report — powered by Roovr
+          Shared report — powered by vett
         </span>
         <a
           href="https://roovr.co"

@@ -12,12 +12,12 @@ import { EmailChangeEmail } from '@/lib/email-templates/email-change'
 import { ReauthenticationEmail } from '@/lib/email-templates/reauthentication'
 
 const EMAIL_SUBJECTS: Record<string, string> = {
-  signup: 'Activate your Roovr Buyer Pass',
-  invite: "You've been invited to Roovr",
-  magiclink: 'Your Roovr access link',
-  recovery: 'Reset your Roovr password',
+  signup: 'Activate your vett Buyer Pass',
+  invite: "You've been invited to vett",
+  magiclink: 'Your vett access link',
+  recovery: 'Reset your vett password',
   email_change: 'Confirm your new email',
-  reauthentication: 'Your Roovr verification code',
+  reauthentication: 'Your vett verification code',
 }
 
 // Template mapping
@@ -31,7 +31,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "roovr"
+const SITE_NAME = "vett"
 const SENDER_DOMAIN = "notify.roovr.co"
 const ROOT_DOMAIN = "roovr.co"
 const FROM_DOMAIN = "roovr.co"

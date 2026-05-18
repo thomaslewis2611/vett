@@ -9,13 +9,13 @@ import { createCheckoutSession } from "@/lib/checkout.functions";
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
-      { title: "Pricing — Roovr" },
+      { title: "Pricing — vett" },
       {
         name: "description",
         content:
           "One-off payments. £4.99 for a single report or £24.99 for a 90-day Buyer Pass with unlimited analyses, AI chat and saved reports.",
       },
-      { property: "og:title", content: "Roovr pricing" },
+      { property: "og:title", content: "vett pricing" },
       {
         property: "og:description",
         content:

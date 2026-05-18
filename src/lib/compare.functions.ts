@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@roovr.co>";
 
 function escapeHtml(s: unknown): string {
   return String(s ?? "")
@@ -155,7 +155,7 @@ export const emailComparison = createServerFn({ method: "POST" })
     const html = `<!doctype html><html><body style="margin:0;padding:0;background:#F1EFE8;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:680px;margin:0 auto;">
     <div style="background:#1A1108;padding:20px 24px;">
-      <div style="font-size:20px;font-weight:700;color:#FFFDF9;"><span style="color:#2D6A4F;">●</span> Roovr</div>
+      <div style="font-size:20px;font-weight:700;color:#FFFDF9;"><span style="color:#2D6A4F;">●</span> vett</div>
     </div>
     <div style="background:#FFFDF9;padding:32px 24px;">
       <h1 style="font-size:22px;font-weight:600;color:#1A1108;margin:0 0 24px;">Property comparison</h1>
@@ -165,7 +165,7 @@ export const emailComparison = createServerFn({ method: "POST" })
           <td style="padding:10px;font-size:13px;font-weight:700;color:#1A1108;background:#F1EFE8;">${escapeHtml(a.property.address)}</td>
           <td style="padding:10px;font-size:13px;font-weight:700;color:#1A1108;background:#F1EFE8;">${escapeHtml(b.property.address)}</td>
         </tr>
-        ${rowHtml("Roovr score", `${a.score.toFixed(1)}/10`, `${b.score.toFixed(1)}/10`)}
+        ${rowHtml("vett score", `${a.score.toFixed(1)}/10`, `${b.score.toFixed(1)}/10`)}
         ${rowHtml("Price", gbp(a.property.price), gbp(b.property.price))}
         ${rowHtml("Type", a.property.type || "—", b.property.type || "—")}
         ${rowHtml("Bedrooms", String(a.property.beds), String(b.property.beds))}
@@ -184,13 +184,13 @@ export const emailComparison = createServerFn({ method: "POST" })
       </table>
 
       <div style="margin-top:32px;padding:20px;background:#FAECE7;border-radius:12px;">
-        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#993C1D;font-weight:700;margin-bottom:8px;">Roovr verdict</div>
+        <div style="font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:#993C1D;font-weight:700;margin-bottom:8px;">vett verdict</div>
         <p style="font-size:14px;color:#1A1108;line-height:1.6;margin:0;">${escapeHtml(verdict)}</p>
         <p style="font-size:11px;color:#888780;margin:12px 0 0;">AI-generated comparison based on listing data. Always verify independently.</p>
       </div>
     </div>
     <div style="padding:20px 24px;text-align:center;">
-      <p style="font-size:12px;color:#888780;margin:0;">© 2026 Roovr · roovr.co</p>
+      <p style="font-size:12px;color:#888780;margin:0;">© 2026 vett · roovr.co</p>
     </div>
   </div>
 </body></html>`;
@@ -204,7 +204,7 @@ export const emailComparison = createServerFn({ method: "POST" })
       body: JSON.stringify({
         from: FROM_ADDRESS,
         to: data.email,
-        subject: `Roovr comparison — ${a.property.address} vs ${b.property.address}`,
+        subject: `vett comparison — ${a.property.address} vs ${b.property.address}`,
         html,
       }),
     });

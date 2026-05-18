@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
-const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@roovr.co>";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -18,19 +18,19 @@ function buildHtml(expiryDate: string): string {
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;">
         <tr><td style="background:#1a1a1a;padding:24px 32px;">
           <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2D6A4F;vertical-align:middle;margin-right:8px;"></span>
-          <span style="color:#ffffff;font-size:18px;font-weight:600;vertical-align:middle;">Roovr</span>
+          <span style="color:#ffffff;font-size:18px;font-weight:600;vertical-align:middle;">vett</span>
         </td></tr>
         <tr><td style="padding:40px 32px 24px 32px;">
           <h1 style="margin:0 0 16px 0;font-size:24px;line-height:1.3;color:#1a1a1a;">Your Buyer Pass expires soon</h1>
           <p style="margin:0 0 24px 0;font-size:15px;line-height:1.6;color:#444;">
-            Your Roovr Buyer Pass expires on <strong>${formatDate(expiryDate)}</strong>. Renew now to keep unlimited access to property analyses, AI chat, flood risk data, and more.
+            Your vett Buyer Pass expires on <strong>${formatDate(expiryDate)}</strong>. Renew now to keep unlimited access to property analyses, AI chat, flood risk data, and more.
           </p>
           <table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="background:#2D6A4F;border-radius:999px;">
             <a href="https://roovr.co/pricing" style="display:inline-block;padding:14px 24px;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;">Renew my Buyer Pass — £24.99 →</a>
           </td></tr></table>
         </td></tr>
         <tr><td style="padding:24px 32px 32px 32px;border-top:1px solid #eee;font-size:12px;color:#888780;line-height:1.6;">
-          © 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.
+          © 2026 vett · roovr.co · Every listing. Analysed. Instantly.
         </td></tr>
       </table>
     </td></tr>
@@ -49,7 +49,7 @@ async function sendWithTimeout(apiKey: string, to: string, html: string): Promis
       body: JSON.stringify({
         from: FROM_ADDRESS,
         to,
-        subject: "Your Roovr Buyer Pass expires in 14 days",
+        subject: "Your vett Buyer Pass expires in 14 days",
         html,
       }),
       signal: controller.signal,

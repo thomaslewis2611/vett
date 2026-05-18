@@ -12,7 +12,7 @@ export const Route = createFileRoute("/payment-success")({
     session_id: z.string().optional(),
     tier: z.enum(["single", "pass"]).optional(),
   }),
-  head: () => ({ meta: [{ title: "Payment confirmed — Roovr" }] }),
+  head: () => ({ meta: [{ title: "Payment confirmed — vett" }] }),
   component: PaymentSuccessPage,
 });
 

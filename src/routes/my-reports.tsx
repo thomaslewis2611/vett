@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { formatGBP } from "@/lib/analysis.types";
 
 export const Route = createFileRoute("/my-reports")({
-  head: () => ({ meta: [{ title: "My Reports — Roovr" }] }),
+  head: () => ({ meta: [{ title: "My Reports — vett" }] }),
   component: MyReportsPage,
 });
 
