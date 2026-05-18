@@ -437,7 +437,7 @@ function ComparisonView({
     { title: "Analysis", rows: analysis },
   ];
 
-  const winStyle = { background: "#E7F4EA" };
+  const winStyle = { background: "#EAF3DE", color: "#2D6A4F", fontWeight: 700 };
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
@@ -490,17 +490,17 @@ function ComparisonView({
               {sections.map((section) => (
                 <Fragment key={section.title}>
                   <tr>
-                    <td colSpan={3} style={{ padding: "14px 12px", background: "#F1EFE8", fontSize: 11, fontWeight: 700, color: "#888780", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                    <td colSpan={3} style={{ padding: "10px 16px", background: "#1A1108", color: "#FFFDF9", fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase" }}>
                       {section.title}
                     </td>
                   </tr>
                   {section.rows.map((r, i) => {
-                    const bg = i % 2 === 0 ? "#FFFDF9" : "#FAF8F1";
+                    const bg = "#FFFDF9";
                     return (
-                      <tr key={`${section.title}-${r.label}`} style={{ background: bg }}>
-                        <td style={{ padding: "12px", fontSize: 13, color: "#5F5E5A" }}>{r.label}</td>
-                        <td style={{ padding: "12px", fontSize: 13, color: "#1A1108", fontWeight: 600, ...(r.winner === -1 ? winStyle : {}) }}>{r.aVal}</td>
-                        <td style={{ padding: "12px", fontSize: 13, color: "#1A1108", fontWeight: 600, ...(r.winner === 1 ? winStyle : {}) }}>{r.bVal}</td>
+                      <tr key={`${section.title}-${r.label}`} style={{ background: bg, borderBottom: "0.5px solid rgba(26,17,8,0.08)" }}>
+                        <td style={{ padding: "12px 16px", fontSize: 12, color: "#888780", fontWeight: 500, width: "30%", background: "#F1EFE8" }}>{r.label}</td>
+                        <td style={{ padding: "12px 16px", fontSize: 13, color: "#1A1108", fontWeight: 600, ...(r.winner === -1 ? winStyle : {}) }}>{r.aVal}</td>
+                        <td style={{ padding: "12px 16px", fontSize: 13, color: "#1A1108", fontWeight: 600, ...(r.winner === 1 ? winStyle : {}) }}>{r.bVal}</td>
                       </tr>
                     );
                   })}
