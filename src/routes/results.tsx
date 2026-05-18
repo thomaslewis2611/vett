@@ -3410,7 +3410,7 @@ function PaywallGate({ listingUrl }: { listingUrl?: string }) {
             "Renovation cost estimator",
             "Seller motivation score",
             "Flood risk assessment",
-            "Nearby schools with Ofsted ratings",
+            "Nearby schools",
             "Crime statistics",
             "Broadband and internet speed",
             "Transport links",
