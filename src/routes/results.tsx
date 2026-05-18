@@ -6203,6 +6203,30 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
 }
 
 // ---------- Sold price history (PropertyData / Land Registry) ----------
+const HPI_INDEX: Record<number, number> = {
+  2015: 100.0,
+  2016: 107.3,
+  2017: 112.1,
+  2018: 115.6,
+  2019: 117.8,
+  2020: 120.4,
+  2021: 133.8,
+  2022: 148.2,
+  2023: 147.1,
+  2024: 150.3,
+  2025: 151.8,
+  2026: 152.6,
+};
+
+function hpiAdjust(price: number, soldDateStr: string): number | null {
+  const year = parseInt(soldDateStr.slice(0, 4), 10);
+  if (!year || year < 2015) return null;
+  const soldIndex = HPI_INDEX[year];
+  const currentIndex = HPI_INDEX[2026];
+  if (!soldIndex || !currentIndex || year >= 2026) return null;
+  return Math.round((price * currentIndex) / soldIndex);
+}
+
 function PriceHistorySection({
   analysis,
   unlocked,
