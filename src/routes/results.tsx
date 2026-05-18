@@ -1925,14 +1925,8 @@ function computeConfidence(a: AnalysisResult): ConfidenceLevel {
   return "limited";
 }
 
-function ScoreBadge({ score, label, confidence, compact }: { score: number; label: string; confidence?: ConfidenceLevel; compact?: boolean }) {
-  const conf = confidence
-    ? confidence === "high"
-      ? { text: "High confidence", bg: "#EAF3DE", fg: "#2D6A4F" }
-      : confidence === "medium"
-        ? { text: "Medium confidence", bg: "#FEF3C7", fg: "#92400E" }
-        : { text: "Limited local data", bg: "#F1EFE8", fg: "#888780" }
-    : null;
+function ScoreBadge({ score, label, compact }: { score: number; label: string; confidence?: ConfidenceLevel; compact?: boolean }) {
+
   return (
     <div
       style={{
