@@ -1359,6 +1359,14 @@ async function runJob(
     // to ~40s (5 schools × up to 8s each) and pushes us past the 90s
     // deadline. PropertyData already returns basic school info; Ofsted
     // ratings can be lazy-loaded later from the schools section.
+    const mappedFlood = mapPdFloodRisk(pd["flood-risk"]);
+    if (mappedFlood) {
+      parsed.floodRisk = mappedFlood;
+      console.log("[flood] mapped from PropertyData:", JSON.stringify(mappedFlood).slice(0, 200));
+    } else {
+      console.log("[flood] no flood data to map. raw:", JSON.stringify(pd["flood-risk"])?.slice(0, 200));
+    }
+
     const mappedSchools = mapPdSchools(pd["schools"]);
     if (mappedSchools) {
       // Enrich with Ofsted ratings - run in parallel with 8s budget
