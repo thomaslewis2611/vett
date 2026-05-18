@@ -14,7 +14,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 const SITE_URL = "https://vetthome.com";
-const FROM_ADDRESS = "vett <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@vetthome.com>";
 
 type EmailVariant = "single" | "pass";
 
@@ -51,7 +51,7 @@ function buildMagicLinkHtml(actionLink: string, variant: EmailVariant): { html: 
   const c = EMAIL_COPY[variant];
   const html = `<!doctype html><html><body style="margin:0;padding:32px 0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:0 20px;">
-    <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#2D6A4F;letter-spacing:-0.01em;">● vett</div></div>
+    <div style="padding:0 0 24px;"><div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;color:#1A1108;letter-spacing:-1px;">vett</div></div>
     <div style="background:#FFFDF9;border:1px solid rgba(26,17,8,0.12);border-radius:12px;padding:32px;">
       <h1 style="font-size:24px;font-weight:700;color:#1A1108;margin:0 0 12px;line-height:1.3;">${c.heading}</h1>
       <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">${c.body}</p>
@@ -148,8 +148,8 @@ async function resolveVariantFromSession(
 // const messageId = crypto.randomUUID();
 // await supabase.from("email_send_log").insert({ message_id: messageId, template_name: "magiclink", recipient_email: email, status: "pending" });
 // await supabase.rpc("enqueue_email", { queue_name: "auth_emails", payload: {
-//   message_id: messageId, to: email, from: "vett <noreply@roovr.co>",
-//   sender_domain: "notify.roovr.co", subject: "Activate your vett Buyer Pass",
+//   message_id: messageId, to: email, from: "vett <noreply@vetthome.com>",
+//   sender_domain: "vetthome.com", subject: "Activate your vett Buyer Pass",
 //   html, text, purpose: "transactional", label: "magiclink",
 //   queued_at: new Date().toISOString(), run_id: crypto.randomUUID(),
 // }});
