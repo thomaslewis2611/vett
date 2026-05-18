@@ -21,7 +21,9 @@ interface MagicLinkEmailProps {
 
 export const MagicLinkEmail = ({ confirmationUrl }: MagicLinkEmailProps) => (
   <Html lang="en" dir="ltr">
-    <Head />
+    <Head>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap" rel="stylesheet" />
+    </Head>
     <Preview>Your vett access link</Preview>
     <Body style={main}>
       <Container style={container}>
@@ -64,7 +66,7 @@ const main = {
 const container = { maxWidth: "560px", margin: "0 auto", padding: "0 20px" };
 const header = { padding: "0 0 24px" };
 const brand = {
-  fontFamily: "Georgia, 'Times New Roman', serif",
+  fontFamily: "'Playfair Display', Georgia, 'Times New Roman', serif",
   fontSize: "24px",
   fontWeight: 700 as const,
   color: "#1A1108",
