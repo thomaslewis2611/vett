@@ -1688,6 +1688,18 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
                   fetching={sectionFetching && a.crime == null}
                   onUpgrade={() => upgradeToSingle(listingUrl)}
                   onUpgradePass={() => upgradeToPass(listingUrl)}
+                  listingUrl={listingUrl}
+                  userEmail={access.email}
+                  onPostcodeSaved={(patch) =>
+                    setA((prev) => ({
+                      ...prev,
+                      crime: patch.crime ?? prev.crime,
+                      floodRisk: patch.floodRisk ?? prev.floodRisk,
+                      nearbySchools: patch.nearbySchools ?? prev.nearbySchools,
+                      broadband: patch.broadband ?? prev.broadband,
+                      partialPostcode: null,
+                    }))
+                  }
                 />
               )}
 
