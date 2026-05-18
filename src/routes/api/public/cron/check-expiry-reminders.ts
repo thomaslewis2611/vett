@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
-const FROM_ADDRESS = "vett <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@vetthome.com>";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
