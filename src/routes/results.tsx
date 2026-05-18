@@ -4930,18 +4930,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUp
           </div>
         )}
         <p className="mt-4" style={{ fontSize: 10, color: "#888780" }}>
-          {ns?.aiSourced
-            ? "School information based on AI knowledge — verify at get-information-schools.service.gov.uk"
-            : (
-              <a
-                href="https://reports.ofsted.gov.uk"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "#888780", textDecoration: "underline" }}
-              >
-                Source: DfE / Ofsted · Ratings reflect last inspection. Schools inspected after Sept 2024 use new report card system.
-              </a>
-            )}
+          Source: Department for Education · <a href="https://get-information-schools.service.gov.uk" target="_blank" rel="noopener noreferrer" style={{ color: "#888780", textDecoration: "underline" }}>get-information-schools.service.gov.uk</a>
         </p>
       </div>
     </section>
