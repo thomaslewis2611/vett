@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createClient } from "@supabase/supabase-js";
 
-const FROM_ADDRESS = "vett <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@vetthome.com>";
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
@@ -17,8 +17,7 @@ function buildHtml(expiryDate: string): string {
     <tr><td align="center">
       <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;">
         <tr><td style="background:#1a1a1a;padding:24px 32px;">
-          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#2D6A4F;vertical-align:middle;margin-right:8px;"></span>
-          <span style="color:#ffffff;font-size:18px;font-weight:600;vertical-align:middle;">vett</span>
+          <span style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-1px;vertical-align:middle;">vett</span>
         </td></tr>
         <tr><td style="padding:40px 32px 24px 32px;">
           <h1 style="margin:0 0 16px 0;font-size:24px;line-height:1.3;color:#1a1a1a;">Your Buyer Pass expires soon</h1>
