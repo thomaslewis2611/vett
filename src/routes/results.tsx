@@ -1352,8 +1352,8 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
               </div>
             </div>
             <div className="w-full flex justify-center sm:block sm:w-auto sm:row-start-1 sm:col-start-2 shrink-0">
-              <div className="sm:hidden"><ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} compact /></div>
-              <div className="hidden sm:block"><ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} /></div>
+              <div className="sm:hidden"><ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} confidence={computeConfidence(a)} compact /></div>
+              <div className="hidden sm:block"><ScoreBadge score={a.score} label={sanitiseText(a.scoreLabel)} confidence={computeConfidence(a)} /></div>
             </div>
             <div className="flex sm:hidden flex-wrap items-center" style={{ gap: 8 }}>
               <PropertyPill>{a.property.beds} bed{a.property.beds === 1 ? "" : "s"}</PropertyPill>
@@ -1903,7 +1903,24 @@ function PropertyPill({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ScoreBadge({ score, label, compact }: { score: number; label: string; compact?: boolean }) {
+type ConfidenceLevel = "high" | "medium" | "limited";
+
+function computeConfidence(a: AnalysisResult): ConfidenceLevel {
+  const hasSold = Array.isArray(a.propertyData?.soldPrices) && a.propertyData!.soldPrices.length > 0;
+  const hasAreaPpsf = a.areaContext?.avgPricePerSqFtArea != null;
+  if (hasSold && hasAreaPpsf) return "high";
+  if (hasSold || hasAreaPpsf) return "medium";
+  return "limited";
+}
+
+function ScoreBadge({ score, label, confidence, compact }: { score: number; label: string; confidence?: ConfidenceLevel; compact?: boolean }) {
+  const conf = confidence
+    ? confidence === "high"
+      ? { text: "High confidence", bg: "#EAF3DE", fg: "#2D6A4F" }
+      : confidence === "medium"
+        ? { text: "Medium confidence", bg: "#FEF3C7", fg: "#92400E" }
+        : { text: "Limited local data", bg: "#F1EFE8", fg: "#888780" }
+    : null;
   return (
     <div
       style={{
@@ -1954,6 +1971,28 @@ function ScoreBadge({ score, label, compact }: { score: number; label: string; c
         >
           {label}
         </span>
+      )}
+      {conf && (
+        <div style={{ marginTop: 6 }}>
+          <span
+            title="Based on availability of local sold price data for this postcode."
+            style={{
+              background: conf.bg,
+              color: conf.fg,
+              borderRadius: 100,
+              padding: "3px 8px",
+              fontSize: 11,
+              fontWeight: 500,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 4,
+              cursor: "help",
+            }}
+          >
+            <span aria-hidden="true" style={{ fontSize: 10 }}>ⓘ</span>
+            {conf.text}
+          </span>
+        </div>
       )}
     </div>
   );
