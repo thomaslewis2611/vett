@@ -30,7 +30,7 @@ function buildHtml(expiryDate: string): string {
           </td></tr></table>
         </td></tr>
         <tr><td style="padding:24px 32px 32px 32px;border-top:1px solid #eee;font-size:12px;color:#888780;line-height:1.6;">
-          © 2026 vett · vetthome.com · Every listing. Vetted. Instantly.
+          © 2026 vett · vetthome.com · Every listing. Vetted.
         </td></tr>
       </table>
     </td></tr>

@@ -49,7 +49,7 @@ export const SignupEmail = ({ confirmationUrl }: SignupEmailProps) => (
         </Section>
 
         <Section style={footer}>
-          <Text style={footerText}>© 2026 vett · vetthome.com · Every listing. Vetted. Instantly.</Text>
+          <Text style={footerText}>© 2026 vett · vetthome.com · Every listing. Vetted. </Text>
         </Section>
       </Container>
     </Body>

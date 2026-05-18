@@ -26,7 +26,7 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "vett — Every listing. Vetted. Instantly." },
+      { title: "vett — Every listing. Vetted." },
       {
         name: "description",
         content:
