@@ -6260,6 +6260,10 @@ function PriceHistorySection({
     price: Number(s?.price ?? s?.sold_price ?? s?.amount ?? 0),
     type: String(s?.property_type ?? s?.type ?? "—"),
     address: String(s?.address ?? s?.paon ?? "").trim(),
+    hpiAdjusted: hpiAdjust(
+      Number(s?.price ?? s?.sold_price ?? s?.amount ?? 0),
+      String(s?.date ?? s?.sold_date ?? s?.transaction_date ?? "")
+    ),
   })).filter((r) => r.price > 0);
 
   const visible = unlocked ? norm.slice(0, 10) : norm.slice(0, 3);
