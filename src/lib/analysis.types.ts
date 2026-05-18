@@ -83,6 +83,7 @@ export type AnalysisResult = {
       schoolType: string | null;
       phase: "primary" | "secondary" | "other";
       distanceMiles: number;
+      urn?: string | null;
     }[];
     unavailable?: boolean | null;
     aiSourced?: boolean | null;
