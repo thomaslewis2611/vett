@@ -687,6 +687,50 @@ function pdData(raw: any): any {
 
 // ---------- PropertyData → frontend shape mappers ----------
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapPdFloodRisk(raw: any): AnalysisResult["floodRisk"] | null {
+  if (!raw || typeof raw !== "object") return null;
+  // PropertyData /flood-risk returns a flat object: { status, flood_risk, ... }
+  // It does NOT have a .data wrapper. Try all known key shapes.
+  const level: string | null =
+    raw.flood_risk ??
+    raw.data?.flood_risk ??
+    raw.overallRisk ??
+    raw.overall ??
+    null;
+  if (!level || raw.status === "error") return null;
+
+  const normalise = (v: any): string | null => {
+    if (!v) return null;
+    const s = String(v).trim();
+    return s || null;
+  };
+
+  const overallRisk = normalise(level);
+  const riversAndSea = normalise(raw.rivers_and_sea ?? raw.riversAndSea ?? raw.rivers ?? level);
+  const surfaceWater = normalise(raw.surface_water ?? raw.surfaceWater ?? raw.surface ?? null);
+  const groundwater = normalise(raw.groundwater ?? null);
+  const reservoirRaw = raw.reservoir ?? raw.flood_risk_from_reservoir ?? null;
+  const reservoir = typeof reservoirRaw === "boolean" ? reservoirRaw : null;
+
+  const isHigh = /^high$/i.test(overallRisk ?? "");
+  const commentary = isHigh
+    ? "This postcode has a high flood risk. Some insurers refuse buildings insurance cover or charge 3–5x standard premiums. Some mortgage lenders require flood resilience measures as a condition of lending."
+    : overallRisk
+    ? `Flood risk for this postcode is ${overallRisk.toLowerCase()} according to Environment Agency data.`
+    : "";
+
+  return {
+    riversAndSea,
+    surfaceWater,
+    reservoir,
+    groundwater,
+    overallRisk,
+    commentary,
+    autoRedFlag: isHigh,
+  };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapPdSchools(raw: any) {
   if (!raw || raw.status !== "success" || !raw.data) return null;
   // PropertyData /schools returns ofsted rating under a few possible keys
