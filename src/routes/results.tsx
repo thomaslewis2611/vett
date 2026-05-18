@@ -6282,6 +6282,7 @@ function PriceHistorySection({
               <tr style={{ textAlign: "left", color: "#888780", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 <th style={{ padding: "8px 8px 8px 0" }}>Date</th>
                 <th style={{ padding: "8px" }}>Price</th>
+                <th style={{ padding: "8px" }}>Est. today</th>
                 <th style={{ padding: "8px" }}>Type</th>
                 <th style={{ padding: "8px 0 8px 8px" }}>Address</th>
               </tr>
