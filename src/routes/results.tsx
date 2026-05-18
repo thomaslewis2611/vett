@@ -1925,14 +1925,8 @@ function computeConfidence(a: AnalysisResult): ConfidenceLevel {
   return "limited";
 }
 
-function ScoreBadge({ score, label, confidence, compact }: { score: number; label: string; confidence?: ConfidenceLevel; compact?: boolean }) {
-  const conf = confidence
-    ? confidence === "high"
-      ? { text: "High confidence", bg: "#EAF3DE", fg: "#2D6A4F" }
-      : confidence === "medium"
-        ? { text: "Medium confidence", bg: "#FEF3C7", fg: "#92400E" }
-        : { text: "Limited local data", bg: "#F1EFE8", fg: "#888780" }
-    : null;
+function ScoreBadge({ score, label, compact }: { score: number; label: string; confidence?: ConfidenceLevel; compact?: boolean }) {
+
   return (
     <div
       style={{
@@ -1983,28 +1977,6 @@ function ScoreBadge({ score, label, confidence, compact }: { score: number; labe
         >
           {label}
         </span>
-      )}
-      {conf && (
-        <div style={{ marginTop: 6 }}>
-          <span
-            title="Based on availability of local sold price data for this postcode."
-            style={{
-              background: conf.bg,
-              color: conf.fg,
-              borderRadius: 100,
-              padding: "3px 8px",
-              fontSize: 11,
-              fontWeight: 500,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-              cursor: "help",
-            }}
-          >
-            <span aria-hidden="true" style={{ fontSize: 10 }}>ⓘ</span>
-            {conf.text}
-          </span>
-        </div>
       )}
     </div>
   );
