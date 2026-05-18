@@ -4993,6 +4993,34 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
 
   const crime = analysis.crime;
 
+  const hasFullPostcode = Boolean(
+    analysis.postcode &&
+    analysis.postcode.trim().length > 4 &&
+    analysis.postcode.includes(' ')
+  );
+
+  if (isBuyerPass && !hasFullPostcode) {
+    return (
+      <section className="mt-10">
+        {heading}
+        <div className="mt-4" style={cardStyle}>
+          <p style={{ fontSize: 14, color: "#5F5E5A" }}>
+            Crime data requires a full postcode. Rightmove listings don't always include it — enter it below to load accurate local crime statistics.
+          </p>
+        </div>
+        {onPostcodeSaved && (
+          <PostcodePromptBanner
+            partial={analysis.partialPostcode ?? null}
+            email={userEmail ?? null}
+            listingUrl={listingUrl}
+            onSaved={onPostcodeSaved}
+          />
+        )}
+      </section>
+    );
+  }
+
+
   if (fetching && !crime) {
     return (
       <section className="mt-10">
