@@ -660,7 +660,7 @@ function Index() {
       <hr style={{ border: "none", borderTop: "0.5px solid rgba(26,17,8,0.1)", margin: 0 }} />
 
       {/* 7. PRICING */}
-      <section style={{ background: COLORS.dark, padding: "80px 24px" }}>
+      <section style={{ background: "#1a2820", padding: "80px 24px" }}>
         <div className="mx-auto text-center" style={{ maxWidth: 800 }}>
           <div
             className="uppercase"
