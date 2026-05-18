@@ -26,17 +26,17 @@ export const SignupEmail = ({
 }: SignupEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Activate your Roovr Buyer Pass</Preview>
+    <Preview>Activate your vett Buyer Pass</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Text style={brand}>Roovr</Text>
+          <Text style={brand}>vett</Text>
         </Section>
 
         <Section style={card}>
           <Heading style={h1}>Activate your Buyer Pass</Heading>
           <Text style={text}>
-            Thanks for purchasing a Roovr Buyer Pass. Click below to activate
+            Thanks for purchasing a vett Buyer Pass. Click below to activate
             your account and get unlimited property analyses for 90 days,
             including flood risk data, AI chat, and more.
           </Text>
@@ -58,7 +58,7 @@ export const SignupEmail = ({
 
         <Section style={footer}>
           <Text style={footerText}>
-            © 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.
+            © 2026 vett · roovr.co · Every listing. Analysed. Instantly.
           </Text>
         </Section>
       </Container>

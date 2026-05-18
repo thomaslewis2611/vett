@@ -24,21 +24,21 @@ export const MagicLinkEmail = ({
 }: MagicLinkEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Your Roovr access link</Preview>
+    <Preview>Your vett access link</Preview>
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Text style={brand}>Roovr</Text>
+          <Text style={brand}>vett</Text>
         </Section>
 
         <Section style={card}>
           <Heading style={h1}>Your access link is ready</Heading>
           <Text style={text}>
-            Click the button below to access your Roovr report. This link is
+            Click the button below to access your vett report. This link is
             unique to you and expires in 24 hours.
           </Text>
           <Button style={button} href={confirmationUrl}>
-            Access my Roovr report →
+            Access my vett report →
           </Button>
           <Hr style={hr} />
           <Text style={small}>
@@ -55,7 +55,7 @@ export const MagicLinkEmail = ({
 
         <Section style={footer}>
           <Text style={footerText}>
-            © 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.
+            © 2026 vett · roovr.co · Every listing. Analysed. Instantly.
           </Text>
         </Section>
       </Container>

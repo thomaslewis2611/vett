@@ -5,7 +5,7 @@
 //
 // Responsibilities:
 //   1. Fetch the Rightmove/Zoopla listing HTML.
-//   2. Call Claude with the full Roovr SYSTEM_PROMPT.
+//   2. Call Claude with the full vett SYSTEM_PROMPT.
 //   3. Parse JSON (with light truncation repair + simplified-schema fallback).
 //   4. Update the analysis_jobs row to `complete` / `error`.
 
@@ -172,7 +172,7 @@ async function fetchListingHtml(url: string): Promise<string> {
 }
 
 // ---------- Claude prompt ----------
-const SYSTEM_PROMPT = `You are Roovr, an expert UK property buyer's analyst surfacing red flags estate agents hide. Analyse Rightmove/Zoopla listings for serious UK buyers.
+const SYSTEM_PROMPT = `You are vett, an expert UK property buyer's analyst surfacing red flags estate agents hide. Analyse Rightmove/Zoopla listings for serious UK buyers.
 
 Rules:
 - Read description, captions, key features, agent copy.
@@ -403,7 +403,7 @@ function parseStageJson(raw: string, stageName: string): Record<string, unknown>
   return parsed as Record<string, unknown>;
 }
 
-const STAGED_ANALYSIS_BASE_PROMPT = `You are Roovr, an expert UK property buyer's analyst surfacing red flags estate agents hide. Return ONLY valid JSON. Be specific to this UK listing. Never use markdown.
+const STAGED_ANALYSIS_BASE_PROMPT = `You are vett, an expert UK property buyer's analyst surfacing red flags estate agents hide. Return ONLY valid JSON. Be specific to this UK listing. Never use markdown.
 
 Critical rules:
 - SQUARE FOOTAGE: only use explicit listing text or PropertyData floor areas. If unknown: sqft=0 and pricePerSqFt=0. Never estimate from beds/type.
@@ -1387,7 +1387,7 @@ async function runJob(
     } else {
     }
 
-    // Recompute the overall Roovr score as a weighted average of the six
+    // Recompute the overall vett score as a weighted average of the six
     // sub-scores. Claude tends to anchor the overall figure (commonly 6.8)
     // even when sub-scores vary, so we always derive it deterministically.
     const sub = (parsed.subScores ?? {}) as Record<string, number>;

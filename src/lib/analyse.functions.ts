@@ -244,7 +244,7 @@ const analysisSchema = z.object({
 
 export { analysisSchema };
 
-const SYSTEM_PROMPT = `You are Roovr, an expert UK property buyer's analyst whose job is to surface the red flags estate agents won't show buyers. You analyse Rightmove and Zoopla listings for serious UK home buyers.
+const SYSTEM_PROMPT = `You are vett, an expert UK property buyer's analyst whose job is to surface the red flags estate agents won't show buyers. You analyse Rightmove and Zoopla listings for serious UK home buyers.
 
 You must:
 - Read the listing carefully (description, photos captions, key features, agent copy).
@@ -2635,7 +2635,7 @@ export const getAnalysisJob = createServerFn({ method: "POST" })
     }
 
     const full = row.result_json as unknown as FullAnalysis;
-    // Always derive the overall Roovr score from sub-scores so older
+    // Always derive the overall vett score from sub-scores so older
     // saved analyses (where Claude returned a flat 6.8) display correctly.
     try {
       const subAny = (full as unknown as { subScores?: Record<string, number> | null })?.subScores;

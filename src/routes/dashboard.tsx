@@ -11,7 +11,7 @@ import { computeWeightedScore } from "@/lib/score";
 const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
 export const Route = createFileRoute("/dashboard")({
-  head: () => ({ meta: [{ title: "My Reports — Roovr" }] }),
+  head: () => ({ meta: [{ title: "My Reports — vett" }] }),
   component: DashboardPage,
 });
 
@@ -38,7 +38,7 @@ function sortRows(rows: SavedRow[]): SavedRow[] {
 
 type PassStatus = "active" | "expiring" | "expired";
 
-// Derive the overall Roovr score from sub-scores. Mirrors the server-side
+// Derive the overall vett score from sub-scores. Mirrors the server-side
 // weighting so dashboard matches the report page even for older saved rows
 // where the stored `score` field is stale (Claude often returned 6.8).
 function computeOverallScore(a: any): number | null {

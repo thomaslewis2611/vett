@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { AnalysisResult } from "@/lib/analysis.types";
 
-const FROM_ADDRESS = "Roovr <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@roovr.co>";
 
 type Tier = "free" | "single" | "pass";
 
@@ -455,7 +455,7 @@ function buildReportHtml(opts: {
   <meta name="x-apple-disable-message-reformatting">
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
-  <title>Roovr report</title>
+  <title>vett report</title>
   <style>
     /* Mobile-first overrides — desktop rendering is unchanged */
     @media only screen and (max-width: 600px) {
@@ -486,7 +486,7 @@ function buildReportHtml(opts: {
   <div class="content" style="max-width:600px;margin:0 auto;padding:0;">
     <div class="px" style="background:#1A1108;padding:20px 24px;">
       <div style="font-size:20px;font-weight:700;color:#FFFDF9;letter-spacing:-0.01em;">
-        <span style="color:#2D6A4F;">●</span> Roovr
+        <span style="color:#2D6A4F;">●</span> vett
       </div>
     </div>
 
@@ -500,7 +500,7 @@ function buildReportHtml(opts: {
         <td valign="top" align="right" width="100">
           <div style="background:#1A1108;color:#FFFDF9;border-radius:12px;padding:12px 16px;text-align:center;min-width:80px;display:inline-block;">
             <div style="font-size:28px;font-weight:700;line-height:1;">${Number(a.score ?? 0).toFixed(1)}</div>
-            <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px;opacity:0.8;">Roovr score</div>
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:0.08em;margin-top:4px;opacity:0.8;">vett score</div>
           </div>
         </td>
       </tr></table>
@@ -555,7 +555,7 @@ function buildReportHtml(opts: {
     </div>
 
     <div class="px" style="padding:20px 24px;text-align:center;">
-      <p class="small-note" style="font-size:12px;color:#888780;margin:0;">© 2026 Roovr · roovr.co · Every listing. Analysed. Instantly.</p>
+      <p class="small-note" style="font-size:12px;color:#888780;margin:0;">© 2026 vett · roovr.co · Every listing. Analysed. Instantly.</p>
     </div>
   </div>
 </body></html>`;
@@ -581,7 +581,7 @@ export const sendReportEmail = createServerFn({ method: "POST" })
 
     const tier: Tier = data.tier ?? (data.isPaid ? "single" : "free");
 
-    const subject = `Your Roovr report — ${analysis.property.address}`;
+    const subject = `Your vett report — ${analysis.property.address}`;
     const html = buildReportHtml({
       analysis,
       resultsUrl: data.resultsUrl,

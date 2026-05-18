@@ -16,7 +16,7 @@ export const SCORE_WEIGHTS: Record<string, number> = {
 };
 
 /**
- * Compute the overall Roovr score as a weighted average of sub-scores.
+ * Compute the overall vett score as a weighted average of sub-scores.
  * Missing / non-finite / zero sub-scores are skipped and their weight is
  * not counted toward the divisor. Returns NaN if no sub-scores contribute.
  * Result is rounded to one decimal place.

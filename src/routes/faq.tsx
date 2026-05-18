@@ -10,10 +10,10 @@ import {
 export const Route = createFileRoute("/faq")({
   head: () => ({
     meta: [
-      { title: "FAQ — Roovr" },
-      { name: "description", content: "Answers to common questions about Roovr — pricing, accuracy, supported sites, refunds and more." },
-      { property: "og:title", content: "FAQ — Roovr" },
-      { property: "og:description", content: "Answers to common questions about Roovr — pricing, accuracy, supported sites, refunds and more." },
+      { title: "FAQ — vett" },
+      { name: "description", content: "Answers to common questions about vett — pricing, accuracy, supported sites, refunds and more." },
+      { property: "og:title", content: "FAQ — vett" },
+      { property: "og:description", content: "Answers to common questions about vett — pricing, accuracy, supported sites, refunds and more." },
     ],
   }),
   component: FaqPage,
@@ -21,8 +21,8 @@ export const Route = createFileRoute("/faq")({
 
 const FAQS: { q: string; a: React.ReactNode }[] = [
   {
-    q: "What is Roovr?",
-    a: "Roovr is an AI-powered property analysis tool that helps UK home buyers make smarter, more informed decisions. Paste any Rightmove listing URL and get a full report in minutes — including red flags, true cost breakdown, negotiation strategy, nearby schools, crime statistics, broadband speeds, flood risk, and more.",
+    q: "What is vett?",
+    a: "vett is an AI-powered property analysis tool that helps UK home buyers make smarter, more informed decisions. Paste any Rightmove listing URL and get a full report in minutes — including red flags, true cost breakdown, negotiation strategy, nearby schools, crime statistics, broadband speeds, flood risk, and more.",
   },
   {
     q: "How does it work?",
@@ -30,7 +30,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "Which countries and property sites do you support?",
-    a: "Currently Roovr works best with Rightmove listings and covers UK properties only. We're actively working on adding Zoopla and other major UK property portals. Support for the US, Europe, Australia, Canada and other countries is coming soon.",
+    a: "Currently vett works best with Rightmove listings and covers UK properties only. We're actively working on adding Zoopla and other major UK property portals. Support for the US, Europe, Australia, Canada and other countries is coming soon.",
   },
   {
     q: "What's the difference between a Single Report and a Buyer Pass?",
@@ -42,11 +42,11 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "How accurate is the data?",
-    a: "Roovr uses a combination of AI analysis and real data from trusted sources including PropertyData, Environment Agency, Ofcom, and DfE/Ofsted. AI-generated content (red flags, negotiation strategy, area analysis) is based on Claude's reasoning and should be treated as advisory. Roovr cannot be held liable for any decisions made based on report content. Always verify key information independently and seek professional advice from a solicitor, surveyor, and mortgage broker before making any offer.",
+    a: "vett uses a combination of AI analysis and real data from trusted sources including PropertyData, Environment Agency, Ofcom, and DfE/Ofsted. AI-generated content (red flags, negotiation strategy, area analysis) is based on Claude's reasoning and should be treated as advisory. vett cannot be held liable for any decisions made based on report content. Always verify key information independently and seek professional advice from a solicitor, surveyor, and mortgage broker before making any offer.",
   },
   {
-    q: "Can I use Roovr on my phone?",
-    a: "Yes — Roovr works on mobile, tablet, and desktop. We recommend keeping your screen on while the analysis runs (60-90 seconds) as some mobile browsers may pause background processes when the screen locks.",
+    q: "Can I use vett on my phone?",
+    a: "Yes — vett works on mobile, tablet, and desktop. We recommend keeping your screen on while the analysis runs (60-90 seconds) as some mobile browsers may pause background processes when the screen locks.",
   },
   {
     q: "What happens to my reports after I buy them?",
@@ -54,7 +54,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
   },
   {
     q: "Is my payment information secure?",
-    a: "Yes. All payments are processed securely by Stripe, one of the world's leading payment providers. Roovr never stores your card details.",
+    a: "Yes. All payments are processed securely by Stripe, one of the world's leading payment providers. vett never stores your card details.",
   },
   {
     q: "The analysis failed or I got an error — what should I do?",
@@ -109,7 +109,7 @@ function FaqPage() {
           Frequently asked questions
         </h1>
         <p className="mt-4" style={{ fontSize: 16, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.7 }}>
-          Everything you need to know about Roovr. Can't find an answer?{" "}
+          Everything you need to know about vett. Can't find an answer?{" "}
           <a href="mailto:support@roovr.co" className="hover:underline" style={{ color: "#2D6A4F", fontWeight: 400 }}>
             Email support@roovr.co
           </a>

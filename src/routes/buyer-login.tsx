@@ -8,8 +8,8 @@ import { sendBuyerPassMagicLink } from "@/lib/checkout.functions";
 export const Route = createFileRoute("/buyer-login")({
   head: () => ({
     meta: [
-      { title: "Buyer Login — Roovr" },
-      { name: "description", content: "Sign in to access your Roovr Buyer Pass or property report." },
+      { title: "Buyer Login — vett" },
+      { name: "description", content: "Sign in to access your vett Buyer Pass or property report." },
     ],
   }),
   component: BuyerLoginPage,

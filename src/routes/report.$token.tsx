@@ -9,8 +9,8 @@ export const Route = createFileRoute("/report/$token")({
   component: SharedReportPage,
   head: ({ params }) => ({
     meta: [
-      { title: `Shared Roovr Report — ${params.token.slice(0, 8)}` },
-      { name: "description", content: "A shared property analysis from Roovr." },
+      { title: `Shared vett Report — ${params.token.slice(0, 8)}` },
+      { name: "description", content: "A shared property analysis from vett." },
       { name: "robots", content: "noindex, nofollow" },
     ],
   }),
@@ -61,7 +61,7 @@ function SharedReportPage() {
 
   // Set the document title to the property address once loaded.
   if (typeof document !== "undefined" && data.propertyAddress) {
-    document.title = `${data.propertyAddress} — Roovr Report`;
+    document.title = `${data.propertyAddress} — vett Report`;
   }
 
   return <ReportView analysis={data.analysis} shareMode />;
