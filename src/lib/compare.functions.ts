@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-const FROM_ADDRESS = "vett <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@vetthome.com>";
 
 function escapeHtml(s: unknown): string {
   return String(s ?? "")

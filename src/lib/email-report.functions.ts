@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { AnalysisResult } from "@/lib/analysis.types";
 
-const FROM_ADDRESS = "vett <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@vetthome.com>";
 
 type Tier = "free" | "single" | "pass";
 
