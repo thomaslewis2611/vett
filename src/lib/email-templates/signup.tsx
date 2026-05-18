@@ -67,10 +67,11 @@ const main = {
 const container = { maxWidth: "560px", margin: "0 auto", padding: "0 20px" };
 const header = { padding: "0 0 24px" };
 const brand = {
-  fontSize: "20px",
+  fontFamily: "Georgia, 'Times New Roman', serif",
+  fontSize: "24px",
   fontWeight: 700 as const,
-  color: "#2D6A4F",
-  letterSpacing: "-0.01em",
+  color: "#1A1108",
+  letterSpacing: "-1px",
   margin: 0,
 };
 const card = {
