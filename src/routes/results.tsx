@@ -4937,7 +4937,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUp
   );
 }
 
-function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void }) {
+function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePass, listingUrl, userEmail, onPostcodeSaved }: { analysis: AnalysisResult; isBuyerPass: boolean; fetching?: boolean; onUpgrade?: () => void; onUpgradePass?: () => void; listingUrl?: string; userEmail?: string | null; onPostcodeSaved?: (patch: PostcodePromptPatch) => void }) {
   console.log("[CrimeSection]", { isBuyerPass, hasData: !!analysis?.crime, unavailable: analysis?.crime?.unavailable });
   const cardStyle: CSSProperties = {
     background: "#FFFDF9",
