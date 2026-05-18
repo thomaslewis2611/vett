@@ -66,7 +66,7 @@ export const MagicLinkEmail = ({
 export default MagicLinkEmail
 
 const main = {
-  backgroundColor: '#ffffff',
+  backgroundColor: '#F1EFE8',
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
   margin: 0,
