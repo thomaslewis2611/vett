@@ -6,12 +6,12 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AnalysisResult } from "@/lib/analysis.types";
 
 const SITE_URL = "https://vetthome.com";
-const FROM_ADDRESS = "vett <noreply@roovr.co>";
+const FROM_ADDRESS = "vett <noreply@vetthome.com>";
 
 function buildMagicLinkHtml(actionLink: string, opts: { heading: string; body: string; cta: string }): string {
   return `<!doctype html><html><body style="margin:0;padding:32px 0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
   <div style="max-width:560px;margin:0 auto;padding:0 20px;">
-    <div style="padding:0 0 24px;"><div style="font-size:20px;font-weight:700;color:#2D6A4F;letter-spacing:-0.01em;">● vett</div></div>
+    <div style="padding:0 0 24px;"><div style="font-family:Georgia,'Times New Roman',serif;font-size:24px;font-weight:700;color:#1A1108;letter-spacing:-1px;">vett</div></div>
     <div style="background:#FFFDF9;border:1px solid rgba(26,17,8,0.12);border-radius:12px;padding:32px;">
       <h1 style="font-size:24px;font-weight:700;color:#1A1108;margin:0 0 12px;line-height:1.3;">${opts.heading}</h1>
       <p style="font-size:15px;color:#1A1108;line-height:1.6;margin:0 0 24px;">${opts.body}</p>
@@ -107,8 +107,8 @@ async function sendMagicLinkViaResend(
 //   // const html = await render(element);
 //   // const text = await render(element, { plainText: true });
 //   // await supabaseAdmin.rpc("enqueue_email", { queue_name: "auth_emails", payload: {
-//   //   message_id: crypto.randomUUID(), to: email, from: "vett <noreply@roovr.co>",
-//   //   sender_domain: "notify.roovr.co", subject: "Your vett access link",
+//   //   message_id: crypto.randomUUID(), to: email, from: "vett <noreply@vetthome.com>",
+//   //   sender_domain: "vetthome.com", subject: "Your vett access link",
 //   //   html, text, purpose: "transactional", label: "magiclink",
 //   //   queued_at: new Date().toISOString(), run_id: crypto.randomUUID(),
 //   // }});
