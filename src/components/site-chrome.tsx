@@ -354,7 +354,7 @@ export function SiteFooter() {
       >
         <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div className="flex items-center gap-2">
-            <span aria-hidden style={{ width: 9, height: 9, borderRadius: 999, background: "#2D6A4F", display: "inline-block" }} />
+            
             <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "#1A1108", letterSpacing: "-1px" }}>vett</span>
             <span style={{ fontSize: 12, color: "#888780", marginLeft: 12 }}>© 2026 vett</span>
           </div>
