@@ -6,7 +6,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { AnalysisResult } from "@/lib/analysis.types";
 
 const SITE_URL = "https://vetthome.com";
-const FROM_ADDRESS = "vett <noreply@vetthome.com>";
+const FROM_ADDRESS = "vett <noreply@roovr.co>";
 
 function buildMagicLinkHtml(actionLink: string, opts: { heading: string; body: string; cta: string }): string {
   return `<!doctype html><html><body style="margin:0;padding:32px 0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
@@ -21,7 +21,7 @@ function buildMagicLinkHtml(actionLink: string, opts: { heading: string; body: s
       <a href="${actionLink}" style="font-size:13px;color:#2D6A4F;word-break:break-all;">${actionLink}</a>
       <p style="font-size:13px;color:#888780;line-height:1.5;margin:20px 0 0;">If you did not request this, you can safely ignore this email.</p>
     </div>
-    <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 vett · vetthome.com · Every listing. Analysed. Instantly.</p></div>
+    <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 vett · vetthome.com · Every listing. Vetted. Instantly.</p></div>
   </div>
 </body></html>`;
 }
@@ -33,7 +33,7 @@ function buildMagicLinkHtml(actionLink: string, opts: { heading: string; body: s
 async function sendMagicLinkViaResend(
   email: string,
   redirectTo: string,
-  variant: "buyer-pass" | "access"
+  variant: "buyer-pass" | "access",
 ): Promise<{ ok: boolean; error?: string }> {
   console.log("Magic link flow started for:", email);
 
@@ -75,7 +75,7 @@ async function sendMagicLinkViaResend(
           heading: "Your vett access link",
           body: "Click the button below to access your vett report.",
           cta: "Access my vett report →",
-        }
+        },
   );
 
   const resendResponse = await fetch("https://api.resend.com/emails", {
@@ -128,7 +128,7 @@ export const createCheckoutSession = createServerFn({ method: "POST" })
       tier: z.enum(["single", "pass"]),
       analysisJobId: z.string().uuid().optional(),
       source: z.string().max(40).optional(),
-    })
+    }),
   )
   .handler(async ({ data }): Promise<{ url: string }> => {
     const stripe = getStripe();
@@ -186,7 +186,7 @@ export const verifyCheckoutSession = createServerFn({ method: "POST" })
       }
 
       return { paid, tier, email, token, listingUrl, hadAnalysisJob };
-    }
+    },
   );
 
 export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
@@ -226,14 +226,13 @@ export const sendBuyerPassMagicLink = createServerFn({ method: "POST" })
     return { ok: res.ok, found: true };
   });
 
-
 export const saveAnalysisForUser = createServerFn({ method: "POST" })
   .inputValidator(
     z.object({
       email: z.string().email().max(320),
       listingUrl: z.string().max(2000).optional().nullable(),
       analysis: z.unknown(),
-    })
+    }),
   )
   .handler(async ({ data }): Promise<{ ok: boolean }> => {
     const email = data.email.toLowerCase();
