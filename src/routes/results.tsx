@@ -6301,7 +6301,7 @@ function PriceHistorySection({
               ))}
               {!unlocked && norm.length > 3 && (
                 <tr>
-                  <td colSpan={4} style={{ padding: 0 }}>
+                  <td colSpan={5} style={{ padding: 0 }}>
                     <div style={{ position: "relative", height: 120 }}>
                       <div style={{ position: "absolute", inset: 0, filter: "blur(5px)", userSelect: "none", pointerEvents: "none", padding: "10px 0" }}>
                         <div style={{ height: 18, background: "rgba(26,17,8,0.06)", borderRadius: 4, marginBottom: 10 }} />
