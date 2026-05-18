@@ -938,7 +938,7 @@ function Index() {
               padding: "14px 26px",
             }}
           >
-            Analyse your first property →
+            Vett it →
           </button>
         </div>
       </section>
