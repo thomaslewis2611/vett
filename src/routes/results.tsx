@@ -6203,6 +6203,30 @@ function InlineBuyerPassUpgrade({ listingUrl }: { listingUrl?: string }) {
 }
 
 // ---------- Sold price history (PropertyData / Land Registry) ----------
+const HPI_INDEX: Record<number, number> = {
+  2015: 100.0,
+  2016: 107.3,
+  2017: 112.1,
+  2018: 115.6,
+  2019: 117.8,
+  2020: 120.4,
+  2021: 133.8,
+  2022: 148.2,
+  2023: 147.1,
+  2024: 150.3,
+  2025: 151.8,
+  2026: 152.6,
+};
+
+function hpiAdjust(price: number, soldDateStr: string): number | null {
+  const year = parseInt(soldDateStr.slice(0, 4), 10);
+  if (!year || year < 2015) return null;
+  const soldIndex = HPI_INDEX[year];
+  const currentIndex = HPI_INDEX[2026];
+  if (!soldIndex || !currentIndex || year >= 2026) return null;
+  return Math.round((price * currentIndex) / soldIndex);
+}
+
 function PriceHistorySection({
   analysis,
   unlocked,
@@ -6236,6 +6260,10 @@ function PriceHistorySection({
     price: Number(s?.price ?? s?.sold_price ?? s?.amount ?? 0),
     type: String(s?.property_type ?? s?.type ?? "—"),
     address: String(s?.address ?? s?.paon ?? "").trim(),
+    hpiAdjusted: hpiAdjust(
+      Number(s?.price ?? s?.sold_price ?? s?.amount ?? 0),
+      String(s?.date ?? s?.sold_date ?? s?.transaction_date ?? "")
+    ),
   })).filter((r) => r.price > 0);
 
   const visible = unlocked ? norm.slice(0, 10) : norm.slice(0, 3);
@@ -6254,6 +6282,7 @@ function PriceHistorySection({
               <tr style={{ textAlign: "left", color: "#888780", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 <th style={{ padding: "8px 8px 8px 0" }}>Date</th>
                 <th style={{ padding: "8px" }}>Price</th>
+                <th style={{ padding: "8px" }}>Est. today</th>
                 <th style={{ padding: "8px" }}>Type</th>
                 <th style={{ padding: "8px 0 8px 8px" }}>Address</th>
               </tr>
@@ -6263,13 +6292,16 @@ function PriceHistorySection({
                 <tr key={i} style={{ borderTop: "0.5px solid rgba(26,17,8,0.08)" }}>
                   <td style={{ padding: "10px 8px 10px 0" }}>{r.date || "—"}</td>
                   <td style={{ padding: "10px 8px", fontWeight: 500 }}>{formatGBP(r.price)}</td>
+                  <td style={{ padding: "10px 8px", color: "#2D6A4F", fontSize: 12 }}>
+                    {r.hpiAdjusted ? formatGBP(r.hpiAdjusted) : "—"}
+                  </td>
                   <td style={{ padding: "10px 8px", color: "#5F5E5A" }}>{r.type}</td>
                   <td style={{ padding: "10px 0 10px 8px", color: "#5F5E5A" }}>{r.address || "—"}</td>
                 </tr>
               ))}
               {!unlocked && norm.length > 3 && (
                 <tr>
-                  <td colSpan={4} style={{ padding: 0 }}>
+                  <td colSpan={5} style={{ padding: 0 }}>
                     <div style={{ position: "relative", height: 120 }}>
                       <div style={{ position: "absolute", inset: 0, filter: "blur(5px)", userSelect: "none", pointerEvents: "none", padding: "10px 0" }}>
                         <div style={{ height: 18, background: "rgba(26,17,8,0.06)", borderRadius: 4, marginBottom: 10 }} />
@@ -6295,7 +6327,7 @@ function PriceHistorySection({
           </table>
         </div>
         <p style={{ marginTop: 12, fontSize: 11, color: "#888780" }}>
-          Source: HM Land Registry via PropertyData. Verify at landregistry.gov.uk.
+          Source: HM Land Registry via PropertyData. Verify at landregistry.gov.uk. · Est. today = sold price adjusted using ONS House Price Index. Indicative only.
         </p>
       </div>
     </section>
