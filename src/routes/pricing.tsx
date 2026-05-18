@@ -31,7 +31,7 @@ function PricingPage() {
     <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8" }}>
       <SiteHeader />
 
-      <main className="w-full" style={{ background: "#1A1108" }}>
+      <main className="w-full" style={{ background: "#1a2820" }}>
         <div className="mx-auto max-w-5xl px-6 py-20 sm:py-28">
           <div className="text-center">
             <div
