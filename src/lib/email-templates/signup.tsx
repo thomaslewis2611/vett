@@ -69,7 +69,7 @@ export const SignupEmail = ({
 export default SignupEmail
 
 const main = {
-  backgroundColor: '#ffffff',
+  backgroundColor: '#F1EFE8',
   fontFamily:
     '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
   margin: 0,
