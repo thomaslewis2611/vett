@@ -515,14 +515,45 @@ Return ONLY JSON matching:
 }
 
 // ---------- External APIs (postcode-driven) ----------
-const POSTCODE_RE = /[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}/i;
+const POSTCODE_RE = /\b[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}\b/i;
+// Loose variant (no word boundaries) — some listings concatenate the postcode
+// with surrounding text (e.g. "...BrightonBN33JA</div>").
+const POSTCODE_RE_LOOSE = /[A-Z]{1,2}[0-9][0-9A-Z]?\s?[0-9][A-Z]{2}/i;
 // Outward-only (e.g. "BA1", "SW1A", "EC1"): a postcode area + district with NO inward part.
 const PARTIAL_POSTCODE_RE = /\b([A-Z]{1,2}[0-9][0-9A-Z]?)\b(?!\s?[0-9][A-Z]{2})/i;
+// Common Rightmove / Zoopla JSON-LD + data attribute patterns that embed a postcode.
+const POSTCODE_JSON_PATTERNS: RegExp[] = [
+  /"postalCode"\s*:\s*"([^"]+)"/i,
+  /"postcode"\s*:\s*"([^"]+)"/i,
+  /"outcode"\s*:\s*"([^"]+)"\s*,\s*"incode"\s*:\s*"([^"]+)"/i,
+  /data-postcode\s*=\s*"([^"]+)"/i,
+];
+
+function normalisePostcode(raw: string): string {
+  const cleaned = raw.toUpperCase().replace(/\s+/g, "").trim();
+  if (cleaned.length < 5) return cleaned;
+  return `${cleaned.slice(0, cleaned.length - 3)} ${cleaned.slice(-3)}`;
+}
 
 function extractPostcode(text: string): string | null {
-  const m = text.match(POSTCODE_RE);
-  return m ? m[0].toUpperCase().trim() : null;
+  if (!text) return null;
+  // 1) Try structured JSON-LD / data-attribute patterns first (most reliable).
+  for (const re of POSTCODE_JSON_PATTERNS) {
+    const m = text.match(re);
+    if (m) {
+      const candidate = m.length >= 3 ? `${m[1]} ${m[2]}` : m[1];
+      const inner = candidate.match(POSTCODE_RE_LOOSE);
+      if (inner) return normalisePostcode(inner[0]);
+    }
+  }
+  // 2) Strict word-boundary match.
+  const strict = text.match(POSTCODE_RE);
+  if (strict) return normalisePostcode(strict[0]);
+  // 3) Loose match for concatenated HTML.
+  const loose = text.match(POSTCODE_RE_LOOSE);
+  return loose ? normalisePostcode(loose[0]) : null;
 }
+
 
 function extractPartialPostcode(text: string): string | null {
   if (!text) return null;
