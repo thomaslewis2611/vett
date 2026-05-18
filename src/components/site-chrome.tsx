@@ -247,7 +247,8 @@ export function SiteHeader() {
       }}
     >
       <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-8" style={{ height: 56 }}>
-        <Link to="/" className="flex items-center">
+        <Link to="/" className="flex items-center gap-2">
+          <span aria-hidden style={{ width: 10, height: 10, borderRadius: 999, background: "#2D6A4F", display: "inline-block" }} />
           <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 22, fontWeight: 700, color: "#1A1108", letterSpacing: "-1px" }}>
             vett
           </span>
