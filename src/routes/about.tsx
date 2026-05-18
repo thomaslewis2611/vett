@@ -8,13 +8,13 @@ export const Route = createFileRoute("/about")({
       {
         name: "description",
         content:
-          "Why we built vett: an AI property analysis tool that gives UK home buyers honest red flags, true costs and viewing questions in 60 to 90 seconds.",
+          "Why we built vett: an AI property analysis tool that gives UK home buyers honest red flags, true costs and viewing questions in under 2 minutes.",
       },
       { property: "og:title", content: "About vett — Honest AI property analysis for UK home buyers" },
       {
         property: "og:description",
         content:
-          "Why we built vett: an AI property analysis tool that gives UK home buyers honest red flags, true costs and viewing questions in 60 to 90 seconds.",
+          "Why we built vett: an AI property analysis tool that gives UK home buyers honest red flags, true costs and viewing questions in under 2 minutes.",
       },
     ],
   }),
@@ -72,7 +72,7 @@ function AboutPage() {
           className="mt-7 max-w-2xl"
           style={{ fontSize: 18, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.7 }}
         >
-          Buying a home is the biggest financial decision most people will ever make. Yet buyers go into viewings armed with nothing more than a listing description written by the agent trying to sell it. We built vett to change that. Paste any Rightmove or Zoopla listing and get an honest, AI-powered analysis in 60 to 90 seconds — red flags, true costs, fair value, and exactly what to ask at the viewing. No estate agent spin. Just the facts.
+          Buying a home is the biggest financial decision most people will ever make. Yet buyers go into viewings armed with nothing more than a listing description written by the agent trying to sell it. We built vett to change that. Paste any property listing and get an honest, AI-powered analysis in under 2 minutes — red flags, true costs, fair value, and exactly what to ask at the viewing. No estate agent spin. Just the facts.
         </p>
 
         <Section heading="What vett is">
