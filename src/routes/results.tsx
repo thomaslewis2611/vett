@@ -1984,28 +1984,6 @@ function ScoreBadge({ score, label, confidence, compact }: { score: number; labe
           {label}
         </span>
       )}
-      {conf && (
-        <div style={{ marginTop: 6 }}>
-          <span
-            title="Based on availability of local sold price data for this postcode."
-            style={{
-              background: conf.bg,
-              color: conf.fg,
-              borderRadius: 100,
-              padding: "3px 8px",
-              fontSize: 11,
-              fontWeight: 500,
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-              cursor: "help",
-            }}
-          >
-            <span aria-hidden="true" style={{ fontSize: 10 }}>ⓘ</span>
-            {conf.text}
-          </span>
-        </div>
-      )}
     </div>
   );
 }
