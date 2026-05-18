@@ -4871,7 +4871,7 @@ function NearbySchoolsSection({ analysis, isBuyerPass, fetching, onUpgrade, onUp
           <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ background: "rgba(255,253,249,0.85)" }}>
             <Lock className="h-5 w-5 mb-2" style={{ color: "#2D6A4F" }} />
             <p className="text-center" style={{ fontSize: 13, color: "#1A1108", maxWidth: 320 }}>
-              Unlock with a Single Report — £4.99 to see nearby schools and Ofsted ratings
+              Unlock with a Single Report — £4.99 to see nearby schools within 3 miles
             </p>
             <div className="mt-3 flex flex-col items-center gap-1">
               {onUpgrade && (
