@@ -6292,6 +6292,9 @@ function PriceHistorySection({
                 <tr key={i} style={{ borderTop: "0.5px solid rgba(26,17,8,0.08)" }}>
                   <td style={{ padding: "10px 8px 10px 0" }}>{r.date || "—"}</td>
                   <td style={{ padding: "10px 8px", fontWeight: 500 }}>{formatGBP(r.price)}</td>
+                  <td style={{ padding: "10px 8px", color: "#2D6A4F", fontSize: 12 }}>
+                    {r.hpiAdjusted ? formatGBP(r.hpiAdjusted) : "—"}
+                  </td>
                   <td style={{ padding: "10px 8px", color: "#5F5E5A" }}>{r.type}</td>
                   <td style={{ padding: "10px 0 10px 8px", color: "#5F5E5A" }}>{r.address || "—"}</td>
                 </tr>
