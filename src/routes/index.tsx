@@ -274,7 +274,7 @@ function Index() {
                   padding: "12px 20px",
                 }}
               >
-                Analyse
+                Vett it
                 <ArrowRight className="h-4 w-4" />
               </button>
             </form>
