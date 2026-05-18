@@ -6327,7 +6327,7 @@ function PriceHistorySection({
           </table>
         </div>
         <p style={{ marginTop: 12, fontSize: 11, color: "#888780" }}>
-          Source: HM Land Registry via PropertyData. Verify at landregistry.gov.uk.
+          Source: HM Land Registry via PropertyData. Verify at landregistry.gov.uk. · Est. today = sold price adjusted using ONS House Price Index. Indicative only.
         </p>
       </div>
     </section>
