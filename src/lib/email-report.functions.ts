@@ -555,7 +555,7 @@ function buildReportHtml(opts: {
     </div>
 
     <div class="px" style="padding:20px 24px;text-align:center;">
-      <p class="small-note" style="font-size:12px;color:#888780;margin:0;">© 2026 vett · roovr.co · Every listing. Analysed. Instantly.</p>
+      <p class="small-note" style="font-size:12px;color:#888780;margin:0;">© 2026 vett · vetthome.com · Every listing. Analysed. Instantly.</p>
     </div>
   </div>
 </body></html>`;

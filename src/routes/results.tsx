@@ -4534,11 +4534,11 @@ function EmailReportButton({
         setShowInput(false);
       } else {
         setStatus("error");
-        setErrorMsg("Couldn't send the report — try again or contact support@roovr.co");
+        setErrorMsg("Couldn't send the report — try again or contact support@vetthome.com");
       }
     } catch {
       setStatus("error");
-      setErrorMsg("Couldn't send the report — try again or contact support@roovr.co");
+      setErrorMsg("Couldn't send the report — try again or contact support@vetthome.com");
     }
   };
 
@@ -6637,11 +6637,11 @@ function SharedReportBanner() {
           Shared report — powered by vett
         </span>
         <a
-          href="https://roovr.co"
+          href="https://vetthome.com"
           style={{ color: "#FFFDF9", fontWeight: 500 }}
           className="shrink-0 hover:underline"
         >
-          roovr.co →
+          vetthome.com →
         </a>
       </div>
     </div>
@@ -6664,7 +6664,7 @@ function ShareReportButton({ analysis }: { analysis: AnalysisResult }) {
           propertyAddress: analysis.property?.address ?? null,
         },
       });
-      setUrl(`https://roovr.co/report/${token}`);
+      setUrl(`https://vetthome.com/report/${token}`);
       setState("ready");
     } catch (e) {
       console.error("[ShareReportButton] failed", e);
