@@ -190,7 +190,7 @@ export const emailComparison = createServerFn({ method: "POST" })
       </div>
     </div>
     <div style="padding:20px 24px;text-align:center;">
-      <p style="font-size:12px;color:#888780;margin:0;">© 2026 vett · roovr.co</p>
+      <p style="font-size:12px;color:#888780;margin:0;">© 2026 vett · vetthome.com</p>
     </div>
   </div>
 </body></html>`;

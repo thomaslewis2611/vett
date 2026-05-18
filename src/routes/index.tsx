@@ -280,7 +280,7 @@ function Index() {
             </form>
 
             <a
-              href="https://roovr.co/report/c462872f03a8353e41cd696c791d0a4a"
+              href="https://vetthome.com/report/c462872f03a8353e41cd696c791d0a4a"
               target="_blank"
               rel="noopener noreferrer"
               style={{ fontSize: 13, color: "#2D6A4F", textDecoration: "underline", marginTop: 8, display: "inline-block" }}
@@ -473,7 +473,7 @@ function Index() {
         <p style={{ fontSize: 13, color: "#5F5E5A", marginTop: -24, marginBottom: 16, textAlign: "center" }}>
           Condensed previews shown below.{" "}
           <a
-            href="https://roovr.co/report/c462872f03a8353e41cd696c791d0a4a"
+            href="https://vetthome.com/report/c462872f03a8353e41cd696c791d0a4a"
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "#2D6A4F", textDecoration: "underline" }}

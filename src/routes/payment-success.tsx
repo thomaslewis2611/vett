@@ -162,7 +162,7 @@ function PaymentSuccessPage() {
               </h1>
               <p className="mt-4" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>{state.message}</p>
               <p className="mt-3" style={{ fontSize: 14, fontWeight: 300, color: "#5F5E5A" }}>
-                Need help? Email <a href="mailto:support@roovr.co" style={{ color: "#2D6A4F", fontWeight: 500 }}>support@roovr.co</a>
+                Need help? Email <a href="mailto:support@vetthome.com" style={{ color: "#2D6A4F", fontWeight: 500 }}>support@vetthome.com</a>
               </p>
               <Link
                 to="/"

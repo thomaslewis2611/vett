@@ -60,7 +60,7 @@ function PrivacyPage() {
             <li>You can email any report to yourself at any time using the "Email me my report" button, giving you a permanent copy</li>
             <li>
               You can request deletion of your data at any time by emailing{" "}
-              <a href="mailto:support@roovr.co" style={{ color: "#2D6A4F" }} className="hover:underline">support@roovr.co</a>
+              <a href="mailto:support@vetthome.com" style={{ color: "#2D6A4F" }} className="hover:underline">support@vetthome.com</a>
             </li>
           </ul>
         </Section>
@@ -90,13 +90,13 @@ function PrivacyPage() {
             <li>We will never sell your data to third parties</li>
             <li>
               Contact{" "}
-              <a href="mailto:support@roovr.co" style={{ color: "#2D6A4F" }} className="hover:underline">support@roovr.co</a>{" "}
+              <a href="mailto:support@vetthome.com" style={{ color: "#2D6A4F" }} className="hover:underline">support@vetthome.com</a>{" "}
               to exercise your rights
             </li>
           </ul>
         </Section>
         <Section n={7} title="Contact">
-          <a href="mailto:support@roovr.co" style={{ color: "#2D6A4F" }} className="hover:underline">support@roovr.co</a>
+          <a href="mailto:support@vetthome.com" style={{ color: "#2D6A4F" }} className="hover:underline">support@vetthome.com</a>
         </Section>
         </div>
       </main>

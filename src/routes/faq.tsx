@@ -61,7 +61,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         If your analysis fails, try running it again with the same URL. If the problem persists, email us at{" "}
-        <a href="mailto:support@roovr.co" className="underline" style={{ color: "#1A1108" }}>support@roovr.co</a>{" "}
+        <a href="mailto:support@vetthome.com" className="underline" style={{ color: "#1A1108" }}>support@vetthome.com</a>{" "}
         and we'll resolve it promptly. If the issue is on our side, we'll always make it right.
       </>
     ),
@@ -71,7 +71,7 @@ const FAQS: { q: string; a: React.ReactNode }[] = [
     a: (
       <>
         As reports are generated instantly using AI and third-party data, we're unable to offer refunds once a report has been generated. If you experience a technical issue that prevented you from accessing your report, please contact us at{" "}
-        <a href="mailto:support@roovr.co" className="underline" style={{ color: "#1A1108" }}>support@roovr.co</a>{" "}
+        <a href="mailto:support@vetthome.com" className="underline" style={{ color: "#1A1108" }}>support@vetthome.com</a>{" "}
         and we'll resolve it.
       </>
     ),
@@ -110,8 +110,8 @@ function FaqPage() {
         </h1>
         <p className="mt-4" style={{ fontSize: 16, fontWeight: 300, color: "#5F5E5A", lineHeight: 1.7 }}>
           Everything you need to know about vett. Can't find an answer?{" "}
-          <a href="mailto:support@roovr.co" className="hover:underline" style={{ color: "#2D6A4F", fontWeight: 400 }}>
-            Email support@roovr.co
+          <a href="mailto:support@vetthome.com" className="hover:underline" style={{ color: "#2D6A4F", fontWeight: 400 }}>
+            Email support@vetthome.com
           </a>
           .
         </p>

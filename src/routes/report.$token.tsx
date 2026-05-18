@@ -48,11 +48,11 @@ function SharedReportPage() {
             This shared report could not be found or the link has expired.
           </p>
           <a
-            href="https://roovr.co"
+            href="https://vetthome.com"
             className="mt-6 inline-block rounded-lg px-4 py-2 text-sm font-medium"
             style={{ background: "#2D6A4F", color: "#FFFDF9" }}
           >
-            Go to roovr.co →
+            Go to vetthome.com →
           </a>
         </div>
       </div>

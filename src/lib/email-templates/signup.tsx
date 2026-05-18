@@ -58,7 +58,7 @@ export const SignupEmail = ({
 
         <Section style={footer}>
           <Text style={footerText}>
-            © 2026 vett · roovr.co · Every listing. Analysed. Instantly.
+            © 2026 vett · vetthome.com · Every listing. Analysed. Instantly.
           </Text>
         </Section>
       </Container>

@@ -85,8 +85,8 @@ function AboutPage() {
 
         <Section heading="Get in touch">
           Questions, feedback, or press enquiries — email us at{" "}
-          <a href="mailto:support@roovr.co" style={{ color: "#2D6A4F", fontWeight: 400 }} className="hover:underline">
-            support@roovr.co
+          <a href="mailto:support@vetthome.com" style={{ color: "#2D6A4F", fontWeight: 400 }} className="hover:underline">
+            support@vetthome.com
           </a>
         </Section>
       </main>

@@ -53,7 +53,7 @@ function TermsPage() {
         </Section>
         <Section n={4} title="Refund policy">
           As reports are generated instantly using AI and third-party data services, we are unable to offer refunds once a report has been generated. If a technical fault on our part prevented you from accessing a paid report, contact{" "}
-          <a href="mailto:support@roovr.co" style={{ color: "#2D6A4F" }} className="hover:underline">support@roovr.co</a>{" "}
+          <a href="mailto:support@vetthome.com" style={{ color: "#2D6A4F" }} className="hover:underline">support@vetthome.com</a>{" "}
           and we will resolve it.
         </Section>
         <Section n={5} title="Buyer Pass expiry">
@@ -69,7 +69,7 @@ function TermsPage() {
           These terms are governed by the laws of England and Wales. Any disputes shall be subject to the exclusive jurisdiction of the courts of England and Wales.
         </Section>
         <Section n={9} title="Contact">
-          <a href="mailto:support@roovr.co" style={{ color: "#2D6A4F" }} className="hover:underline">support@roovr.co</a>
+          <a href="mailto:support@vetthome.com" style={{ color: "#2D6A4F" }} className="hover:underline">support@vetthome.com</a>
         </Section>
         </div>
       </main>
