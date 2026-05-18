@@ -14,20 +14,23 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey, {
 });
 
 const SITE_URL = "https://vetthome.com";
-const FROM_ADDRESS = "vett <noreply@vetthome.com>";
+const FROM_ADDRESS = "vett <noreply@roovr.co>";
 
 type EmailVariant = "single" | "pass";
 
 const SINGLE_REPORT_PRICE_ID = "price_1TWXsjCfTT0mXB2cPz7SPIOL";
 const BUYER_PASS_PRICE_ID = "price_1TWtPLCfTT0mXB2cU829oJlb";
 
-const EMAIL_COPY: Record<EmailVariant, {
-  subject: string;
-  heading: string;
-  body: string;
-  button: string;
-  textIntro: string;
-}> = {
+const EMAIL_COPY: Record<
+  EmailVariant,
+  {
+    subject: string;
+    heading: string;
+    body: string;
+    button: string;
+    textIntro: string;
+  }
+> = {
   single: {
     subject: "Your vett report is ready",
     heading: "Your report is ready",
@@ -58,18 +61,14 @@ function buildMagicLinkHtml(actionLink: string, variant: EmailVariant): { html: 
       <a href="${actionLink}" style="font-size:13px;color:#2D6A4F;word-break:break-all;">${actionLink}</a>
       <p style="font-size:13px;color:#888780;line-height:1.5;margin:20px 0 0;">If you did not request this, you can safely ignore this email.</p>
     </div>
-    <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 vett · vetthome.com · Every listing. Analysed. Instantly.</p></div>
+    <div style="padding:24px 8px 0;text-align:center;"><p style="font-size:12px;color:#888780;margin:0;">© 2026 vett · vetthome.com · Every listing. Vetted. Instantly.</p></div>
   </div>
 </body></html>`;
   const text = `${c.textIntro}\n\n${c.body}\n${actionLink}\n\nIf you did not request this, you can safely ignore this email.`;
   return { html, text };
 }
 
-async function sendMagicLinkEdge(
-  email: string,
-  redirectTo: string,
-  variant: EmailVariant,
-): Promise<void> {
+async function sendMagicLinkEdge(email: string, redirectTo: string, variant: EmailVariant): Promise<void> {
   console.log(`Magic link flow started for: ${email} (variant=${variant})`);
 
   const { data: createData, error: createErr } = await supabase.auth.admin.createUser({
@@ -134,7 +133,7 @@ async function resolveVariantFromSession(
   try {
     const items = await stripe.checkout.sessions.listLineItems(session.id, { limit: 5 });
     const priceIds = items.data
-      .map((li) => (typeof li.price === "string" ? li.price : li.price?.id ?? null))
+      .map((li) => (typeof li.price === "string" ? li.price : (li.price?.id ?? null)))
       .filter((p): p is string => !!p);
     console.log("Stripe session price IDs:", JSON.stringify(priceIds), "session:", session.id);
     if (priceIds.some((p) => p === SINGLE_REPORT_PRICE_ID)) return "single";
@@ -181,8 +180,7 @@ Deno.serve(async (req) => {
   const listingUrl = session.metadata?.listing_url ?? null;
   const analysisJobId = session.metadata?.analysis_job_id ?? null;
   const customerEmail = session.customer_details?.email ?? session.customer_email ?? null;
-  const customerId =
-    typeof session.customer === "string" ? session.customer : session.customer?.id ?? null;
+  const customerId = typeof session.customer === "string" ? session.customer : (session.customer?.id ?? null);
 
   // If the buyer came from a results-page upgrade, copy the analysis from
   // analysis_jobs into saved_analyses for their email so the magic link can
@@ -233,10 +231,7 @@ Deno.serve(async (req) => {
           .limit(1)
           .maybeSingle();
         if (existing?.id) {
-          await supabase
-            .from("saved_analyses")
-            .update({ analysis_json: job.result_json })
-            .eq("id", existing.id);
+          await supabase.from("saved_analyses").update({ analysis_json: job.result_json }).eq("id", existing.id);
           savedId = existing.id;
         }
       }
@@ -293,13 +288,16 @@ Deno.serve(async (req) => {
         resolved_user_id: resolvedUserId,
       });
 
-      const { error } = await supabase.from("single_report_tokens").upsert({
-        token,
-        listing_url: listingUrl,
-        stripe_session_id: session.id,
-        user_email: normalizedEmail,
-        user_id: resolvedUserId,
-      }, { onConflict: "stripe_session_id", ignoreDuplicates: true });
+      const { error } = await supabase.from("single_report_tokens").upsert(
+        {
+          token,
+          listing_url: listingUrl,
+          stripe_session_id: session.id,
+          user_email: normalizedEmail,
+          user_id: resolvedUserId,
+        },
+        { onConflict: "stripe_session_id", ignoreDuplicates: true },
+      );
       if (error) throw error;
 
       // Send a magic link so the customer can log in and revisit the report
@@ -339,7 +337,7 @@ Deno.serve(async (req) => {
           activated_at: now.toISOString(),
           expires_at: expiresAt,
         },
-        { onConflict: "email" }
+        { onConflict: "email" },
       );
       if (error) throw error;
 

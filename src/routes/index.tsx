@@ -26,7 +26,7 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "vett — Every listing. Analysed. Instantly." },
+      { title: "vett — Every listing. Vetted. Instantly." },
       {
         name: "description",
         content:
@@ -235,9 +235,8 @@ function Index() {
                 lineHeight: 1.6,
               }}
             >
-              Make your most important financial decision with confidence. vett gives you an
-              independent analysis of any property listing — red flags, true costs, negotiation
-              strategy and more — in under 2 minutes.
+              Make your most important financial decision with confidence. vett gives you an independent analysis of any
+              property listing — red flags, true costs, negotiation strategy and more — in under 2 minutes.
             </p>
 
             <form
@@ -283,7 +282,13 @@ function Index() {
               href="https://vetthome.com/report/c462872f03a8353e41cd696c791d0a4a"
               target="_blank"
               rel="noopener noreferrer"
-              style={{ fontSize: 13, color: "#2D6A4F", textDecoration: "underline", marginTop: 8, display: "inline-block" }}
+              style={{
+                fontSize: 13,
+                color: "#2D6A4F",
+                textDecoration: "underline",
+                marginTop: 8,
+                display: "inline-block",
+              }}
             >
               View an example report →
             </a>
@@ -304,16 +309,8 @@ function Index() {
             </p>
 
             <ul className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 justify-center">
-              {[
-                "From £4.99 · one-off",
-                "No subscription",
-                "Report in under 2 minutes",
-              ].map((t) => (
-                <li
-                  key={t}
-                  className="flex items-center gap-2"
-                  style={{ fontSize: 12, color: COLORS.muted }}
-                >
+              {["From £4.99 · one-off", "No subscription", "Report in under 2 minutes"].map((t) => (
+                <li key={t} className="flex items-center gap-2" style={{ fontSize: 12, color: COLORS.muted }}>
                   <span
                     className="inline-flex items-center justify-center"
                     style={{
@@ -342,10 +339,8 @@ function Index() {
           borderBottom: "0.5px solid rgba(26,17,8,0.1)",
           padding: "14px 0",
           overflow: "hidden",
-          WebkitMaskImage:
-            "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
-          maskImage:
-            "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
+          maskImage: "linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%)",
         }}
       >
         <div
@@ -416,8 +411,7 @@ function Index() {
               className="flex flex-col items-center justify-center px-8 py-10 text-center"
               style={{
                 minHeight: 140,
-                borderLeft:
-                  i === 0 ? "none" : `0.5px solid ${COLORS.border}`,
+                borderLeft: i === 0 ? "none" : `0.5px solid ${COLORS.border}`,
               }}
             >
               <div
@@ -518,22 +512,55 @@ function Index() {
           </h2>
         </div>
 
-        <div
-          className="mt-12 grid grid-cols-2 md:grid-cols-4"
-          style={{ gap: 16 }}
-        >
+        <div className="mt-12 grid grid-cols-2 md:grid-cols-4" style={{ gap: 16 }}>
           {[
-            { icon: AlertTriangle, title: "Full red flag analysis", body: "Every risk identified and explained, ranked by severity" },
-            { icon: Zap, title: "EPC analysis", body: "Energy rating, estimated annual costs and upgrade recommendations" },
-            { icon: BarChart3, title: "Area pricing analysis", body: "Local £/sqft data so you know if the price is fair" },
-            { icon: TrendingUp, title: "Local price trends", body: "1yr, 3yr and 5yr price movement in the local area" },
-            { icon: PoundSterling, title: "True cost breakdown", body: "Every cost including stamp duty, surveys and legal fees" },
-            { icon: MessageSquare, title: "Negotiation strategy", body: "A recommended offer range with specific leverage points" },
-            { icon: ClipboardCheck, title: "Viewing checklist", body: "Property-specific questions and checks for the day" },
-            { icon: Wrench, title: "Renovation cost estimator", body: "Estimated costs for any work identified in the listing" },
+            {
+              icon: AlertTriangle,
+              title: "Full red flag analysis",
+              body: "Every risk identified and explained, ranked by severity",
+            },
+            {
+              icon: Zap,
+              title: "EPC analysis",
+              body: "Energy rating, estimated annual costs and upgrade recommendations",
+            },
+            {
+              icon: BarChart3,
+              title: "Area pricing analysis",
+              body: "Local £/sqft data so you know if the price is fair",
+            },
+            {
+              icon: TrendingUp,
+              title: "Local price trends",
+              body: "1yr, 3yr and 5yr price movement in the local area",
+            },
+            {
+              icon: PoundSterling,
+              title: "True cost breakdown",
+              body: "Every cost including stamp duty, surveys and legal fees",
+            },
+            {
+              icon: MessageSquare,
+              title: "Negotiation strategy",
+              body: "A recommended offer range with specific leverage points",
+            },
+            {
+              icon: ClipboardCheck,
+              title: "Viewing checklist",
+              body: "Property-specific questions and checks for the day",
+            },
+            {
+              icon: Wrench,
+              title: "Renovation cost estimator",
+              body: "Estimated costs for any work identified in the listing",
+            },
             { icon: UserCheck, title: "Seller motivation score", body: "How urgently the seller needs to move" },
             { icon: Droplets, title: "Flood risk assessment", body: "Environment Agency data for this exact postcode" },
-            { icon: GraduationCap, title: "Nearby schools", body: "Local primary and secondary schools with Ofsted ratings" },
+            {
+              icon: GraduationCap,
+              title: "Nearby schools",
+              body: "Local primary and secondary schools with Ofsted ratings",
+            },
             { icon: Shield, title: "Crime statistics", body: "Crime levels recorded within 1 mile of the property" },
             { icon: Wifi, title: "Broadband & connectivity", body: "Download speeds and full fibre availability" },
             { icon: Train, title: "Transport links", body: "PTAL accessibility score for London properties" },
@@ -560,16 +587,10 @@ function Index() {
               >
                 <f.icon className="h-4 w-4" style={{ color: COLORS.green }} />
               </div>
-              <h3
-                className="mt-5"
-                style={{ fontSize: 14, fontWeight: 500, color: COLORS.dark }}
-              >
+              <h3 className="mt-5" style={{ fontSize: 14, fontWeight: 500, color: COLORS.dark }}>
                 {f.title}
               </h3>
-              <p
-                className="mt-2"
-                style={{ fontSize: 12, fontWeight: 300, color: COLORS.muted, lineHeight: 1.6 }}
-              >
+              <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: COLORS.muted, lineHeight: 1.6 }}>
                 {f.body}
               </p>
             </div>
@@ -639,16 +660,10 @@ function Index() {
                 >
                   {s.n}
                 </div>
-                <h3
-                  className="mt-4"
-                  style={{ fontSize: 15, fontWeight: 500, color: COLORS.dark }}
-                >
+                <h3 className="mt-4" style={{ fontSize: 15, fontWeight: 500, color: COLORS.dark }}>
                   {s.title}
                 </h3>
-                <p
-                  className="mt-2"
-                  style={{ fontSize: 13, fontWeight: 300, color: COLORS.muted, lineHeight: 1.65 }}
-                >
+                <p className="mt-2" style={{ fontSize: 13, fontWeight: 300, color: COLORS.muted, lineHeight: 1.65 }}>
                   {s.body}
                 </p>
               </div>
@@ -694,10 +709,7 @@ function Index() {
           </p>
         </div>
 
-        <div
-          className="mx-auto mt-12 grid grid-cols-1 md:grid-cols-2"
-          style={{ maxWidth: 800, gap: 16 }}
-        >
+        <div className="mx-auto mt-12 grid grid-cols-1 md:grid-cols-2" style={{ maxWidth: 800, gap: 16 }}>
           {/* Single Report */}
           <div
             style={{
@@ -768,10 +780,7 @@ function Index() {
                       background: "rgba(255,255,255,0.08)",
                     }}
                   >
-                    <Check
-                      className="h-2.5 w-2.5"
-                      style={{ color: "rgba(241,239,232,0.7)" }}
-                    />
+                    <Check className="h-2.5 w-2.5" style={{ color: "rgba(241,239,232,0.7)" }} />
                   </span>
                   {f}
                 </li>
@@ -922,8 +931,8 @@ function Index() {
               maxWidth: 520,
             }}
           >
-            You wouldn't make a decision involving hundreds of thousands of pounds without doing
-            your research. vett does it in two minutes, for £4.99.
+            You wouldn't make a decision involving hundreds of thousands of pounds without doing your research. vett
+            does it in two minutes, for £4.99.
           </p>
           <button
             type="button"
@@ -1049,10 +1058,7 @@ function SampleReportCard({ data }: { data: SampleData }) {
       </div>
 
       {/* Area pricing */}
-      <div
-        className="mt-4"
-        style={{ background: COLORS.bg, borderRadius: 10, padding: "14px 16px" }}
-      >
+      <div className="mt-4" style={{ background: COLORS.bg, borderRadius: 10, padding: "14px 16px" }}>
         <div
           className="uppercase"
           style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.veryMuted }}
@@ -1061,8 +1067,20 @@ function SampleReportCard({ data }: { data: SampleData }) {
         </div>
         <div className="mt-3 grid grid-cols-3 gap-3">
           {[
-            { label: "This property", val: data.ppsfThis, sub: "per sq ft", color: COLORS.dark, subColor: COLORS.veryMuted },
-            { label: "Area average", val: data.ppsfArea, sub: "per sq ft", color: COLORS.dark, subColor: COLORS.veryMuted },
+            {
+              label: "This property",
+              val: data.ppsfThis,
+              sub: "per sq ft",
+              color: COLORS.dark,
+              subColor: COLORS.veryMuted,
+            },
+            {
+              label: "Area average",
+              val: data.ppsfArea,
+              sub: "per sq ft",
+              color: COLORS.dark,
+              subColor: COLORS.veryMuted,
+            },
             {
               label: "Vs area avg",
               val: data.vsArea,
@@ -1125,8 +1143,8 @@ function SampleReportCard({ data }: { data: SampleData }) {
             f.sev === "HIGH"
               ? { bg: "#A32D2D", fg: "#FFFDF9" }
               : f.sev === "MEDIUM"
-              ? { bg: "#C8862A", fg: "#FFFDF9" }
-              : { bg: "rgba(26,17,8,0.12)", fg: COLORS.dark };
+                ? { bg: "#C8862A", fg: "#FFFDF9" }
+                : { bg: "rgba(26,17,8,0.12)", fg: COLORS.dark };
           return (
             <div key={i} className="flex items-start gap-2">
               <span
@@ -1153,10 +1171,7 @@ function SampleReportCard({ data }: { data: SampleData }) {
       {/* Bottom metrics */}
       <div className="mt-4 grid grid-cols-3 gap-2">
         {data.metrics.map((m) => (
-          <div
-            key={m.label}
-            style={{ background: COLORS.bg, borderRadius: 10, padding: "10px 12px" }}
-          >
+          <div key={m.label} style={{ background: COLORS.bg, borderRadius: 10, padding: "10px 12px" }}>
             <div style={{ fontSize: 10, color: COLORS.veryMuted }}>{m.label}</div>
             <div
               className="mt-0.5"

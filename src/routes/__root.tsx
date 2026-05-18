@@ -1,12 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  Outlet,
-  Link,
-  createRootRouteWithContext,
-  useRouter,
-  HeadContent,
-  Scripts,
-} from "@tanstack/react-router";
+import { Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 
@@ -109,18 +102,38 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" },
-      { title: "vett — Every listing. Analysed. Instantly." },
-      { name: "description", content: "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99." },
+      { title: "vett — Every listing. Vetted. Instantly." },
+      {
+        name: "description",
+        content:
+          "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
+      },
       { name: "author", content: "vett" },
       { property: "og:title", content: "vett — AI property analysis for smarter buyers" },
-      { property: "og:description", content: "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99." },
+      {
+        property: "og:description",
+        content:
+          "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@vett" },
       { name: "twitter:title", content: "vett — AI property analysis for smarter buyers" },
-      { name: "twitter:description", content: "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/255de182-edb0-4d96-8a07-3e73806ff312/id-preview-e28ee195--e239acee-68b4-47c9-912e-3378d99dae28.lovable.app-1778654002429.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/255de182-edb0-4d96-8a07-3e73806ff312/id-preview-e28ee195--e239acee-68b4-47c9-912e-3378d99dae28.lovable.app-1778654002429.png" },
+      {
+        name: "twitter:description",
+        content:
+          "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
+      },
+      {
+        property: "og:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/255de182-edb0-4d96-8a07-3e73806ff312/id-preview-e28ee195--e239acee-68b4-47c9-912e-3378d99dae28.lovable.app-1778654002429.png",
+      },
+      {
+        name: "twitter:image",
+        content:
+          "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/255de182-edb0-4d96-8a07-3e73806ff312/id-preview-e28ee195--e239acee-68b4-47c9-912e-3378d99dae28.lovable.app-1778654002429.png",
+      },
     ],
     links: [
       {

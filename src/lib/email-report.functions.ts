@@ -62,7 +62,7 @@ function calcMainResidenceSDLT(price: number): number {
     [125_000, 0],
     [250_000, 0.02],
     [925_000, 0.05],
-    [1_500_000, 0.10],
+    [1_500_000, 0.1],
     [Infinity, 0.12],
   ];
   let prev = 0;
@@ -97,28 +97,16 @@ function pickStampDuty(a: AnalysisResult): number {
 }
 
 function pickPricePerSqFt(a: any): number | null {
-  const v =
-    a?.metrics?.pricePerSqFt ??
-    a?.keyMetrics?.pricePerSqFt ??
-    a?.pricePerSqFt ??
-    null;
+  const v = a?.metrics?.pricePerSqFt ?? a?.keyMetrics?.pricePerSqFt ?? a?.pricePerSqFt ?? null;
   return v == null ? null : Number(v);
 }
 
 function pickDaysOnMarket(a: any): number | null {
-  const v =
-    a?.metrics?.daysOnMarket ??
-    a?.keyMetrics?.daysOnMarket ??
-    a?.daysOnMarket ??
-    null;
+  const v = a?.metrics?.daysOnMarket ?? a?.keyMetrics?.daysOnMarket ?? a?.daysOnMarket ?? null;
   return v == null ? null : Number(v);
 }
 
-function buildReportHtml(opts: {
-  analysis: AnalysisResult;
-  resultsUrl: string;
-  tier: Tier;
-}): string {
+function buildReportHtml(opts: { analysis: AnalysisResult; resultsUrl: string; tier: Tier }): string {
   const { analysis: a, resultsUrl, tier } = opts;
   const isSingle = tier === "single" || tier === "pass";
   const isPass = tier === "pass";
@@ -153,8 +141,7 @@ function buildReportHtml(opts: {
   const pricePerSqFt = pickPricePerSqFt(a);
   const daysOnMarket = pickDaysOnMarket(a);
 
-  const rowStyle =
-    'style="padding:6px 0;font-size:13px;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);"';
+  const rowStyle = 'style="padding:6px 0;font-size:13px;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);"';
   const valStyle =
     'style="padding:6px 0;font-size:13px;font-weight:600;color:#1A1108;text-align:right;border-bottom:1px solid rgba(26,17,8,0.06);"';
 
@@ -212,8 +199,9 @@ function buildReportHtml(opts: {
     : `Red flags${flags.length > visibleFlags.length ? ` <span style="font-size:12px;font-weight:400;color:#5F5E5A;">(${visibleFlags.length} of ${flags.length} shown — free preview)</span>` : ""}`;
 
   // True cost (single+)
-  const trueCostHtml = isSingle && costs
-    ? `
+  const trueCostHtml =
+    isSingle && costs
+      ? `
     <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">True cost breakdown</h2>
     <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
       <tr><td ${rowStyle}>Purchase price</td><td ${valStyle}>${gbp(costs.purchasePrice)}</td></tr>
@@ -228,20 +216,25 @@ function buildReportHtml(opts: {
       <tr><td ${rowStyle}>Est. monthly mortgage</td><td ${valStyle}>${gbp(costs.monthlyMortgage)}</td></tr>
     </table>
     ${costs.mortgageAssumptions ? `<p style="font-size:12px;color:#888780;margin:8px 0 0;">${escapeHtml(costs.mortgageAssumptions)}</p>` : ""}`
-    : "";
+      : "";
 
   // Negotiation (single+)
-  const negotiationHtml = isSingle && neg
-    ? `
+  const negotiationHtml =
+    isSingle && neg
+      ? `
     <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Negotiation strategy</h2>
-    ${neg.isAuction
-      ? `<p style="font-size:14px;color:#1A1108;margin:0 0 8px;"><strong>Auction max bid:</strong> ${gbp(neg.maxBid)}</p>`
-      : `<p style="font-size:14px;color:#1A1108;margin:0 0 8px;"><strong>Recommended offer:</strong> ${gbp(neg.recommendedOffer?.low)} – ${gbp(neg.recommendedOffer?.high)}</p>`}
+    ${
+      neg.isAuction
+        ? `<p style="font-size:14px;color:#1A1108;margin:0 0 8px;"><strong>Auction max bid:</strong> ${gbp(neg.maxBid)}</p>`
+        : `<p style="font-size:14px;color:#1A1108;margin:0 0 8px;"><strong>Recommended offer:</strong> ${gbp(neg.recommendedOffer?.low)} – ${gbp(neg.recommendedOffer?.high)}</p>`
+    }
     ${neg.rationale ? `<p style="font-size:13px;color:#1A1108;line-height:1.6;margin:0 0 12px;">${escapeHtml(neg.rationale)}</p>` : ""}
-    ${Array.isArray(neg.leverage) && neg.leverage.length
-      ? `<p style="font-size:13px;font-weight:600;color:#1A1108;margin:0 0 6px;">Leverage points</p><ul style="margin:0;padding:0 0 0 18px;">${neg.leverage.map((l) => `<li style="font-size:13px;color:#1A1108;line-height:1.6;">${escapeHtml(l)}</li>`).join("")}</ul>`
-      : ""}`
-    : "";
+    ${
+      Array.isArray(neg.leverage) && neg.leverage.length
+        ? `<p style="font-size:13px;font-weight:600;color:#1A1108;margin:0 0 6px;">Leverage points</p><ul style="margin:0;padding:0 0 0 18px;">${neg.leverage.map((l) => `<li style="font-size:13px;color:#1A1108;line-height:1.6;">${escapeHtml(l)}</li>`).join("")}</ul>`
+        : ""
+    }`
+      : "";
 
   // Viewing checklist (single+)
   let checklistHtml = "";
@@ -253,7 +246,10 @@ function buildReportHtml(opts: {
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k)!.push({ item: it.item, why: it.why });
     }
-    const orderedKeys = [...order.filter((k) => groups.has(k)), ...[...groups.keys()].filter((k) => !order.includes(k))];
+    const orderedKeys = [
+      ...order.filter((k) => groups.has(k)),
+      ...[...groups.keys()].filter((k) => !order.includes(k)),
+    ];
     const sections = orderedKeys
       .map((cat) => {
         const items = groups.get(cat)!;
@@ -282,7 +278,8 @@ function buildReportHtml(opts: {
   if (isSingle && reno?.items?.length) {
     const headerCell =
       'style="padding:8px 8px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#5F5E5A;text-align:left;border-bottom:1px solid rgba(26,17,8,0.18);background:#F1EFE8;"';
-    const cell = 'style="padding:10px 8px;font-size:13px;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);vertical-align:top;"';
+    const cell =
+      'style="padding:10px 8px;font-size:13px;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);vertical-align:top;"';
     const rows = reno.items
       .map(
         (it) => `
@@ -414,7 +411,8 @@ function buildReportHtml(opts: {
           ? soldRaw.results
           : [];
   if (isSingle && soldList.length) {
-    const rows = soldList.slice(0, 10)
+    const rows = soldList
+      .slice(0, 10)
       .map((s: any) => {
         const date = s.date || s.sold_date || s.transaction_date || "";
         const price = Number(s.price ?? s.sold_price ?? s.amount ?? 0);
@@ -425,7 +423,8 @@ function buildReportHtml(opts: {
           <td style="padding:8px 8px;font-size:13px;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);">${escapeHtml(addr)}${type ? ` <span style="color:#5F5E5A;">· ${escapeHtml(type)}</span>` : ""}</td>
           <td style="padding:8px 8px;font-size:13px;font-weight:600;color:#1A1108;border-bottom:1px solid rgba(26,17,8,0.06);text-align:right;white-space:nowrap;">${gbp(price)}</td>
         </tr>`;
-      }).join("");
+      })
+      .join("");
     soldHistoryHtml = `
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Sold price history</h2>
       <table class="stack3" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${rows}</table>
@@ -439,7 +438,8 @@ function buildReportHtml(opts: {
     const g1 = growth["1yr"] ?? growth.oneYear ?? growth.year_1 ?? null;
     const g3 = growth["3yr"] ?? growth.threeYear ?? growth.year_3 ?? null;
     const g5 = growth["5yr"] ?? growth.fiveYear ?? growth.year_5 ?? null;
-    const fmt = (v: any) => v == null || v === "" ? "—" : (typeof v === "number" ? `${v > 0 ? "+" : ""}${v.toFixed(1)}%` : String(v));
+    const fmt = (v: any) =>
+      v == null || v === "" ? "—" : typeof v === "number" ? `${v > 0 ? "+" : ""}${v.toFixed(1)}%` : String(v);
     growthHtml = `
       <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Local price trends</h2>
       <table class="stack" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
@@ -523,11 +523,15 @@ function buildReportHtml(opts: {
         <tr><td ${rowStyle}>Additional property</td><td ${valStyle}>${gbp(sdltAdditional)}</td></tr>
       </table>
 
-      ${ac ? `
+      ${
+        ac
+          ? `
         <h2 style="font-size:16px;font-weight:600;color:#1A1108;margin:32px 0 12px;">Area Pricing Analysis</h2>
         ${ac.areaDescription ? `<p style="font-size:13px;color:#1A1108;line-height:1.6;margin:0 0 8px;">${escapeHtml(ac.areaDescription)}</p>` : ""}
         ${ac.comparableNote ? `<p style="font-size:13px;color:#5F5E5A;line-height:1.6;margin:0;">${escapeHtml(ac.comparableNote)}</p>` : ""}
-      ` : ""}
+      `
+          : ""
+      }
 
       ${epcHtml}
       ${sellerHtml}
@@ -555,7 +559,7 @@ function buildReportHtml(opts: {
     </div>
 
     <div class="px" style="padding:20px 24px;text-align:center;">
-      <p class="small-note" style="font-size:12px;color:#888780;margin:0;">© 2026 vett · vetthome.com · Every listing. Analysed. Instantly.</p>
+      <p class="small-note" style="font-size:12px;color:#888780;margin:0;">© 2026 vett · vetthome.com · Every listing. Vetted. Instantly.</p>
     </div>
   </div>
 </body></html>`;
