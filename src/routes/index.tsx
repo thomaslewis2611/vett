@@ -1004,7 +1004,7 @@ function SampleReportCard({ data }: { data: SampleData }) {
           <div
             style={{
               fontFamily: HEADING_FONT,
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: 400,
               color: COLORS.dark,
               letterSpacing: "-0.3px",
