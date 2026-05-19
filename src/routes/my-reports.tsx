@@ -35,54 +35,60 @@ function MyReportsPage() {
 
   useEffect(() => {
     let cancelled = false;
+    let loaded = false;
 
     const loadForUser = async (userEmail: string) => {
-      if (cancelled) return;
-      setEmail(userEmail);
+      if (cancelled || loaded) return;
+      loaded = true;
+      try {
+        setEmail(userEmail);
 
-      // If they have a Buyer Pass, send them to the dashboard instead
-      const { data: bp } = await supabase
-        .from("buyer_pass_users")
-        .select("email, expires_at")
-        .ilike("email", userEmail)
-        .maybeSingle();
-      if (bp) {
-        const exp = (bp as { expires_at: string | null }).expires_at;
-        if (!exp || new Date(exp).getTime() > Date.now()) {
-          setHasPass(true);
-          navigate({ to: "/dashboard" });
-          return;
+        // If they have a Buyer Pass, send them to the dashboard instead
+        const { data: bp } = await supabase
+          .from("buyer_pass_users")
+          .select("email, expires_at")
+          .ilike("email", userEmail)
+          .maybeSingle();
+        if (cancelled) return;
+        if (bp) {
+          const exp = (bp as { expires_at: string | null }).expires_at;
+          if (!exp || new Date(exp).getTime() > Date.now()) {
+            setHasPass(true);
+            navigate({ to: "/dashboard" });
+            return;
+          }
         }
+
+        const { data: savedRows } = await supabase
+          .from("saved_analyses")
+          .select("id, listing_url, analysis_json, created_at")
+          .order("created_at", { ascending: false });
+        if (cancelled) return;
+        const savedList = (savedRows as SavedRow[]) ?? [];
+        setSaved(savedList);
+
+        const { data: tokenRows } = await supabase
+          .from("single_report_tokens")
+          .select("token, listing_url, created_at, expires_at")
+          .ilike("user_email", userEmail)
+          .order("created_at", { ascending: false });
+        if (cancelled) return;
+        const tokens = (tokenRows as PendingTokenRow[]) ?? [];
+        const savedUrls = new Set(savedList.map((s) => s.listing_url).filter(Boolean));
+        const now = Date.now();
+        setPending(
+          tokens.filter(
+            (t) =>
+              t.listing_url &&
+              !savedUrls.has(t.listing_url) &&
+              new Date(t.expires_at).getTime() > now
+          )
+        );
+      } catch (err) {
+        console.error("[my-reports] loadForUser error:", err);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-
-      const { data: savedRows } = await supabase
-        .from("saved_analyses")
-        .select("id, listing_url, analysis_json, created_at")
-        .order("created_at", { ascending: false });
-      if (cancelled) return;
-      const savedList = (savedRows as SavedRow[]) ?? [];
-      setSaved(savedList);
-
-      // Pending: paid single-report tokens that don't yet have a saved analysis
-      const { data: tokenRows } = await supabase
-        .from("single_report_tokens")
-        .select("token, listing_url, created_at, expires_at")
-        .ilike("user_email", userEmail)
-        .order("created_at", { ascending: false });
-      if (cancelled) return;
-      const tokens = (tokenRows as PendingTokenRow[]) ?? [];
-      const savedUrls = new Set(savedList.map((s) => s.listing_url).filter(Boolean));
-      const now = Date.now();
-      setPending(
-        tokens.filter(
-          (t) =>
-            t.listing_url &&
-            !savedUrls.has(t.listing_url) &&
-            new Date(t.expires_at).getTime() > now
-        )
-      );
-
-      setLoading(false);
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
@@ -94,8 +100,19 @@ function MyReportsPage() {
         if (typeof window === "undefined" || !window.location.hash.includes("access_token")) {
           navigate({ to: "/" });
         }
+        // If there IS a hash token, wait for SIGNED_IN
       } else if (event === "SIGNED_OUT") {
         navigate({ to: "/" });
+      }
+    });
+
+    // Belt-and-suspenders: if SIGNED_IN already fired before we subscribed,
+    // INITIAL_SESSION delivers the session and onAuthStateChange covers it.
+    // But if detectSessionInUrl processed the hash synchronously, getSession()
+    // may also find it here before any event fires.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!cancelled && session?.user?.email) {
+        loadForUser(session.user.email);
       }
     });
 
