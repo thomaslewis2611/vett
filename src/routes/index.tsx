@@ -1004,7 +1004,7 @@ function SampleReportCard({ data }: { data: SampleData }) {
           <div
             style={{
               fontFamily: HEADING_FONT,
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: 400,
               color: COLORS.dark,
               letterSpacing: "-0.3px",
@@ -1032,8 +1032,8 @@ function SampleReportCard({ data }: { data: SampleData }) {
             background: COLORS.card,
             border: `0.5px solid rgba(26,17,8,0.12)`,
             borderRadius: 14,
-            padding: "12px 14px",
-            minWidth: 92,
+            padding: "10px 12px",
+            minWidth: 76,
           }}
         >
           <div
@@ -1045,7 +1045,7 @@ function SampleReportCard({ data }: { data: SampleData }) {
           <div
             style={{
               fontFamily: HEADING_FONT,
-              fontSize: 32,
+              fontSize: 24,
               fontWeight: 400,
               color: COLORS.green,
               lineHeight: 1,
@@ -1169,7 +1169,7 @@ function SampleReportCard({ data }: { data: SampleData }) {
       </div>
 
       {/* Bottom metrics */}
-      <div className="mt-4 grid grid-cols-3 gap-2" style={{ alignItems: "stretch", marginTop: "auto" }}>
+      <div className="grid grid-cols-3 gap-2" style={{ marginTop: "auto", paddingTop: 16 }}>
         {data.metrics.map((m) => (
           <div key={m.label} style={{ background: COLORS.bg, borderRadius: 10, padding: "10px 12px", height: "100%" }}>
             <div style={{ fontSize: 10, color: COLORS.veryMuted }}>{m.label}</div>
