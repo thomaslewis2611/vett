@@ -35,14 +35,9 @@ function MyReportsPage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const { data } = await supabase.auth.getUser();
+
+    const loadForUser = async (userEmail: string) => {
       if (cancelled) return;
-      const userEmail = data.user?.email ?? null;
-      if (!userEmail) {
-        navigate({ to: "/" });
-        return;
-      }
       setEmail(userEmail);
 
       // If they have a Buyer Pass, send them to the dashboard instead
@@ -88,9 +83,25 @@ function MyReportsPage() {
       );
 
       setLoading(false);
-    })();
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      const userEmail = session?.user?.email ?? null;
+      if (userEmail) {
+        loadForUser(userEmail);
+      } else if (event === "INITIAL_SESSION") {
+        if (typeof window === "undefined" || !window.location.hash.includes("access_token")) {
+          navigate({ to: "/" });
+        }
+      } else if (event === "SIGNED_OUT") {
+        navigate({ to: "/" });
+      }
+    });
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, [navigate]);
 

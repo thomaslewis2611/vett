@@ -71,15 +71,9 @@ function DashboardPage() {
 
   useEffect(() => {
     let cancelled = false;
-    (async () => {
-      const { data } = await supabase.auth.getUser();
+
+    const loadForUser = async (userEmail: string, authUserId: string | null) => {
       if (cancelled) return;
-      const authUserId = data.user?.id ?? null;
-      const userEmail = data.user?.email ?? null;
-      if (!userEmail) {
-        navigate({ to: "/" });
-        return;
-      }
       console.log("[dashboard] authenticated user", { userId: authUserId, email: userEmail });
       // Confirm Buyer Pass row exists (active OR expired)
       const { data: bp } = await supabase
@@ -215,9 +209,30 @@ function DashboardPage() {
       });
       setRows(sortedRows);
       setLoading(false);
-    })();
+    };
+
+    // onAuthStateChange fires after the initial session is resolved, including
+    // after a magic link hash token exchange completes. Using getUser() here
+    // would race with the exchange and redirect prematurely.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (cancelled) return;
+      const userEmail = session?.user?.email ?? null;
+      const userId = session?.user?.id ?? null;
+      if (userEmail) {
+        loadForUser(userEmail, userId);
+      } else if (event === "INITIAL_SESSION") {
+        // Only redirect if there is no pending magic link token in the hash.
+        if (typeof window === "undefined" || !window.location.hash.includes("access_token")) {
+          navigate({ to: "/" });
+        }
+      } else if (event === "SIGNED_OUT") {
+        navigate({ to: "/" });
+      }
+    });
+
     return () => {
       cancelled = true;
+      subscription.unsubscribe();
     };
   }, [navigate]);
 
