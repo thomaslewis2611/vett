@@ -68,7 +68,7 @@ export const Route = createFileRoute("/api/public/cron/check-expiry-reminders")(
       POST: async ({ request }) => {
         const supabaseUrl = process.env.SUPABASE_URL;
         const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-        const resendKey = process.env.RESEND_API_KEY;
+        const resendKey = process.env.RESEND_API_KEY ?? (globalThis as any).RESEND_API_KEY;
         const cronSecret = process.env.CRON_SECRET;
         if (!supabaseUrl || !serviceKey || !resendKey || !cronSecret) {
           return new Response(JSON.stringify({ error: "missing env" }), { status: 500 });

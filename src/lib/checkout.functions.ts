@@ -56,7 +56,7 @@ async function sendMagicLinkViaResend(
     return { ok: false, error: linkError?.message ?? "no action_link" };
   }
 
-  const resendApiKey = process.env.RESEND_API_KEY;
+  const resendApiKey = process.env.RESEND_API_KEY ?? (globalThis as any).RESEND_API_KEY;
   if (!resendApiKey) {
     console.error("RESEND_API_KEY not configured");
     return { ok: false, error: "RESEND_API_KEY missing" };

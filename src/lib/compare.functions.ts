@@ -145,7 +145,7 @@ export const emailComparison = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }): Promise<{ ok: boolean; error?: string }> => {
-    const apiKey = process.env.RESEND_API_KEY;
+    const apiKey = process.env.RESEND_API_KEY ?? (globalThis as any).RESEND_API_KEY;
     if (!apiKey) return { ok: false, error: "RESEND_API_KEY missing" };
 
     const { a, b, verdict } = data;
