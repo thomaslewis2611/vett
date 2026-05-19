@@ -1736,28 +1736,28 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
     : Promise.resolve(null);
 
   const nearbySchoolsPromise: Promise<NearbySchoolsRaw | null> = postcode
-    ? fetchNearbySchools(postcode, sourceForExtraction.slice(0, 200), process.env.ANTHROPIC_API_KEY).catch((err) => {
+    ? fetchNearbySchools(postcode, sourceForExtraction.slice(0, 200), process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY).catch((err) => {
         console.error("[nearbySchools] lookup failed:", err);
         return null;
       })
     : Promise.resolve(null);
 
   const crimePromise: Promise<CrimeRaw | null> = postcode
-    ? fetchCrimeStats(postcode, sourceForExtraction.slice(0, 200), process.env.ANTHROPIC_API_KEY).catch((err) => {
+    ? fetchCrimeStats(postcode, sourceForExtraction.slice(0, 200), process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY).catch((err) => {
         console.error("[crime] lookup failed:", err);
         return null;
       })
     : Promise.resolve(null);
 
   const broadbandPromise: Promise<BroadbandRaw | null> = postcode
-    ? fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY).catch((err) => {
+    ? fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY).catch((err) => {
         console.error("[broadband] lookup failed:", err);
         return null;
       })
     : Promise.resolve(null);
 
   const transportPromise: Promise<TransportRaw | null> = postcode
-    ? fetchTransport(postcode, sourceForExtraction.slice(0, 400), null, process.env.ANTHROPIC_API_KEY).catch((err) => {
+    ? fetchTransport(postcode, sourceForExtraction.slice(0, 400), null, process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY).catch((err) => {
         console.error("[transport] lookup failed:", err);
         return null;
       })
@@ -1840,8 +1840,8 @@ async function fetchListingText(url: string): Promise<FetchedListing> {
 // Returns null if the token is missing, invalid, expired, or env is missing.
 async function resolveEmailFromJwt(sessionJwt: string | null | undefined): Promise<string | null> {
   if (!sessionJwt) return null;
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY;
+  const SUPABASE_URL = process.env.SUPABASE_URL ?? (globalThis as any).SUPABASE_URL;
+  const SUPABASE_PUBLISHABLE_KEY = process.env.SUPABASE_PUBLISHABLE_KEY ?? (globalThis as any).SUPABASE_PUBLISHABLE_KEY;
   if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) return null;
   try {
     const c = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -2347,7 +2347,7 @@ export const analyseListing = createServerFn({ method: "POST" })
     })
   )
   .handler(async ({ data }): Promise<AnalysisResult> => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY;
     if (!apiKey) {
       console.error("[analyseListing] Missing ANTHROPIC_API_KEY");
       throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
@@ -2438,7 +2438,7 @@ async function processAnalysisJob(
   let step = "init";
   try {
     step = "read-api-key";
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY;
     if (!apiKey) {
       throw new Error("Analysis service is temporarily unavailable. Please try again shortly.");
     }
@@ -2724,15 +2724,15 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
           console.error("[fetchBuyerPassExtras] flood failed:", err);
           return null;
         }),
-        fetchNearbySchools(postcode, analysis.property?.address ?? "", process.env.ANTHROPIC_API_KEY).catch((err) => {
+        fetchNearbySchools(postcode, analysis.property?.address ?? "", process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY).catch((err) => {
           console.error("[fetchBuyerPassExtras] schools failed:", err);
           return null;
         }),
-        fetchCrimeStats(postcode, analysis.property?.address ?? "", process.env.ANTHROPIC_API_KEY).catch((err) => {
+        fetchCrimeStats(postcode, analysis.property?.address ?? "", process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY).catch((err) => {
           console.error("[fetchBuyerPassExtras] crime failed:", err);
           return null;
         }),
-        fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY).catch((err) => {
+        fetchBroadband(postcode, process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY).catch((err) => {
           console.error("[fetchBuyerPassExtras] broadband failed:", err);
           return null;
         }),
@@ -2740,7 +2740,7 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
           postcode,
           analysis.property?.address ?? "",
           analysis.property?.type ?? null,
-          process.env.ANTHROPIC_API_KEY,
+          process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY,
         ).catch((err) => {
           console.error("[fetchBuyerPassExtras] transport failed:", err);
           return null;
@@ -2901,7 +2901,7 @@ export const refetchLocalDataForPostcode = createServerFn({ method: "POST" })
       const existing = (row.analysis_json as AnalysisResult) ?? null;
       if (!existing) return fail("Empty analysis");
 
-      const apiKey = process.env.ANTHROPIC_API_KEY;
+      const apiKey = process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY;
       const [floodRaw, schoolsRaw, crimeRawResult, broadbandRawResult] = await Promise.all([
         fetchFloodRisk(postcode).catch((err) => {
           console.error("[refetchLocalDataForPostcode] flood failed:", err);
@@ -3027,7 +3027,7 @@ export const analyseEpcRating = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
 
     const rating = data.epcRating.toUpperCase();
@@ -3126,7 +3126,7 @@ export const analyseFloodZone = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
 
     const zone = data.floodZone;
@@ -3252,7 +3252,7 @@ export const analyseManualSqft = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }) => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY;
     if (!apiKey) throw new Error("Missing ANTHROPIC_API_KEY");
 
     const ppsf = Math.round(data.price / data.sqft);

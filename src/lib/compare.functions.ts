@@ -96,7 +96,7 @@ export const getComparisonVerdict = createServerFn({ method: "POST" })
     }),
   )
   .handler(async ({ data }): Promise<{ verdict: string }> => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY ?? (globalThis as any).ANTHROPIC_API_KEY;
     if (!apiKey) {
       return { verdict: "Comparison verdict is temporarily unavailable." };
     }
