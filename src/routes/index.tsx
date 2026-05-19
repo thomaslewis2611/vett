@@ -1169,9 +1169,9 @@ function SampleReportCard({ data }: { data: SampleData }) {
       </div>
 
       {/* Bottom metrics */}
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-3 gap-2" style={{ alignItems: "stretch" }}>
         {data.metrics.map((m) => (
-          <div key={m.label} style={{ background: COLORS.bg, borderRadius: 10, padding: "10px 12px" }}>
+          <div key={m.label} style={{ background: COLORS.bg, borderRadius: 10, padding: "10px 12px", height: "100%" }}>
             <div style={{ fontSize: 10, color: COLORS.veryMuted }}>{m.label}</div>
             <div
               className="mt-0.5"
