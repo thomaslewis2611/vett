@@ -1232,6 +1232,7 @@ const SAMPLE_B: SampleData = {
   flags: [
     { sev: "LOW", text: "Loft room documentation not confirmed — request building regs certificate" },
     { sev: "LOW", text: "Guide price format — confirm standard sale not auction" },
+    { sev: "LOW", text: "No EPC rating provided — request current certificate before proceeding" },
   ],
   metrics: [
     { label: "Stamp duty", val: "£17,500" },
