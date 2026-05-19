@@ -1045,7 +1045,7 @@ function SampleReportCard({ data }: { data: SampleData }) {
           <div
             style={{
               fontFamily: HEADING_FONT,
-              fontSize: 32,
+              fontSize: 24,
               fontWeight: 400,
               color: COLORS.green,
               lineHeight: 1,
