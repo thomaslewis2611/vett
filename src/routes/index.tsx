@@ -1032,8 +1032,8 @@ function SampleReportCard({ data }: { data: SampleData }) {
             background: COLORS.card,
             border: `0.5px solid rgba(26,17,8,0.12)`,
             borderRadius: 14,
-            padding: "12px 14px",
-            minWidth: 92,
+            padding: "10px 12px",
+            minWidth: 76,
           }}
         >
           <div
