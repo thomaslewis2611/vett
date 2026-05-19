@@ -319,3 +319,57 @@ export const getSavedAnalysis = createServerFn({ method: "POST" })
       userEmail: (row as { user_email: string | null }).user_email,
     };
   });
+
+export const getMyReportsData = createServerFn({ method: "POST" })
+  .inputValidator(z.object({ token: z.string().min(1).max(4096) }))
+  .handler(async ({ data }): Promise<{
+    hasBuyerPass: boolean;
+    email: string | null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    savedAnalyses: Array<{ id: string; listing_url: string | null; analysis_json: any; created_at: string }>;
+    pendingTokens: Array<{ token: string; listing_url: string | null; created_at: string; expires_at: string }>;
+  }> => {
+    const empty = { hasBuyerPass: false, email: null, savedAnalyses: [], pendingTokens: [] };
+    const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(data.token);
+    if (authError || !authData?.user?.email) return empty;
+
+    const email = authData.user.email.toLowerCase();
+
+    const { data: bp } = await supabaseAdmin
+      .from("buyer_pass_users")
+      .select("email, expires_at")
+      .ilike("email", email)
+      .maybeSingle();
+    if (bp) {
+      const exp = (bp as { expires_at: string | null }).expires_at;
+      if (!exp || new Date(exp).getTime() > Date.now()) {
+        return { hasBuyerPass: true, email, savedAnalyses: [], pendingTokens: [] };
+      }
+    }
+
+    const { data: savedRows } = await supabaseAdmin
+      .from("saved_analyses")
+      .select("id, listing_url, analysis_json, created_at")
+      .ilike("user_email", email)
+      .order("created_at", { ascending: false });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const savedList = (savedRows ?? []) as Array<{ id: string; listing_url: string | null; analysis_json: any; created_at: string }>;
+
+    const { data: tokenRows } = await supabaseAdmin
+      .from("single_report_tokens")
+      .select("token, listing_url, created_at, expires_at")
+      .ilike("user_email", email)
+      .order("created_at", { ascending: false });
+    const tokens = (tokenRows ?? []) as Array<{ token: string; listing_url: string | null; created_at: string; expires_at: string }>;
+    const savedUrls = new Set(savedList.map((s) => s.listing_url).filter(Boolean));
+    const now = Date.now();
+
+    return {
+      hasBuyerPass: false,
+      email,
+      savedAnalyses: savedList,
+      pendingTokens: tokens.filter(
+        (t) => t.listing_url && !savedUrls.has(t.listing_url) && new Date(t.expires_at).getTime() > now,
+      ),
+    };
+  });

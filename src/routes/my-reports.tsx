@@ -4,6 +4,7 @@ import { ArrowRight, LogOut, FileText } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { supabase } from "@/integrations/supabase/client";
 import { formatGBP } from "@/lib/analysis.types";
+import { getMyReportsData } from "@/lib/checkout.functions";
 
 export const Route = createFileRoute("/my-reports")({
   head: () => ({ meta: [{ title: "My Reports — vett" }] }),
@@ -36,54 +37,32 @@ function MyReportsPage() {
   useEffect(() => {
     let cancelled = false;
     let loaded = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
 
-    const loadForUser = async (userEmail: string) => {
+    const loadForUser = async (accessToken: string) => {
       if (cancelled || loaded) return;
       loaded = true;
+      if (timeoutId) clearTimeout(timeoutId);
       try {
-        setEmail(userEmail);
-
-        // If they have a Buyer Pass, send them to the dashboard instead
-        const { data: bp } = await supabase
-          .from("buyer_pass_users")
-          .select("email, expires_at")
-          .ilike("email", userEmail)
-          .maybeSingle();
+        const result = await getMyReportsData({ data: { token: accessToken } });
         if (cancelled) return;
-        if (bp) {
-          const exp = (bp as { expires_at: string | null }).expires_at;
-          if (!exp || new Date(exp).getTime() > Date.now()) {
-            setHasPass(true);
-            navigate({ to: "/dashboard" });
-            return;
-          }
+
+        if (!result.email) {
+          // Token invalid or expired — send to home
+          navigate({ to: "/" });
+          return;
         }
 
-        const { data: savedRows } = await supabase
-          .from("saved_analyses")
-          .select("id, listing_url, analysis_json, created_at")
-          .order("created_at", { ascending: false });
-        if (cancelled) return;
-        const savedList = (savedRows as SavedRow[]) ?? [];
-        setSaved(savedList);
+        setEmail(result.email);
 
-        const { data: tokenRows } = await supabase
-          .from("single_report_tokens")
-          .select("token, listing_url, created_at, expires_at")
-          .ilike("user_email", userEmail)
-          .order("created_at", { ascending: false });
-        if (cancelled) return;
-        const tokens = (tokenRows as PendingTokenRow[]) ?? [];
-        const savedUrls = new Set(savedList.map((s) => s.listing_url).filter(Boolean));
-        const now = Date.now();
-        setPending(
-          tokens.filter(
-            (t) =>
-              t.listing_url &&
-              !savedUrls.has(t.listing_url) &&
-              new Date(t.expires_at).getTime() > now
-          )
-        );
+        if (result.hasBuyerPass) {
+          setHasPass(true);
+          navigate({ to: "/dashboard" });
+          return;
+        }
+
+        setSaved(result.savedAnalyses as SavedRow[]);
+        setPending(result.pendingTokens as PendingTokenRow[]);
       } catch (err) {
         console.error("[my-reports] loadForUser error:", err);
       } finally {
@@ -93,31 +72,37 @@ function MyReportsPage() {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (cancelled) return;
-      const userEmail = session?.user?.email ?? null;
-      if (userEmail) {
-        loadForUser(userEmail);
+      const accessToken = session?.access_token ?? null;
+      if (accessToken) {
+        loadForUser(accessToken);
       } else if (event === "INITIAL_SESSION") {
-        if (typeof window === "undefined" || !window.location.hash.includes("access_token")) {
+        const hash = typeof window !== "undefined" ? window.location.hash : "";
+        if (hash.includes("access_token")) {
+          // Hash token is being exchanged; wait for SIGNED_IN, but cap at 8 s
+          timeoutId = setTimeout(() => {
+            if (!cancelled && !loaded) navigate({ to: "/" });
+          }, 8000);
+        } else if (hash.includes("error=")) {
+          // Magic link expired or already used
+          navigate({ to: "/" });
+        } else {
           navigate({ to: "/" });
         }
-        // If there IS a hash token, wait for SIGNED_IN
       } else if (event === "SIGNED_OUT") {
         navigate({ to: "/" });
       }
     });
 
-    // Belt-and-suspenders: if SIGNED_IN already fired before we subscribed,
-    // INITIAL_SESSION delivers the session and onAuthStateChange covers it.
-    // But if detectSessionInUrl processed the hash synchronously, getSession()
-    // may also find it here before any event fires.
+    // Belt-and-suspenders: session may already be established before subscription
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!cancelled && session?.user?.email) {
-        loadForUser(session.user.email);
+      if (!cancelled && session?.access_token) {
+        loadForUser(session.access_token);
       }
     });
 
     return () => {
       cancelled = true;
+      if (timeoutId) clearTimeout(timeoutId);
       subscription.unsubscribe();
     };
   }, [navigate]);
