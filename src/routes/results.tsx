@@ -5001,7 +5001,7 @@ function CrimeSection({ analysis, isBuyerPass, fetching, onUpgrade, onUpgradePas
     analysis.postcode.includes(' ')
   );
 
-  if (isBuyerPass && !hasFullPostcode) {
+  if (isBuyerPass && !hasFullPostcode && (!crime || crime.unavailable)) {
     return (
       <section className="mt-10">
         {heading}
