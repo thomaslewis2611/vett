@@ -683,7 +683,7 @@ function isLondonPostcode(pc: string): boolean {
 type PdKey = typeof PD_ENDPOINTS[number];
 type PdResults = Partial<Record<PdKey, unknown>>;
 
-async function fetchPdEndpoint(ep: string, postcode: string): Promise<unknown> {
+async function fetchPdEndpoint(ep: string, postcode: string, attempt = 0): Promise<unknown> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 10000);
   const started = Date.now();
@@ -704,8 +704,17 @@ async function fetchPdEndpoint(ep: string, postcode: string): Promise<unknown> {
     }
     if (apiStatus === "error") {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const code = (json as any)?.code;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       console.warn(`[analyse-listing] pd ${ep} error: ${(json as any)?.message ?? "(no message)"}`);
       console.log(`[analyse-listing] pd ${ep} full response: ${rawText.slice(0, 500)}`);
+      // Retry once on throttle (X14) after a delay — PropertyData limits to 4 req/10s
+      if (code === "X14" && attempt === 0) {
+        clearTimeout(timer);
+        console.warn(`[analyse-listing] pd ${ep} throttled — retrying in 3s`);
+        await new Promise((res) => setTimeout(res, 3000));
+        return fetchPdEndpoint(ep, postcode, 1);
+      }
     }
     return json;
   } catch (err) {
@@ -1198,6 +1207,13 @@ const PD_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const PD_CACHE_VERSION = "v3";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+function hasUsablePropertyData(pd: PdResults): boolean {
+  return Object.values(pd).some(
+    (v) => v && typeof v === "object" && (v as any).status === "success",
+  );
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function getCachedPropertyData(supabase: any, postcode: string): Promise<PdResults | null> {
   try {
     const { data, error } = await supabase
@@ -1295,7 +1311,11 @@ async function runJob(
       } else {
         try {
           pd = await fetchPropertyDataAll(postcode);
-          await setCachedPropertyData(supabase, postcode, pd);
+          if (hasUsablePropertyData(pd)) {
+            await setCachedPropertyData(supabase, postcode, pd);
+          } else {
+            console.warn("[analyse-listing] propertydata all endpoints failed/throttled — skipping cache");
+          }
         } catch (e) {
           console.warn("[analyse-listing] propertydata fetch failed", e);
           pd = {};
@@ -1324,7 +1344,11 @@ async function runJob(
         } else {
           try {
             pd = await fetchPropertyDataAll(postcode);
-            await setCachedPropertyData(supabase, postcode, pd);
+            if (hasUsablePropertyData(pd)) {
+              await setCachedPropertyData(supabase, postcode, pd);
+            } else {
+              console.warn("[analyse-listing] propertydata all endpoints failed/throttled — skipping cache");
+            }
           } catch (e) {
             console.warn("[analyse-listing] propertydata fetch failed", e);
             pd = {};
