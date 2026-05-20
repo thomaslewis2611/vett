@@ -249,6 +249,7 @@ const searchSchema = z.object({
   text: z.string().optional(),
   token: z.string().optional(),
   saved_id: z.string().optional(),
+  job_id: z.string().optional(),
 });
 
 type PreAnalysisOverrides = { userEpc: string | null; userSqft: number | null };
@@ -340,14 +341,14 @@ function ResultsPageWithBoundary() {
 }
 
 function ResultsPage() {
-  const { url, text, token, saved_id } = Route.useSearch();
+  const { url, text, token, saved_id, job_id } = Route.useSearch();
   const navigate = useNavigate();
   const startJobFn = useServerFn(startAnalysisJob);
   const getJobFn = useServerFn(getAnalysisJob);
   const getSavedFn = useServerFn(getSavedAnalysis);
   const precheckFn = useServerFn(precheckListing);
 
-  const hasInput = Boolean(url || text || saved_id);
+  const hasInput = Boolean(url || text || saved_id || job_id);
 
   const cached = saved_id ? undefined : readCachedAnalysis(url, text, token);
 
@@ -355,7 +356,7 @@ function ResultsPage() {
     | { status: "ready"; overrides: PreAnalysisOverrides }
     | { status: "fetching" }
     | { status: "needs-input"; missing: { epc: boolean; sqft: boolean } };
-  const shouldRunPreAnalysis = Boolean(url) && !text && !saved_id && !cached;
+  const shouldRunPreAnalysis = Boolean(url) && !text && !saved_id && !job_id && !cached;
   const [preAnalysis, setPreAnalysis] = useState<PreAnalysisState>(
     shouldRunPreAnalysis ? { status: "fetching" } : { status: "ready", overrides: EMPTY_PRE_ANALYSIS_OVERRIDES },
   );
@@ -433,6 +434,7 @@ function ResultsPage() {
       text ?? "",
       token ?? "",
       saved_id ?? "",
+      job_id ?? "",
       analysisOverrides.userEpc ?? "",
       analysisOverrides.userSqft ?? "",
       forceRestart,
@@ -476,7 +478,7 @@ function ResultsPage() {
       const sessionJwt = sess.session?.access_token ?? null;
 
       const hasAnalysisOverrides = Boolean(analysisOverrides.userEpc || analysisOverrides.userSqft);
-      let jobId = hasAnalysisOverrides ? undefined : recallJobId(url);
+      let jobId = job_id || (hasAnalysisOverrides ? undefined : recallJobId(url));
       // Verify any existing jobId is still known to the server before reusing.
       // Only discard the jobId on an explicit "not found" — transient
       // network errors (mobile screen-lock, flaky connection) must NOT

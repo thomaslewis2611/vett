@@ -24,6 +24,8 @@ type PendingTokenRow = {
   listing_url: string | null;
   created_at: string;
   expires_at: string;
+  job_id: string | null;
+  address: string | null;
 };
 
 function MyReportsPage() {
@@ -190,7 +192,7 @@ function MyReportsPage() {
                         className="truncate"
                         style={{ fontFamily: HEADING, fontSize: 18, fontWeight: 400, color: "#1A1108", letterSpacing: "-0.2px" }}
                       >
-                        Your purchased report
+                        {p.address ?? "Your purchased report"}
                       </div>
                       {p.listing_url && (
                         <div
@@ -204,7 +206,11 @@ function MyReportsPage() {
                   </div>
                   <Link
                     to="/results"
-                    search={{ url: p.listing_url ?? undefined }}
+                    search={
+                      p.job_id
+                        ? { url: p.listing_url ?? undefined, job_id: p.job_id }
+                        : { url: p.listing_url ?? undefined }
+                    }
                     className="inline-flex items-center justify-center gap-1"
                     style={{
                       background: "#2D6A4F",

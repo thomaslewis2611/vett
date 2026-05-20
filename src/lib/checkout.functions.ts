@@ -327,7 +327,14 @@ export const getMyReportsData = createServerFn({ method: "POST" })
     email: string | null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     savedAnalyses: Array<{ id: string; listing_url: string | null; analysis_json: any; created_at: string }>;
-    pendingTokens: Array<{ token: string; listing_url: string | null; created_at: string; expires_at: string }>;
+    pendingTokens: Array<{
+      token: string;
+      listing_url: string | null;
+      created_at: string;
+      expires_at: string;
+      job_id: string | null;
+      address: string | null;
+    }>;
   }> => {
     const empty = { hasBuyerPass: false, email: null, savedAnalyses: [], pendingTokens: [] };
     const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(data.token);
@@ -363,13 +370,36 @@ export const getMyReportsData = createServerFn({ method: "POST" })
     const tokens = (tokenRows ?? []) as Array<{ token: string; listing_url: string | null; created_at: string; expires_at: string }>;
     const savedUrls = new Set(savedList.map((s) => s.listing_url).filter(Boolean));
     const now = Date.now();
+    const pendingTokens = tokens.filter(
+      (t) => t.listing_url && !savedUrls.has(t.listing_url) && new Date(t.expires_at).getTime() > now,
+    );
+
+    // Enrich pending tokens with the most recent completed analysis job for each URL
+    const pendingUrls = pendingTokens.map((t) => t.listing_url).filter(Boolean) as string[];
+    const jobsByUrl: Record<string, { id: string; address: string | null }> = {};
+    if (pendingUrls.length > 0) {
+      const { data: jobs } = await supabaseAdmin
+        .from("analysis_jobs")
+        .select("id, url, result_json")
+        .in("url", pendingUrls)
+        .eq("status", "complete")
+        .order("created_at", { ascending: false });
+      for (const job of jobs ?? []) {
+        if (job.url && !jobsByUrl[job.url]) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          jobsByUrl[job.url] = { id: job.id, address: (job.result_json as any)?.property?.address ?? null };
+        }
+      }
+    }
 
     return {
       hasBuyerPass: false,
       email,
       savedAnalyses: savedList,
-      pendingTokens: tokens.filter(
-        (t) => t.listing_url && !savedUrls.has(t.listing_url) && new Date(t.expires_at).getTime() > now,
-      ),
+      pendingTokens: pendingTokens.map((t) => ({
+        ...t,
+        job_id: t.listing_url ? (jobsByUrl[t.listing_url]?.id ?? null) : null,
+        address: t.listing_url ? (jobsByUrl[t.listing_url]?.address ?? null) : null,
+      })),
     };
   });
