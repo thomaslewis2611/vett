@@ -326,7 +326,7 @@ export const getMyReportsData = createServerFn({ method: "POST" })
     hasBuyerPass: boolean;
     email: string | null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    savedAnalyses: Array<{ id: string; listing_url: string | null; analysis_json: any; created_at: string }>;
+    savedAnalyses: Array<{ id: string; listing_url: string | null; analysis_json: any; created_at: string; job_id: string | null }>;
     pendingTokens: Array<{
       token: string;
       listing_url: string | null;
@@ -347,12 +347,10 @@ export const getMyReportsData = createServerFn({ method: "POST" })
       .select("email, expires_at")
       .ilike("email", email)
       .maybeSingle();
-    if (bp) {
+    const hasBuyerPass = Boolean(bp && (() => {
       const exp = (bp as { expires_at: string | null }).expires_at;
-      if (!exp || new Date(exp).getTime() > Date.now()) {
-        return { hasBuyerPass: true, email, savedAnalyses: [], pendingTokens: [] };
-      }
-    }
+      return !exp || new Date(exp).getTime() > Date.now();
+    })());
 
     const { data: savedRows } = await supabaseAdmin
       .from("saved_analyses")
@@ -374,14 +372,18 @@ export const getMyReportsData = createServerFn({ method: "POST" })
       (t) => t.listing_url && !savedUrls.has(t.listing_url) && new Date(t.expires_at).getTime() > now,
     );
 
-    // Enrich pending tokens with the most recent completed analysis job for each URL
-    const pendingUrls = pendingTokens.map((t) => t.listing_url).filter(Boolean) as string[];
+    // Single query to enrich both saved analyses and pending tokens with completed job IDs
+    const allUrls = [...new Set([
+      ...savedList.map((s) => s.listing_url),
+      ...pendingTokens.map((t) => t.listing_url),
+    ].filter((u): u is string => Boolean(u)))];
+
     const jobsByUrl: Record<string, { id: string; address: string | null }> = {};
-    if (pendingUrls.length > 0) {
+    if (allUrls.length > 0) {
       const { data: jobs } = await supabaseAdmin
         .from("analysis_jobs")
         .select("id, url, result_json")
-        .in("url", pendingUrls)
+        .in("url", allUrls)
         .eq("status", "complete")
         .order("created_at", { ascending: false });
       for (const job of jobs ?? []) {
@@ -393,9 +395,12 @@ export const getMyReportsData = createServerFn({ method: "POST" })
     }
 
     return {
-      hasBuyerPass: false,
+      hasBuyerPass,
       email,
-      savedAnalyses: savedList,
+      savedAnalyses: savedList.map((s) => ({
+        ...s,
+        job_id: s.listing_url ? (jobsByUrl[s.listing_url]?.id ?? null) : null,
+      })),
       pendingTokens: pendingTokens.map((t) => ({
         ...t,
         job_id: t.listing_url ? (jobsByUrl[t.listing_url]?.id ?? null) : null,

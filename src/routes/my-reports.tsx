@@ -17,6 +17,7 @@ type SavedRow = {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   analysis_json: any;
   created_at: string;
+  job_id: string | null;
 };
 
 type PendingTokenRow = {
@@ -272,7 +273,11 @@ function MyReportsPage() {
                       )}
                       <Link
                         to="/results"
-                        search={{ saved_id: r.id }}
+                        search={
+                          r.job_id
+                            ? { url: r.listing_url ?? undefined, job_id: r.job_id }
+                            : { saved_id: r.id }
+                        }
                         style={{ fontSize: 13, fontWeight: 500, color: "#2D6A4F" }}
                       >
                         View →
