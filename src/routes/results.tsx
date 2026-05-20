@@ -1650,10 +1650,11 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
                   onSaved={(patch) =>
                     setA((prev) => ({
                       ...prev,
-                      floodRisk: patch.floodRisk ?? prev.floodRisk,
-                      nearbySchools: patch.nearbySchools ?? prev.nearbySchools,
+                      postcode: patch.postcode ?? prev.postcode,
+                      floodRisk: pickBetter(patch.floodRisk, prev.floodRisk),
+                      nearbySchools: pickBetter(patch.nearbySchools, prev.nearbySchools),
                       crime: patch.crime ?? prev.crime,
-                      broadband: patch.broadband ?? prev.broadband,
+                      broadband: pickBetter(patch.broadband, prev.broadband),
                       partialPostcode: null,
                     }))
                   }
@@ -1695,10 +1696,11 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
                   onPostcodeSaved={(patch) =>
                     setA((prev) => ({
                       ...prev,
+                      postcode: patch.postcode ?? prev.postcode,
                       crime: patch.crime ?? prev.crime,
-                      floodRisk: patch.floodRisk ?? prev.floodRisk,
-                      nearbySchools: patch.nearbySchools ?? prev.nearbySchools,
-                      broadband: patch.broadband ?? prev.broadband,
+                      floodRisk: pickBetter(patch.floodRisk, prev.floodRisk),
+                      nearbySchools: pickBetter(patch.nearbySchools, prev.nearbySchools),
+                      broadband: pickBetter(patch.broadband, prev.broadband),
                       partialPostcode: null,
                     }))
                   }
@@ -1725,10 +1727,11 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
                   onSaved={(patch) =>
                     setA((prev) => ({
                       ...prev,
-                      floodRisk: patch.floodRisk ?? prev.floodRisk,
-                      nearbySchools: patch.nearbySchools ?? prev.nearbySchools,
+                      postcode: patch.postcode ?? prev.postcode,
+                      floodRisk: pickBetter(patch.floodRisk, prev.floodRisk),
+                      nearbySchools: pickBetter(patch.nearbySchools, prev.nearbySchools),
                       crime: patch.crime ?? prev.crime,
-                      broadband: patch.broadband ?? prev.broadband,
+                      broadband: pickBetter(patch.broadband, prev.broadband),
                       inferredPostcode: false,
                       inferredPostcodeValue: null,
                     }))
@@ -2148,11 +2151,22 @@ function PricePerSqftCard({
 }
 
 type PostcodePromptPatch = {
+  postcode: string | null;
   floodRisk: AnalysisResult["floodRisk"] | null;
   nearbySchools: AnalysisResult["nearbySchools"] | null;
   crime: AnalysisResult["crime"] | null;
   broadband: AnalysisResult["broadband"] | null;
 };
+
+// Prefer new data when it is non-null and not flagged unavailable; otherwise
+// keep the existing value (don't let a failed refetch wipe good data).
+function pickBetter<T extends { unavailable?: boolean | null }>(
+  newData: T | null | undefined,
+  existing: T | null | undefined,
+): T | null | undefined {
+  if (!newData || newData.unavailable) return existing ?? newData;
+  return newData;
+}
 
 function PostcodePromptBanner({
   partial,
@@ -2193,6 +2207,7 @@ function PostcodePromptBanner({
         return;
       }
       onSaved({
+        postcode: r.postcode ?? cleaned,
         floodRisk: r.floodRisk,
         nearbySchools: r.nearbySchools,
         crime: r.crime,
@@ -2296,6 +2311,7 @@ function InferredPostcodeNotice({
         return;
       }
       onSaved({
+        postcode: r.postcode ?? cleaned,
         floodRisk: r.floodRisk,
         nearbySchools: r.nearbySchools,
         crime: r.crime,

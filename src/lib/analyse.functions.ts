@@ -1241,24 +1241,46 @@ async function fetchCrimeStats(
     };
   }
 
+  // Police data can lag 2-6 months. Try the target month and fall back to
+  // earlier months if the API returns 404 (month not yet published).
   let crimes: { category: string }[] = [];
-  try {
-    const url = `https://data.police.uk/api/crimes-street/all-crime?lat=${coords.lat}&lng=${coords.lng}&date=${month}`;
-    const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 15_000);
-    const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" }, signal: ctrl.signal });
-    clearTimeout(t);
-    if (!res.ok) {
-      console.error(`[crime] police.uk HTTP ${res.status}`);
+  let usedMonth = month;
+  let fetched = false;
+  for (let offset = 0; offset <= 4 && !fetched; offset++) {
+    const d = new Date();
+    d.setUTCMonth(d.getUTCMonth() - (2 + offset));
+    const tryMonth = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`;
+    try {
+      const url = `https://data.police.uk/api/crimes-street/all-crime?lat=${coords.lat}&lng=${coords.lng}&date=${tryMonth}`;
+      const ctrl = new AbortController();
+      const t = setTimeout(() => ctrl.abort(), 15_000);
+      const res = await fetch(url, { headers: { Accept: "application/json", "User-Agent": "Roovr/1.0" }, signal: ctrl.signal });
+      clearTimeout(t);
+      if (res.status === 404) {
+        console.log(`[crime] police.uk 404 for ${tryMonth}, trying earlier month`);
+        continue;
+      }
+      if (!res.ok) {
+        console.error(`[crime] police.uk HTTP ${res.status} for ${tryMonth}`);
+        return {
+          totalCrimes: 0, month: tryMonth, topCategories: [], riskLevel: "Low",
+          commentary: "", autoRedFlag: false, coordinates: coords, unavailable: true,
+        };
+      }
+      const json = (await res.json()) as { category?: string }[];
+      crimes = Array.isArray(json) ? json.map((c) => ({ category: String(c.category ?? "other-crime") })) : [];
+      usedMonth = tryMonth;
+      fetched = true;
+    } catch (err) {
+      console.error("[crime] police.uk fetch failed:", err);
       return {
-        totalCrimes: 0, month, topCategories: [], riskLevel: "Low",
+        totalCrimes: 0, month: tryMonth, topCategories: [], riskLevel: "Low",
         commentary: "", autoRedFlag: false, coordinates: coords, unavailable: true,
       };
     }
-    const json = (await res.json()) as { category?: string }[];
-    crimes = Array.isArray(json) ? json.map((c) => ({ category: String(c.category ?? "other-crime") })) : [];
-  } catch (err) {
-    console.error("[crime] police.uk fetch failed:", err);
+  }
+  if (!fetched) {
+    console.error("[crime] no data found in last 6 months");
     return {
       totalCrimes: 0, month, topCategories: [], riskLevel: "Low",
       commentary: "", autoRedFlag: false, coordinates: coords, unavailable: true,
@@ -1283,12 +1305,12 @@ async function fetchCrimeStats(
     totalCrimes,
     coordinates: coords,
     address,
-    month,
+    month: usedMonth,
   });
 
   const raw: CrimeRaw = {
     totalCrimes,
-    month,
+    month: usedMonth,
     topCategories,
     riskLevel,
     commentary,
@@ -1307,7 +1329,7 @@ async function fetchCrimeStats(
     console.error("[crime] cache upsert failed:", err);
   }
 
-  console.log(`[crime] ${cacheKey} → total=${totalCrimes} risk=${riskLevel}`);
+  console.log(`[crime] ${cacheKey} → month=${usedMonth} total=${totalCrimes} risk=${riskLevel}`);
   return raw;
 }
 
@@ -2871,6 +2893,7 @@ export const refetchLocalDataForPostcode = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{
     ok: boolean;
+    postcode: string | null;
     floodRisk: AnalysisResult["floodRisk"] | null;
     nearbySchools: AnalysisResult["nearbySchools"] | null;
     crime: AnalysisResult["crime"] | null;
@@ -2879,6 +2902,7 @@ export const refetchLocalDataForPostcode = createServerFn({ method: "POST" })
   }> => {
     const fail = (error: string) => ({
       ok: false,
+      postcode: null,
       floodRisk: null,
       nearbySchools: null,
       crime: null,
@@ -2981,6 +3005,7 @@ export const refetchLocalDataForPostcode = createServerFn({ method: "POST" })
 
       const merged: AnalysisResult = {
         ...existing,
+        postcode: postcode,
         floodRisk: floodRisk ?? existing.floodRisk,
         nearbySchools: nearbySchools ?? existing.nearbySchools,
         crime: crime ?? existing.crime,
@@ -2996,7 +3021,7 @@ export const refetchLocalDataForPostcode = createServerFn({ method: "POST" })
         console.error("[refetchLocalDataForPostcode] update failed:", err);
       }
 
-      return { ok: true, floodRisk, nearbySchools, crime, broadband };
+      return { ok: true, postcode, floodRisk, nearbySchools, crime, broadband };
     } catch (err) {
       console.error("[refetchLocalDataForPostcode] failed:", err);
       return fail((err as Error).message ?? "Unknown error");
