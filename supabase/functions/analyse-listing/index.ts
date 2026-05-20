@@ -562,17 +562,75 @@ function extractPartialPostcode(text: string): string | null {
   return m ? m[1].toUpperCase().trim() : null;
 }
 
-// Ask Claude to infer the most likely full postcode from the listing's address.
-// Used when the listing only exposes a partial postcode (e.g. "BA1") so we can
-// still run the postcode-driven PropertyData calls. Returns a normalised
-// "OUTWARD INWARD" postcode or null if Claude cannot make a confident guess.
+// Resolve a partial outward code (e.g. "BN21") to a full postcode via
+// postcodes.io, then use Claude to pick the best match when a street address
+// is present in the listing. Falls back to the first postcodes.io result if
+// Claude is unavailable or the list is ambiguous without a street.
 async function inferPostcodeFromAddress(
   listingContent: string,
   partialHint: string | null,
 ): Promise<string | null> {
+  // ── Step 1: query postcodes.io with the partial outward code ──────────────
+  if (partialHint) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8_000);
+      const res = await fetch(
+        `https://api.postcodes.io/postcodes?q=${encodeURIComponent(partialHint)}&limit=100`,
+        { signal: ctrl.signal },
+      );
+      clearTimeout(timer);
+      if (res.ok) {
+        const json = await res.json() as { status: number; result: { postcode: string }[] | null };
+        const results = json.result ?? [];
+        const postcodes = results.map((r) => r.postcode).filter(Boolean);
+        console.log(`[analyse-listing] postcodes.io returned ${postcodes.length} results for ${partialHint}`);
+
+        if (postcodes.length === 1) {
+          // Only one match — use it directly, no need for Claude.
+          return normalisePostcode(postcodes[0]);
+        }
+
+        if (postcodes.length > 1) {
+          // Multiple matches. If we have a street address, ask Claude to pick
+          // the best one. Otherwise use the first result.
+          const snippet = listingContent.slice(0, 800);
+          if (ANTHROPIC_API_KEY) {
+            try {
+              const list = postcodes.slice(0, 30).join(", ");
+              const prompt = `A UK property listing contains the partial postcode "${partialHint}". The postcodes.io API returned these matching full postcodes: ${list}\n\nListing excerpt (first 800 chars):\n${snippet}\n\nReturn ONLY the single most likely full postcode from the list above based on the street name or location clues in the listing. If you cannot determine which is most likely, return the first one: ${postcodes[0]}. Return ONLY the postcode, nothing else.`;
+              const text = await callClaude(
+                "You are a UK postcode resolver. Return only one postcode from the provided list.",
+                prompt,
+                20,
+              );
+              const trimmed = (text ?? "").trim().toUpperCase();
+              const m = trimmed.match(POSTCODE_RE);
+              if (m) {
+                const candidate = normalisePostcode(m[0]);
+                // Only accept it if it's actually in the list postcodes.io returned.
+                if (postcodes.includes(candidate)) {
+                  console.log(`[analyse-listing] Claude picked ${candidate} from ${postcodes.length} postcodes.io results`);
+                  return candidate;
+                }
+              }
+            } catch (err) {
+              console.warn("[analyse-listing] Claude postcode pick failed, using first result", err);
+            }
+          }
+          // Fallback: first postcodes.io result.
+          console.log(`[analyse-listing] using first postcodes.io result: ${postcodes[0]}`);
+          return normalisePostcode(postcodes[0]);
+        }
+      }
+    } catch (err) {
+      console.warn("[analyse-listing] postcodes.io lookup failed", err);
+    }
+  }
+
+  // ── Step 2: no partial hint or postcodes.io returned nothing — fall back to
+  // pure Claude inference (last resort, low hit rate) ────────────────────────
   if (!ANTHROPIC_API_KEY) return null;
-  // Keep the prompt small — first 1500 chars typically contains the title /
-  // address block. Claude only needs the location signal, not the full advert.
   const snippet = listingContent.slice(0, 1500);
   const hint = partialHint ? `\n\nPartial postcode found in the listing: ${partialHint}` : "";
   const prompt = `Based on this UK property listing, what is the most likely FULL postcode for the property?${hint}\n\nListing excerpt:\n${snippet}\n\nReturn ONLY the postcode in standard UK format (e.g. "BA1 5NW"), nothing else. If you cannot make a confident guess, return "UNKNOWN".`;
@@ -586,8 +644,7 @@ async function inferPostcodeFromAddress(
     if (!trimmed || trimmed.startsWith("UNKNOWN")) return null;
     const m = trimmed.match(POSTCODE_RE);
     if (!m) return null;
-    const raw = m[0].replace(/\s+/g, "");
-    return `${raw.slice(0, -3)} ${raw.slice(-3)}`;
+    return normalisePostcode(m[0]);
   } catch (err) {
     console.warn("[analyse-listing] inferPostcodeFromAddress failed", err);
     return null;
@@ -1296,7 +1353,7 @@ async function runJob(
     try {
       console.log("[timing] claude start", Date.now());
       const claudeStart = Date.now();
-      const text = await callClaude(systemPrompt, userContent, 5000);
+      const text = await callClaude(systemPrompt, userContent, 7000);
       console.log("[timing] claude complete", Date.now(), `(+${Date.now() - claudeStart}ms, response length ${text.length})`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
     } catch (primaryErr) {
@@ -1306,7 +1363,7 @@ async function runJob(
         "\n\nIMPORTANT OVERRIDE: Omit the renovationCosts field entirely from your JSON response. Set it to null.";
       console.log("[timing] claude start", Date.now(), "(retry)");
       const claudeStart = Date.now();
-      const text = await callClaude(simplified, userContent, 5000);
+      const text = await callClaude(simplified, userContent, 7000);
       console.log("[timing] claude complete", Date.now(), `(+${Date.now() - claudeStart}ms, retry)`);
       parsed = parseWithRepair(text) as Record<string, unknown>;
       console.log("[renovation] CASE 3: primary parse failed — renovationCosts dropped in fallback retry. Check response length in timing log above.");
