@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, Link, createRootRouteWithContext, useRouter, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { ConsentBanner } from "../components/consent-banner";
 
 const HEADING_FONT = "'Playfair Display', Georgia, serif";
 
@@ -143,9 +144,33 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
-      {
+{
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap",
+      },
+    ],
+    scripts: [
+      {
+        children: `
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          window.gtag = gtag;
+          gtag('consent', 'default', {
+            'analytics_storage': 'denied',
+            'ad_storage': 'denied',
+            'ad_user_data': 'denied',
+            'ad_personalization': 'denied',
+            'wait_for_update': 500
+          });
+          gtag('set', 'url_passthrough', true);
+          gtag('set', 'ads_data_redaction', true);
+          gtag('js', new Date());
+          gtag('config', 'G-B01ZMLED3N', { 'anonymize_ip': true });
+        `,
+      },
+      {
+        src: "https://www.googletagmanager.com/gtag/js?id=G-B01ZMLED3N",
+        async: true,
       },
     ],
   }),
@@ -175,6 +200,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <ConsentBanner />
     </QueryClientProvider>
   );
 }
