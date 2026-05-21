@@ -74,8 +74,8 @@ export interface ArticleSchemaInput {
   description: string;
   slug: string;
   imageUrl: string;
-  datePublished: string; // ISO 8601 (e.g. "2026-05-21")
-  dateModified?: string; // ISO 8601, defaults to datePublished
+  datePublished: string; // ISO 8601 datetime with timezone (e.g. "2026-05-21T00:00:00+00:00")
+  dateModified?: string; // ISO 8601 datetime with timezone, defaults to datePublished
   authorName?: string;
   authorUrl?: string;
 }
