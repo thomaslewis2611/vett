@@ -769,13 +769,13 @@ function isLondonPostcode(pc: string): boolean {
 type PdKey = typeof PD_ENDPOINTS[number];
 type PdResults = Partial<Record<PdKey, unknown>>;
 
-async function fetchPdEndpoint(ep: string, postcode: string, attempt = 0): Promise<unknown> {
+async function fetchPdEndpoint(ep: string, postcode: string, attempt = 0, extraParams = ""): Promise<unknown> {
   const ctl = new AbortController();
   const timer = setTimeout(() => ctl.abort(), 10000);
   const started = Date.now();
   try {
     const pc = encodeURIComponent(postcode);
-    const r = await fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}`, {
+    const r = await fetch(`${PD_BASE}/${ep}?key=${PROPERTYDATA_API_KEY}&postcode=${pc}${extraParams}`, {
       signal: ctl.signal,
     });
     const httpStatus = r.status;
@@ -799,7 +799,7 @@ async function fetchPdEndpoint(ep: string, postcode: string, attempt = 0): Promi
         clearTimeout(timer);
         console.warn(`[analyse-listing] pd ${ep} throttled — retrying in 3s`);
         await new Promise((res) => setTimeout(res, 3000));
-        return fetchPdEndpoint(ep, postcode, 1);
+        return fetchPdEndpoint(ep, postcode, 1, extraParams);
       }
     }
     return json;
@@ -811,17 +811,21 @@ async function fetchPdEndpoint(ep: string, postcode: string, attempt = 0): Promi
   }
 }
 
-async function fetchPropertyDataAll(postcode: string): Promise<PdResults> {
+const PD_PRICE_ENDPOINTS = new Set(["sold-prices", "sold-prices-per-sqf"]);
+
+async function fetchPropertyDataAll(postcode: string, propertyType: string | null = null): Promise<PdResults> {
   if (!PROPERTYDATA_API_KEY) {
     console.warn("[analyse-listing] PROPERTYDATA API KEY INVALID OR MISSING (env var not set)");
     return {};
   }
-  console.log(`[analyse-listing] PROPERTYDATA fetch start postcode=${postcode} keyLen=${PROPERTYDATA_API_KEY.length}`);
+  const typeParam = propertyType ? `&type=${encodeURIComponent(propertyType)}` : "";
+  console.log(`[analyse-listing] PROPERTYDATA fetch start postcode=${postcode} propertyType=${propertyType ?? "all"} keyLen=${PROPERTYDATA_API_KEY.length}`);
   const london = isLondonPostcode(postcode);
   const settled = await Promise.allSettled(
     PD_ENDPOINTS.map((ep) => {
       if (ep === "ptal" && !london) return Promise.resolve(null);
-      return fetchPdEndpoint(ep, postcode);
+      const extra = PD_PRICE_ENDPOINTS.has(ep) ? typeParam : "";
+      return fetchPdEndpoint(ep, postcode, 0, extra);
     }),
   );
   const out: PdResults = {};
@@ -1244,7 +1248,18 @@ function mapPdPpsf(raw: any): { average: number; low: number | null; high: numbe
   };
 }
 
-function buildPropertyDataContext(pd: PdResults): string {
+type PdPropertyType = "detached_house" | "semi-detached_house" | "terraced_house" | "flat";
+
+function extractPropertyTypeForPD(text: string): PdPropertyType | null {
+  const t = text.toLowerCase();
+  if (/\bsemi[- ]?detached\b/.test(t)) return "semi-detached_house";
+  if (/\b(end[- ]of[- ]terrace|end[- ]terrace|terraced|terrace house|town[- ]?house|mews house)\b/.test(t)) return "terraced_house";
+  if (/\bdetached\b/.test(t)) return "detached_house";
+  if (/\b(flat|apartment|maisonette|studio flat)\b/.test(t)) return "flat";
+  return null;
+}
+
+function buildPropertyDataContext(pd: PdResults, propertyType: PdPropertyType | null = null): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const slice = (v: any, n: number) => (Array.isArray(v) ? v.slice(0, n) : v ?? null);
   return `PROPERTYDATA API RESULTS (official data — use these facts in your analysis):
@@ -1285,7 +1300,7 @@ ${JSON.stringify(pdData(pd["schools"]) || [])}
 LIVE LOCAL ASKING £/SQFT (current market — use as secondary reference):
 ${JSON.stringify(mapPdPpsf(pd["prices-per-sqf"]) || null)}
 
-LOCAL SOLD £/SQFT (most recent sold transactions — USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this). The "radiusMiles" field is the geographic radius of PropertyData's search — when present, include "Based on {points} sales within {radiusMiles} miles" in comparableNote so buyers know how local the benchmark is. If this is null but the SOLD PRICES array above has entries, estimate avgPricePerSqFtArea yourself by dividing the average of those recent sold prices by a sensible typical sqft for the property type (flats ~850, terraced ~1100, semi-detached ~1300, detached ~1600) and explain in comparableNote that it is estimated from sold prices because exact £/sqft data wasn't available:
+LOCAL SOLD £/SQFT (most recent sold transactions${propertyType ? ` — FILTERED TO ${propertyType.replace(/_/g, " ").toUpperCase()} ONLY for like-for-like comparison` : " — all property types (no type filter was available)"}). USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this. The "radiusMiles" field is the geographic radius of PropertyData's search — when present, include "Based on {points} ${propertyType ? propertyType.replace(/_/g, " ") + " " : ""}sales within {radiusMiles} miles" in comparableNote so buyers know how local and like-for-like the benchmark is. If this is null but the SOLD PRICES array above has entries, estimate avgPricePerSqFtArea yourself by dividing the average of those recent sold prices by a sensible typical sqft for the property type (flats ~850, terraced ~1100, semi-detached ~1300, detached ~1600) and explain in comparableNote that it is estimated from sold prices because exact £/sqft data wasn't available:
 ${JSON.stringify(mapPdPpsf(pd["sold-prices-per-sqf"]) || null)}
 `;
 }
@@ -1301,19 +1316,24 @@ function hasUsablePropertyData(pd: PdResults): boolean {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getCachedPropertyData(supabase: any, postcode: string): Promise<PdResults | null> {
+function pdCacheKey(postcode: string, propertyType: string | null): string {
+  return propertyType ? `${postcode}|${propertyType}` : postcode;
+}
+
+async function getCachedPropertyData(supabase: any, postcode: string, propertyType: string | null = null): Promise<PdResults | null> {
+  const key = pdCacheKey(postcode, propertyType);
   try {
     const { data, error } = await supabase
       .from("property_data_cache")
       .select("data, fetched_at")
-      .eq("postcode", postcode)
+      .eq("postcode", key)
       .maybeSingle();
     if (error || !data) return null;
     const age = Date.now() - new Date(data.fetched_at).getTime();
     if (age > PD_CACHE_TTL_MS) return null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((data.data as any)?.__cacheVersion !== PD_CACHE_VERSION) {
-      console.log(`[analyse-listing] pd cache version mismatch for ${postcode} — refetching`);
+      console.log(`[analyse-listing] pd cache version mismatch for ${key} — refetching`);
       return null;
     }
     return data.data as PdResults;
@@ -1324,12 +1344,13 @@ async function getCachedPropertyData(supabase: any, postcode: string): Promise<P
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function setCachedPropertyData(supabase: any, postcode: string, pd: PdResults) {
+async function setCachedPropertyData(supabase: any, postcode: string, pd: PdResults, propertyType: string | null = null) {
+  const key = pdCacheKey(postcode, propertyType);
   try {
     const pdWithVersion = { ...pd, __cacheVersion: PD_CACHE_VERSION };
     await supabase
       .from("property_data_cache")
-      .upsert({ postcode, data: pdWithVersion, fetched_at: new Date().toISOString() }, { onConflict: "postcode" });
+      .upsert({ postcode: key, data: pdWithVersion, fetched_at: new Date().toISOString() }, { onConflict: "postcode" });
   } catch (e) {
     console.warn("[analyse-listing] pd cache write failed", e);
   }
@@ -1387,19 +1408,21 @@ async function runJob(
     let inferredPostcode = false;
     let partialPostcode: string | null = null;
     let pd: PdResults = {};
+    const propertyType = extractPropertyTypeForPD(listingContent);
+    console.log(`[analyse-listing] extractPropertyTypeForPD: ${propertyType ?? "unknown"}`);
 
     if (postcode) {
       console.log("[timing] postcode found:", postcode, Date.now());
       const pdStart = Date.now();
-      const cached = await getCachedPropertyData(supabase, postcode);
+      const cached = await getCachedPropertyData(supabase, postcode, propertyType);
       if (cached) {
-        console.log(`[analyse-listing] propertydata cache hit ${postcode}`);
+        console.log(`[analyse-listing] propertydata cache hit ${postcode} type=${propertyType ?? "all"}`);
         pd = cached;
       } else {
         try {
-          pd = await fetchPropertyDataAll(postcode);
+          pd = await fetchPropertyDataAll(postcode, propertyType);
           if (hasUsablePropertyData(pd)) {
-            await setCachedPropertyData(supabase, postcode, pd);
+            await setCachedPropertyData(supabase, postcode, pd, propertyType);
           } else {
             console.warn("[analyse-listing] propertydata all endpoints failed/throttled — skipping cache");
           }
@@ -1425,14 +1448,14 @@ async function runJob(
         inferredPostcode = true;
         console.log("[timing] postcode found:", postcode, Date.now(), "(inferred)");
         const pdStart = Date.now();
-        const cached = await getCachedPropertyData(supabase, postcode);
+        const cached = await getCachedPropertyData(supabase, postcode, propertyType);
         if (cached) {
           pd = cached;
         } else {
           try {
-            pd = await fetchPropertyDataAll(postcode);
+            pd = await fetchPropertyDataAll(postcode, propertyType);
             if (hasUsablePropertyData(pd)) {
-              await setCachedPropertyData(supabase, postcode, pd);
+              await setCachedPropertyData(supabase, postcode, pd, propertyType);
             } else {
               console.warn("[analyse-listing] propertydata all endpoints failed/throttled — skipping cache");
             }
@@ -1448,7 +1471,7 @@ async function runJob(
       }
     }
 
-    const propertyDataContext = postcode ? buildPropertyDataContext(pd) : "";
+    const propertyDataContext = postcode ? buildPropertyDataContext(pd, propertyType) : "";
     const userContent = `${propertyDataContext}\nListing URL: ${url || "(pasted text only)"}\n\nListing content:\n${listingContent}`;
 
     const todayStr = new Date().toLocaleDateString("en-GB", {
