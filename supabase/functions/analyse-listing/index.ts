@@ -583,10 +583,26 @@ function extractLocalityNearPartialPostcode(text: string, partial: string): stri
   return null;
 }
 
+// Extract a street address query for postcodes.io from listing text when no
+// postcode (full or partial) is present in the listing. Looks for the first
+// "Street Name, Town" pattern in the first 1000 chars of the listing.
+function extractAddressQueryForPostcodesIO(text: string): string | null {
+  const SUFFIXES = "Road|Street|Avenue|Drive|Lane|Close|Way|Place|Gardens?|Grove|Court|Hill|Rise|Crescent|Terrace|Walk|Mews|Row|Square|View|Vale|Green|End|Gate|Fold|Meadow|Villas?|Parade|Broadway|Approach|Chase|Croft|Mount|Heights|Bank|Nook";
+  const re = new RegExp(
+    `(?:^|[\\n,])\\s*((?:\\d+\\s+)?[A-Z][A-Za-z]+(?:\\s+[A-Za-z]+)*?\\s+(?:${SUFFIXES}))\\s*,\\s*([A-Z][A-Za-z][A-Za-z\\s]{1,20}?)(?:\\s*[,\\n]|$)`,
+    "m",
+  );
+  const m = text.slice(0, 1000).match(re);
+  if (!m) return null;
+  return `${m[1].trim()} ${m[2].trim()}`;
+}
+
 // Resolve a partial outward code (e.g. "BN21") to a full postcode via
 // postcodes.io, then use Claude to pick the best match when a street address
 // is present in the listing. Falls back to the first postcodes.io result if
 // Claude is unavailable or the list is ambiguous without a street.
+// When no partial hint exists, tries extracting a street+town address and
+// querying postcodes.io directly before falling back to pure Claude inference.
 async function inferPostcodeFromAddress(
   listingContent: string,
   partialHint: string | null,
@@ -597,6 +613,18 @@ async function inferPostcodeFromAddress(
   // the correct sector rather than returning 100 postcodes across the whole
   // district. We fall back to the plain district query if that yields nothing.
   if (partialHint) {
+    // Guard: postcodes.io text search can return results from entirely different
+    // districts (e.g. searching "Eastbourne BN20" may return "D6 9FF"). Only
+    // accept candidates whose outward code starts with the partial hint.
+    const filterByPartial = (codes: string[]): string[] => {
+      const upper = partialHint.toUpperCase();
+      const filtered = codes.filter((pc) => pc.split(" ")[0].toUpperCase().startsWith(upper));
+      if (filtered.length !== codes.length) {
+        console.log(`[analyse-listing] filtered ${codes.length - filtered.length} off-district postcodes (kept ${filtered.length} matching "${partialHint}")`);
+      }
+      return filtered;
+    };
+
     try {
       const locality = extractLocalityNearPartialPostcode(listingContent, partialHint);
       let queryStr = partialHint;
@@ -612,7 +640,8 @@ async function inferPostcodeFromAddress(
           clearTimeout(narrowTimer);
           if (narrowRes.ok) {
             const narrowJson = await narrowRes.json() as { result: { postcode: string }[] | null };
-            const narrowCodes = (narrowJson.result ?? []).map((r) => r.postcode).filter(Boolean);
+            const rawCodes = (narrowJson.result ?? []).map((r) => r.postcode).filter(Boolean);
+            const narrowCodes = filterByPartial(rawCodes);
             if (narrowCodes.length > 0) {
               console.log(`[analyse-listing] postcodes.io locality query "${locality} ${partialHint}" → ${narrowCodes.length} results`);
               queryStr = `${locality} ${partialHint}`;
@@ -648,7 +677,7 @@ async function inferPostcodeFromAddress(
                 return normalisePostcode(postcodes[0]);
               }
             } else {
-              console.log(`[analyse-listing] locality query "${locality} ${partialHint}" returned 0 results — falling back to plain district query`);
+              console.log(`[analyse-listing] locality query "${locality} ${partialHint}" returned 0 valid results for district "${partialHint}" — falling back to plain district query`);
             }
           }
         } catch {
@@ -668,8 +697,8 @@ async function inferPostcodeFromAddress(
       if (res.ok) {
         const json = await res.json() as { status: number; result: { postcode: string }[] | null };
         const results = json.result ?? [];
-        const postcodes = results.map((r) => r.postcode).filter(Boolean);
-        console.log(`[analyse-listing] postcodes.io returned ${postcodes.length} results for ${partialHint}`);
+        const postcodes = filterByPartial(results.map((r) => r.postcode).filter(Boolean));
+        console.log(`[analyse-listing] postcodes.io returned ${postcodes.length} valid results for ${partialHint}`);
 
         if (postcodes.length === 1) {
           // Only one match — use it directly, no need for Claude.
@@ -693,7 +722,7 @@ async function inferPostcodeFromAddress(
               const m = trimmed.match(POSTCODE_RE);
               if (m) {
                 const candidate = normalisePostcode(m[0]);
-                // Only accept it if it's actually in the list postcodes.io returned.
+                // Only accept it if it's actually in the filtered list.
                 if (postcodes.includes(candidate)) {
                   console.log(`[analyse-listing] Claude picked ${candidate} from ${postcodes.length} postcodes.io results`);
                   return candidate;
@@ -711,6 +740,61 @@ async function inferPostcodeFromAddress(
       } // end else (plain district query)
     } catch (err) {
       console.warn("[analyse-listing] postcodes.io lookup failed", err);
+    }
+  }
+
+  // ── Step 1b: no partial postcode — try address-based postcodes.io search ──
+  // Extract "Street Name, Town" from the listing and query postcodes.io text
+  // search (e.g. "Willingdon Park Drive Eastbourne"). Much more reliable than
+  // pure Claude inference.
+  if (!partialHint) {
+    const addressQuery = extractAddressQueryForPostcodesIO(listingContent);
+    if (addressQuery) {
+      try {
+        console.log(`[analyse-listing] no partial postcode — trying address search: "${addressQuery}"`);
+        const ctrl = new AbortController();
+        const timer = setTimeout(() => ctrl.abort(), 8_000);
+        const res = await fetch(
+          `https://api.postcodes.io/postcodes?q=${encodeURIComponent(addressQuery)}&limit=20`,
+          { signal: ctrl.signal },
+        );
+        clearTimeout(timer);
+        if (res.ok) {
+          const json = await res.json() as { result: { postcode: string }[] | null };
+          const postcodes = (json.result ?? []).map((r) => r.postcode).filter(Boolean);
+          console.log(`[analyse-listing] address search "${addressQuery}" → ${postcodes.length} results`);
+          if (postcodes.length === 1) return normalisePostcode(postcodes[0]);
+          if (postcodes.length > 1) {
+            const snippet = listingContent.slice(0, 800);
+            if (ANTHROPIC_API_KEY) {
+              try {
+                const list = postcodes.slice(0, 20).join(", ");
+                const prompt = `A UK property listing has the address "${addressQuery}". The postcodes.io API returned these matching full postcodes: ${list}\n\nListing excerpt (first 800 chars):\n${snippet}\n\nReturn ONLY the single most likely full postcode from the list above based on the street name or location clues in the listing. If you cannot determine which is most likely, return the first one: ${postcodes[0]}. Return ONLY the postcode, nothing else.`;
+                const text = await callClaude(
+                  "You are a UK postcode resolver. Return only one postcode from the provided list.",
+                  prompt,
+                  20,
+                );
+                const trimmed = (text ?? "").trim().toUpperCase();
+                const m = trimmed.match(POSTCODE_RE);
+                if (m) {
+                  const candidate = normalisePostcode(m[0]);
+                  if (postcodes.includes(candidate)) {
+                    console.log(`[analyse-listing] Claude picked ${candidate} from ${postcodes.length} address-search results`);
+                    return candidate;
+                  }
+                }
+              } catch (err) {
+                console.warn("[analyse-listing] Claude address postcode pick failed, using first result", err);
+              }
+            }
+            console.log(`[analyse-listing] using first address-search result: ${postcodes[0]}`);
+            return normalisePostcode(postcodes[0]);
+          }
+        }
+      } catch (err) {
+        console.warn("[analyse-listing] address-based postcodes.io lookup failed", err);
+      }
     }
   }
 

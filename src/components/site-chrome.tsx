@@ -253,6 +253,15 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav className="flex items-center gap-4 sm:gap-6">
+          <Link
+            to="/blog/"
+            style={{ fontSize: 13, color: "#5F5E5A" }}
+            className="hover:text-foreground transition-colors hidden sm:inline"
+            activeProps={{ style: { fontSize: 13, color: "#1A1108" } }}
+            activeOptions={{ includeChildMatches: true }}
+          >
+            Blog
+          </Link>
           {!loggedIn && (
             <Link
               to="/pricing"
@@ -362,6 +371,7 @@ export function SiteFooter() {
             <Link to="/pricing" className="hover:text-[#1A1108] transition-colors">Pricing</Link>
             <Link to="/about" className="hover:text-[#1A1108] transition-colors">About</Link>
             <Link to="/faq" className="hover:text-[#1A1108] transition-colors">FAQ</Link>
+            <Link to="/blog/" className="hover:text-[#1A1108] transition-colors">Blog</Link>
             <Link to="/privacy" className="hover:text-[#1A1108] transition-colors">Privacy</Link>
             <Link to="/terms" className="hover:text-[#1A1108] transition-colors">Terms</Link>
           </div>

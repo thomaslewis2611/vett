@@ -6,6 +6,8 @@ import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { usePassDiscount } from "@/hooks/use-pass-discount";
 import { createCheckoutSession } from "@/lib/checkout.functions";
 
+const PRICE_PASS = "price_1TWtPLCfTT0mXB2cU829oJlb";
+
 export const Route = createFileRoute("/pricing")({
   head: () => ({
     meta: [
@@ -108,16 +110,11 @@ function BuyerPassPlan() {
   const checkoutFn = useServerFn(createCheckoutSession);
   const [loading, setLoading] = useState(false);
 
-  const startDiscountCheckout = async () => {
+  const startCheckout = async (priceId: string, source: string) => {
     setLoading(true);
     try {
       const r = await checkoutFn({
-        data: {
-          priceId: discount.priceId,
-          listingUrl: "",
-          tier: "pass",
-          source: "pricing_page_discount",
-        },
+        data: { priceId, listingUrl: "", tier: "pass", source },
       });
       if (r?.url) window.location.href = r.url;
     } catch {
@@ -145,7 +142,7 @@ function BuyerPassPlan() {
           "All reports saved to dashboard",
         ]}
         footnote="One-off payment. Access ends 90 days after purchase."
-        onClick={startDiscountCheckout}
+        onClick={() => startCheckout(discount.priceId, "pricing_page_discount")}
       />
     );
   }
@@ -156,7 +153,7 @@ function BuyerPassPlan() {
       title="Buyer Pass"
       price="£24.99"
       cadence="90-day pass · one-off payment"
-      cta="Get Buyer Pass"
+      cta={loading ? "Redirecting…" : "Get Buyer Pass"}
       highlight
       headline="Your entire property search, covered"
       plusIntro="Everything in Single Report, plus:"
@@ -167,6 +164,7 @@ function BuyerPassPlan() {
         "All reports saved to dashboard",
       ]}
       footnote="One-off payment. Access ends 90 days after purchase."
+      onClick={() => startCheckout(PRICE_PASS, "pricing_page")}
     />
   );
 }

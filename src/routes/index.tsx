@@ -89,6 +89,100 @@ function SectionHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
+function SingleReportCard({ scrollToTop }: { scrollToTop: () => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const alwaysVisible = [
+    "Full red flag analysis",
+    "Area pricing & true cost breakdown",
+    "Negotiation strategy with recommended offer",
+    "Viewing checklist — specific to this property",
+  ];
+  const expandable = [
+    "Flood risk, schools, EPC, broadband & transport",
+    "Crime statistics",
+    "Renovation estimate",
+    "Seller motivation score",
+    "Local price trends",
+    "Price vs area average",
+    "True cost breakdown",
+    "Side-by-side property comparison",
+    "All reports saved to dashboard",
+  ];
+  return (
+    <div
+      style={{
+        background: COLORS.card,
+        border: `0.5px solid ${COLORS.border}`,
+        borderRadius: 20,
+        padding: 32,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div className="uppercase" style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.veryMuted }}>
+        Single Report
+      </div>
+      <div
+        className="mt-3"
+        style={{ fontFamily: HEADING_FONT, fontSize: 44, fontWeight: 400, color: COLORS.dark, letterSpacing: "-1px", lineHeight: 1 }}
+      >
+        £4.99
+      </div>
+      <div className="mt-2" style={{ fontSize: 12, color: COLORS.veryMuted }}>
+        One property · one-off payment
+      </div>
+      <ul className="mt-6 flex flex-col gap-3" style={{ flex: 1 }}>
+        {alwaysVisible.map((f) => (
+          <li key={f} className="flex items-center gap-3" style={{ fontSize: 13, color: COLORS.muted }}>
+            <span
+              className="inline-flex items-center justify-center"
+              style={{ width: 16, height: 16, borderRadius: 999, background: COLORS.greenTint }}
+            >
+              <Check className="h-2.5 w-2.5" style={{ color: COLORS.green }} />
+            </span>
+            {f}
+          </li>
+        ))}
+        {expanded && expandable.map((f) => (
+          <li key={f} className="flex items-center gap-3" style={{ fontSize: 13, color: COLORS.muted }}>
+            <span
+              className="inline-flex items-center justify-center"
+              style={{ width: 16, height: 16, borderRadius: 999, background: COLORS.greenTint }}
+            >
+              <Check className="h-2.5 w-2.5" style={{ color: COLORS.green }} />
+            </span>
+            {f}
+          </li>
+        ))}
+      </ul>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="mt-4 text-left hover:opacity-70 transition-opacity"
+        style={{ fontSize: 12, color: COLORS.green, fontWeight: 500, background: "none", border: "none", padding: 0, cursor: "pointer" }}
+      >
+        {expanded ? "Show less ↑" : "Show all 16 checks ↓"}
+      </button>
+      <button
+        type="button"
+        onClick={scrollToTop}
+        className="mt-6 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
+        style={{
+          background: COLORS.dark,
+          color: COLORS.card,
+          fontSize: 13,
+          fontWeight: 500,
+          borderRadius: 100,
+          padding: "12px 24px",
+          border: 0,
+        }}
+      >
+        Single report — £4.99
+      </button>
+    </div>
+  );
+}
+
 function Index() {
   const navigate = useNavigate();
   const [url, setUrl] = useState("");
@@ -347,7 +441,7 @@ function Index() {
           style={{
             display: "flex",
             width: "max-content",
-            animation: "vettTickerScroll 35s linear infinite",
+            animation: "vettTickerScroll 22s linear infinite",
           }}
         >
           {[0, 1].map((dup) => (
@@ -362,14 +456,14 @@ function Index() {
               }}
             >
               {[
-                "Epping CM16 · £516/sqft · 7.7% below area avg",
-                "Woodford Green IG8 · £539/sqft · 79 days on market",
-                "Walthamstow E17 · £839/sqft · 10.4% above area avg",
-                "Epping CM16 · Score 8.0 · Good Buy",
-                "Woodford Green IG8 · Score 7.8 · Good Buy",
-                "Chingford E4 · £425/sqft · 3 red flags found",
-                "Epping CM16 · £524/sqft · 19.1% below area avg",
-                "Walthamstow E17 · Score 6.8 · Solid with Caveats",
+                "CM16  ·  8.0  ·  Good Buy  ·  7.7% below area",
+                "IG8  ·  6.8  ·  Solid with Caveats  ·  £539/sqft",
+                "E17  ·  7.4  ·  Good Buy  ·  10.4% above area",
+                "E4  ·  6.2  ·  Caveats  ·  3 red flags",
+                "CM16  ·  8.6  ·  Strong Buy  ·  £475/sqft",
+                "E17  ·  7.1  ·  Solid  ·  £419/sqft",
+                "IG8  ·  6.4  ·  Caveats  ·  Lease drops below 80yr",
+                "CM16  ·  8.2  ·  Good Buy  ·  19.1% below area",
               ].map((item, i) => (
                 <span
                   key={`${dup}-${i}`}
@@ -383,7 +477,7 @@ function Index() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  <span style={{ color: COLORS.green }}>●</span>
+                  <span style={{ fontFamily: HEADING_FONT, fontWeight: 700, fontSize: 13, color: "rgba(95,94,90,0.55)", letterSpacing: "-0.5px" }}>vett</span>
                   {item}
                 </span>
               ))}
@@ -484,16 +578,11 @@ function Index() {
       <hr style={{ border: "none", borderTop: "0.5px solid rgba(26,17,8,0.1)", margin: 0 }} />
 
       {/* 4. WHAT'S INCLUDED */}
-      <section className="mx-auto px-6" style={{ maxWidth: 960, padding: "80px 24px" }}>
+      <section className="mx-auto px-6" style={{ maxWidth: 1100, padding: "80px 24px" }}>
         <div className="text-center">
           <div
             className="uppercase"
-            style={{
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: "0.1em",
-              color: COLORS.green,
-            }}
+            style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.green }}
           >
             What's included
           </div>
@@ -508,91 +597,100 @@ function Index() {
               lineHeight: 1.15,
             }}
           >
-            Everything you need to know before you offer.
+            Sixteen ways to read between the lines.
           </h2>
+          <p
+            className="mt-4 mx-auto"
+            style={{ fontSize: 14, color: COLORS.muted, fontWeight: 300, lineHeight: 1.6, maxWidth: 520 }}
+          >
+            Grouped by the question you're actually asking when you stand outside the front door.
+          </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-2 md:grid-cols-4" style={{ gap: 16 }}>
+        <div className="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4" style={{ gap: 16 }}>
           {[
             {
-              icon: AlertTriangle,
-              title: "Full red flag analysis",
-              body: "Every risk identified and explained, ranked by severity",
+              eyebrow: "Pricing & cost",
+              title: "Will I get my money's worth?",
+              items: [
+                { icon: BarChart3, label: "Area pricing analysis" },
+                { icon: TrendingUp, label: "Local price trends" },
+                { icon: PoundSterling, label: "True cost breakdown" },
+                { icon: MessageSquare, label: "Negotiation strategy" },
+              ],
             },
             {
-              icon: Zap,
-              title: "EPC analysis",
-              body: "Energy rating, estimated annual costs and upgrade recommendations",
+              eyebrow: "Hidden problems",
+              title: "Where's the risk?",
+              items: [
+                { icon: AlertTriangle, label: "Red flag analysis" },
+                { icon: Zap, label: "EPC analysis" },
+                { icon: Droplets, label: "Flood risk" },
+                { icon: Wrench, label: "Renovation estimate" },
+                { icon: UserCheck, label: "Seller motivation" },
+              ],
             },
             {
-              icon: BarChart3,
-              title: "Area pricing analysis",
-              body: "Local £/sqft data so you know if the price is fair",
+              eyebrow: "Neighbourhood",
+              title: "Will I want to live here?",
+              items: [
+                { icon: GraduationCap, label: "Schools — Ofsted" },
+                { icon: Shield, label: "Crime statistics" },
+                { icon: Wifi, label: "Broadband speed" },
+                { icon: Train, label: "Transport — PTAL" },
+              ],
             },
             {
-              icon: TrendingUp,
-              title: "Local price trends",
-              body: "1yr, 3yr and 5yr price movement in the local area",
+              eyebrow: "Action plan",
+              title: "What now?",
+              items: [
+                { icon: ClipboardCheck, label: "Viewing checklist" },
+                { icon: ListChecks, label: "Recommended next steps" },
+                { icon: MessageCircle, label: "AI chat — Buyer Pass" },
+              ],
             },
-            {
-              icon: PoundSterling,
-              title: "True cost breakdown",
-              body: "Every cost including stamp duty, surveys and legal fees",
-            },
-            {
-              icon: MessageSquare,
-              title: "Negotiation strategy",
-              body: "A recommended offer range with specific leverage points",
-            },
-            {
-              icon: ClipboardCheck,
-              title: "Viewing checklist",
-              body: "Property-specific questions and checks for the day",
-            },
-            {
-              icon: Wrench,
-              title: "Renovation cost estimator",
-              body: "Estimated costs for any work identified in the listing",
-            },
-            { icon: UserCheck, title: "Seller motivation score", body: "How urgently the seller needs to move" },
-            { icon: Droplets, title: "Flood risk assessment", body: "Environment Agency data for this exact postcode" },
-            {
-              icon: GraduationCap,
-              title: "Nearby schools",
-              body: "Local primary and secondary schools with Ofsted ratings",
-            },
-            { icon: Shield, title: "Crime statistics", body: "Crime levels recorded within 1 mile of the property" },
-            { icon: Wifi, title: "Broadband & connectivity", body: "Download speeds and full fibre availability" },
-            { icon: Train, title: "Transport links", body: "PTAL accessibility score for London properties" },
-            { icon: ListChecks, title: "Recommended next steps", body: "Exactly what to do next, in priority order" },
-            { icon: MessageCircle, title: "AI chat", body: "Ask anything about the property — Buyer Pass only" },
-          ].map((f) => (
+          ].map((card) => (
             <div
-              key={f.title}
+              key={card.eyebrow}
               style={{
-                background: "#FFFDF9",
+                background: COLORS.card,
                 border: `0.5px solid ${COLORS.border}`,
                 borderRadius: 20,
-                padding: 16,
+                padding: 24,
               }}
             >
               <div
-                className="flex items-center justify-center"
+                className="uppercase"
+                style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.08em", color: COLORS.green, marginBottom: 10 }}
+              >
+                {card.eyebrow}
+              </div>
+              <h3
                 style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 8,
-                  background: COLORS.greenTint,
+                  fontFamily: HEADING_FONT,
+                  fontSize: 18,
+                  fontWeight: 400,
+                  color: COLORS.dark,
+                  letterSpacing: "-0.3px",
+                  lineHeight: 1.2,
+                  marginBottom: 20,
                 }}
               >
-                <f.icon className="h-4 w-4" style={{ color: COLORS.green }} />
-              </div>
-              <h3 className="mt-5" style={{ fontSize: 14, fontWeight: 500, color: COLORS.dark }}>
-                {f.title}
+                {card.title}
               </h3>
-              <p className="mt-2" style={{ fontSize: 12, fontWeight: 300, color: COLORS.muted, lineHeight: 1.6 }}>
-                {f.body}
-              </p>
+              <div className="flex flex-col gap-3">
+                {card.items.map(({ icon: Icon, label }) => (
+                  <div key={label} className="flex items-center gap-3">
+                    <div
+                      className="flex items-center justify-center shrink-0"
+                      style={{ width: 28, height: 28, borderRadius: 7, background: COLORS.greenTint }}
+                    >
+                      <Icon className="h-3.5 w-3.5" style={{ color: COLORS.green }} />
+                    </div>
+                    <span style={{ fontSize: 13, color: COLORS.muted, fontWeight: 300 }}>{label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           ))}
         </div>
@@ -675,16 +773,11 @@ function Index() {
       <hr style={{ border: "none", borderTop: "0.5px solid rgba(26,17,8,0.1)", margin: 0 }} />
 
       {/* 7. PRICING */}
-      <section style={{ background: "#1a2820", padding: "80px 24px" }}>
+      <section style={{ background: COLORS.bg, padding: "80px 24px" }}>
         <div className="mx-auto text-center" style={{ maxWidth: 800 }}>
           <div
             className="uppercase"
-            style={{
-              fontSize: 11,
-              fontWeight: 500,
-              letterSpacing: "0.1em",
-              color: COLORS.greenLight,
-            }}
+            style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.green }}
           >
             Pricing
           </div>
@@ -694,190 +787,57 @@ function Index() {
               fontFamily: HEADING_FONT,
               fontSize: "clamp(28px, 4vw, 38px)",
               fontWeight: 400,
-              color: COLORS.bg,
+              color: COLORS.dark,
               letterSpacing: "-0.5px",
               lineHeight: 1.15,
             }}
           >
-            Simple, honest pricing
+            Simple, honest pricing.
           </h2>
-          <p
-            className="mx-auto mt-5"
-            style={{ fontSize: 15, fontWeight: 300, color: "rgba(241,239,232,0.7)", lineHeight: 1.6 }}
-          >
+          <p className="mx-auto mt-4" style={{ fontSize: 15, fontWeight: 300, color: COLORS.muted, lineHeight: 1.6 }}>
             One-time payments. No auto-renewals, no hidden fees.
           </p>
         </div>
 
         <div className="mx-auto mt-12 grid grid-cols-1 md:grid-cols-2" style={{ maxWidth: 800, gap: 16 }}>
           {/* Single Report */}
-          <div
-            style={{
-              background: "rgba(255,255,255,0.06)",
-              border: "0.5px solid rgba(241,239,232,0.15)",
-              borderRadius: 16,
-              padding: 32,
-            }}
-          >
-            <div
-              className="uppercase"
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                color: "rgba(241,239,232,0.45)",
-              }}
-            >
-              Single Report
-            </div>
-            <div
-              className="mt-3"
-              style={{
-                fontFamily: HEADING_FONT,
-                fontSize: 44,
-                fontWeight: 400,
-                color: COLORS.bg,
-                letterSpacing: "-1px",
-                lineHeight: 1,
-              }}
-            >
-              £4.99
-            </div>
-            <div className="mt-2" style={{ fontSize: 12, color: "rgba(241,239,232,0.35)" }}>
-              One property · one-off payment
-            </div>
-            <ul className="mt-6 flex flex-col gap-3">
-              {[
-                "Full analysis with all red flags",
-                "EPC analysis",
-                "Area pricing analysis",
-                "Local price trends",
-                "True cost breakdown and stamp duty",
-                "Negotiation strategy and recommended offer",
-                "Viewing checklist — specific to this property",
-                "Renovation cost estimator",
-                "Seller motivation score",
-                "Flood risk assessment",
-                "Nearby schools with Ofsted ratings",
-                "Crime statistics",
-                "Broadband and internet speed",
-                "Transport links (London properties only)",
-                "Recommended next steps",
-                "Report saved to your account",
-                "Email your report to you",
-              ].map((f) => (
-                <li
-                  key={f}
-                  className="flex items-center gap-3"
-                  style={{ fontSize: 13, color: "rgba(241,239,232,0.65)" }}
-                >
-                  <span
-                    className="inline-flex items-center justify-center"
-                    style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: 999,
-                      background: "rgba(255,255,255,0.08)",
-                    }}
-                  >
-                    <Check className="h-2.5 w-2.5" style={{ color: "rgba(241,239,232,0.7)" }} />
-                  </span>
-                  {f}
-                </li>
-              ))}
-            </ul>
-            <button
-              type="button"
-              onClick={scrollToTop}
-              className="mt-8 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
-              style={{
-                background: "transparent",
-                border: "0.5px solid rgba(241,239,232,0.25)",
-                color: COLORS.bg,
-                fontSize: 13,
-                fontWeight: 500,
-                borderRadius: 100,
-                padding: "12px 24px",
-              }}
-            >
-              Get this report
-            </button>
-          </div>
+          <SingleReportCard scrollToTop={scrollToTop} />
 
           {/* Buyer Pass */}
           <div
-            className="relative"
             style={{
-              background: COLORS.green,
-              borderRadius: 16,
+              background: COLORS.card,
+              border: `1px solid ${COLORS.green}`,
+              borderRadius: 20,
               padding: 32,
+              display: "flex",
+              flexDirection: "column",
             }}
           >
-            <div
-              className="absolute left-1/2 -translate-x-1/2 uppercase"
-              style={{
-                top: -12,
-                background: COLORS.bg,
-                color: COLORS.dark,
-                fontSize: 10,
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                borderRadius: 100,
-                padding: "5px 12px",
-              }}
-            >
-              Most popular
-            </div>
-            <div
-              className="uppercase"
-              style={{
-                fontSize: 11,
-                fontWeight: 500,
-                letterSpacing: "0.1em",
-                color: "rgba(241,239,232,0.55)",
-              }}
-            >
+            <div className="uppercase" style={{ fontSize: 11, fontWeight: 500, letterSpacing: "0.1em", color: COLORS.veryMuted }}>
               Buyer Pass
             </div>
             <div
               className="mt-3"
-              style={{
-                fontFamily: HEADING_FONT,
-                fontSize: 44,
-                fontWeight: 400,
-                color: COLORS.bg,
-                letterSpacing: "-1px",
-                lineHeight: 1,
-              }}
+              style={{ fontFamily: HEADING_FONT, fontSize: 44, fontWeight: 400, color: COLORS.dark, letterSpacing: "-1px", lineHeight: 1 }}
             >
               £24.99
             </div>
-            <div className="mt-2" style={{ fontSize: 12, color: "rgba(241,239,232,0.45)" }}>
+            <div className="mt-2" style={{ fontSize: 12, color: COLORS.veryMuted }}>
               90 days · unlimited analyses
             </div>
-            <ul className="mt-6 flex flex-col gap-3">
+            <ul className="mt-6 flex flex-col gap-3" style={{ flex: 1 }}>
               {[
                 "Everything in Single Report",
                 "Unlimited analyses for 90 days",
                 "AI chat on every property",
-                "Side-by-side property comparison with AI verdict",
-                "All reports saved to dashboard",
               ].map((f) => (
-                <li
-                  key={f}
-                  className="flex items-center gap-3"
-                  style={{ fontSize: 13, color: "rgba(241,239,232,0.85)" }}
-                >
+                <li key={f} className="flex items-center gap-3" style={{ fontSize: 13, color: COLORS.muted }}>
                   <span
                     className="inline-flex items-center justify-center"
-                    style={{
-                      width: 16,
-                      height: 16,
-                      borderRadius: 999,
-                      background: "rgba(255,255,255,0.2)",
-                    }}
+                    style={{ width: 16, height: 16, borderRadius: 999, background: COLORS.greenTint }}
                   >
-                    <Check className="h-2.5 w-2.5" style={{ color: COLORS.bg }} />
+                    <Check className="h-2.5 w-2.5" style={{ color: COLORS.green }} />
                   </span>
                   {f}
                 </li>
@@ -888,12 +848,13 @@ function Index() {
               onClick={() => navigate({ to: "/pricing" })}
               className="mt-8 inline-flex w-full items-center justify-center transition-opacity hover:opacity-90"
               style={{
-                background: COLORS.bg,
-                color: COLORS.dark,
+                background: COLORS.green,
+                color: COLORS.card,
                 fontSize: 13,
                 fontWeight: 500,
                 borderRadius: 100,
                 padding: "12px 24px",
+                border: 0,
               }}
             >
               Get Buyer Pass
