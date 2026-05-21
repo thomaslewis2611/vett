@@ -372,7 +372,7 @@ function Index() {
             </form>
 
             <a
-              href="https://vetthome.com/report/c462872f03a8353e41cd696c791d0a4a"
+              href="https://vetthome.com/report/8ae40e8c-5d4d-4426-bf5c-92e4d073f439"
               target="_blank"
               rel="noopener noreferrer"
               style={{
@@ -560,7 +560,7 @@ function Index() {
         <p style={{ fontSize: 13, color: "#5F5E5A", marginTop: -24, marginBottom: 16, textAlign: "center" }}>
           Condensed previews shown below.{" "}
           <a
-            href="https://vetthome.com/report/c462872f03a8353e41cd696c791d0a4a"
+            href="https://vetthome.com/report/e4823c81-5ca4-41f3-bd08-a8a08f344106"
             target="_blank"
             rel="noopener noreferrer"
             style={{ color: "#2D6A4F", textDecoration: "underline" }}
