@@ -6,7 +6,7 @@ export const SITE_URL = "https://vetthome.com";
 export const SITE_NAME = "vett";
 export const SITE_DESCRIPTION =
   "AI-powered property analysis for UK home buyers. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.";
-export const SITE_LOGO_URL = `${SITE_URL}/favicon.svg`;
+export const SITE_LOGO_URL = `${SITE_URL}/logo.png`;
 export const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 export const TWITTER_HANDLE = "@vett";
 
