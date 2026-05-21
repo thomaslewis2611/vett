@@ -1,4 +1,5 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useState, type CSSProperties } from "react";
 import { getPostBySlug, getRelatedPosts, formatDate, type Post } from "@/lib/blog";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 
@@ -104,6 +105,94 @@ const proseStyles = `
   .vett-prose tr:last-child td { border-bottom: none; }
 `;
 
+function CoverImage({
+  src,
+  alt,
+  title,
+  style,
+}: {
+  src: string;
+  alt: string;
+  title: string;
+  style?: CSSProperties;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div
+        style={{
+          width: "100%",
+          background: C.bg,
+          borderRadius: 16,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "48px 24px",
+          marginBottom: 48,
+          ...style,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: HEADING,
+            fontSize: "clamp(20px, 3vw, 28px)",
+            color: C.green,
+            textAlign: "center",
+            lineHeight: 1.3,
+          }}
+        >
+          {title}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="eager"
+      width={720}
+      height={400}
+      onError={() => setFailed(true)}
+      style={{ width: "100%", height: "auto", borderRadius: 16, display: "block", marginBottom: 48, ...style }}
+    />
+  );
+}
+
+function RelatedCover({ src, alt, title }: { src: string; alt: string; title: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div
+        style={{
+          width: "100%",
+          height: 160,
+          background: C.bg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0 16px",
+        }}
+      >
+        <span style={{ fontFamily: HEADING, fontSize: 13, color: C.green, textAlign: "center", lineHeight: 1.35 }}>
+          {title}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      width={360}
+      height={200}
+      onError={() => setFailed(true)}
+      style={{ width: "100%", height: 160, objectFit: "cover" }}
+    />
+  );
+}
+
 function RelatedCard({ post }: { post: Post }) {
   return (
     <Link
@@ -121,14 +210,7 @@ function RelatedCard({ post }: { post: Post }) {
       }}
       className="hover:opacity-90 transition-opacity"
     >
-      <img
-        src={post.coverImage}
-        alt={post.coverImageAlt}
-        loading="lazy"
-        width={360}
-        height={200}
-        style={{ width: "100%", height: 160, objectFit: "cover" }}
-      />
+      <RelatedCover src={post.coverImage} alt={post.coverImageAlt} title={post.title} />
       <div style={{ padding: "16px 20px", display: "flex", flexDirection: "column", gap: 8 }}>
         <span
           style={{
@@ -267,14 +349,7 @@ function BlogPost() {
 
           {/* Cover image */}
           <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 24px" }}>
-            <img
-              src={post.coverImage}
-              alt={post.coverImageAlt}
-              loading="eager"
-              width={720}
-              height={400}
-              style={{ width: "100%", height: "auto", borderRadius: 16, display: "block", marginBottom: 48 }}
-            />
+            <CoverImage src={post.coverImage} alt={post.coverImageAlt} title={post.title} />
           </div>
 
           {/* MDX content */}

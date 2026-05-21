@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { getAllPosts, formatDate, type Post } from "@/lib/blog";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 
@@ -36,6 +37,59 @@ const C = {
   border: "rgba(26,17,8,0.12)",
 };
 
+function CoverImage({
+  src,
+  alt,
+  title,
+  height,
+  eager,
+}: {
+  src: string;
+  alt: string;
+  title: string;
+  height: number;
+  eager?: boolean;
+}) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return (
+      <div
+        style={{
+          width: "100%",
+          height,
+          background: C.bg,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: "0 20px",
+          flexShrink: 0,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: HEADING,
+            fontSize: 15,
+            color: C.green,
+            textAlign: "center",
+            lineHeight: 1.35,
+          }}
+        >
+          {title}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading={eager ? "eager" : "lazy"}
+      onError={() => setFailed(true)}
+      style={{ width: "100%", height, objectFit: "cover", display: "block" }}
+    />
+  );
+}
+
 function PostCard({ post, featured = false }: { post: Post; featured?: boolean }) {
   return (
     <Link
@@ -55,18 +109,12 @@ function PostCard({ post, featured = false }: { post: Post; featured?: boolean }
       className="hover:opacity-90"
     >
       <div style={{ flex: featured ? "0 0 50%" : undefined, position: "relative" }}>
-        <img
+        <CoverImage
           src={post.coverImage}
           alt={post.coverImageAlt}
-          loading={featured ? "eager" : "lazy"}
-          width={featured ? 640 : 400}
-          height={featured ? 400 : 240}
-          style={{
-            width: "100%",
-            height: featured ? 340 : 200,
-            objectFit: "cover",
-            display: "block",
-          }}
+          title={post.title}
+          height={featured ? 340 : 200}
+          eager={featured}
         />
       </div>
       <div style={{ padding: featured ? 36 : 24, display: "flex", flexDirection: "column", gap: 12, flex: 1 }}>
