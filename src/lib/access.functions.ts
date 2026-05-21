@@ -35,9 +35,7 @@ export const checkBuyerPassByEmail = createServerFn({ method: "POST" })
         .ilike("email", data.email)
         .maybeSingle();
       if (!row) return { hasPass: false, expired: false, expiresAt: null };
-      const expiresAt =
-        (row as { expires_at: string | null }).expires_at ??
-        (row as { activated_at: string }).activated_at;
+      const expiresAt = (row as { expires_at: string | null }).expires_at;
       const expired = expiresAt ? new Date(expiresAt).getTime() <= Date.now() : false;
       return { hasPass: !expired, expired, expiresAt };
     }

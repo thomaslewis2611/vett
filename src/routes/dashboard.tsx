@@ -85,9 +85,7 @@ function DashboardPage() {
         navigate({ to: "/" });
         return;
       }
-      const expiresRaw =
-        (bp as { expires_at: string | null }).expires_at ??
-        (bp as { activated_at: string }).activated_at;
+      const expiresRaw = (bp as { expires_at: string | null }).expires_at;
       const exp = expiresRaw ? new Date(expiresRaw) : null;
       setExpiresAt(exp);
       let nextPassStatus: PassStatus = "active";
@@ -104,6 +102,7 @@ function DashboardPage() {
       const { data: saved, error: savedError } = await supabase
         .from("saved_analyses")
         .select("id, listing_url, analysis_json, created_at, is_pinned, pinned_at")
+        .ilike("user_email", userEmail)
         .order("created_at", { ascending: false });
 
       // Also pull any Single Report tokens the user has purchased. Match on

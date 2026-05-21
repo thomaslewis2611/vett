@@ -2846,8 +2846,23 @@ export const fetchBuyerPassExtras = createServerFn({ method: "POST" })
           }
         : null;
 
-      // 6. Patch the saved analysis row (admin client bypasses RLS).
-      const merged: AnalysisResult = { ...analysis, floodRisk, nearbySchools, crime, broadband, transport };
+      // 6. Patch the saved analysis row — only overwrite with fresh data when it's
+      // better than what's already stored (non-null and not marked unavailable).
+      function pickBetterLocal<T extends { unavailable?: boolean | null }>(
+        fresh: T | null | undefined,
+        fallback: T | null | undefined,
+      ): T | null | undefined {
+        if (!fresh || fresh.unavailable) return fallback ?? fresh;
+        return fresh;
+      }
+      const merged: AnalysisResult = {
+        ...analysis,
+        floodRisk: pickBetterLocal(floodRisk, analysis.floodRisk),
+        nearbySchools: pickBetterLocal(nearbySchools, analysis.nearbySchools),
+        crime: pickBetterLocal(crime, analysis.crime),
+        broadband: pickBetterLocal(broadband, analysis.broadband),
+        transport: transport ?? analysis.transport,
+      };
       try {
         await supabaseAdmin
           .from("saved_analyses")
@@ -3003,13 +3018,20 @@ export const refetchLocalDataForPostcode = createServerFn({ method: "POST" })
           }
         : null;
 
+      function pickBetterLocal<T extends { unavailable?: boolean | null }>(
+        fresh: T | null | undefined,
+        fallback: T | null | undefined,
+      ): T | null | undefined {
+        if (!fresh || fresh.unavailable) return fallback ?? fresh;
+        return fresh;
+      }
       const merged: AnalysisResult = {
         ...existing,
         postcode: postcode,
-        floodRisk: floodRisk ?? existing.floodRisk,
-        nearbySchools: nearbySchools ?? existing.nearbySchools,
-        crime: crime ?? existing.crime,
-        broadband: broadband ?? existing.broadband,
+        floodRisk: pickBetterLocal(floodRisk, existing.floodRisk),
+        nearbySchools: pickBetterLocal(nearbySchools, existing.nearbySchools),
+        crime: pickBetterLocal(crime, existing.crime),
+        broadband: pickBetterLocal(broadband, existing.broadband),
         partialPostcode: null,
       };
       try {

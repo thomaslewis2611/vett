@@ -562,6 +562,27 @@ function extractPartialPostcode(text: string): string | null {
   return m ? m[1].toUpperCase().trim() : null;
 }
 
+// Look at the comma-separated components immediately before the partial postcode
+// in the listing text and return the nearest that looks like a town/village name.
+// Used to build a locality-aware postcodes.io query (e.g. "Bathford BA1" instead
+// of just "BA1") so the returned postcode list is sector-specific rather than
+// covering the entire district.
+function extractLocalityNearPartialPostcode(text: string, partial: string): string | null {
+  const escaped = partial.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const idx = text.search(new RegExp(`\\b${escaped}\\b`, "i"));
+  if (idx === -1) return null;
+  const before = text.slice(Math.max(0, idx - 300), idx);
+  const parts = before.split(/[,|\n\r]+/).map((s) => s.trim()).filter(Boolean);
+  for (let i = parts.length - 1; i >= 0; i--) {
+    const part = parts[i];
+    // Accept: purely alphabetic + spaces/hyphens/apostrophes, 2–25 chars, no leading digit.
+    if (part.length >= 2 && part.length <= 25 && /^[A-Za-z][A-Za-z\s''-]*$/.test(part)) {
+      return part;
+    }
+  }
+  return null;
+}
+
 // Resolve a partial outward code (e.g. "BN21") to a full postcode via
 // postcodes.io, then use Claude to pick the best match when a street address
 // is present in the listing. Falls back to the first postcodes.io result if
@@ -571,12 +592,76 @@ async function inferPostcodeFromAddress(
   partialHint: string | null,
 ): Promise<string | null> {
   // ── Step 1: query postcodes.io with the partial outward code ──────────────
+  // When the listing address contains a recognisable town/village name we try a
+  // locality-aware query first (e.g. "Bathford BA1") which narrows results to
+  // the correct sector rather than returning 100 postcodes across the whole
+  // district. We fall back to the plain district query if that yields nothing.
   if (partialHint) {
     try {
+      const locality = extractLocalityNearPartialPostcode(listingContent, partialHint);
+      let queryStr = partialHint;
+      let narrowed = false;
+      if (locality) {
+        const narrowCtrl = new AbortController();
+        const narrowTimer = setTimeout(() => narrowCtrl.abort(), 6_000);
+        try {
+          const narrowRes = await fetch(
+            `https://api.postcodes.io/postcodes?q=${encodeURIComponent(`${locality} ${partialHint}`)}&limit=20`,
+            { signal: narrowCtrl.signal },
+          );
+          clearTimeout(narrowTimer);
+          if (narrowRes.ok) {
+            const narrowJson = await narrowRes.json() as { result: { postcode: string }[] | null };
+            const narrowCodes = (narrowJson.result ?? []).map((r) => r.postcode).filter(Boolean);
+            if (narrowCodes.length > 0) {
+              console.log(`[analyse-listing] postcodes.io locality query "${locality} ${partialHint}" → ${narrowCodes.length} results`);
+              queryStr = `${locality} ${partialHint}`;
+              narrowed = true;
+              // Reuse narrowCodes directly — skip the broad fallback fetch below
+              const postcodes = narrowCodes;
+              if (postcodes.length === 1) return normalisePostcode(postcodes[0]);
+              if (postcodes.length > 1) {
+                const snippet = listingContent.slice(0, 800);
+                if (ANTHROPIC_API_KEY) {
+                  try {
+                    const list = postcodes.slice(0, 20).join(", ");
+                    const prompt = `A UK property listing contains the partial postcode "${partialHint}" near "${locality}". The postcodes.io API returned these matching full postcodes: ${list}\n\nListing excerpt (first 800 chars):\n${snippet}\n\nReturn ONLY the single most likely full postcode from the list above based on the street name or location clues in the listing. If you cannot determine which is most likely, return the first one: ${postcodes[0]}. Return ONLY the postcode, nothing else.`;
+                    const text = await callClaude(
+                      "You are a UK postcode resolver. Return only one postcode from the provided list.",
+                      prompt,
+                      20,
+                    );
+                    const trimmed = (text ?? "").trim().toUpperCase();
+                    const m = trimmed.match(POSTCODE_RE);
+                    if (m) {
+                      const candidate = normalisePostcode(m[0]);
+                      if (postcodes.includes(candidate)) {
+                        console.log(`[analyse-listing] Claude picked ${candidate} from ${postcodes.length} locality-narrowed postcodes`);
+                        return candidate;
+                      }
+                    }
+                  } catch (err) {
+                    console.warn("[analyse-listing] Claude locality postcode pick failed, using first result", err);
+                  }
+                }
+                console.log(`[analyse-listing] using first locality-narrowed result: ${postcodes[0]}`);
+                return normalisePostcode(postcodes[0]);
+              }
+            } else {
+              console.log(`[analyse-listing] locality query "${locality} ${partialHint}" returned 0 results — falling back to plain district query`);
+            }
+          }
+        } catch {
+          clearTimeout(narrowTimer);
+        }
+      }
+      if (narrowed) {
+        // Already returned above; this branch is unreachable but satisfies linting.
+      } else {
       const ctrl = new AbortController();
       const timer = setTimeout(() => ctrl.abort(), 8_000);
       const res = await fetch(
-        `https://api.postcodes.io/postcodes?q=${encodeURIComponent(partialHint)}&limit=100`,
+        `https://api.postcodes.io/postcodes?q=${encodeURIComponent(queryStr)}&limit=100`,
         { signal: ctrl.signal },
       );
       clearTimeout(timer);
@@ -623,6 +708,7 @@ async function inferPostcodeFromAddress(
           return normalisePostcode(postcodes[0]);
         }
       }
+      } // end else (plain district query)
     } catch (err) {
       console.warn("[analyse-listing] postcodes.io lookup failed", err);
     }
@@ -1137,9 +1223,9 @@ function mapPdPtal(raw: any) {
   };
 }
 
-// PropertyData /prices-per-sqf or /sold-prices-per-sqf → { average, low, high } in £/sqft.
+// PropertyData /prices-per-sqf or /sold-prices-per-sqf → { average, low, high, points, radiusMiles } in £/sqft.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapPdPpsf(raw: any): { average: number; low: number | null; high: number | null; points: number | null } | null {
+function mapPdPpsf(raw: any): { average: number; low: number | null; high: number | null; points: number | null; radiusMiles: number | null } | null {
   if (!raw || raw.status !== "success") return null;
   const d = raw.data ?? raw;
   if (!d) return null;
@@ -1154,6 +1240,7 @@ function mapPdPpsf(raw: any): { average: number; low: number | null; high: numbe
     low: num(d.low ?? d.min ?? d.ppsf_low),
     high: num(d.high ?? d.max ?? d.ppsf_high),
     points: num(d.points_analysed ?? d.points ?? d.transactions),
+    radiusMiles: num(d.radius),
   };
 }
 
@@ -1198,7 +1285,7 @@ ${JSON.stringify(pdData(pd["schools"]) || [])}
 LIVE LOCAL ASKING £/SQFT (current market — use as secondary reference):
 ${JSON.stringify(mapPdPpsf(pd["prices-per-sqf"]) || null)}
 
-LOCAL SOLD £/SQFT (most recent sold transactions — USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this). If this is null but the SOLD PRICES array above has entries, estimate avgPricePerSqFtArea yourself by dividing the average of those recent sold prices by a sensible typical sqft for the property type (flats ~850, terraced ~1100, semi-detached ~1300, detached ~1600) and explain in comparableNote that it is estimated from sold prices because exact £/sqft data wasn't available:
+LOCAL SOLD £/SQFT (most recent sold transactions — USE AS THE PRIMARY avgPricePerSqFtArea figure when available, and base priceVsAreaPercent on this). The "radiusMiles" field is the geographic radius of PropertyData's search — when present, include "Based on {points} sales within {radiusMiles} miles" in comparableNote so buyers know how local the benchmark is. If this is null but the SOLD PRICES array above has entries, estimate avgPricePerSqFtArea yourself by dividing the average of those recent sold prices by a sensible typical sqft for the property type (flats ~850, terraced ~1100, semi-detached ~1300, detached ~1600) and explain in comparableNote that it is estimated from sold prices because exact £/sqft data wasn't available:
 ${JSON.stringify(mapPdPpsf(pd["sold-prices-per-sqf"]) || null)}
 `;
 }
@@ -1502,6 +1589,14 @@ async function runJob(
         ac.priceVsAreaPercent = Math.round(
           ((propPpsf - mappedSoldPricesPerSqf.average) / mappedSoldPricesPerSqf.average) * 1000,
         ) / 10;
+      }
+      // Ensure comparableNote always contains the geographic scope of the benchmark.
+      if (mappedSoldPricesPerSqf.radiusMiles && mappedSoldPricesPerSqf.points) {
+        const existingNote = typeof ac.comparableNote === "string" ? ac.comparableNote : "";
+        const radiusNote = `Based on ${mappedSoldPricesPerSqf.points} sales within ${mappedSoldPricesPerSqf.radiusMiles} miles.`;
+        if (!existingNote.toLowerCase().includes("miles")) {
+          ac.comparableNote = existingNote ? `${existingNote} ${radiusNote}` : radiusNote;
+        }
       }
       parsed.areaContext = ac;
     } else {

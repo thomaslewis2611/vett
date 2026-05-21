@@ -276,8 +276,14 @@ Deno.serve(async (req) => {
       let resolvedUserId: string | null = null;
       if (normalizedEmail) {
         try {
-          const { data } = await supabase.auth.admin.getUserByEmail(normalizedEmail);
-          resolvedUserId = data.user?.id ?? null;
+          const adminRes = await fetch(
+            `${supabaseUrl}/auth/v1/admin/users?email=${encodeURIComponent(normalizedEmail)}&per_page=1`,
+            { headers: { apikey: supabaseServiceKey, Authorization: `Bearer ${supabaseServiceKey}` } },
+          );
+          if (adminRes.ok) {
+            const adminData = await adminRes.json();
+            resolvedUserId = adminData.users?.[0]?.id ?? null;
+          }
         } catch (e) {
           console.error("[stripe-webhook] auth user lookup failed:", (e as Error).message);
         }
@@ -288,17 +294,26 @@ Deno.serve(async (req) => {
         resolved_user_id: resolvedUserId,
       });
 
-      const { error } = await supabase.from("single_report_tokens").upsert(
-        {
+      // Guard against duplicate webhook deliveries before inserting.
+      const { data: existingToken } = await supabase
+        .from("single_report_tokens")
+        .select("token")
+        .eq("stripe_session_id", session.id)
+        .maybeSingle();
+      if (existingToken) {
+        console.log("[stripe-webhook] duplicate session, skipping insert", session.id);
+      } else {
+        const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString();
+        const { error } = await supabase.from("single_report_tokens").insert({
           token,
           listing_url: listingUrl,
           stripe_session_id: session.id,
           user_email: normalizedEmail,
           user_id: resolvedUserId,
-        },
-        { onConflict: "stripe_session_id", ignoreDuplicates: true },
-      );
-      if (error) throw error;
+          expires_at: expiresAt,
+        });
+        if (error) throw error;
+      }
 
       // Send a magic link so the customer can log in and revisit the report
       if (customerEmail) {

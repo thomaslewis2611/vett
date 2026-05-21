@@ -1152,10 +1152,10 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
         if (r?.ok) {
           setA((prev) => ({
             ...prev,
-            floodRisk: r.floodRisk ?? prev.floodRisk,
-            nearbySchools: r.nearbySchools ?? prev.nearbySchools,
-            crime: r.crime ?? prev.crime,
-            broadband: r.broadband ?? prev.broadband,
+            floodRisk: pickBetter(r.floodRisk, prev.floodRisk),
+            nearbySchools: pickBetter(r.nearbySchools, prev.nearbySchools),
+            crime: pickBetter(r.crime, prev.crime),
+            broadband: pickBetter(r.broadband, prev.broadband),
             transport: r.transport ?? prev.transport,
           }));
         }
@@ -1693,17 +1693,42 @@ export function ReportView({ analysis: initialA, listingUrl, token, fromSaved, s
                   onUpgradePass={() => upgradeToPass(listingUrl)}
                   listingUrl={listingUrl}
                   userEmail={access.email}
-                  onPostcodeSaved={(patch) =>
-                    setA((prev) => ({
-                      ...prev,
-                      postcode: patch.postcode ?? prev.postcode,
-                      crime: patch.crime ?? prev.crime,
-                      floodRisk: pickBetter(patch.floodRisk, prev.floodRisk),
-                      nearbySchools: pickBetter(patch.nearbySchools, prev.nearbySchools),
-                      broadband: pickBetter(patch.broadband, prev.broadband),
-                      partialPostcode: null,
-                    }))
-                  }
+                  onPostcodeSaved={(patch) => {
+                    console.log("[CrimeSection.onPostcodeSaved] patch received:", {
+                      postcode: patch.postcode,
+                      crime: patch.crime,
+                      nearbySchools: patch.nearbySchools,
+                    });
+                    setA((prev) => {
+                      const schoolsResult = pickBetter(patch.nearbySchools, prev.nearbySchools);
+                      const crimeResult = patch.crime ?? prev.crime;
+                      console.log("[CrimeSection.onPostcodeSaved] pickBetter schools:", {
+                        patchSchools: patch.nearbySchools,
+                        prevSchools: prev.nearbySchools,
+                        result: schoolsResult,
+                      });
+                      console.log("[CrimeSection.onPostcodeSaved] crime merge:", {
+                        patchCrime: patch.crime,
+                        prevCrime: prev.crime,
+                        result: crimeResult,
+                      });
+                      const next = {
+                        ...prev,
+                        postcode: patch.postcode ?? prev.postcode,
+                        crime: crimeResult,
+                        floodRisk: pickBetter(patch.floodRisk, prev.floodRisk),
+                        nearbySchools: schoolsResult,
+                        broadband: pickBetter(patch.broadband, prev.broadband),
+                        partialPostcode: null,
+                      };
+                      console.log("[CrimeSection.onPostcodeSaved] final merged state:", {
+                        postcode: next.postcode,
+                        crime: next.crime,
+                        nearbySchools: next.nearbySchools,
+                      });
+                      return next;
+                    });
+                  }}
                 />
               )}
 
@@ -2201,7 +2226,17 @@ function PostcodePromptBanner({
     }
     setSubmitting(true);
     try {
+      console.log("[PostcodePromptBanner] submitting postcode:", cleaned);
       const r = await refetchFn({ data: { email, listingUrl, postcode: cleaned } });
+      console.log("[PostcodePromptBanner] refetch result:", {
+        ok: r?.ok,
+        error: r?.error,
+        postcode: r?.postcode,
+        crime: r?.crime,
+        nearbySchools: r?.nearbySchools,
+        floodRisk: r?.floodRisk,
+        broadband: r?.broadband,
+      });
       if (!r?.ok) {
         setError(r?.error ?? "Could not load data for that postcode");
         return;
@@ -2305,7 +2340,17 @@ function InferredPostcodeNotice({
     }
     setSubmitting(true);
     try {
+      console.log("[InferredPostcodeNotice] submitting postcode:", cleaned);
       const r = await refetchFn({ data: { email, listingUrl, postcode: cleaned } });
+      console.log("[InferredPostcodeNotice] refetch result:", {
+        ok: r?.ok,
+        error: r?.error,
+        postcode: r?.postcode,
+        crime: r?.crime,
+        nearbySchools: r?.nearbySchools,
+        floodRisk: r?.floodRisk,
+        broadband: r?.broadband,
+      });
       if (!r?.ok) {
         setError(r?.error ?? "Could not load data for that postcode");
         return;
