@@ -20,7 +20,7 @@ export const Route = createFileRoute("/sitemap.xml")({
           path: `/blog/${p.slug}`,
           changefreq: "monthly" as const,
           priority: "0.7",
-          lastmod: p.date,
+          lastmod: p.dateModified ?? p.date,
         }));
 
         const entries: SitemapEntry[] = [

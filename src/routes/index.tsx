@@ -22,35 +22,34 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
+import {
+  buildPageMeta,
+  buildCanonicalLink,
+  jsonLdScript,
+  organisationSchema,
+  websiteSchema,
+} from "../lib/seo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [
-      { title: "vett — Every listing. Vetted." },
-      {
-        name: "description",
-        content:
-          "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
-      },
-      { property: "og:title", content: "vett — AI property analysis for smarter buyers" },
-      {
-        property: "og:description",
-        content:
-          "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
-      },
-      {
-        name: "twitter:description",
-        content:
-          "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
-      },
-    ],
+    meta: buildPageMeta({
+      title: "vett — AI property analysis for smarter UK buyers",
+      description:
+        "Paste any Rightmove listing and get an instant AI analysis. Red flags, true costs, value score and negotiation strategy in minutes. From £4.99.",
+      canonicalPath: "/",
+    }),
     links: [
+      buildCanonicalLink("/"),
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,700;1,400&family=Inter:wght@300;400;500&display=swap",
       },
+    ],
+    scripts: [
+      jsonLdScript(organisationSchema()),
+      jsonLdScript(websiteSchema()),
     ],
   }),
   component: Index,

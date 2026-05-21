@@ -1,19 +1,12 @@
 User-agent: *
 
 Disallow: /dashboard
-
 Disallow: /my-reports
-
 Disallow: /my-report
-
 Disallow: /results
-
 Disallow: /payment-success
-
 Disallow: /buyer-login
-
 Disallow: /compare
-
 Disallow: /api/
 
-Sitemap: https://roovr.co/sitemap.xml
+Sitemap: https://vetthome.com/sitemap.xml

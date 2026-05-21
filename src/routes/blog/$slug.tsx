@@ -1,9 +1,16 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState, type CSSProperties } from "react";
 import { getPostBySlug, getRelatedPosts, toSerialized, formatDate, type SerializedPost } from "@/lib/blog";
+import {
+  SITE_URL,
+  buildPageMeta,
+  buildCanonicalLink,
+  jsonLdScript,
+  articleSchema,
+  breadcrumbSchema,
+  canonicalUrl,
+} from "@/lib/seo";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
-
-const SITE_URL = "https://vetthome.com";
 
 export const Route = createFileRoute("/blog/$slug")({
   loader: ({ params }) => {
@@ -15,53 +22,40 @@ export const Route = createFileRoute("/blog/$slug")({
     if (!post) return {};
     const title = post.seoTitle || post.title;
     const description = post.seoDescription || post.excerpt;
-    const url = `${SITE_URL}/blog/${post.slug}`;
     const image = post.coverImage.startsWith("http") ? post.coverImage : `${SITE_URL}${post.coverImage}`;
-
-    const articleSchema = {
-      "@context": "https://schema.org",
-      "@type": "Article",
-      headline: post.title,
-      image,
-      datePublished: post.date,
-      dateModified: post.date,
-      author: { "@type": "Person", name: post.author },
-      publisher: {
-        "@type": "Organization",
-        name: "vett",
-        logo: { "@type": "ImageObject", url: `${SITE_URL}/logo.png` },
-      },
-      description,
-    };
-
-    const breadcrumbSchema = {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      itemListElement: [
-        { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
-        { "@type": "ListItem", position: 2, name: "Blog", item: `${SITE_URL}/blog` },
-        { "@type": "ListItem", position: 3, name: post.title, item: url },
-      ],
-    };
+    const dateModified = post.dateModified ?? post.date;
 
     return {
-      meta: [
-        { title },
-        { name: "description", content: description },
-        { property: "og:title", content: title },
-        { property: "og:description", content: description },
-        { property: "og:image", content: image },
-        { property: "og:type", content: "article" },
-        { property: "og:url", content: url },
-        { name: "twitter:card", content: "summary_large_image" },
-        { name: "twitter:title", content: title },
-        { name: "twitter:description", content: description },
-        { name: "twitter:image", content: image },
-      ],
-      links: [{ rel: "canonical", href: url }],
+      meta: buildPageMeta({
+        title,
+        description,
+        canonicalPath: `/blog/${post.slug}`,
+        ogImage: image,
+        ogType: "article",
+        publishedTime: post.date,
+        modifiedTime: dateModified,
+        author: post.author,
+      }),
+      links: [buildCanonicalLink(`/blog/${post.slug}`)],
       scripts: [
-        { type: "application/ld+json", children: JSON.stringify(articleSchema) },
-        { type: "application/ld+json", children: JSON.stringify(breadcrumbSchema) },
+        jsonLdScript(
+          articleSchema({
+            title: post.title,
+            description,
+            slug: post.slug,
+            imageUrl: image,
+            datePublished: post.date,
+            dateModified,
+            authorName: post.author,
+          }),
+        ),
+        jsonLdScript(
+          breadcrumbSchema([
+            { name: "Home", url: SITE_URL },
+            { name: "Blog", url: canonicalUrl("/blog") },
+            { name: post.title, url: canonicalUrl(`/blog/${post.slug}`) },
+          ]),
+        ),
       ],
     };
   },

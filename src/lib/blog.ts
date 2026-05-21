@@ -14,6 +14,7 @@ export type PostFrontmatter = {
   featured?: boolean;
   seoTitle?: string;
   seoDescription?: string;
+  dateModified?: string;
 };
 
 export type Post = PostFrontmatter & {
