@@ -26,6 +26,7 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as ReportTokenRouteImport } from './routes/report.$token'
+import { Route as BlogHowToAnalyseARightmoveListingRouteImport } from './routes/blog/how-to-analyse-a-rightmove-listing'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
@@ -117,6 +118,12 @@ const ReportTokenRoute = ReportTokenRouteImport.update({
   path: '/report/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogHowToAnalyseARightmoveListingRoute =
+  BlogHowToAnalyseARightmoveListingRouteImport.update({
+    id: '/blog/how-to-analyse-a-rightmove-listing',
+    path: '/blog/how-to-analyse-a-rightmove-listing',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const BlogSlugRoute = BlogSlugRouteImport.update({
   id: '/blog/$slug',
   path: '/blog/$slug',
@@ -162,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/blog/how-to-analyse-a-rightmove-listing': typeof BlogHowToAnalyseARightmoveListingRoute
   '/report/$token': typeof ReportTokenRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
@@ -186,6 +194,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/blog/how-to-analyse-a-rightmove-listing': typeof BlogHowToAnalyseARightmoveListingRoute
   '/report/$token': typeof ReportTokenRoute
   '/blog': typeof BlogIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
@@ -211,6 +220,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/blog/$slug': typeof BlogSlugRoute
+  '/blog/how-to-analyse-a-rightmove-listing': typeof BlogHowToAnalyseARightmoveListingRoute
   '/report/$token': typeof ReportTokenRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
@@ -237,6 +247,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/blog/$slug'
+    | '/blog/how-to-analyse-a-rightmove-listing'
     | '/report/$token'
     | '/blog/'
     | '/api/public/cron/check-expiry-reminders'
@@ -261,6 +272,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/blog/$slug'
+    | '/blog/how-to-analyse-a-rightmove-listing'
     | '/report/$token'
     | '/blog'
     | '/api/public/cron/check-expiry-reminders'
@@ -285,6 +297,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/blog/$slug'
+    | '/blog/how-to-analyse-a-rightmove-listing'
     | '/report/$token'
     | '/blog/'
     | '/api/public/cron/check-expiry-reminders'
@@ -310,6 +323,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   BlogSlugRoute: typeof BlogSlugRoute
+  BlogHowToAnalyseARightmoveListingRoute: typeof BlogHowToAnalyseARightmoveListingRoute
   ReportTokenRoute: typeof ReportTokenRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ApiPublicCronCheckExpiryRemindersRoute: typeof ApiPublicCronCheckExpiryRemindersRoute
@@ -439,6 +453,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blog/how-to-analyse-a-rightmove-listing': {
+      id: '/blog/how-to-analyse-a-rightmove-listing'
+      path: '/blog/how-to-analyse-a-rightmove-listing'
+      fullPath: '/blog/how-to-analyse-a-rightmove-listing'
+      preLoaderRoute: typeof BlogHowToAnalyseARightmoveListingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/blog/$slug': {
       id: '/blog/$slug'
       path: '/blog/$slug'
@@ -494,6 +515,8 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   BlogSlugRoute: BlogSlugRoute,
+  BlogHowToAnalyseARightmoveListingRoute:
+    BlogHowToAnalyseARightmoveListingRoute,
   ReportTokenRoute: ReportTokenRoute,
   BlogIndexRoute: BlogIndexRoute,
   ApiPublicCronCheckExpiryRemindersRoute:
