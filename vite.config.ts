@@ -19,13 +19,21 @@ export default defineConfig({
   },
   vite: {
     plugins: [
-      {
-        enforce: "pre",
-        ...mdx({
+      (() => {
+        const mdxPlugin = mdx({
           remarkPlugins: [remarkGfm, remarkFrontmatter, [remarkMdxFrontmatter, { name: "frontmatter" }]],
           rehypePlugins: [rehypeSlug],
-        }),
-      },
+        }) as { transform?: (this: unknown, code: string, id: string) => unknown; [k: string]: unknown };
+        return {
+          enforce: "pre" as const,
+          ...mdxPlugin,
+          async transform(code: string, id: string) {
+            // Skip query-param imports (e.g. ?raw) so Vite's built-in handlers take over.
+            if (id.includes("?")) return null;
+            return (mdxPlugin.transform as ((this: unknown, code: string, id: string) => unknown) | undefined)?.call(this, code, id);
+          },
+        };
+      })(),
     ],
   },
 });

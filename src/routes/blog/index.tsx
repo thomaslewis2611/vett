@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { getAllPosts, formatDate, type Post } from "@/lib/blog";
+import { getAllPosts, toSerialized, formatDate, type SerializedPost } from "@/lib/blog";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 
 export const Route = createFileRoute("/blog/")({
@@ -21,7 +21,7 @@ export const Route = createFileRoute("/blog/")({
     ],
     links: [{ rel: "canonical", href: "https://vetthome.com/blog" }],
   }),
-  loader: () => getAllPosts(),
+  loader: () => getAllPosts().map(toSerialized),
   component: BlogIndex,
 });
 
@@ -90,7 +90,7 @@ function CoverImage({
   );
 }
 
-function PostCard({ post, featured = false }: { post: Post; featured?: boolean }) {
+function PostCard({ post, featured = false }: { post: SerializedPost; featured?: boolean }) {
   return (
     <Link
       to="/blog/$slug"

@@ -21,6 +21,12 @@ export type Post = PostFrontmatter & {
   Component: ComponentType;
 };
 
+export type SerializedPost = Omit<Post, "Component">;
+
+export function toSerialized({ Component: _c, ...post }: Post): SerializedPost {
+  return post;
+}
+
 const compiledModules = import.meta.glob("../content/blog/*.mdx", { eager: true }) as Record<
   string,
   { default: ComponentType; frontmatter: PostFrontmatter }
@@ -49,7 +55,7 @@ export function getAllPosts(): Post[] {
   if (_posts) return _posts;
   _posts = Object.entries(compiledModules)
     .map(([path, mod]) => {
-      const raw = rawModules[path] ?? "";
+      const raw = typeof rawModules[path] === "string" ? rawModules[path] : "";
       const fm = mod.frontmatter;
       return {
         ...fm,

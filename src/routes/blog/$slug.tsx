@@ -1,6 +1,6 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useState, type CSSProperties } from "react";
-import { getPostBySlug, getRelatedPosts, formatDate, type Post } from "@/lib/blog";
+import { getPostBySlug, getRelatedPosts, toSerialized, formatDate, type SerializedPost } from "@/lib/blog";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 
 const SITE_URL = "https://vetthome.com";
@@ -9,7 +9,7 @@ export const Route = createFileRoute("/blog/$slug")({
   loader: ({ params }) => {
     const post = getPostBySlug(params.slug);
     if (!post) throw notFound();
-    return post;
+    return toSerialized(post);
   },
   head: ({ loaderData: post }) => {
     if (!post) return {};
@@ -193,7 +193,7 @@ function RelatedCover({ src, alt, title }: { src: string; alt: string; title: st
   );
 }
 
-function RelatedCard({ post }: { post: Post }) {
+function RelatedCard({ post }: { post: SerializedPost }) {
   return (
     <Link
       to="/blog/$slug"
@@ -236,8 +236,8 @@ function RelatedCard({ post }: { post: Post }) {
 
 function BlogPost() {
   const post = Route.useLoaderData();
-  const related = getRelatedPosts(post.slug, post.tags);
-  const { Component } = post;
+  const related = getRelatedPosts(post.slug, post.tags).map(toSerialized);
+  const Component = getPostBySlug(post.slug)?.Component ?? (() => null);
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: BODY, color: C.dark }}>
