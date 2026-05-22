@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { LogOut, LayoutDashboard, Mail, ChevronDown, X, Wrench } from "lucide-react";
+import { LogOut, LayoutDashboard, Mail, ChevronDown, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkBuyerPassByEmail } from "@/lib/access.functions";
 import { sendBuyerPassMagicLink } from "@/lib/checkout.functions";
@@ -261,7 +261,6 @@ function ToolsDropdown() {
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <Wrench className="h-3.5 w-3.5" />
         <span>vett tools</span>
         <ChevronDown className="h-3 w-3" style={{ opacity: 0.6 }} />
       </button>
