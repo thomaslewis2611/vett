@@ -331,8 +331,8 @@ export function SiteHeader() {
           }}
         >
           {/* Logo */}
-          <Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", flexShrink: 0 }}>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#1A1108", letterSpacing: "-2px" }}>
+          <Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", flexShrink: 0, lineHeight: 1 }}>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#1A1108", letterSpacing: "-2px", lineHeight: 1 }}>
               vett
             </span>
           </Link>
@@ -346,8 +346,8 @@ export function SiteHeader() {
             <Link
               to="/blog/"
               className="nav-link"
-              style={{ fontSize: 13, color: "#5F5E5A", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-block" }}
-              activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-block" } }}
+              style={{ fontSize: 13, color: "#5F5E5A", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+              activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-flex", alignItems: "center" } }}
               activeOptions={{ includeChildMatches: true }}
             >
               Blog
@@ -355,8 +355,8 @@ export function SiteHeader() {
             <Link
               to="/pricing"
               className="nav-link"
-              style={{ fontSize: 13, color: "#5F5E5A", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-block" }}
-              activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-block" } }}
+              style={{ fontSize: 13, color: "#5F5E5A", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
+              activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-flex", alignItems: "center" } }}
             >
               Pricing
             </Link>
