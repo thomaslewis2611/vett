@@ -360,6 +360,14 @@ function LocalBusinesses() {
           padding-bottom: 2px;
         }
         .category-pills::-webkit-scrollbar { display: none; }
+        .category-pills button { flex-shrink: 0; }
+        input:-webkit-autofill,
+        input:-webkit-autofill:hover,
+        input:-webkit-autofill:focus {
+          -webkit-box-shadow: 0 0 0px 1000px #FFFDF9 inset;
+          box-shadow: 0 0 0px 1000px #FFFDF9 inset;
+          -webkit-text-fill-color: #1A1108;
+        }
       `}</style>
       <SiteHeader />
 
@@ -492,97 +500,99 @@ function LocalBusinesses() {
           ))}
         </div>
 
-        {/* Results area */}
-        {status === "loading" && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-          </div>
-        )}
-
-        {status === "error" && (
-          <div
-            style={{
-              background: C.card,
-              border: `0.5px solid ${C.border}`,
-              borderRadius: 16,
-              padding: 28,
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontSize: 15, color: C.dark, margin: "0 0 16px" }}>
-              Something went wrong. Please try again.
-            </p>
-            <button
-              type="button"
-              onClick={() => searchedPostcode && performSearch(searchedPostcode, category)}
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#FFFDF9",
-                background: C.green,
-                border: "none",
-                borderRadius: 100,
-                padding: "10px 20px",
-                cursor: "pointer",
-                fontFamily: BODY,
-              }}
-            >
-              Try again
-            </button>
-          </div>
-        )}
-
-        {status === "success" && results.length === 0 && (
-          <div
-            style={{
-              background: C.card,
-              border: `0.5px solid ${C.border}`,
-              borderRadius: 16,
-              padding: 28,
-              textAlign: "center",
-            }}
-          >
-            <p style={{ fontSize: 15, color: C.muted, margin: 0, lineHeight: 1.6 }}>
-              No results found near <strong style={{ color: C.dark }}>{searchedPostcode}</strong>.
-              Try a nearby postcode or expand your search.
-            </p>
-          </div>
-        )}
-
-        {status === "success" && results.length > 0 && (
-          <div>
-            <p style={{ fontSize: 13, color: C.veryMuted, margin: "0 0 14px" }}>
-              Showing {results.length} professional{results.length !== 1 ? "s" : ""} near{" "}
-              <strong style={{ color: C.muted }}>{searchedPostcode}</strong>
-            </p>
+        {/* Results area — always between pills and prose */}
+        <div style={{ marginBottom: status !== "idle" ? 64 : 0 }}>
+          {status === "loading" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {results.map((r, i) => (
-                <BusinessCard key={`${r.name}-${i}`} result={r} rank={i} />
-              ))}
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
             </div>
+          )}
 
-            {/* Map placeholder */}
+          {status === "error" && (
             <div
               style={{
-                marginTop: 20,
                 background: C.card,
                 border: `0.5px solid ${C.border}`,
                 borderRadius: 16,
-                padding: "28px 20px",
+                padding: 28,
                 textAlign: "center",
               }}
             >
-              <p style={{ fontSize: 13, color: C.veryMuted, margin: 0 }}>
-                🗺 View on map — coming soon
+              <p style={{ fontSize: 15, color: C.dark, margin: "0 0 16px" }}>
+                Something went wrong. Please try again.
+              </p>
+              <button
+                type="button"
+                onClick={() => searchedPostcode && performSearch(searchedPostcode, category)}
+                style={{
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: "#FFFDF9",
+                  background: C.green,
+                  border: "none",
+                  borderRadius: 100,
+                  padding: "10px 20px",
+                  cursor: "pointer",
+                  fontFamily: BODY,
+                }}
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {status === "success" && results.length === 0 && (
+            <div
+              style={{
+                background: C.card,
+                border: `0.5px solid ${C.border}`,
+                borderRadius: 16,
+                padding: 28,
+                textAlign: "center",
+              }}
+            >
+              <p style={{ fontSize: 15, color: C.muted, margin: 0, lineHeight: 1.6 }}>
+                No results found near <strong style={{ color: C.dark }}>{searchedPostcode}</strong>.
+                Try a nearby postcode or expand your search.
               </p>
             </div>
-          </div>
-        )}
+          )}
+
+          {status === "success" && results.length > 0 && (
+            <div>
+              <p style={{ fontSize: 13, color: C.veryMuted, margin: "0 0 14px" }}>
+                Showing {results.length} professional{results.length !== 1 ? "s" : ""} near{" "}
+                <strong style={{ color: C.muted }}>{searchedPostcode}</strong>
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {results.map((r, i) => (
+                  <BusinessCard key={`${r.name}-${i}`} result={r} rank={i} />
+                ))}
+              </div>
+
+              {/* Map placeholder */}
+              <div
+                style={{
+                  marginTop: 20,
+                  background: C.card,
+                  border: `0.5px solid ${C.border}`,
+                  borderRadius: 16,
+                  padding: "28px 20px",
+                  textAlign: "center",
+                }}
+              >
+                <p style={{ fontSize: 13, color: C.veryMuted, margin: 0 }}>
+                  🗺 View on map — coming soon
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* SEO prose content — always rendered server-side */}
-        <div style={{ marginTop: 64 }}>
+        <div>
           <h2
             style={{
               fontFamily: HEADING,
