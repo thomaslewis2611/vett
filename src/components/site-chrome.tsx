@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useRef, useState } from "react";
-import { LogOut, LayoutDashboard, Mail, ChevronDown, X } from "lucide-react";
+import { LogOut, LayoutDashboard, Mail, ChevronDown, X, Wrench } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkBuyerPassByEmail } from "@/lib/access.functions";
 import { sendBuyerPassMagicLink } from "@/lib/checkout.functions";
@@ -233,6 +233,64 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
   );
 }
 
+const TOOLS_ITEMS = [
+  { label: "Renovation calculator", to: "/tools/renovation-calculator" as const },
+];
+
+function ToolsDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener("mousedown", onClick);
+    return () => document.removeEventListener("mousedown", onClick);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
+        style={{ fontSize: 13, color: "#5F5E5A" }}
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        <Wrench className="h-3.5 w-3.5" />
+        <span className="hidden sm:inline">Tools</span>
+        <ChevronDown className="h-3 w-3" style={{ opacity: 0.6 }} />
+      </button>
+      {open && (
+        <div
+          className="absolute left-0 mt-2 w-52 overflow-hidden"
+          style={{
+            background: "#FFFDF9",
+            borderRadius: 10,
+            border: "0.5px solid rgba(26,17,8,0.12)",
+            boxShadow: "0 8px 24px rgba(26,17,8,0.08)",
+          }}
+        >
+          {TOOLS_ITEMS.map((item) => (
+            <Link
+              key={item.to}
+              to={item.to}
+              onClick={() => setOpen(false)}
+              className="flex items-center px-3 py-2.5 transition-colors hover:bg-[#F1EFE8]"
+              style={{ fontSize: 13, color: "#1A1108" }}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SiteHeader() {
   const { email, hasPass, ready } = useAuthUser();
   const [magicOpen, setMagicOpen] = useState(false);
@@ -256,12 +314,13 @@ export function SiteHeader() {
           <Link
             to="/blog/"
             style={{ fontSize: 13, color: "#5F5E5A" }}
-            className="hover:text-foreground transition-colors hidden sm:inline"
+            className="hover:text-foreground transition-colors"
             activeProps={{ style: { fontSize: 13, color: "#1A1108" } }}
             activeOptions={{ includeChildMatches: true }}
           >
             Blog
           </Link>
+          <ToolsDropdown />
           {!loggedIn && (
             <Link
               to="/pricing"
@@ -372,6 +431,7 @@ export function SiteFooter() {
             <Link to="/about" className="hover:text-[#1A1108] transition-colors">About</Link>
             <Link to="/faq" className="hover:text-[#1A1108] transition-colors">FAQ</Link>
             <Link to="/blog/" className="hover:text-[#1A1108] transition-colors">Blog</Link>
+            <Link to="/tools/renovation-calculator" className="hover:text-[#1A1108] transition-colors">Renovation calculator</Link>
             <Link to="/privacy" className="hover:text-[#1A1108] transition-colors">Privacy</Link>
             <Link to="/terms" className="hover:text-[#1A1108] transition-colors">Terms</Link>
           </div>

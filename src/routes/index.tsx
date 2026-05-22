@@ -264,9 +264,11 @@ function Index() {
           align-items: start;
         }
         .vett-hero-left { max-width: 640px; margin-left: auto; margin-right: auto; }
+        .vett-hero-section { padding: 48px 24px 48px; }
+        @media (min-width: 640px) { .vett-hero-section { padding: 80px 24px 48px; } }
       `}</style>
 
-      <section style={{ padding: "80px 24px 48px" }}>
+      <section className="vett-hero-section">
         <div className="mx-auto vett-hero-grid" style={{ maxWidth: 1100 }}>
           {/* LEFT */}
           <div className="vett-hero-left text-center">

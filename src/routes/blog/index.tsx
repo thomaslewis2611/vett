@@ -178,10 +178,11 @@ function BlogIndex() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: BODY, color: C.dark }}>
+      <style>{`.blog-hero { padding: 48px 24px 56px; } @media (min-width: 640px) { .blog-hero { padding: 80px 24px 56px; } }`}</style>
       <SiteHeader />
       <main>
         {/* Hero */}
-        <section style={{ padding: "80px 24px 56px", textAlign: "center" }}>
+        <section className="blog-hero" style={{ textAlign: "center" }}>
           <div className="mx-auto" style={{ maxWidth: 640 }}>
             <div
               style={{
