@@ -52,6 +52,7 @@ interface CalcState {
   windows_material: "upvc" | "aluminium" | "timber";
   refurb_spec: "budget" | "mid" | "high";
   refurb_sqft: number;
+  refurb_unit: "sqft" | "sqm";
 }
 
 interface ItemCost {
@@ -98,6 +99,8 @@ const PROP_LABELS: Record<PropType, string> = {
 
 const WINDOW_DEFAULTS: Record<PropType, number> = { flat: 4, terrace: 8, semi: 11, detached: 14 };
 const REFURB_SQM_DEFAULTS: Record<PropType, number> = { flat: 55, terrace: 80, semi: 100, detached: 140 };
+const REFURB_SQFT_DEFAULTS: Record<PropType, number> = { flat: 592, terrace: 861, semi: 1076, detached: 1507 };
+const SQM_PER_SQFT = 1 / 10.764;
 
 // ── Default state ─────────────────────────────────────────────────────────────
 function defaultState(): CalcState {
@@ -122,6 +125,7 @@ function defaultState(): CalcState {
     windows_material: "upvc",
     refurb_spec: "mid",
     refurb_sqft: 0,
+    refurb_unit: "sqft",
   };
 }
 
@@ -167,6 +171,8 @@ function paramsToState(params: URLSearchParams): CalcState {
   if (rspec && ["budget", "mid", "high"].includes(rspec)) s.refurb_spec = rspec as "budget" | "mid" | "high";
   const rsqft = parseInt(params.get("refurb_sqft") ?? "0");
   if (!isNaN(rsqft) && rsqft >= 0) s.refurb_sqft = rsqft;
+  const ru = params.get("refurb_unit");
+  if (ru && ["sqft", "sqm"].includes(ru)) s.refurb_unit = ru as "sqft" | "sqm";
   return s;
 }
 
@@ -192,6 +198,7 @@ function stateToParams(s: CalcState): string {
   p.set("windows_material", s.windows_material);
   p.set("refurb_spec", s.refurb_spec);
   if (s.refurb_sqft > 0) p.set("refurb_sqft", String(s.refurb_sqft));
+  p.set("refurb_unit", s.refurb_unit);
   return p.toString();
 }
 
@@ -241,7 +248,13 @@ function calcItemCost(id: CategoryId, s: CalcState): ItemCost {
       break;
     }
     case "refurb": {
-      const sqm = s.refurb_sqft > 0 ? s.refurb_sqft : REFURB_SQM_DEFAULTS[s.prop];
+      let sqm: number;
+      if (s.refurb_unit === "sqft") {
+        const sqft = s.refurb_sqft > 0 ? s.refurb_sqft : REFURB_SQFT_DEFAULTS[s.prop];
+        sqm = sqft * SQM_PER_SQFT;
+      } else {
+        sqm = s.refurb_sqft > 0 ? s.refurb_sqft : REFURB_SQM_DEFAULTS[s.prop];
+      }
       const rate = { budget: 500, mid: 850, high: 1200 }[s.refurb_spec];
       mid = sqm * rate;
       break;
@@ -567,7 +580,25 @@ function WindowsAdjusters({ s, set }: { s: CalcState; set: (u: Partial<CalcState
 }
 
 function RefurbAdjusters({ s, set }: { s: CalcState; set: (u: Partial<CalcState>) => void }) {
-  const defaultSqm = REFURB_SQM_DEFAULTS[s.prop];
+  const isSqft = s.refurb_unit === "sqft";
+  const displayDefault = isSqft ? REFURB_SQFT_DEFAULTS[s.prop] : REFURB_SQM_DEFAULTS[s.prop];
+  const displayValue = s.refurb_sqft > 0 ? s.refurb_sqft : displayDefault;
+  const unitLabel = isSqft ? "sq ft" : "m²";
+
+  const handleUnitChange = (newUnit: "sqft" | "sqm") => {
+    if (newUnit === s.refurb_unit) return;
+    if (s.refurb_sqft === 0) {
+      // Using default — just switch unit, show new default
+      set({ refurb_unit: newUnit });
+    } else if (newUnit === "sqm") {
+      // sq ft → sq m
+      set({ refurb_unit: newUnit, refurb_sqft: Math.round(s.refurb_sqft * SQM_PER_SQFT) });
+    } else {
+      // sq m → sq ft
+      set({ refurb_unit: newUnit, refurb_sqft: Math.round(s.refurb_sqft / SQM_PER_SQFT) });
+    }
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <AdjusterRow>
@@ -579,16 +610,26 @@ function RefurbAdjusters({ s, set }: { s: CalcState; set: (u: Partial<CalcState>
         />
       </AdjusterRow>
       <AdjusterRow>
-        <AdjusterLabel>Floor area (m²)</AdjusterLabel>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+          <AdjusterLabel>Floor area ({unitLabel})</AdjusterLabel>
+          <SegmentedControl
+            options={[{ value: "sqft", label: "sq ft" }, { value: "sqm", label: "m²" }]}
+            value={s.refurb_unit}
+            onChange={handleUnitChange}
+          />
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <input
             type="number"
-            min={10}
-            max={1000}
-            value={s.refurb_sqft > 0 ? s.refurb_sqft : defaultSqm}
+            min={isSqft ? 100 : 10}
+            max={isSqft ? 15000 : 1000}
+            value={displayValue}
             onChange={(e) => {
               const n = parseInt(e.target.value);
-              set({ refurb_sqft: isNaN(n) ? 0 : Math.max(10, Math.min(1000, n)) });
+              if (isNaN(n)) { set({ refurb_sqft: 0 }); return; }
+              const min = isSqft ? 100 : 10;
+              const max = isSqft ? 15000 : 1000;
+              set({ refurb_sqft: Math.max(min, Math.min(max, n)) });
             }}
             style={{
               width: 80,
@@ -601,7 +642,9 @@ function RefurbAdjusters({ s, set }: { s: CalcState; set: (u: Partial<CalcState>
               outline: "none",
             }}
           />
-          <span style={{ fontSize: 12, color: C.veryMuted }}>default {defaultSqm}m² for {PROP_LABELS[s.prop].toLowerCase()}</span>
+          <span style={{ fontSize: 12, color: C.veryMuted }}>
+            default {displayDefault} {unitLabel} for {PROP_LABELS[s.prop].toLowerCase()}
+          </span>
         </div>
       </AdjusterRow>
     </div>
