@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { buildPageMeta, buildCanonicalLink, jsonLdScript, SITE_URL, DEFAULT_OG_IMAGE, canonicalUrl } from "@/lib/seo";
@@ -1043,6 +1043,7 @@ export const Route = createFileRoute("/tools/renovation-calculator")({
 
 // ── Main component ────────────────────────────────────────────────────────────
 function RenovationCalculator() {
+  const router = useRouter();
   const [state, setState] = useState<CalcState>(defaultState);
 
   // Restore from URL params on mount
@@ -1054,13 +1055,19 @@ function RenovationCalculator() {
     }
   }, []);
 
-  // Update URL whenever state changes (replace, not push)
+  // Update URL on state change. We bypass TanStack Router's patched replaceState
+  // by temporarily setting _ignoreSubscribers — the same technique TanStack uses
+  // internally in its flush() function — so the router never sees this as a
+  // navigation event and never resets scroll position.
   useEffect(() => {
     if (typeof window === "undefined") return;
     const qs = stateToParams(state);
     const url = `${window.location.pathname}?${qs}`;
+    const hist = (router as any).history;
+    hist._ignoreSubscribers = true;
     window.history.replaceState(null, "", url);
-  }, [state]);
+    hist._ignoreSubscribers = false;
+  }, [state, router]);
 
   const update = (u: Partial<CalcState>) => setState((prev) => ({ ...prev, ...u }));
 
