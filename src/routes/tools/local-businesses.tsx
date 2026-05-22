@@ -51,7 +51,7 @@ interface PlaceReviewsData {
   reviews: PlaceReview[];
 }
 
-type Status = "idle" | "loading" | "success" | "error";
+type Status = "idle" | "loading" | "success" | "error" | "rate-limited";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
@@ -178,7 +178,7 @@ function ReviewsModal({
   target: BusinessResult;
   onClose: () => void;
 }) {
-  const [reviewStatus, setReviewStatus] = useState<"loading" | "success" | "error">(
+  const [reviewStatus, setReviewStatus] = useState<"loading" | "success" | "error" | "rate-limited">(
     "loading",
   );
   const [data, setData] = useState<PlaceReviewsData | null>(null);
@@ -190,6 +190,10 @@ function ReviewsModal({
       `/api/place-reviews?name=${encodeURIComponent(target.name)}&address=${encodeURIComponent(target.address)}`,
     )
       .then((r) => {
+        if (r.status === 429) {
+          setReviewStatus("rate-limited");
+          throw new Error("rate-limited");
+        }
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json() as Promise<PlaceReviewsData>;
       })
@@ -197,7 +201,9 @@ function ReviewsModal({
         setData(d);
         setReviewStatus("success");
       })
-      .catch(() => setReviewStatus("error"));
+      .catch((e) => {
+        if (e.message !== "rate-limited") setReviewStatus("error");
+      });
   }, [target.name, target.address]);
 
   useEffect(() => {
@@ -275,6 +281,14 @@ function ReviewsModal({
           >
             <div className="lb-spinner" />
             <span style={{ fontSize: 13, color: C.veryMuted }}>Loading reviews…</span>
+          </div>
+        )}
+
+        {reviewStatus === "rate-limited" && (
+          <div style={{ textAlign: "center", padding: "32px 16px" }}>
+            <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>
+              Too many requests. Please try again later.
+            </p>
           </div>
         )}
 
@@ -635,7 +649,9 @@ function LocalBusinesses() {
           `/api/local-businesses?postcode=${encodeURIComponent(normalised)}&category=${encodeURIComponent(cat)}`,
         );
         const data = await resp.json();
-        if (!resp.ok) {
+        if (resp.status === 429) {
+          setStatus("rate-limited");
+        } else if (!resp.ok) {
           setStatus("error");
         } else {
           setResults(data.results ?? []);
@@ -889,6 +905,23 @@ function LocalBusinesses() {
               >
                 Try again
               </button>
+            </div>
+          )}
+
+          {/* Rate limited */}
+          {status === "rate-limited" && (
+            <div
+              style={{
+                background: C.card,
+                border: `0.5px solid ${C.border}`,
+                borderRadius: 16,
+                padding: 28,
+                textAlign: "center",
+              }}
+            >
+              <p style={{ fontSize: 15, color: C.muted, margin: 0, lineHeight: 1.6 }}>
+                You've made too many searches. Please try again in an hour.
+              </p>
             </div>
           )}
 

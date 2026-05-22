@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { getCloudflareEnv } from "@/lib/cloudflare-env";
 
 const POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
 
 const FIELD_MASK =
   "places.displayName,places.formattedAddress,places.rating,places.userRatingCount,places.websiteUri,places.nationalPhoneNumber,places.regularOpeningHours,places.businessStatus";
 
-// Categories that use text search
 const TEXT_QUERIES: Record<string, string> = {
   surveyors: "{postcode} chartered surveyors RICS",
   solicitors: "{postcode} property solicitors conveyancing",
@@ -15,7 +15,6 @@ const TEXT_QUERIES: Record<string, string> = {
   "removal-companies": "{postcode} removal companies",
 };
 
-// Categories that use nearby search with a Google Places type
 const NEARBY_TYPES: Record<string, string[]> = {
   "estate-agents": ["real_estate_agency"],
 };
@@ -43,19 +42,61 @@ function normalisePlace(p: RawPlace) {
   };
 }
 
+const RATE_LIMIT = 20;
+
 export const Route = createFileRoute("/api/local-businesses")({
   server: {
     handlers: {
       GET: async ({ request }) => {
+        // ── Rate limiting ─────────────────────────────────────────────────────
+        const kv = getCloudflareEnv().RATE_LIMIT_KV as
+          | { get(k: string): Promise<string | null>; put(k: string, v: string, o?: { expirationTtl?: number }): Promise<void> }
+          | undefined;
+
+        let remaining = RATE_LIMIT - 1;
+
+        if (kv) {
+          const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+          const hour = Math.floor(Date.now() / 3600000);
+          const kvKey = `search:${ip}:${hour}`;
+          const countStr = await kv.get(kvKey);
+          const count = countStr ? parseInt(countStr, 10) : 0;
+
+          if (count >= RATE_LIMIT) {
+            return new Response(
+              JSON.stringify({ error: "Rate limit exceeded. Please try again in an hour." }),
+              {
+                status: 429,
+                headers: {
+                  "Content-Type": "application/json",
+                  "X-RateLimit-Limit": String(RATE_LIMIT),
+                  "X-RateLimit-Remaining": "0",
+                },
+              },
+            );
+          }
+
+          remaining = RATE_LIMIT - count - 1;
+          kv.put(kvKey, String(count + 1), { expirationTtl: 7200 }).catch(() => {});
+        }
+
+        const rl = {
+          "X-RateLimit-Limit": String(RATE_LIMIT),
+          "X-RateLimit-Remaining": String(remaining),
+        };
+        const json = (body: unknown, status = 200) =>
+          new Response(JSON.stringify(body), {
+            status,
+            headers: { "Content-Type": "application/json", ...rl },
+          });
+
+        // ── Parse params ──────────────────────────────────────────────────────
         const url = new URL(request.url);
         const postcode = (url.searchParams.get("postcode") ?? "").trim();
         const category = url.searchParams.get("category") ?? "surveyors";
 
         if (!POSTCODE_REGEX.test(postcode)) {
-          return new Response(JSON.stringify({ error: "Invalid postcode format" }), {
-            status: 400,
-            headers: { "Content-Type": "application/json" },
-          });
+          return json({ error: "Invalid postcode format" }, 400);
         }
 
         const radiusRaw = parseInt(url.searchParams.get("radius") ?? "8000", 10);
@@ -74,10 +115,7 @@ export const Route = createFileRoute("/api/local-businesses")({
         const apiKey =
           process.env.GOOGLE_PLACES_API_KEY ?? (globalThis as any).GOOGLE_PLACES_API_KEY;
         if (!apiKey) {
-          return new Response(JSON.stringify({ error: "Search service unavailable" }), {
-            status: 503,
-            headers: { "Content-Type": "application/json" },
-          });
+          return json({ error: "Search service unavailable" }, 503);
         }
 
         // ── Step 1: Geocode postcode ──────────────────────────────────────────
@@ -89,19 +127,13 @@ export const Route = createFileRoute("/api/local-businesses")({
           if (!geoResp.ok) throw new Error(`Geocode HTTP ${geoResp.status}`);
           const geo = (await geoResp.json()) as any;
           if (!geo.results?.length) {
-            return new Response(JSON.stringify({ error: "Postcode not found" }), {
-              status: 400,
-              headers: { "Content-Type": "application/json" },
-            });
+            return json({ error: "Postcode not found" }, 400);
           }
           lat = geo.results[0].geometry.location.lat;
           lng = geo.results[0].geometry.location.lng;
         } catch (e) {
           console.error("[local-businesses] geocode error", e);
-          return new Response(JSON.stringify({ error: "Failed to look up postcode" }), {
-            status: 500,
-            headers: { "Content-Type": "application/json" },
-          });
+          return json({ error: "Failed to look up postcode" }, 500);
         }
 
         // ── Step 2: Search Places ─────────────────────────────────────────────
@@ -132,8 +164,7 @@ export const Route = createFileRoute("/api/local-businesses")({
             }
             rawPlaces = ((await resp.json()) as any).places ?? [];
           } else {
-            const queryTemplate =
-              TEXT_QUERIES[category] ?? `{postcode} ${category}`;
+            const queryTemplate = TEXT_QUERIES[category] ?? `{postcode} ${category}`;
             const textQuery = queryTemplate.replace("{postcode}", postcode.toUpperCase());
             const resp = await fetch(
               "https://places.googleapis.com/v1/places:searchText",
@@ -161,10 +192,7 @@ export const Route = createFileRoute("/api/local-businesses")({
           }
         } catch (e) {
           console.error("[local-businesses] places error", e);
-          return new Response(
-            JSON.stringify({ error: "Search failed — please try again" }),
-            { status: 500, headers: { "Content-Type": "application/json" } },
-          );
+          return json({ error: "Search failed — please try again" }, 500);
         }
 
         // ── Step 3: Filter, normalise, sort ───────────────────────────────────
@@ -182,16 +210,7 @@ export const Route = createFileRoute("/api/local-businesses")({
             return b.reviewCount - a.reviewCount;
           });
 
-        return new Response(
-          JSON.stringify({
-            postcode: postcode.toUpperCase(),
-            category,
-            lat,
-            lng,
-            results,
-          }),
-          { status: 200, headers: { "Content-Type": "application/json" } },
-        );
+        return json({ postcode: postcode.toUpperCase(), category, lat, lng, results });
       },
     },
   },
