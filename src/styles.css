@@ -95,6 +95,16 @@
   --text-secondary: #5F5E5A;
 }
 
+@keyframes inputPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(45,106,79,0); }
+  35%  { box-shadow: 0 0 0 4px rgba(45,106,79,0.25); }
+  100% { box-shadow: 0 0 0 0 rgba(45,106,79,0); }
+}
+.input-pulse {
+  border-color: #2D6A4F !important;
+  animation: inputPulse 1s ease-out forwards;
+}
+
 @layer base {
   *, *::before, *::after {
     box-sizing: border-box;
@@ -102,6 +112,17 @@
   * {
     border-color: var(--color-border);
     min-width: 0;
+  }
+  button,
+  [role="button"],
+  a,
+  input[type="submit"],
+  input[type="button"],
+  label[for],
+  select,
+  summary,
+  .cursor-pointer {
+    cursor: pointer;
   }
   html, body {
     background-color: var(--color-background);

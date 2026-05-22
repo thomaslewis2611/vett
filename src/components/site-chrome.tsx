@@ -261,6 +261,7 @@ function NavPill({
 }) {
   const routerState = useRouterState();
   const pathname = routerState.location.pathname;
+  const navigate = useNavigate();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
@@ -302,6 +303,26 @@ function NavPill({
     setMobileOpen(false);
   }, [pathname]);
 
+  const handleVettClick = () => {
+    setMobileOpen(false);
+    if (pathname === "/") {
+      const form = document.getElementById("vett-form");
+      const input = document.getElementById("url-input");
+      if (form && input) {
+        form.scrollIntoView({ behavior: "smooth", block: "center" });
+        setTimeout(() => {
+          input.focus();
+          form.style.borderColor = "#2D6A4F";
+          form.style.boxShadow = "0 0 0 3px rgba(45,106,79,0.2)";
+          setTimeout(() => { form.style.borderColor = ""; form.style.boxShadow = ""; }, 900);
+        }, 350);
+      }
+    } else {
+      if (typeof sessionStorage !== "undefined") sessionStorage.setItem("vettFocusInput", "1");
+      navigate({ to: "/" });
+    }
+  };
+
   return (
     <>
       {!isMobile ? (
@@ -320,7 +341,7 @@ function NavPill({
         >
           {/* Magic-line nav links */}
           <div ref={containerRef} style={{ position: "relative", display: "flex", alignItems: "center" }}>
-            <div aria-hidden style={{ position: "absolute", top: 0, bottom: 0, left: slider.left, width: slider.width, background: "#EAF3DE", borderRadius: 100, transition: "left 200ms ease, width 200ms ease, opacity 150ms ease", opacity: slider.opacity, pointerEvents: "none" }} />
+            <div aria-hidden style={{ position: "absolute", top: 0, bottom: 0, left: slider.left, width: slider.width, background: "#EAF3DE", borderRadius: 100, transition: "left 420ms cubic-bezier(0.4, 0.0, 0.2, 1), width 420ms cubic-bezier(0.4, 0.0, 0.2, 1), opacity 200ms ease", opacity: slider.opacity, pointerEvents: "none" }} />
             {NAV_ITEMS.map((item, i) => (
               <Link
                 key={item.to}
@@ -349,9 +370,9 @@ function NavPill({
               <Link to="/buyer-login" className="nav-signin-link" style={{ fontSize: 13, color: "#888780", padding: "7px 12px", borderRadius: 100, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
                 Sign in
               </Link>
-              <Link to="/" className="nav-vett-cta" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108", padding: "7px 14px", borderRadius: 100, textDecoration: "none", display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(26,17,8,0.15)" }}>
+              <button type="button" onClick={handleVettClick} className="nav-vett-cta" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108", padding: "7px 14px", borderRadius: 100, display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(26,17,8,0.15)", background: "transparent" }}>
                 Vett a property →
-              </Link>
+              </button>
             </>
           )}
         </div>
@@ -398,9 +419,9 @@ function NavPill({
                 )}
               </div>
               <div style={{ padding: "8px 6px 0" }}>
-                <Link to="/" onClick={() => setMobileOpen(false)} style={{ display: "block", textAlign: "center", background: "#1A1108", color: "#F1EFE8", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "11px 16px", textDecoration: "none" }}>
+                <button type="button" onClick={handleVettClick} style={{ display: "block", width: "100%", textAlign: "center", background: "#1A1108", color: "#F1EFE8", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "11px 16px", border: "none" }}>
                   Vett a property →
-                </Link>
+                </button>
               </div>
             </div>
           )}

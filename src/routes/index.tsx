@@ -241,7 +241,24 @@ function Index() {
   };
 
   useEffect(() => {
-    // base body font
+    if (typeof window === "undefined" || typeof sessionStorage === "undefined") return;
+    if (sessionStorage.getItem("vettFocusInput") === "1") {
+      sessionStorage.removeItem("vettFocusInput");
+      const t = setTimeout(() => {
+        const form = document.getElementById("vett-form");
+        const input = document.getElementById("url-input");
+        if (form && input) {
+          form.scrollIntoView({ behavior: "smooth", block: "center" });
+          setTimeout(() => {
+            input.focus();
+            form.style.borderColor = "#2D6A4F";
+            form.style.boxShadow = "0 0 0 3px rgba(45,106,79,0.2)";
+            setTimeout(() => { form.style.borderColor = ""; form.style.boxShadow = ""; }, 900);
+          }, 350);
+        }
+      }, 100);
+      return () => clearTimeout(t);
+    }
   }, []);
 
   return (
@@ -335,6 +352,7 @@ function Index() {
             </p>
 
             <form
+              id="vett-form"
               onSubmit={handleAnalyse}
               className="mt-8 flex items-center gap-2"
               style={{

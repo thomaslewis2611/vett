@@ -104,9 +104,9 @@ function PostCard({ post, featured = false }: { post: SerializedPost; featured?:
         overflow: "hidden",
         textDecoration: "none",
         color: C.dark,
-        transition: "opacity 0.15s",
+        transition: "border-color 150ms ease, opacity 150ms ease",
       }}
-      className="hover:opacity-90"
+      className="blog-card hover:opacity-90"
     >
       <div style={{ flex: featured ? "0 0 50%" : undefined, position: "relative" }}>
         <CoverImage
@@ -178,7 +178,7 @@ function BlogIndex() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: BODY, color: C.dark }}>
-      <style>{`.blog-hero { padding: 48px 24px 56px; } @media (min-width: 640px) { .blog-hero { padding: 80px 24px 56px; } }`}</style>
+      <style>{`.blog-hero { padding: 48px 24px 56px; } @media (min-width: 640px) { .blog-hero { padding: 80px 24px 56px; } } .blog-card:hover { border-color: #2D6A4F !important; }`}</style>
       <SiteHeader />
       <main>
         {/* Hero */}
