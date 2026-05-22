@@ -26,10 +26,12 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as ToolsRenovationCalculatorRouteImport } from './routes/tools/renovation-calculator'
+import { Route as ToolsLocalBusinessesRouteImport } from './routes/tools/local-businesses'
 import { Route as ReportTokenRouteImport } from './routes/report.$token'
 import { Route as BlogHowToAnalyseARightmoveListingRouteImport } from './routes/blog/how-to-analyse-a-rightmove-listing'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as ApiRenovationEstimateEmailRouteImport } from './routes/api/renovation-estimate-email'
+import { Route as ApiLocalBusinessesRouteImport } from './routes/api/local-businesses'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
@@ -121,6 +123,11 @@ const ToolsRenovationCalculatorRoute =
     path: '/tools/renovation-calculator',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ToolsLocalBusinessesRoute = ToolsLocalBusinessesRouteImport.update({
+  id: '/tools/local-businesses',
+  path: '/tools/local-businesses',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ReportTokenRoute = ReportTokenRouteImport.update({
   id: '/report/$token',
   path: '/report/$token',
@@ -143,6 +150,11 @@ const ApiRenovationEstimateEmailRoute =
     path: '/api/renovation-estimate-email',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiLocalBusinessesRoute = ApiLocalBusinessesRouteImport.update({
+  id: '/api/local-businesses',
+  path: '/api/local-businesses',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -182,10 +194,12 @@ export interface FileRoutesByFullPath {
   '/rss.xml': typeof RssDotxmlRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/api/local-businesses': typeof ApiLocalBusinessesRoute
   '/api/renovation-estimate-email': typeof ApiRenovationEstimateEmailRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/how-to-analyse-a-rightmove-listing': typeof BlogHowToAnalyseARightmoveListingRoute
   '/report/$token': typeof ReportTokenRoute
+  '/tools/local-businesses': typeof ToolsLocalBusinessesRoute
   '/tools/renovation-calculator': typeof ToolsRenovationCalculatorRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
@@ -209,10 +223,12 @@ export interface FileRoutesByTo {
   '/rss.xml': typeof RssDotxmlRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/api/local-businesses': typeof ApiLocalBusinessesRoute
   '/api/renovation-estimate-email': typeof ApiRenovationEstimateEmailRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/how-to-analyse-a-rightmove-listing': typeof BlogHowToAnalyseARightmoveListingRoute
   '/report/$token': typeof ReportTokenRoute
+  '/tools/local-businesses': typeof ToolsLocalBusinessesRoute
   '/tools/renovation-calculator': typeof ToolsRenovationCalculatorRoute
   '/blog': typeof BlogIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
@@ -237,10 +253,12 @@ export interface FileRoutesById {
   '/rss.xml': typeof RssDotxmlRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/api/local-businesses': typeof ApiLocalBusinessesRoute
   '/api/renovation-estimate-email': typeof ApiRenovationEstimateEmailRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/how-to-analyse-a-rightmove-listing': typeof BlogHowToAnalyseARightmoveListingRoute
   '/report/$token': typeof ReportTokenRoute
+  '/tools/local-businesses': typeof ToolsLocalBusinessesRoute
   '/tools/renovation-calculator': typeof ToolsRenovationCalculatorRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
@@ -266,10 +284,12 @@ export interface FileRouteTypes {
     | '/rss.xml'
     | '/sitemap.xml'
     | '/terms'
+    | '/api/local-businesses'
     | '/api/renovation-estimate-email'
     | '/blog/$slug'
     | '/blog/how-to-analyse-a-rightmove-listing'
     | '/report/$token'
+    | '/tools/local-businesses'
     | '/tools/renovation-calculator'
     | '/blog/'
     | '/api/public/cron/check-expiry-reminders'
@@ -293,10 +313,12 @@ export interface FileRouteTypes {
     | '/rss.xml'
     | '/sitemap.xml'
     | '/terms'
+    | '/api/local-businesses'
     | '/api/renovation-estimate-email'
     | '/blog/$slug'
     | '/blog/how-to-analyse-a-rightmove-listing'
     | '/report/$token'
+    | '/tools/local-businesses'
     | '/tools/renovation-calculator'
     | '/blog'
     | '/api/public/cron/check-expiry-reminders'
@@ -320,10 +342,12 @@ export interface FileRouteTypes {
     | '/rss.xml'
     | '/sitemap.xml'
     | '/terms'
+    | '/api/local-businesses'
     | '/api/renovation-estimate-email'
     | '/blog/$slug'
     | '/blog/how-to-analyse-a-rightmove-listing'
     | '/report/$token'
+    | '/tools/local-businesses'
     | '/tools/renovation-calculator'
     | '/blog/'
     | '/api/public/cron/check-expiry-reminders'
@@ -348,10 +372,12 @@ export interface RootRouteChildren {
   RssDotxmlRoute: typeof RssDotxmlRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
+  ApiLocalBusinessesRoute: typeof ApiLocalBusinessesRoute
   ApiRenovationEstimateEmailRoute: typeof ApiRenovationEstimateEmailRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogHowToAnalyseARightmoveListingRoute: typeof BlogHowToAnalyseARightmoveListingRoute
   ReportTokenRoute: typeof ReportTokenRoute
+  ToolsLocalBusinessesRoute: typeof ToolsLocalBusinessesRoute
   ToolsRenovationCalculatorRoute: typeof ToolsRenovationCalculatorRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ApiPublicCronCheckExpiryRemindersRoute: typeof ApiPublicCronCheckExpiryRemindersRoute
@@ -481,6 +507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ToolsRenovationCalculatorRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tools/local-businesses': {
+      id: '/tools/local-businesses'
+      path: '/tools/local-businesses'
+      fullPath: '/tools/local-businesses'
+      preLoaderRoute: typeof ToolsLocalBusinessesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/report/$token': {
       id: '/report/$token'
       path: '/report/$token'
@@ -507,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/api/renovation-estimate-email'
       fullPath: '/api/renovation-estimate-email'
       preLoaderRoute: typeof ApiRenovationEstimateEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/local-businesses': {
+      id: '/api/local-businesses'
+      path: '/api/local-businesses'
+      fullPath: '/api/local-businesses'
+      preLoaderRoute: typeof ApiLocalBusinessesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lovable/email/queue/process': {
@@ -556,11 +596,13 @@ const rootRouteChildren: RootRouteChildren = {
   RssDotxmlRoute: RssDotxmlRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
+  ApiLocalBusinessesRoute: ApiLocalBusinessesRoute,
   ApiRenovationEstimateEmailRoute: ApiRenovationEstimateEmailRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogHowToAnalyseARightmoveListingRoute:
     BlogHowToAnalyseARightmoveListingRoute,
   ReportTokenRoute: ReportTokenRoute,
+  ToolsLocalBusinessesRoute: ToolsLocalBusinessesRoute,
   ToolsRenovationCalculatorRoute: ToolsRenovationCalculatorRoute,
   BlogIndexRoute: BlogIndexRoute,
   ApiPublicCronCheckExpiryRemindersRoute:

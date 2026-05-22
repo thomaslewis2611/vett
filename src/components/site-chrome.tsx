@@ -235,6 +235,7 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
 
 const TOOLS_ITEMS = [
   { label: "Renovation calculator", to: "/tools/renovation-calculator" as const },
+  { label: "Find local professionals", to: "/tools/local-businesses" as const },
 ];
 
 function ToolsDropdown() {
