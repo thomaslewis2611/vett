@@ -873,14 +873,14 @@ function RenovationCalculator() {
           }}>
             Let's <Italic>cost it</Italic> properly.
           </h1>
+          {/* Sentinel: bar appears once the h1 title scrolls past the viewport top */}
+          <div ref={heroEndRef} style={{ height: 0 }} />
           <p style={{
             margin: 0, fontFamily: HEADING_FONT, fontStyle: "italic", fontSize: 17,
             color: COLORS.text2, lineHeight: 1.5,
           }}>
             Build your renovation, line by line — we'll guide the price.
           </p>
-          {/* Sentinel: IntersectionObserver watches this to trigger the tally bar */}
-          <div ref={heroEndRef} style={{ height: 0 }} />
         </div>
 
         {/* Q-cards */}
