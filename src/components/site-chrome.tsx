@@ -256,13 +256,22 @@ function ToolsDropdown() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex items-center gap-1 transition-colors hover:text-foreground"
-        style={{ fontSize: 13, color: "#5F5E5A" }}
+        className="nav-link inline-flex items-center"
+        style={{
+          fontSize: 13,
+          color: "#5F5E5A",
+          padding: "6px 10px",
+          borderRadius: 6,
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
         aria-expanded={open}
         aria-haspopup="true"
       >
-        <span>vett tools</span>
-        <ChevronDown className="h-3 w-3" style={{ opacity: 0.6 }} />
+        <span>vett Tools</span>
+        <ChevronDown style={{ width: 10, height: 10, opacity: 0.5, marginLeft: 3 }} />
       </button>
       {open && (
         <div
@@ -293,100 +302,231 @@ function ToolsDropdown() {
 
 export function SiteHeader() {
   const { email, hasPass, ready } = useAuthUser();
-  const [magicOpen, setMagicOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const loggedIn = ready && Boolean(email);
 
   return (
-    <header
-      className="sticky top-0 z-40"
-      style={{
-        background: "#F1EFE8",
-        borderBottom: "0.5px solid rgba(26,17,8,0.1)",
-      }}
-    >
-      <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-8" style={{ height: 56 }}>
-        <Link to="/" className="flex items-center">
-          <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#1A1108", letterSpacing: "-2px" }}>
-            vett
-          </span>
-        </Link>
-        <nav className="flex items-center gap-4 sm:gap-6">
-          <ToolsDropdown />
-          <Link
-            to="/blog/"
-            style={{ fontSize: 13, color: "#5F5E5A" }}
-            className="hover:text-foreground transition-colors"
-            activeProps={{ style: { fontSize: 13, color: "#1A1108" } }}
-            activeOptions={{ includeChildMatches: true }}
-          >
-            Blog
+    <>
+      <style>{`
+        .nav-link { transition: color 0.12s, background-color 0.12s; }
+        .nav-link:hover { color: #1A1108 !important; background-color: rgba(26,17,8,0.05) !important; }
+      `}</style>
+      <header
+        className="sticky top-0 z-40"
+        style={{
+          background: "#F1EFE8",
+          borderBottom: "0.5px solid rgba(26,17,8,0.08)",
+        }}
+      >
+        {/* Desktop bar */}
+        <div
+          style={{
+            maxWidth: 1152,
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            height: 58,
+            paddingLeft: 32,
+            paddingRight: 32,
+          }}
+        >
+          {/* Logo */}
+          <Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", flexShrink: 0 }}>
+            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#1A1108", letterSpacing: "-2px" }}>
+              vett
+            </span>
           </Link>
-          {!loggedIn && (
+
+          {/* Nav links — desktop */}
+          <nav
+            className="hidden md:flex items-center"
+            style={{ marginLeft: 28, gap: 2 }}
+          >
+            <ToolsDropdown />
+            <Link
+              to="/blog/"
+              className="nav-link"
+              style={{ fontSize: 13, color: "#5F5E5A", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-block" }}
+              activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-block" } }}
+              activeOptions={{ includeChildMatches: true }}
+            >
+              Blog
+            </Link>
             <Link
               to="/pricing"
-              style={{ fontSize: 13, color: "#5F5E5A" }}
-              className="hover:text-foreground transition-colors"
-              activeProps={{ style: { fontSize: 13, color: "#1A1108" } }}
+              className="nav-link"
+              style={{ fontSize: 13, color: "#5F5E5A", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-block" }}
+              activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-block" } }}
             >
               Pricing
             </Link>
-          )}
+          </nav>
 
-          {loggedIn ? (
-            <>
+          {/* Spacer */}
+          <div style={{ flex: 1 }} />
+
+          {/* Action buttons — desktop */}
+          <div className="hidden md:flex items-center" style={{ gap: 8 }}>
+            {loggedIn ? (
+              <>
+                <Link
+                  to={hasPass ? "/dashboard" : "/my-reports"}
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#F1EFE8",
+                    background: "#2D6A4F",
+                    borderRadius: 20,
+                    padding: "7px 16px",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                >
+                  Dashboard
+                </Link>
+                <UserMenu email={email!} hasPass={hasPass} />
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/buyer-login"
+                  style={{
+                    fontSize: 13,
+                    color: "#1A1108",
+                    background: "transparent",
+                    border: "0.5px solid rgba(26,17,8,0.2)",
+                    borderRadius: 20,
+                    padding: "7px 14px",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                >
+                  Login
+                </Link>
+                <Link
+                  to="/"
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: "#F1EFE8",
+                    background: "#2D6A4F",
+                    borderRadius: 20,
+                    padding: "7px 16px",
+                    textDecoration: "none",
+                    display: "inline-flex",
+                    alignItems: "center",
+                  }}
+                >
+                  Get started
+                </Link>
+              </>
+            )}
+          </div>
+
+          {/* Hamburger — mobile only */}
+          <button
+            type="button"
+            className="md:hidden"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Toggle menu"
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#1A1108", marginLeft: "auto" }}
+          >
+            {mobileOpen ? (
+              <X style={{ width: 20, height: 20 }} />
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                <path d="M3 5h14M3 10h14M3 15h14" stroke="#1A1108" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <div
+            className="md:hidden"
+            style={{
+              background: "#F1EFE8",
+              borderTop: "0.5px solid rgba(26,17,8,0.08)",
+              padding: "8px 16px 20px",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {/* vett Tools sub-items */}
+              <div style={{ fontSize: 11, fontWeight: 500, color: "#888780", textTransform: "uppercase", letterSpacing: "0.06em", padding: "8px 10px 4px" }}>
+                vett Tools
+              </div>
+              {TOOLS_ITEMS.map((item) => (
+                <Link
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setMobileOpen(false)}
+                  style={{ fontSize: 13, color: "#5F5E5A", padding: "9px 10px 9px 20px", borderRadius: 8, textDecoration: "none", display: "block" }}
+                >
+                  {item.label}
+                </Link>
+              ))}
               <Link
-                to={hasPass ? "/dashboard" : "/my-reports"}
-                className="inline-flex items-center justify-center transition-opacity hover:opacity-90"
+                to="/blog/"
+                onClick={() => setMobileOpen(false)}
+                style={{ fontSize: 13, color: "#5F5E5A", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" }}
+                activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" } }}
+                activeOptions={{ includeChildMatches: true }}
+              >
+                Blog
+              </Link>
+              <Link
+                to="/pricing"
+                onClick={() => setMobileOpen(false)}
+                style={{ fontSize: 13, color: "#5F5E5A", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" }}
+                activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" } }}
+              >
+                Pricing
+              </Link>
+              {loggedIn ? (
+                <Link
+                  to={hasPass ? "/dashboard" : "/my-reports"}
+                  onClick={() => setMobileOpen(false)}
+                  style={{ fontSize: 13, color: "#5F5E5A", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" }}
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <Link
+                  to="/buyer-login"
+                  onClick={() => setMobileOpen(false)}
+                  style={{ fontSize: 13, color: "#5F5E5A", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" }}
+                >
+                  Login
+                </Link>
+              )}
+            </div>
+            {/* Get started CTA */}
+            <div style={{ marginTop: 12 }}>
+              <Link
+                to="/"
+                onClick={() => setMobileOpen(false)}
                 style={{
-                  background: "#1A1108",
+                  display: "block",
+                  textAlign: "center",
+                  background: "#2D6A4F",
                   color: "#F1EFE8",
                   fontSize: 13,
                   fontWeight: 500,
-                  borderRadius: 100,
-                  padding: "9px 20px",
+                  borderRadius: 20,
+                  padding: "10px 16px",
+                  textDecoration: "none",
                 }}
               >
-                Dashboard
+                Get started
               </Link>
-              <UserMenu email={email!} hasPass={hasPass} />
-            </>
-          ) : (
-            <>
-              <Link
-                to="/buyer-login"
-                className="hidden sm:inline-flex items-center justify-center transition-opacity hover:opacity-90"
-                style={{
-                  background: "#1A1108",
-                  color: "#F1EFE8",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  borderRadius: 100,
-                  padding: "9px 20px",
-                }}
-              >
-                Buyer Login
-              </Link>
-              {/* Mobile: filled dark Login pill */}
-              <Link
-                to="/buyer-login"
-                className="inline-flex sm:hidden items-center justify-center transition-opacity hover:opacity-90"
-                style={{
-                  background: "#1A1108",
-                  color: "#F1EFE8",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  borderRadius: 100,
-                  padding: "6px 12px",
-                }}
-              >
-                Login
-              </Link>
-            </>
-          )}
-        </nav>
-      </div>
-      {magicOpen && <MagicLinkModal onClose={() => setMagicOpen(false)} />}
-    </header>
+            </div>
+          </div>
+        )}
+      </header>
+    </>
   );
 }
 
