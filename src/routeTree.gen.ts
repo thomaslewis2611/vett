@@ -31,6 +31,7 @@ import { Route as ReportTokenRouteImport } from './routes/report.$token'
 import { Route as BlogHowToAnalyseARightmoveListingRouteImport } from './routes/blog/how-to-analyse-a-rightmove-listing'
 import { Route as BlogSlugRouteImport } from './routes/blog/$slug'
 import { Route as ApiRenovationEstimateEmailRouteImport } from './routes/api/renovation-estimate-email'
+import { Route as ApiPlaceReviewsRouteImport } from './routes/api/place-reviews'
 import { Route as ApiLocalBusinessesRouteImport } from './routes/api/local-businesses'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
@@ -150,6 +151,11 @@ const ApiRenovationEstimateEmailRoute =
     path: '/api/renovation-estimate-email',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPlaceReviewsRoute = ApiPlaceReviewsRouteImport.update({
+  id: '/api/place-reviews',
+  path: '/api/place-reviews',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiLocalBusinessesRoute = ApiLocalBusinessesRouteImport.update({
   id: '/api/local-businesses',
   path: '/api/local-businesses',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/api/local-businesses': typeof ApiLocalBusinessesRoute
+  '/api/place-reviews': typeof ApiPlaceReviewsRoute
   '/api/renovation-estimate-email': typeof ApiRenovationEstimateEmailRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/how-to-analyse-a-rightmove-listing': typeof BlogHowToAnalyseARightmoveListingRoute
@@ -224,6 +231,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/api/local-businesses': typeof ApiLocalBusinessesRoute
+  '/api/place-reviews': typeof ApiPlaceReviewsRoute
   '/api/renovation-estimate-email': typeof ApiRenovationEstimateEmailRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/how-to-analyse-a-rightmove-listing': typeof BlogHowToAnalyseARightmoveListingRoute
@@ -254,6 +262,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/api/local-businesses': typeof ApiLocalBusinessesRoute
+  '/api/place-reviews': typeof ApiPlaceReviewsRoute
   '/api/renovation-estimate-email': typeof ApiRenovationEstimateEmailRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/blog/how-to-analyse-a-rightmove-listing': typeof BlogHowToAnalyseARightmoveListingRoute
@@ -285,6 +294,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/api/local-businesses'
+    | '/api/place-reviews'
     | '/api/renovation-estimate-email'
     | '/blog/$slug'
     | '/blog/how-to-analyse-a-rightmove-listing'
@@ -314,6 +324,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/api/local-businesses'
+    | '/api/place-reviews'
     | '/api/renovation-estimate-email'
     | '/blog/$slug'
     | '/blog/how-to-analyse-a-rightmove-listing'
@@ -343,6 +354,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/terms'
     | '/api/local-businesses'
+    | '/api/place-reviews'
     | '/api/renovation-estimate-email'
     | '/blog/$slug'
     | '/blog/how-to-analyse-a-rightmove-listing'
@@ -373,6 +385,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   ApiLocalBusinessesRoute: typeof ApiLocalBusinessesRoute
+  ApiPlaceReviewsRoute: typeof ApiPlaceReviewsRoute
   ApiRenovationEstimateEmailRoute: typeof ApiRenovationEstimateEmailRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogHowToAnalyseARightmoveListingRoute: typeof BlogHowToAnalyseARightmoveListingRoute
@@ -542,6 +555,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiRenovationEstimateEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/place-reviews': {
+      id: '/api/place-reviews'
+      path: '/api/place-reviews'
+      fullPath: '/api/place-reviews'
+      preLoaderRoute: typeof ApiPlaceReviewsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/local-businesses': {
       id: '/api/local-businesses'
       path: '/api/local-businesses'
@@ -597,6 +617,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   ApiLocalBusinessesRoute: ApiLocalBusinessesRoute,
+  ApiPlaceReviewsRoute: ApiPlaceReviewsRoute,
   ApiRenovationEstimateEmailRoute: ApiRenovationEstimateEmailRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogHowToAnalyseARightmoveListingRoute:

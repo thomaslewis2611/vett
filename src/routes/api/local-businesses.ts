@@ -58,6 +58,19 @@ export const Route = createFileRoute("/api/local-businesses")({
           });
         }
 
+        const radiusRaw = parseInt(url.searchParams.get("radius") ?? "8000", 10);
+        const radius = isNaN(radiusRaw) || radiusRaw < 1000 ? 8000 : Math.min(radiusRaw, 50000);
+
+        const excludeRaw = url.searchParams.get("exclude") ?? "";
+        const excludeSet = excludeRaw
+          ? new Set(
+              excludeRaw
+                .split(",")
+                .map((n) => n.trim().toLowerCase())
+                .filter(Boolean),
+            )
+          : null;
+
         const apiKey =
           process.env.GOOGLE_PLACES_API_KEY ?? (globalThis as any).GOOGLE_PLACES_API_KEY;
         if (!apiKey) {
@@ -108,7 +121,7 @@ export const Route = createFileRoute("/api/local-businesses")({
                   includedTypes: NEARBY_TYPES[category],
                   maxResultCount: 10,
                   locationRestriction: {
-                    circle: { center: { latitude: lat, longitude: lng }, radius: 8000 },
+                    circle: { center: { latitude: lat, longitude: lng }, radius },
                   },
                 }),
               },
@@ -134,7 +147,7 @@ export const Route = createFileRoute("/api/local-businesses")({
                 body: JSON.stringify({
                   textQuery,
                   locationBias: {
-                    circle: { center: { latitude: lat, longitude: lng }, radius: 8000 },
+                    circle: { center: { latitude: lat, longitude: lng }, radius },
                   },
                   maxResultCount: 10,
                 }),
@@ -158,7 +171,9 @@ export const Route = createFileRoute("/api/local-businesses")({
         const results = rawPlaces
           .filter(
             (p) =>
-              p.businessStatus === "OPERATIONAL" || p.businessStatus === undefined,
+              (p.businessStatus === "OPERATIONAL" || p.businessStatus === undefined) &&
+              (!excludeSet ||
+                !excludeSet.has((p.displayName?.text ?? "").toLowerCase())),
           )
           .map(normalisePlace)
           .sort((a, b) => {
