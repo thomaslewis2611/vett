@@ -857,59 +857,89 @@ function SummaryCard({
       </div>
 
       {/* Action buttons */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        <button
-          type="button"
-          onClick={handleShare}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+        {/* 1 — Primary CTA */}
+        <a
+          href="https://vetthome.com"
           style={{
-            background: "rgba(241,239,232,0.1)",
-            border: "0.5px solid rgba(241,239,232,0.25)",
-            borderRadius: 100,
-            padding: "11px 20px",
+            display: "block",
+            textAlign: "center",
+            background: C.green,
+            border: "none",
+            borderRadius: 20,
+            padding: "11px 16px",
             fontSize: 13,
             fontWeight: 500,
-            color: C.bg,
-            cursor: "pointer",
-            transition: "background 0.12s",
+            color: "#F1EFE8",
+            textDecoration: "none",
+            width: "100%",
+            boxSizing: "border-box",
           }}
         >
-          {copied ? "Copied!" : "Share my estimate"}
-        </button>
+          Get a vett report →
+        </a>
 
+        {/* 2 — Secondary CTA */}
         <a
           href="/tools/local-businesses?category=contractors"
           style={{
             display: "block",
             textAlign: "center",
-            background: "transparent",
-            border: "0.5px solid rgba(241,239,232,0.15)",
+            background: "#F1EFE8",
+            border: "none",
             borderRadius: 20,
-            padding: "10px 20px",
+            padding: "11px 16px",
             fontSize: 13,
             fontWeight: 500,
-            color: "rgba(241,239,232,0.8)",
+            color: "#1A1108",
             textDecoration: "none",
+            width: "100%",
+            boxSizing: "border-box",
           }}
         >
           Find tradespeople near you →
         </a>
 
-        <button
-          type="button"
-          onClick={() => setShowEmail((v) => !v)}
-          style={{
-            background: "rgba(241,239,232,0.1)",
-            border: "0.5px solid rgba(241,239,232,0.25)",
-            borderRadius: 100,
-            padding: "11px 20px",
-            fontSize: 13,
-            fontWeight: 500,
-            color: C.bg,
-            cursor: "pointer",
-          }}
-        >
-          Email me my estimate
-        </button>
+        {/* 3 — Ghost pair */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          <button
+            type="button"
+            onClick={handleShare}
+            style={{
+              background: "transparent",
+              border: "0.5px solid rgba(241,239,232,0.25)",
+              borderRadius: 20,
+              padding: "11px 16px",
+              fontSize: 13,
+              fontWeight: 500,
+              color: "rgba(241,239,232,0.75)",
+              cursor: "pointer",
+              width: "100%",
+              fontFamily: "inherit",
+            }}
+          >
+            {copied ? "Copied!" : "Share estimate"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setShowEmail((v) => !v)}
+            style={{
+              background: "transparent",
+              border: "0.5px solid rgba(241,239,232,0.25)",
+              borderRadius: 20,
+              padding: "11px 16px",
+              fontSize: 13,
+              fontWeight: 500,
+              color: "rgba(241,239,232,0.75)",
+              cursor: "pointer",
+              width: "100%",
+              fontFamily: "inherit",
+            }}
+          >
+            Email estimate
+          </button>
+        </div>
 
         {showEmail && (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -947,6 +977,7 @@ function SummaryCard({
                   color: "#FFFDF9",
                   cursor: emailStatus === "sending" ? "wait" : "pointer",
                   opacity: !email.includes("@") ? 0.5 : 1,
+                  fontFamily: "inherit",
                 }}
               >
                 {emailStatus === "sending" ? "Sending…" : "Send"}
@@ -954,24 +985,6 @@ function SummaryCard({
             )}
           </div>
         )}
-
-        <a
-          href="https://vetthome.com"
-          style={{
-            display: "block",
-            textAlign: "center",
-            background: C.green,
-            border: "none",
-            borderRadius: 100,
-            padding: "11px 20px",
-            fontSize: 13,
-            fontWeight: 500,
-            color: "#FFFDF9",
-            textDecoration: "none",
-          }}
-        >
-          Get a vett report →
-        </a>
       </div>
     </div>
   );
