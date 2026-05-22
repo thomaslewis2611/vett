@@ -261,7 +261,7 @@ function ToolsDropdown() {
         aria-haspopup="true"
       >
         <Wrench className="h-3.5 w-3.5" />
-        <span className="hidden sm:inline">Tools</span>
+        <span>vett tools</span>
         <ChevronDown className="h-3 w-3" style={{ opacity: 0.6 }} />
       </button>
       {open && (
@@ -311,6 +311,7 @@ export function SiteHeader() {
           </span>
         </Link>
         <nav className="flex items-center gap-4 sm:gap-6">
+          <ToolsDropdown />
           <Link
             to="/blog/"
             style={{ fontSize: 13, color: "#5F5E5A" }}
@@ -320,7 +321,6 @@ export function SiteHeader() {
           >
             Blog
           </Link>
-          <ToolsDropdown />
           {!loggedIn && (
             <Link
               to="/pricing"

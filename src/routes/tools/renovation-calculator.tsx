@@ -257,9 +257,12 @@ function calcItemCost(id: CategoryId, s: CalcState): ItemCost {
   };
 }
 
-function formatK(n: number): string {
-  if (n >= 1000) return `£${Math.round(n / 1000)}k`;
-  return `£${n}`;
+function formatGbp(n: number): string {
+  if (n >= 100000) {
+    const rounded = Math.round(n / 1000) * 1000;
+    return `£${rounded.toLocaleString("en-GB")}`;
+  }
+  return `£${Math.round(n / 100) * 100 === n ? n.toLocaleString("en-GB") : n.toLocaleString("en-GB")}`;
 }
 
 // ── Shared UI components ──────────────────────────────────────────────────────
@@ -319,9 +322,21 @@ function Toggle({
   label: string;
 }) {
   return (
-    <label style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        cursor: "pointer",
+        background: "none",
+        border: "none",
+        padding: 0,
+        textAlign: "left",
+      }}
+    >
       <div
-        onClick={() => onChange(!checked)}
         style={{
           width: 34,
           height: 18,
@@ -346,7 +361,7 @@ function Toggle({
         />
       </div>
       <span style={{ fontSize: 13, color: C.muted }}>{label}</span>
-    </label>
+    </button>
   );
 }
 
@@ -628,11 +643,12 @@ function CategoryCard({
   return (
     <div
       style={{
-        background: C.card,
+        background: active ? "#F0F7F0" : C.card,
         border: `0.5px solid ${C.border}`,
         borderRadius: 16,
         overflow: "hidden",
         borderLeft: active ? `3px solid ${C.green}` : `0.5px solid ${C.border}`,
+        transition: "background 0.15s",
       }}
     >
       {/* Header */}
@@ -673,12 +689,12 @@ function CategoryCard({
               </svg>
             )}
           </div>
-          <span style={{ fontSize: 14, fontWeight: 500, color: C.dark }}>{label}</span>
+          <span style={{ fontSize: 14, fontWeight: 500, color: active ? C.green : C.dark }}>{label}</span>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12, flexShrink: 0 }}>
           {active && cost && (
             <span style={{ fontSize: 13, fontWeight: 600, color: C.green }}>
-              {formatK(cost.mid)}
+              {formatGbp(cost.mid)}
             </span>
           )}
           <svg
@@ -776,10 +792,10 @@ function SummaryCard({
           Total mid estimate
         </div>
         <div style={{ fontFamily: HEADING, fontSize: "clamp(36px, 5vw, 52px)", fontWeight: 400, lineHeight: 1, letterSpacing: "-1px" }}>
-          {formatK(total)}
+          {formatGbp(total)}
         </div>
         <div style={{ fontSize: 13, color: "rgba(241,239,232,0.55)", marginTop: 6 }}>
-          Range: {formatK(totalLow)} – {formatK(totalHigh)}
+          Range: {formatGbp(totalLow)} – {formatGbp(totalHigh)}
         </div>
       </div>
 
@@ -788,12 +804,12 @@ function SummaryCard({
         {costs.map((c) => (
           <div key={c.id} style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
             <span style={{ color: "rgba(241,239,232,0.7)" }}>{c.label}</span>
-            <span style={{ color: C.bg, fontWeight: 500 }}>{formatK(c.mid)}</span>
+            <span style={{ color: C.bg, fontWeight: 500 }}>{formatGbp(c.mid)}</span>
           </div>
         ))}
         <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 10, borderTop: "0.5px solid rgba(241,239,232,0.12)", fontSize: 14, fontWeight: 600 }}>
           <span style={{ color: C.bg }}>Total</span>
-          <span style={{ color: C.bg }}>{formatK(total)}</span>
+          <span style={{ color: C.bg }}>{formatGbp(total)}</span>
         </div>
       </div>
 
@@ -931,7 +947,16 @@ const FAQ_ITEMS = [
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ borderBottom: `0.5px solid ${C.border}` }}>
+    <div
+      style={{
+        borderBottom: `0.5px solid ${C.border}`,
+        background: open ? "#F0F7F0" : "transparent",
+        borderRadius: open ? 8 : 0,
+        padding: open ? "0 12px" : "0",
+        margin: open ? "4px 0" : "0",
+        transition: "background 0.15s, padding 0.15s, margin 0.15s",
+      }}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -1122,11 +1147,11 @@ function RenovationCalculator() {
         </div>
 
         {/* Property type selector */}
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: 12, background: C.card, border: `0.5px solid ${C.border}`, borderRadius: 14, padding: "14px 16px", boxShadow: "0 1px 4px rgba(26,17,8,0.05)" }}>
           <div style={{ fontSize: 11, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", color: C.veryMuted, marginBottom: 10 }}>
             Property type
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, background: C.card, border: `0.5px solid ${C.border}`, borderRadius: 12, padding: 6 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, background: C.bg, borderRadius: 10, padding: 4 }}>
             {(["flat", "terrace", "semi", "detached"] as PropType[]).map((p) => (
               <button key={p} type="button" onClick={() => handlePropChange(p)} style={selectorBtn(state.prop === p)}>
                 {PROP_LABELS[p]}
@@ -1136,11 +1161,11 @@ function RenovationCalculator() {
         </div>
 
         {/* Region selector */}
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 28, background: C.card, border: `0.5px solid ${C.border}`, borderRadius: 14, padding: "14px 16px", boxShadow: "0 1px 4px rgba(26,17,8,0.05)" }}>
           <div style={{ fontSize: 11, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", color: C.veryMuted, marginBottom: 10 }}>
             Region
           </div>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, background: C.card, border: `0.5px solid ${C.border}`, borderRadius: 12, padding: 6 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, background: C.bg, borderRadius: 10, padding: 4 }}>
             {(Object.entries(REGION_LABELS) as [Region, string][]).map(([r, label]) => (
               <button key={r} type="button" onClick={() => update({ region: r })} style={selectorBtn(state.region === r)}>
                 {label}
@@ -1179,7 +1204,7 @@ function RenovationCalculator() {
 
         {/* SEO prose content */}
         <div style={{ marginTop: 64 }}>
-          <h2 style={{ fontFamily: HEADING, fontSize: 26, fontWeight: 400, color: C.dark, letterSpacing: "-0.3px", margin: "0 0 16px" }}>
+          <h2 style={{ fontFamily: HEADING, fontSize: 26, fontWeight: 400, color: C.dark, letterSpacing: "-0.3px", margin: "0 0 16px", borderLeft: `3px solid ${C.green}`, paddingLeft: 12 }}>
             How much does renovation cost in the UK in 2026?
           </h2>
           <div style={{ fontSize: 15, color: C.muted, lineHeight: 1.75 }}>
@@ -1197,7 +1222,7 @@ function RenovationCalculator() {
             </p>
           </div>
 
-          <h2 style={{ fontFamily: HEADING, fontSize: 26, fontWeight: 400, color: C.dark, letterSpacing: "-0.3px", margin: "0 0 16px" }}>
+          <h2 style={{ fontFamily: HEADING, fontSize: 26, fontWeight: 400, color: C.dark, letterSpacing: "-0.3px", margin: "0 0 16px", borderLeft: `3px solid ${C.green}`, paddingLeft: 12 }}>
             How to get an accurate renovation quote
           </h2>
           <div style={{ fontSize: 15, color: C.muted, lineHeight: 1.75 }}>
@@ -1250,18 +1275,20 @@ function RenovationCalculator() {
         </div>
 
         {/* Disclaimer */}
-        <p
-          style={{
-            marginTop: 48,
-            fontSize: 11,
-            color: C.veryMuted,
-            lineHeight: 1.6,
-            borderTop: `0.5px solid ${C.border}`,
-            paddingTop: 20,
-          }}
-        >
-          Estimates are indicative only, based on 2026 UK market data. Costs include VAT at 20%. Always get at least 3 itemised quotes before committing to any contractor. Regional multipliers: London ×1.35, South East ×1.22, Scotland &amp; Wales ×0.88.
-        </p>
+        <div style={{ marginTop: 56, borderTop: `0.5px solid ${C.border}`, paddingTop: 28 }}>
+          <p
+            style={{
+              fontSize: 13,
+              color: C.veryMuted,
+              lineHeight: 1.7,
+              textAlign: "center",
+              maxWidth: 600,
+              margin: "0 auto",
+            }}
+          >
+            Estimates are indicative only and based on 2026 UK market data. Costs include VAT at 20%. Always get at least 3 itemised quotes before committing to any contractor. Regional multipliers applied: London ×1.35, South East ×1.22, Scotland &amp; Wales ×0.88. vett renovation estimates are AI-assisted and for budgeting purposes only — they are not quotes and should not be relied upon as such.
+          </p>
+        </div>
       </main>
 
       <SiteFooter />
