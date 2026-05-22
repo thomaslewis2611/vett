@@ -587,7 +587,7 @@ function StickyTallyBar({ total, low, high, selectedCount, emailItems, property,
             fontSize: 12, fontWeight: 500,
             borderRadius: 100, padding: "8px 14px", cursor: "pointer", whiteSpace: "nowrap" as const,
             fontFamily: BODY_FONT,
-          }}>{copied ? "Copied!" : "↗ Save"}</button>
+          }}>{copied ? "Link copied!" : "↗ Share"}</button>
           <button onClick={() => { setShowEmail(v => !v); setEmailStatus("idle"); }} className="rc-tally-btn" style={{
             background: COLORS.greenLight, color: COLORS.dark, border: 0,
             fontSize: 12, fontWeight: 500,
