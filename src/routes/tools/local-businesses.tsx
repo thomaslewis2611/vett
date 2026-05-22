@@ -1218,23 +1218,6 @@ function LocalBusinesses() {
                     </p>
                   )}
 
-                  {/* Map placeholder */}
-                  {!loadMoreLoading && (
-                    <div
-                      style={{
-                        marginTop: 20,
-                        background: C.card,
-                        border: `0.5px solid ${C.border}`,
-                        borderRadius: 16,
-                        padding: "28px 20px",
-                        textAlign: "center",
-                      }}
-                    >
-                      <p style={{ fontSize: 13, color: C.veryMuted, margin: 0 }}>
-                        🗺 View on map — coming soon
-                      </p>
-                    </div>
-                  )}
                 </div>
               )}
             </>
