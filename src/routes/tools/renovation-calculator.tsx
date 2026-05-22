@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useRouter, useNavigate } from "@tanstack/react-router";
-import { useState, useEffect, useMemo, type CSSProperties } from "react";
+import { useState, useEffect, useRef, useMemo, type CSSProperties } from "react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import { buildPageMeta, buildCanonicalLink, jsonLdScript, SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo";
 import { focusAndPulseInput } from "@/lib/focus-input";
@@ -522,10 +522,10 @@ function ItemConfigPanel({ item, cfg, property, onChange, note, contributionStr 
 }
 
 // ── Sticky Tally Bar (wired: Save copies URL, Email posts to existing route) ──
-function StickyTallyBar({ total, low, high, selectedCount, emailItems, property, region, getShareUrl }: {
+function StickyTallyBar({ total, low, high, selectedCount, emailItems, property, region, getShareUrl, visible }: {
   total: number; low: number; high: number; selectedCount: number;
   emailItems: Array<{ label: string; mid: number; low: number; high: number }>;
-  property: string; region: string; getShareUrl: () => string;
+  property: string; region: string; getShareUrl: () => string; visible: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [showEmail, setShowEmail] = useState(false);
@@ -555,11 +555,13 @@ function StickyTallyBar({ total, low, high, selectedCount, emailItems, property,
     <div
       className="rc-tally"
       style={{
-        position: "sticky" as const, top: 0, zIndex: 50,
+        position: "fixed" as const, top: 0, left: 0, right: 0, zIndex: 80,
         background: COLORS.dark, color: COLORS.bg,
         padding: "14px 56px",
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        gap: 24, boxShadow: "0 1px 0 rgba(0,0,0,0.25)",
+        gap: 24, boxShadow: "0 2px 12px rgba(0,0,0,0.18)",
+        transform: visible ? "translateY(0)" : "translateY(-100%)",
+        transition: "transform 220ms ease-in-out",
       }}
     >
       <div>
@@ -715,6 +717,23 @@ function RenovationCalculator() {
   const [configs, setConfigs] = useState<Record<string, ItemCfg>>({});
   const [answered, setAnswered] = useState<Record<number, boolean>>({});
   const [active, setActive] = useState(1);
+  const [tallyVisible, setTallyVisible] = useState(false);
+  const heroEndRef = useRef<HTMLDivElement>(null);
+
+  // Show/hide tally bar based on hero scrolling out of view
+  useEffect(() => {
+    if (typeof window === "undefined" || !heroEndRef.current) return;
+    const sentinel = heroEndRef.current;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show bar once sentinel has scrolled above the viewport top
+        setTallyVisible(!entry.isIntersecting && entry.boundingClientRect.top < 0);
+      },
+      { threshold: 0 }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, []);
 
   // Restore from URL on mount
   useEffect(() => {
@@ -835,6 +854,7 @@ function RenovationCalculator() {
         total={computed.total} low={computed.low} high={computed.high}
         selectedCount={selectedCount} emailItems={emailItems}
         property={property} region={region} getShareUrl={getShareUrl}
+        visible={tallyVisible}
       />
 
       <SiteHeader />
@@ -859,6 +879,8 @@ function RenovationCalculator() {
           }}>
             Build your renovation, line by line — we'll guide the price.
           </p>
+          {/* Sentinel: IntersectionObserver watches this to trigger the tally bar */}
+          <div ref={heroEndRef} style={{ height: 0 }} />
         </div>
 
         {/* Q-cards */}
