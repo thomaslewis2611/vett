@@ -24,6 +24,7 @@ import { Route as CompareRouteImport } from './routes/compare'
 import { Route as BuyerLoginRouteImport } from './routes/buyer-login'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ToolsIndexRouteImport } from './routes/tools/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
 import { Route as ToolsStampDutyRouteImport } from './routes/tools/stamp-duty'
 import { Route as ToolsRenovationCalculatorRouteImport } from './routes/tools/renovation-calculator'
@@ -112,6 +113,11 @@ const AboutRoute = AboutRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ToolsIndexRoute = ToolsIndexRouteImport.update({
+  id: '/tools/',
+  path: '/tools/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
@@ -216,6 +222,7 @@ export interface FileRoutesByFullPath {
   '/tools/renovation-calculator': typeof ToolsRenovationCalculatorRoute
   '/tools/stamp-duty': typeof ToolsStampDutyRoute
   '/blog/': typeof BlogIndexRoute
+  '/tools/': typeof ToolsIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -247,6 +254,7 @@ export interface FileRoutesByTo {
   '/tools/renovation-calculator': typeof ToolsRenovationCalculatorRoute
   '/tools/stamp-duty': typeof ToolsStampDutyRoute
   '/blog': typeof BlogIndexRoute
+  '/tools': typeof ToolsIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -279,6 +287,7 @@ export interface FileRoutesById {
   '/tools/renovation-calculator': typeof ToolsRenovationCalculatorRoute
   '/tools/stamp-duty': typeof ToolsStampDutyRoute
   '/blog/': typeof BlogIndexRoute
+  '/tools/': typeof ToolsIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -312,6 +321,7 @@ export interface FileRouteTypes {
     | '/tools/renovation-calculator'
     | '/tools/stamp-duty'
     | '/blog/'
+    | '/tools/'
     | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -343,6 +353,7 @@ export interface FileRouteTypes {
     | '/tools/renovation-calculator'
     | '/tools/stamp-duty'
     | '/blog'
+    | '/tools'
     | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -374,6 +385,7 @@ export interface FileRouteTypes {
     | '/tools/renovation-calculator'
     | '/tools/stamp-duty'
     | '/blog/'
+    | '/tools/'
     | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -406,6 +418,7 @@ export interface RootRouteChildren {
   ToolsRenovationCalculatorRoute: typeof ToolsRenovationCalculatorRoute
   ToolsStampDutyRoute: typeof ToolsStampDutyRoute
   BlogIndexRoute: typeof BlogIndexRoute
+  ToolsIndexRoute: typeof ToolsIndexRoute
   ApiPublicCronCheckExpiryRemindersRoute: typeof ApiPublicCronCheckExpiryRemindersRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
   LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
@@ -517,6 +530,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tools/': {
+      id: '/tools/'
+      path: '/tools'
+      fullPath: '/tools/'
+      preLoaderRoute: typeof ToolsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/': {
@@ -647,6 +667,7 @@ const rootRouteChildren: RootRouteChildren = {
   ToolsRenovationCalculatorRoute: ToolsRenovationCalculatorRoute,
   ToolsStampDutyRoute: ToolsStampDutyRoute,
   BlogIndexRoute: BlogIndexRoute,
+  ToolsIndexRoute: ToolsIndexRoute,
   ApiPublicCronCheckExpiryRemindersRoute:
     ApiPublicCronCheckExpiryRemindersRoute,
   LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
