@@ -1,6 +1,18 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
+import {
+  IconRuler2,
+  IconScale,
+  IconBuilding,
+  IconHomeDollar,
+  IconTools,
+  IconDroplet,
+  IconBolt,
+  IconPlant,
+  IconHomeSearch,
+  IconTruck,
+} from "@tabler/icons-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import {
   buildPageMeta,
@@ -59,17 +71,42 @@ const DEFAULT_RADIUS = 8000;
 const RADIUS_STEP = 5000;
 const MAX_RADIUS = 30000;
 
-const CATEGORIES: { id: string; label: string }[] = [
-  { id: "surveyors", label: "Surveyors" },
-  { id: "solicitors", label: "Solicitors" },
-  { id: "architects", label: "Architects" },
-  { id: "mortgage-brokers", label: "Mortgage Brokers" },
-  { id: "contractors", label: "Renovation Contractors" },
-  { id: "estate-agents", label: "Estate Agents" },
-  { id: "removal-companies", label: "Removal Companies" },
+interface CategoryDef {
+  id: string;
+  label: string;
+  Icon: React.ComponentType<{ size?: number; color?: string }>;
+}
+
+const GROUPS: { label: string; categories: CategoryDef[] }[] = [
+  {
+    label: "Property & legal",
+    categories: [
+      { id: "surveyors", label: "Surveyors", Icon: IconRuler2 },
+      { id: "solicitors", label: "Solicitors", Icon: IconScale },
+      { id: "architects", label: "Architects", Icon: IconBuilding },
+      { id: "mortgage-brokers", label: "Mortgage Brokers", Icon: IconHomeDollar },
+    ],
+  },
+  {
+    label: "Trades & renovation",
+    categories: [
+      { id: "contractors", label: "Renovation Contractors", Icon: IconTools },
+      { id: "plumbers", label: "Plumbers", Icon: IconDroplet },
+      { id: "electricians", label: "Electricians", Icon: IconBolt },
+      { id: "landscapers", label: "Landscapers", Icon: IconPlant },
+    ],
+  },
+  {
+    label: "Moving",
+    categories: [
+      { id: "estate-agents", label: "Estate Agents", Icon: IconHomeSearch },
+      { id: "removal-companies", label: "Removal Companies", Icon: IconTruck },
+    ],
+  },
 ];
 
-const VALID_CATEGORY_IDS = new Set(CATEGORIES.map((c) => c.id));
+const ALL_CATEGORIES = GROUPS.flatMap((g) => g.categories);
+const VALID_CATEGORY_IDS = new Set(ALL_CATEGORIES.map((c) => c.id));
 
 // ── SEO schema ─────────────────────────────────────────────────────────────────
 const softwareAppSchema = {
@@ -178,9 +215,9 @@ function ReviewsModal({
   target: BusinessResult;
   onClose: () => void;
 }) {
-  const [reviewStatus, setReviewStatus] = useState<"loading" | "success" | "error" | "rate-limited">(
-    "loading",
-  );
+  const [reviewStatus, setReviewStatus] = useState<
+    "loading" | "success" | "error" | "rate-limited"
+  >("loading");
   const [data, setData] = useState<PlaceReviewsData | null>(null);
 
   useEffect(() => {
@@ -610,8 +647,10 @@ function LocalBusinesses() {
   const [inputError, setInputError] = useState<string | null>(null);
   const [radius, setRadius] = useState(DEFAULT_RADIUS);
   const [seenNames, setSeenNames] = useState<string[]>([]);
-  const [refreshLoading, setRefreshLoading] = useState(false);
-  const [refreshExhausted, setRefreshExhausted] = useState(false);
+  const [loadMoreLoading, setLoadMoreLoading] = useState(false);
+  const [loadMoreExhausted, setLoadMoreExhausted] = useState(false);
+  const [loadMoreRateLimited, setLoadMoreRateLimited] = useState(false);
+  const [initialCount, setInitialCount] = useState(0);
   const [reviewTarget, setReviewTarget] = useState<BusinessResult | null>(null);
   const initDone = useRef(false);
 
@@ -642,7 +681,9 @@ function LocalBusinesses() {
       setSearchedPostcode(normalised);
       setRadius(DEFAULT_RADIUS);
       setSeenNames([]);
-      setRefreshExhausted(false);
+      setLoadMoreExhausted(false);
+      setLoadMoreRateLimited(false);
+      setInitialCount(0);
       updateUrl(normalised, cat);
       try {
         const resp = await fetch(
@@ -654,7 +695,9 @@ function LocalBusinesses() {
         } else if (!resp.ok) {
           setStatus("error");
         } else {
-          setResults(data.results ?? []);
+          const fetched: BusinessResult[] = data.results ?? [];
+          setResults(fetched);
+          setInitialCount(fetched.length);
           setStatus("success");
         }
       } catch {
@@ -664,26 +707,31 @@ function LocalBusinesses() {
     [updateUrl],
   );
 
-  const handleRefresh = useCallback(async () => {
+  const handleLoadMore = useCallback(async () => {
     const nextRadius = Math.min(radius + RADIUS_STEP, MAX_RADIUS);
     const newSeen = [...seenNames, ...results.map((r) => r.name)];
     setSeenNames(newSeen);
-    setRefreshLoading(true);
+    setLoadMoreLoading(true);
     try {
       const resp = await fetch(
         `/api/local-businesses?postcode=${encodeURIComponent(searchedPostcode)}&category=${encodeURIComponent(category)}&radius=${nextRadius}&exclude=${encodeURIComponent(newSeen.join(","))}`,
       );
       const data = await resp.json();
-      if (resp.ok) {
-        const newResults: BusinessResult[] = data.results ?? [];
-        setResults(newResults);
+      if (resp.status === 429) {
+        setLoadMoreRateLimited(true);
+      } else if (resp.ok) {
+        const more: BusinessResult[] = data.results ?? [];
         setRadius(nextRadius);
-        if (newResults.length === 0) setRefreshExhausted(true);
+        if (more.length === 0) {
+          setLoadMoreExhausted(true);
+        } else {
+          setResults((prev) => [...prev, ...more]);
+        }
       }
     } catch {
-      // keep existing results on network error
+      // keep existing results on error
     } finally {
-      setRefreshLoading(false);
+      setLoadMoreLoading(false);
     }
   }, [radius, seenNames, results, searchedPostcode, category]);
 
@@ -717,12 +765,22 @@ function LocalBusinesses() {
     performSearch(trimmed, category);
   };
 
-  const handleCategoryChange = (cat: string) => {
+  const handleCategorySelect = (cat: string) => {
     setCategory(cat);
     if (searchedPostcode) {
       performSearch(searchedPostcode, cat);
     }
   };
+
+  // show "Load more" only if the initial search returned exactly 10 (may be more)
+  const showLoadMore =
+    status === "success" &&
+    results.length > 0 &&
+    initialCount >= 10 &&
+    !loadMoreLoading &&
+    !loadMoreExhausted &&
+    !loadMoreRateLimited &&
+    radius < MAX_RADIUS;
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: BODY, color: C.dark }}>
@@ -732,14 +790,15 @@ function LocalBusinesses() {
         .skeleton { animation: lbPulse 1.5s ease-in-out infinite; background: rgba(26,17,8,0.09); }
         .lb-spinner { width: 28px; height: 28px; border: 3px solid rgba(45,106,79,0.2); border-top-color: #2D6A4F; border-radius: 50%; animation: lbSpin 0.8s linear infinite; }
         .address-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .category-pills { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 8px; }
-        .category-pills::-webkit-scrollbar { display: none; }
-        .category-pills button { flex-shrink: 0; white-space: nowrap; }
         input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
           -webkit-box-shadow: 0 0 0px 1000px #FFFDF9 inset;
           box-shadow: 0 0 0px 1000px #FFFDF9 inset;
           -webkit-text-fill-color: #1A1108;
         }
+        .cat-card { transition: border-color 0.12s; }
+        .cat-card:hover { border-color: #2D6A4F !important; }
+        .cat-group-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+        @media (max-width: 640px) { .cat-group-grid { grid-template-columns: repeat(2, 1fr); } }
       `}</style>
       <SiteHeader />
 
@@ -782,7 +841,7 @@ function LocalBusinesses() {
         </div>
 
         {/* Search bar */}
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 32 }}>
           <div style={{ display: "flex", gap: 8, maxWidth: 480 }}>
             <input
               type="text"
@@ -835,32 +894,93 @@ function LocalBusinesses() {
           )}
         </div>
 
-        {/* Category pills */}
-        <div className="category-pills" style={{ marginBottom: 32 }}>
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat.id}
-              type="button"
-              onClick={() => handleCategoryChange(cat.id)}
-              style={{
-                fontSize: 13,
-                fontWeight: category === cat.id ? 500 : 400,
-                color: category === cat.id ? "#FFFDF9" : C.muted,
-                background: category === cat.id ? C.green : C.card,
-                border: category === cat.id ? "none" : `0.5px solid ${C.border}`,
-                borderRadius: 100,
-                padding: "8px 16px",
-                cursor: "pointer",
-                transition: "all 0.12s",
-                fontFamily: BODY,
-              }}
-            >
-              {cat.label}
-            </button>
+        {/* Category icon grid — grouped */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 20, marginBottom: 36 }}>
+          {GROUPS.map((group) => (
+            <div key={group.label}>
+              {/* Group header */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  marginBottom: 8,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 500,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.06em",
+                    color: C.veryMuted,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {group.label}
+                </span>
+                <div
+                  style={{
+                    flex: 1,
+                    height: "0.5px",
+                    background: C.border,
+                  }}
+                />
+              </div>
+
+              {/* Cards */}
+              <div
+                className="cat-group-grid"
+                style={
+                  group.categories.length < 4
+                    ? { display: "flex", flexWrap: "wrap", gap: 8 }
+                    : undefined
+                }
+              >
+                {group.categories.map(({ id, label, Icon }) => {
+                  const active = category === id;
+                  return (
+                    <button
+                      key={id}
+                      type="button"
+                      className="cat-card"
+                      onClick={() => handleCategorySelect(id)}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        gap: 6,
+                        padding: "12px 6px",
+                        background: active ? C.green : C.card,
+                        border: `0.5px solid ${active ? C.green : C.border}`,
+                        borderRadius: 12,
+                        cursor: "pointer",
+                        fontFamily: BODY,
+                        width: group.categories.length < 4 ? "calc(25% - 6px)" : undefined,
+                        minWidth: group.categories.length < 4 ? 120 : undefined,
+                      }}
+                    >
+                      <Icon size={20} color={active ? "#F1EFE8" : C.green} />
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 500,
+                          color: active ? "#F1EFE8" : C.dark,
+                          textAlign: "center",
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {label}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
           ))}
         </div>
 
-        {/* Results area — always between pills and prose */}
+        {/* Results area — always between category grid and prose */}
         <div style={{ marginBottom: status !== "idle" ? 64 : 0 }}>
 
           {/* Initial loading */}
@@ -929,7 +1049,7 @@ function LocalBusinesses() {
           {status === "success" && (
             <>
               {/* Empty state */}
-              {!refreshLoading && results.length === 0 && (
+              {results.length === 0 && !loadMoreLoading && (
                 <div
                   style={{
                     background: C.card,
@@ -940,76 +1060,103 @@ function LocalBusinesses() {
                   }}
                 >
                   <p style={{ fontSize: 15, color: C.muted, margin: 0, lineHeight: 1.6 }}>
-                    {refreshExhausted ? (
-                      "No more results found nearby. You've seen all professionals in the area."
-                    ) : (
-                      <>
-                        No results found near{" "}
-                        <strong style={{ color: C.dark }}>{searchedPostcode}</strong>.
-                        Try a nearby postcode or expand your search.
-                      </>
-                    )}
+                    No results found near{" "}
+                    <strong style={{ color: C.dark }}>{searchedPostcode}</strong>.
+                    Try a nearby postcode or expand your search.
                   </p>
                 </div>
               )}
 
-              {/* Results or refresh skeleton */}
-              {(results.length > 0 || refreshLoading) && (
+              {/* Results */}
+              {results.length > 0 && (
                 <div>
-                  {!refreshLoading && (
-                    <p style={{ fontSize: 13, color: C.veryMuted, margin: "0 0 14px" }}>
-                      Showing {results.length}{" "}
-                      {seenNames.length > 0 ? "more " : ""}
-                      professional{results.length !== 1 ? "s" : ""} near{" "}
-                      <strong style={{ color: C.muted }}>{searchedPostcode}</strong>{" "}
-                      (within {Math.round(radius / 1000)}km)
+                  <p style={{ fontSize: 13, color: C.veryMuted, margin: "0 0 14px" }}>
+                    Showing {results.length} professional{results.length !== 1 ? "s" : ""} near{" "}
+                    <strong style={{ color: C.muted }}>{searchedPostcode}</strong>
+                  </p>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {results.map((r, i) => (
+                      <BusinessCard
+                        key={`${r.name}-${i}`}
+                        result={r}
+                        rank={i}
+                        onReviewClick={setReviewTarget}
+                      />
+                    ))}
+                  </div>
+
+                  {/* Load more skeleton */}
+                  {loadMoreLoading && (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 10,
+                        marginTop: 10,
+                      }}
+                    >
+                      <SkeletonCard />
+                      <SkeletonCard />
+                      <SkeletonCard />
+                    </div>
+                  )}
+
+                  {/* Load more button */}
+                  {showLoadMore && (
+                    <div style={{ display: "flex", justifyContent: "center", marginTop: 16 }}>
+                      <button
+                        type="button"
+                        onClick={handleLoadMore}
+                        style={{
+                          fontSize: 13,
+                          fontWeight: 500,
+                          color: C.green,
+                          background: "transparent",
+                          border: `0.5px solid ${C.green}`,
+                          borderRadius: 10,
+                          padding: "10px 20px",
+                          cursor: "pointer",
+                          fontFamily: BODY,
+                          width: "100%",
+                          maxWidth: 360,
+                        }}
+                      >
+                        Load more results →
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Load more exhausted */}
+                  {loadMoreExhausted && (
+                    <p
+                      style={{
+                        fontSize: 13,
+                        color: C.veryMuted,
+                        margin: "14px 0 0",
+                        textAlign: "center",
+                      }}
+                    >
+                      No more results in the area.
                     </p>
                   )}
 
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    {refreshLoading ? (
-                      <>
-                        <SkeletonCard />
-                        <SkeletonCard />
-                        <SkeletonCard />
-                      </>
-                    ) : (
-                      results.map((r, i) => (
-                        <BusinessCard
-                          key={`${r.name}-${i}`}
-                          result={r}
-                          rank={i}
-                          onReviewClick={setReviewTarget}
-                        />
-                      ))
-                    )}
-                  </div>
-
-                  {/* Refresh list button */}
-                  {!refreshLoading && !refreshExhausted && radius < MAX_RADIUS && (
-                    <button
-                      type="button"
-                      onClick={handleRefresh}
+                  {/* Load more rate limited */}
+                  {loadMoreRateLimited && (
+                    <p
                       style={{
-                        display: "block",
-                        marginTop: 16,
                         fontSize: 13,
-                        fontWeight: 500,
-                        color: C.green,
-                        background: "transparent",
-                        border: `1px solid ${C.green}`,
-                        borderRadius: 100,
-                        padding: "10px 20px",
-                        cursor: "pointer",
-                        fontFamily: BODY,
+                        color: C.veryMuted,
+                        margin: "14px 0 0",
+                        textAlign: "center",
                       }}
                     >
-                      Refresh list →
-                    </button>
+                      You've made too many searches. Please try again in an hour.
+                    </p>
                   )}
 
                   {/* Map placeholder */}
-                  {!refreshLoading && (
+                  {!loadMoreLoading && (
                     <div
                       style={{
                         marginTop: 20,

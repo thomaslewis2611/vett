@@ -13,6 +13,9 @@ const TEXT_QUERIES: Record<string, string> = {
   "mortgage-brokers": "{postcode} mortgage brokers advisers",
   contractors: "{postcode} renovation contractors builders",
   "removal-companies": "{postcode} removal companies",
+  plumbers: "{postcode} plumbers emergency plumbing",
+  electricians: "{postcode} electricians NICEIC",
+  landscapers: "{postcode} landscape gardeners",
 };
 
 const NEARBY_TYPES: Record<string, string[]> = {
