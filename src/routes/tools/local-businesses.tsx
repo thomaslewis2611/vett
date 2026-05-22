@@ -1,5 +1,6 @@
 import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import {
   buildPageMeta,
@@ -34,10 +35,29 @@ interface BusinessResult {
   isOpen: boolean | null;
 }
 
+interface PlaceReview {
+  author: string;
+  authorPhoto: string | null;
+  rating: number;
+  text: string;
+  timeAgo: string;
+}
+
+interface PlaceReviewsData {
+  name: string;
+  rating: number;
+  reviewCount: number;
+  googleMapsUrl: string;
+  reviews: PlaceReview[];
+}
+
 type Status = "idle" | "loading" | "success" | "error";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 const POSTCODE_REGEX = /^[A-Z]{1,2}[0-9][0-9A-Z]?\s*[0-9][A-Z]{2}$/i;
+const DEFAULT_RADIUS = 8000;
+const RADIUS_STEP = 5000;
+const MAX_RADIUS = 30000;
 
 const CATEGORIES: { id: string; label: string }[] = [
   { id: "surveyors", label: "Surveyors" },
@@ -82,6 +102,283 @@ export const Route = createFileRoute("/tools/local-businesses")({
   component: LocalBusinesses,
 });
 
+// ── Star display ───────────────────────────────────────────────────────────────
+function StarDisplay({ rating }: { rating: number }) {
+  const full = Math.round(rating);
+  return (
+    <span>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} style={{ color: i <= full ? "#D4A017" : "rgba(212,160,23,0.3)" }}>
+          {i <= full ? "★" : "☆"}
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// ── Review card ────────────────────────────────────────────────────────────────
+function ReviewCard({ review }: { review: PlaceReview }) {
+  const [expanded, setExpanded] = useState(false);
+  const long = review.text.length > 300;
+  const displayText = !long || expanded ? review.text : review.text.slice(0, 300) + "…";
+
+  return (
+    <div style={{ paddingBottom: 16, borderBottom: `0.5px solid ${C.border}` }}>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          marginBottom: 4,
+        }}
+      >
+        <span style={{ fontSize: 13, fontWeight: 500, color: C.dark }}>
+          {review.author}
+        </span>
+        <span style={{ fontSize: 12 }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <span key={i} style={{ color: i <= review.rating ? "#D4A017" : "rgba(212,160,23,0.3)" }}>
+              {i <= review.rating ? "★" : "☆"}
+            </span>
+          ))}
+        </span>
+      </div>
+      <div style={{ fontSize: 12, color: C.veryMuted, marginBottom: 8 }}>
+        {review.timeAgo}
+      </div>
+      <p style={{ fontSize: 14, color: C.muted, lineHeight: 1.6, margin: 0 }}>
+        {displayText}
+        {long && !expanded && (
+          <button
+            type="button"
+            onClick={() => setExpanded(true)}
+            style={{
+              background: "none",
+              border: "none",
+              color: C.green,
+              cursor: "pointer",
+              fontSize: 14,
+              padding: "0 0 0 4px",
+              fontFamily: BODY,
+            }}
+          >
+            read more
+          </button>
+        )}
+      </p>
+    </div>
+  );
+}
+
+// ── Reviews modal ──────────────────────────────────────────────────────────────
+function ReviewsModal({
+  target,
+  onClose,
+}: {
+  target: BusinessResult;
+  onClose: () => void;
+}) {
+  const [reviewStatus, setReviewStatus] = useState<"loading" | "success" | "error">(
+    "loading",
+  );
+  const [data, setData] = useState<PlaceReviewsData | null>(null);
+
+  useEffect(() => {
+    setReviewStatus("loading");
+    setData(null);
+    fetch(
+      `/api/place-reviews?name=${encodeURIComponent(target.name)}&address=${encodeURIComponent(target.address)}`,
+    )
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json() as Promise<PlaceReviewsData>;
+      })
+      .then((d) => {
+        setData(d);
+        setReviewStatus("success");
+      })
+      .catch(() => setReviewStatus("error"));
+  }, [target.name, target.address]);
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [onClose]);
+
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+
+  const modal = (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 16,
+        background: "rgba(0,0,0,0.5)",
+      }}
+      onClick={onClose}
+    >
+      <div
+        style={{
+          background: C.card,
+          borderRadius: 16,
+          padding: 24,
+          width: "100%",
+          maxWidth: 540,
+          maxHeight: "85vh",
+          overflowY: "auto",
+          position: "relative",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          style={{
+            position: "absolute",
+            top: 14,
+            right: 14,
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            fontSize: 22,
+            color: C.veryMuted,
+            lineHeight: 1,
+            padding: 4,
+            fontFamily: BODY,
+          }}
+        >
+          ×
+        </button>
+
+        {reviewStatus === "loading" && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              padding: "40px 0",
+              gap: 14,
+            }}
+          >
+            <div className="lb-spinner" />
+            <span style={{ fontSize: 13, color: C.veryMuted }}>Loading reviews…</span>
+          </div>
+        )}
+
+        {reviewStatus === "error" && (
+          <div style={{ textAlign: "center", padding: "32px 16px" }}>
+            <p style={{ fontSize: 14, color: C.muted, margin: 0 }}>
+              Couldn't load reviews. View them on{" "}
+              <a
+                href={`https://maps.google.com/search/${encodeURIComponent(target.name + " " + target.address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: C.green }}
+              >
+                Google Maps →
+              </a>
+            </p>
+          </div>
+        )}
+
+        {reviewStatus === "success" && data && (
+          <>
+            <h3
+              style={{
+                fontFamily: HEADING,
+                fontSize: 20,
+                fontWeight: 400,
+                color: C.dark,
+                margin: "0 0 10px",
+                paddingRight: 36,
+                lineHeight: 1.3,
+              }}
+            >
+              {data.name}
+            </h3>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                marginBottom: 16,
+              }}
+            >
+              <StarDisplay rating={data.rating} />
+              <span style={{ fontSize: 14, fontWeight: 500, color: C.dark }}>
+                {data.rating.toFixed(1)}
+              </span>
+              <span style={{ fontSize: 13, color: C.veryMuted }}>
+                ({data.reviewCount.toLocaleString("en-GB")} reviews)
+              </span>
+            </div>
+            <hr
+              style={{
+                border: "none",
+                borderTop: `0.5px solid ${C.border}`,
+                margin: "0 0 20px",
+              }}
+            />
+
+            {data.reviews.length === 0 ? (
+              <p
+                style={{
+                  fontSize: 14,
+                  color: C.muted,
+                  textAlign: "center",
+                  padding: "16px 0",
+                }}
+              >
+                No written reviews available.
+              </p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {data.reviews.map((r, i) => (
+                  <ReviewCard key={i} review={r} />
+                ))}
+              </div>
+            )}
+
+            {data.googleMapsUrl && (
+              <a
+                href={data.googleMapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: "block",
+                  marginTop: 20,
+                  fontSize: 14,
+                  color: C.green,
+                  textDecoration: "underline",
+                  textUnderlineOffset: 3,
+                }}
+              >
+                View all reviews on Google →
+              </a>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+
+  if (typeof document === "undefined") return null;
+  return createPortal(modal, document.body);
+}
+
 // ── Skeleton card ──────────────────────────────────────────────────────────────
 function SkeletonCard() {
   return (
@@ -97,8 +394,14 @@ function SkeletonCard() {
         <div className="skeleton" style={{ height: 16, width: "55%", borderRadius: 4 }} />
         <div className="skeleton" style={{ height: 16, width: "20%", borderRadius: 4 }} />
       </div>
-      <div className="skeleton" style={{ height: 13, width: "80%", borderRadius: 4, marginBottom: 6 }} />
-      <div className="skeleton" style={{ height: 13, width: "60%", borderRadius: 4, marginBottom: 16 }} />
+      <div
+        className="skeleton"
+        style={{ height: 13, width: "80%", borderRadius: 4, marginBottom: 6 }}
+      />
+      <div
+        className="skeleton"
+        style={{ height: 13, width: "60%", borderRadius: 4, marginBottom: 16 }}
+      />
       <div style={{ display: "flex", gap: 10 }}>
         <div className="skeleton" style={{ height: 32, width: 120, borderRadius: 999 }} />
         <div className="skeleton" style={{ height: 32, width: 80, borderRadius: 999 }} />
@@ -108,7 +411,15 @@ function SkeletonCard() {
 }
 
 // ── Business card ──────────────────────────────────────────────────────────────
-function BusinessCard({ result, rank }: { result: BusinessResult; rank: number }) {
+function BusinessCard({
+  result,
+  rank,
+  onReviewClick,
+}: {
+  result: BusinessResult;
+  rank: number;
+  onReviewClick: (r: BusinessResult) => void;
+}) {
   const isTopRated = rank < 3;
 
   return (
@@ -121,7 +432,6 @@ function BusinessCard({ result, rank }: { result: BusinessResult; rank: number }
         position: "relative",
       }}
     >
-      {/* Top rated badge */}
       {isTopRated && (
         <span
           style={{
@@ -141,7 +451,6 @@ function BusinessCard({ result, rank }: { result: BusinessResult; rank: number }
         </span>
       )}
 
-      {/* Name row */}
       <div
         style={{
           display: "flex",
@@ -157,20 +466,38 @@ function BusinessCard({ result, rank }: { result: BusinessResult; rank: number }
         </span>
       </div>
 
-      {/* Rating */}
       <div style={{ marginBottom: 8 }}>
         {result.rating !== null ? (
-          <span style={{ fontSize: 13, color: C.muted }}>
+          <button
+            type="button"
+            onClick={() => onReviewClick(result)}
+            style={{
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              fontSize: 13,
+              color: C.muted,
+              fontFamily: BODY,
+              textDecoration: "underline",
+              textDecorationStyle: "dotted",
+              textUnderlineOffset: 2,
+              textDecorationColor: "rgba(95,94,90,0.4)",
+            }}
+          >
             <span style={{ color: "#D4A017" }}>★</span>{" "}
-            <span style={{ fontWeight: 500, color: C.dark }}>{result.rating.toFixed(1)}</span>{" "}
-            <span style={{ color: C.veryMuted }}>({result.reviewCount.toLocaleString("en-GB")} reviews)</span>
-          </span>
+            <span style={{ fontWeight: 500, color: C.dark }}>
+              {result.rating.toFixed(1)}
+            </span>{" "}
+            <span style={{ color: C.veryMuted }}>
+              ({result.reviewCount.toLocaleString("en-GB")} reviews)
+            </span>
+          </button>
         ) : (
           <span style={{ fontSize: 13, color: C.veryMuted }}>No reviews yet</span>
         )}
       </div>
 
-      {/* Open status */}
       {result.isOpen !== null && (
         <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
           <div
@@ -182,13 +509,18 @@ function BusinessCard({ result, rank }: { result: BusinessResult; rank: number }
               flexShrink: 0,
             }}
           />
-          <span style={{ fontSize: 12, color: result.isOpen ? C.green : C.veryMuted, fontWeight: 500 }}>
+          <span
+            style={{
+              fontSize: 12,
+              color: result.isOpen ? C.green : C.veryMuted,
+              fontWeight: 500,
+            }}
+          >
             {result.isOpen ? "Open now" : "Closed"}
           </span>
         </div>
       )}
 
-      {/* Address */}
       <p
         className="address-clamp"
         style={{ fontSize: 13, color: C.muted, margin: "0 0 14px", lineHeight: 1.5 }}
@@ -196,7 +528,6 @@ function BusinessCard({ result, rank }: { result: BusinessResult; rank: number }
         {result.address}
       </p>
 
-      {/* Action buttons */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
         {result.website && (
           <a
@@ -237,7 +568,14 @@ function BusinessCard({ result, rank }: { result: BusinessResult; rank: number }
             }}
           >
             <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-              <path d="M14.5 11.5l-2.5-1.5c-.4-.2-.9-.1-1.2.2L9.5 11.5C8 10.8 5.2 8 4.5 6.5l1.3-1.3c.3-.3.4-.8.2-1.2L4.5 1.5C4.2 1.1 3.7.9 3.3 1L1.5 1.5C1.2 1.6 1 1.9 1 2.2c.2 7 5.8 12.6 12.8 12.8.3 0 .6-.2.7-.5l.5-1.8c.1-.4-.1-.9-.5-1z" stroke={C.muted} strokeWidth="1.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+              <path
+                d="M14.5 11.5l-2.5-1.5c-.4-.2-.9-.1-1.2.2L9.5 11.5C8 10.8 5.2 8 4.5 6.5l1.3-1.3c.3-.3.4-.8.2-1.2L4.5 1.5C4.2 1.1 3.7.9 3.3 1L1.5 1.5C1.2 1.6 1 1.9 1 2.2c.2 7 5.8 12.6 12.8 12.8.3 0 .6-.2.7-.5l.5-1.8c.1-.4-.1-.9-.5-1z"
+                stroke={C.muted}
+                strokeWidth="1.2"
+                fill="none"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </svg>
             Call
           </a>
@@ -256,6 +594,11 @@ function LocalBusinesses() {
   const [results, setResults] = useState<BusinessResult[]>([]);
   const [searchedPostcode, setSearchedPostcode] = useState("");
   const [inputError, setInputError] = useState<string | null>(null);
+  const [radius, setRadius] = useState(DEFAULT_RADIUS);
+  const [seenNames, setSeenNames] = useState<string[]>([]);
+  const [refreshLoading, setRefreshLoading] = useState(false);
+  const [refreshExhausted, setRefreshExhausted] = useState(false);
+  const [reviewTarget, setReviewTarget] = useState<BusinessResult | null>(null);
   const initDone = useRef(false);
 
   const updateUrl = useCallback(
@@ -267,7 +610,11 @@ function LocalBusinesses() {
       const hist = (router as any).history;
       const prev = hist._ignoreSubscribers;
       hist._ignoreSubscribers = true;
-      window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
+      window.history.replaceState(
+        null,
+        "",
+        `${window.location.pathname}?${params.toString()}`,
+      );
       hist._ignoreSubscribers = prev;
     },
     [router],
@@ -279,6 +626,9 @@ function LocalBusinesses() {
       setStatus("loading");
       setResults([]);
       setSearchedPostcode(normalised);
+      setRadius(DEFAULT_RADIUS);
+      setSeenNames([]);
+      setRefreshExhausted(false);
       updateUrl(normalised, cat);
       try {
         const resp = await fetch(
@@ -298,6 +648,29 @@ function LocalBusinesses() {
     [updateUrl],
   );
 
+  const handleRefresh = useCallback(async () => {
+    const nextRadius = Math.min(radius + RADIUS_STEP, MAX_RADIUS);
+    const newSeen = [...seenNames, ...results.map((r) => r.name)];
+    setSeenNames(newSeen);
+    setRefreshLoading(true);
+    try {
+      const resp = await fetch(
+        `/api/local-businesses?postcode=${encodeURIComponent(searchedPostcode)}&category=${encodeURIComponent(category)}&radius=${nextRadius}&exclude=${encodeURIComponent(newSeen.join(","))}`,
+      );
+      const data = await resp.json();
+      if (resp.ok) {
+        const newResults: BusinessResult[] = data.results ?? [];
+        setResults(newResults);
+        setRadius(nextRadius);
+        if (newResults.length === 0) setRefreshExhausted(true);
+      }
+    } catch {
+      // keep existing results on network error
+    } finally {
+      setRefreshLoading(false);
+    }
+  }, [radius, seenNames, results, searchedPostcode, category]);
+
   // On mount: read URL params and auto-trigger search if present
   useEffect(() => {
     if (initDone.current || typeof window === "undefined") return;
@@ -305,10 +678,11 @@ function LocalBusinesses() {
     const params = new URLSearchParams(window.location.search);
     const pc = params.get("postcode") ?? "";
     const cat = params.get("category") ?? "";
-    const validCat =
-      cat && VALID_CATEGORY_IDS.has(cat) ? cat : "surveyors";
+    const validCat = cat && VALID_CATEGORY_IDS.has(cat) ? cat : "surveyors";
     if (pc && POSTCODE_REGEX.test(pc)) {
-      const formatted = pc.replace(/([A-Z0-9]+?)([0-9][A-Z]{2})$/i, "$1 $2").toUpperCase();
+      const formatted = pc
+        .replace(/([A-Z0-9]+?)([0-9][A-Z]{2})$/i, "$1 $2")
+        .toUpperCase();
       setPostcode(formatted);
       setCategory(validCat);
       performSearch(pc, validCat);
@@ -337,33 +711,15 @@ function LocalBusinesses() {
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: BODY, color: C.dark }}>
       <style>{`
-        @keyframes lbPulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.35; }
-        }
-        .skeleton {
-          animation: lbPulse 1.5s ease-in-out infinite;
-          background: rgba(26,17,8,0.09);
-        }
-        .address-clamp {
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
-        }
-        .category-pills {
-          display: flex;
-          gap: 8px;
-          overflow-x: auto;
-          -webkit-overflow-scrolling: touch;
-          scrollbar-width: none;
-          padding-bottom: 2px;
-        }
+        @keyframes lbPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+        @keyframes lbSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .skeleton { animation: lbPulse 1.5s ease-in-out infinite; background: rgba(26,17,8,0.09); }
+        .lb-spinner { width: 28px; height: 28px; border: 3px solid rgba(45,106,79,0.2); border-top-color: #2D6A4F; border-radius: 50%; animation: lbSpin 0.8s linear infinite; }
+        .address-clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .category-pills { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 8px; }
         .category-pills::-webkit-scrollbar { display: none; }
-        .category-pills button { flex-shrink: 0; }
-        input:-webkit-autofill,
-        input:-webkit-autofill:hover,
-        input:-webkit-autofill:focus {
+        .category-pills button { flex-shrink: 0; white-space: nowrap; }
+        input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
           -webkit-box-shadow: 0 0 0px 1000px #FFFDF9 inset;
           box-shadow: 0 0 0px 1000px #FFFDF9 inset;
           -webkit-text-fill-color: #1A1108;
@@ -411,13 +767,7 @@ function LocalBusinesses() {
 
         {/* Search bar */}
         <div style={{ marginBottom: 20 }}>
-          <div
-            style={{
-              display: "flex",
-              gap: 8,
-              maxWidth: 480,
-            }}
-          >
+          <div style={{ display: "flex", gap: 8, maxWidth: 480 }}>
             <input
               type="text"
               value={postcode}
@@ -435,9 +785,7 @@ function LocalBusinesses() {
                 fontSize: 15,
                 color: C.dark,
                 background: C.card,
-                border: inputError
-                  ? "1px solid #C0392B"
-                  : `0.5px solid ${C.border}`,
+                border: inputError ? "1px solid #C0392B" : `0.5px solid ${C.border}`,
                 borderRadius: 12,
                 outline: "none",
                 fontFamily: BODY,
@@ -483,14 +831,10 @@ function LocalBusinesses() {
                 fontWeight: category === cat.id ? 500 : 400,
                 color: category === cat.id ? "#FFFDF9" : C.muted,
                 background: category === cat.id ? C.green : C.card,
-                border:
-                  category === cat.id
-                    ? "none"
-                    : `0.5px solid ${C.border}`,
+                border: category === cat.id ? "none" : `0.5px solid ${C.border}`,
                 borderRadius: 100,
                 padding: "8px 16px",
                 cursor: "pointer",
-                whiteSpace: "nowrap",
                 transition: "all 0.12s",
                 fontFamily: BODY,
               }}
@@ -502,6 +846,8 @@ function LocalBusinesses() {
 
         {/* Results area — always between pills and prose */}
         <div style={{ marginBottom: status !== "idle" ? 64 : 0 }}>
+
+          {/* Initial loading */}
           {status === "loading" && (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <SkeletonCard />
@@ -510,6 +856,7 @@ function LocalBusinesses() {
             </div>
           )}
 
+          {/* Error */}
           {status === "error" && (
             <div
               style={{
@@ -525,7 +872,9 @@ function LocalBusinesses() {
               </p>
               <button
                 type="button"
-                onClick={() => searchedPostcode && performSearch(searchedPostcode, category)}
+                onClick={() =>
+                  searchedPostcode && performSearch(searchedPostcode, category)
+                }
                 style={{
                   fontSize: 13,
                   fontWeight: 500,
@@ -543,51 +892,109 @@ function LocalBusinesses() {
             </div>
           )}
 
-          {status === "success" && results.length === 0 && (
-            <div
-              style={{
-                background: C.card,
-                border: `0.5px solid ${C.border}`,
-                borderRadius: 16,
-                padding: 28,
-                textAlign: "center",
-              }}
-            >
-              <p style={{ fontSize: 15, color: C.muted, margin: 0, lineHeight: 1.6 }}>
-                No results found near <strong style={{ color: C.dark }}>{searchedPostcode}</strong>.
-                Try a nearby postcode or expand your search.
-              </p>
-            </div>
-          )}
+          {/* Success */}
+          {status === "success" && (
+            <>
+              {/* Empty state */}
+              {!refreshLoading && results.length === 0 && (
+                <div
+                  style={{
+                    background: C.card,
+                    border: `0.5px solid ${C.border}`,
+                    borderRadius: 16,
+                    padding: 28,
+                    textAlign: "center",
+                  }}
+                >
+                  <p style={{ fontSize: 15, color: C.muted, margin: 0, lineHeight: 1.6 }}>
+                    {refreshExhausted ? (
+                      "No more results found nearby. You've seen all professionals in the area."
+                    ) : (
+                      <>
+                        No results found near{" "}
+                        <strong style={{ color: C.dark }}>{searchedPostcode}</strong>.
+                        Try a nearby postcode or expand your search.
+                      </>
+                    )}
+                  </p>
+                </div>
+              )}
 
-          {status === "success" && results.length > 0 && (
-            <div>
-              <p style={{ fontSize: 13, color: C.veryMuted, margin: "0 0 14px" }}>
-                Showing {results.length} professional{results.length !== 1 ? "s" : ""} near{" "}
-                <strong style={{ color: C.muted }}>{searchedPostcode}</strong>
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {results.map((r, i) => (
-                  <BusinessCard key={`${r.name}-${i}`} result={r} rank={i} />
-                ))}
-              </div>
+              {/* Results or refresh skeleton */}
+              {(results.length > 0 || refreshLoading) && (
+                <div>
+                  {!refreshLoading && (
+                    <p style={{ fontSize: 13, color: C.veryMuted, margin: "0 0 14px" }}>
+                      Showing {results.length}{" "}
+                      {seenNames.length > 0 ? "more " : ""}
+                      professional{results.length !== 1 ? "s" : ""} near{" "}
+                      <strong style={{ color: C.muted }}>{searchedPostcode}</strong>{" "}
+                      (within {Math.round(radius / 1000)}km)
+                    </p>
+                  )}
 
-              {/* Map placeholder */}
-              <div
-                style={{
-                  marginTop: 20,
-                  background: C.card,
-                  border: `0.5px solid ${C.border}`,
-                  borderRadius: 16,
-                  padding: "28px 20px",
-                  textAlign: "center",
-                }}
-              >
-                <p style={{ fontSize: 13, color: C.veryMuted, margin: 0 }}>
-                  🗺 View on map — coming soon
-                </p>
-              </div>
-            </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    {refreshLoading ? (
+                      <>
+                        <SkeletonCard />
+                        <SkeletonCard />
+                        <SkeletonCard />
+                      </>
+                    ) : (
+                      results.map((r, i) => (
+                        <BusinessCard
+                          key={`${r.name}-${i}`}
+                          result={r}
+                          rank={i}
+                          onReviewClick={setReviewTarget}
+                        />
+                      ))
+                    )}
+                  </div>
+
+                  {/* Refresh list button */}
+                  {!refreshLoading && !refreshExhausted && radius < MAX_RADIUS && (
+                    <button
+                      type="button"
+                      onClick={handleRefresh}
+                      style={{
+                        display: "block",
+                        marginTop: 16,
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: C.green,
+                        background: "transparent",
+                        border: `1px solid ${C.green}`,
+                        borderRadius: 100,
+                        padding: "10px 20px",
+                        cursor: "pointer",
+                        fontFamily: BODY,
+                      }}
+                    >
+                      Refresh list →
+                    </button>
+                  )}
+
+                  {/* Map placeholder */}
+                  {!refreshLoading && (
+                    <div
+                      style={{
+                        marginTop: 20,
+                        background: C.card,
+                        border: `0.5px solid ${C.border}`,
+                        borderRadius: 16,
+                        padding: "28px 20px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <p style={{ fontSize: 13, color: C.veryMuted, margin: 0 }}>
+                        🗺 View on map — coming soon
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -702,15 +1109,38 @@ function LocalBusinesses() {
             }}
           >
             Business listings and ratings are sourced from Google Places and may not be complete or up to date. vett does not endorse or verify any listed business. Always check credentials, references, and insurance before engaging any professional. RICS accreditation can be verified at{" "}
-            <a href="https://www.rics.org" target="_blank" rel="noopener noreferrer" style={{ color: C.muted }}>rics.org</a>.
-            {" "}Solicitor registration can be verified at{" "}
-            <a href="https://www.sra.org.uk" target="_blank" rel="noopener noreferrer" style={{ color: C.muted }}>sra.org.uk</a>.
+            <a
+              href="https://www.rics.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: C.muted }}
+            >
+              rics.org
+            </a>
+            .{" "}Solicitor registration can be verified at{" "}
+            <a
+              href="https://www.sra.org.uk"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ color: C.muted }}
+            >
+              sra.org.uk
+            </a>
+            .
           </p>
         </div>
 
       </main>
 
       <SiteFooter />
+
+      {/* Reviews modal — portal to document.body */}
+      {reviewTarget && (
+        <ReviewsModal
+          target={reviewTarget}
+          onClose={() => setReviewTarget(null)}
+        />
+      )}
     </div>
   );
 }
