@@ -876,6 +876,24 @@ function SummaryCard({
           {copied ? "Copied!" : "Share my estimate"}
         </button>
 
+        <a
+          href="/tools/local-businesses?category=contractors"
+          style={{
+            display: "block",
+            textAlign: "center",
+            background: "transparent",
+            border: "0.5px solid rgba(241,239,232,0.15)",
+            borderRadius: 20,
+            padding: "10px 20px",
+            fontSize: 13,
+            fontWeight: 500,
+            color: "rgba(241,239,232,0.8)",
+            textDecoration: "none",
+          }}
+        >
+          Find tradespeople near you →
+        </a>
+
         <button
           type="button"
           onClick={() => setShowEmail((v) => !v)}

@@ -18,9 +18,14 @@ const TEXT_QUERIES: Record<string, string> = {
   landscapers: "{postcode} landscape gardeners",
 };
 
-const NEARBY_TYPES: Record<string, string[]> = {
-  "estate-agents": ["real_estate_agency"],
+const TEXT_QUERIES_OVERRIDE: Record<string, string> = {
+  "estate-agents": "{postcode} residential estate agents house sales",
 };
+
+const ESTATE_AGENT_EXCLUDE_TERMS = [
+  "apartment", "apartments", "serviced", "holiday", "short term", "short-term",
+  "airbnb", "rental", "lettings only", "commercial", "office", "industrial",
+];
 
 interface RawPlace {
   displayName?: { text?: string };
@@ -142,57 +147,34 @@ export const Route = createFileRoute("/api/local-businesses")({
         // ── Step 2: Search Places ─────────────────────────────────────────────
         let rawPlaces: RawPlace[] = [];
         try {
-          if (NEARBY_TYPES[category]) {
-            const resp = await fetch(
-              "https://places.googleapis.com/v1/places:searchNearby",
-              {
-                method: "POST",
-                headers: {
-                  "X-Goog-Api-Key": apiKey,
-                  "X-Goog-FieldMask": FIELD_MASK,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                  includedTypes: NEARBY_TYPES[category],
-                  maxResultCount: 10,
-                  locationRestriction: {
-                    circle: { center: { latitude: lat, longitude: lng }, radius },
-                  },
-                }),
+          const queryTemplate =
+            TEXT_QUERIES_OVERRIDE[category] ??
+            TEXT_QUERIES[category] ??
+            `{postcode} ${category}`;
+          const textQuery = queryTemplate.replace("{postcode}", postcode.toUpperCase());
+          const resp = await fetch(
+            "https://places.googleapis.com/v1/places:searchText",
+            {
+              method: "POST",
+              headers: {
+                "X-Goog-Api-Key": apiKey,
+                "X-Goog-FieldMask": FIELD_MASK,
+                "Content-Type": "application/json",
               },
-            );
-            if (!resp.ok) {
-              const errText = await resp.text();
-              throw new Error(`Places nearby HTTP ${resp.status}: ${errText}`);
-            }
-            rawPlaces = ((await resp.json()) as any).places ?? [];
-          } else {
-            const queryTemplate = TEXT_QUERIES[category] ?? `{postcode} ${category}`;
-            const textQuery = queryTemplate.replace("{postcode}", postcode.toUpperCase());
-            const resp = await fetch(
-              "https://places.googleapis.com/v1/places:searchText",
-              {
-                method: "POST",
-                headers: {
-                  "X-Goog-Api-Key": apiKey,
-                  "X-Goog-FieldMask": FIELD_MASK,
-                  "Content-Type": "application/json",
+              body: JSON.stringify({
+                textQuery,
+                locationBias: {
+                  circle: { center: { latitude: lat, longitude: lng }, radius },
                 },
-                body: JSON.stringify({
-                  textQuery,
-                  locationBias: {
-                    circle: { center: { latitude: lat, longitude: lng }, radius },
-                  },
-                  maxResultCount: 10,
-                }),
-              },
-            );
-            if (!resp.ok) {
-              const errText = await resp.text();
-              throw new Error(`Places text HTTP ${resp.status}: ${errText}`);
-            }
-            rawPlaces = ((await resp.json()) as any).places ?? [];
+                maxResultCount: 10,
+              }),
+            },
+          );
+          if (!resp.ok) {
+            const errText = await resp.text();
+            throw new Error(`Places text HTTP ${resp.status}: ${errText}`);
           }
+          rawPlaces = ((await resp.json()) as any).places ?? [];
         } catch (e) {
           console.error("[local-businesses] places error", e);
           return json({ error: "Search failed — please try again" }, 500);
@@ -201,10 +183,15 @@ export const Route = createFileRoute("/api/local-businesses")({
         // ── Step 3: Filter, normalise, sort ───────────────────────────────────
         const results = rawPlaces
           .filter(
-            (p) =>
-              (p.businessStatus === "OPERATIONAL" || p.businessStatus === undefined) &&
-              (!excludeSet ||
-                !excludeSet.has((p.displayName?.text ?? "").toLowerCase())),
+            (p) => {
+              if (p.businessStatus !== "OPERATIONAL" && p.businessStatus !== undefined) return false;
+              if (excludeSet && excludeSet.has((p.displayName?.text ?? "").toLowerCase())) return false;
+              if (category === "estate-agents") {
+                const nameLower = (p.displayName?.text ?? "").toLowerCase();
+                if (ESTATE_AGENT_EXCLUDE_TERMS.some((t) => nameLower.includes(t))) return false;
+              }
+              return true;
+            },
           )
           .map(normalisePlace)
           .sort((a, b) => {
