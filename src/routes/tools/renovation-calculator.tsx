@@ -304,13 +304,14 @@ function SegmentedControl<T extends string>({
         <button
           key={opt.value}
           type="button"
+          className={`rc-seg-btn${value === opt.value ? " rc-active" : ""}`}
           onClick={() => onChange(opt.value)}
           style={{
             fontSize: 12,
             fontWeight: value === opt.value ? 500 : 400,
-            color: value === opt.value ? C.dark : C.muted,
-            background: value === opt.value ? C.card : "transparent",
-            border: value === opt.value ? `0.5px solid ${C.border}` : "0.5px solid transparent",
+            color: value === opt.value ? "#F1EFE8" : C.muted,
+            background: value === opt.value ? C.green : "transparent",
+            border: value === opt.value ? `0.5px solid ${C.green}` : "0.5px solid transparent",
             borderRadius: 7,
             padding: "5px 12px",
             cursor: "pointer",
@@ -685,13 +686,13 @@ function CategoryCard({
 }) {
   return (
     <div
+      className={`rc-cat-row${active ? " rc-cat-active" : ""}`}
       style={{
         background: active ? "#F0F7F0" : C.card,
-        border: `0.5px solid ${C.border}`,
+        border: `0.5px solid ${active ? C.green : C.border}`,
         borderRadius: 16,
         overflow: "hidden",
-        borderLeft: active ? `3px solid ${C.green}` : `0.5px solid ${C.border}`,
-        transition: "background 0.15s",
+        transition: "background 0.15s, border-color 0.15s",
       }}
     >
       {/* Header */}
@@ -1176,9 +1177,9 @@ function RenovationCalculator() {
   const selectorBtn = (active: boolean) => ({
     fontSize: 13,
     fontWeight: active ? 500 : 400,
-    color: active ? C.dark : C.muted,
-    background: active ? C.card : "transparent",
-    border: active ? `0.5px solid ${C.border}` : "0.5px solid transparent",
+    color: active ? "#F1EFE8" : C.muted,
+    background: active ? C.green : undefined,
+    border: active ? `0.5px solid ${C.green}` : `0.5px solid ${C.border}`,
     borderRadius: 100,
     padding: "8px 18px",
     cursor: "pointer",
@@ -1188,6 +1189,16 @@ function RenovationCalculator() {
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: BODY, color: C.dark }}>
+      <style>{`
+        .rc-pill { transition: background 0.15s, color 0.15s, border-color 0.15s; }
+        .rc-pill:hover { background: #EAF3DE !important; color: #1A1108 !important; }
+        .rc-pill.rc-active:hover { background: #2D6A4F !important; color: #F1EFE8 !important; }
+        .rc-seg-btn { transition: background 0.1s, color 0.1s; }
+        .rc-seg-btn:hover { background: #EAF3DE !important; color: #1A1108 !important; }
+        .rc-seg-btn.rc-active:hover { background: #2D6A4F !important; color: #F1EFE8 !important; }
+        .rc-cat-row { transition: border-color 0.15s; }
+        .rc-cat-row:not(.rc-cat-active):hover { border-color: #2D6A4F !important; }
+      `}</style>
       <SiteHeader />
 
       <main style={{ maxWidth: 720, margin: "0 auto", padding: "48px 20px 80px" }}>
@@ -1234,7 +1245,7 @@ function RenovationCalculator() {
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, background: C.bg, borderRadius: 10, padding: 4 }}>
             {(["flat", "terrace", "semi", "detached"] as PropType[]).map((p) => (
-              <button key={p} type="button" onClick={() => handlePropChange(p)} style={selectorBtn(state.prop === p)}>
+              <button key={p} type="button" className={`rc-pill${state.prop === p ? " rc-active" : ""}`} onClick={() => handlePropChange(p)} style={selectorBtn(state.prop === p)}>
                 {PROP_LABELS[p]}
               </button>
             ))}
@@ -1248,7 +1259,7 @@ function RenovationCalculator() {
           </div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4, background: C.bg, borderRadius: 10, padding: 4 }}>
             {(Object.entries(REGION_LABELS) as [Region, string][]).map(([r, label]) => (
-              <button key={r} type="button" onClick={() => update({ region: r })} style={selectorBtn(state.region === r)}>
+              <button key={r} type="button" className={`rc-pill${state.region === r ? " rc-active" : ""}`} onClick={() => update({ region: r })} style={selectorBtn(state.region === r)}>
                 {label}
               </button>
             ))}

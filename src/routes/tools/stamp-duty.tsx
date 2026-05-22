@@ -502,9 +502,11 @@ function StampDuty() {
     <div style={{ minHeight: "100vh", background: C.bg, fontFamily: BODY, color: C.dark }}>
       <style>{`
         .sd-pill { transition: background 0.12s, color 0.12s, border-color 0.12s; cursor: pointer; }
-        .sd-pill:hover { border-color: #2D6A4F !important; }
+        .sd-pill:hover { background: #EAF3DE !important; color: #1A1108 !important; border-color: #2D6A4F !important; }
+        .sd-pill.sd-active:hover { background: #2D6A4F !important; color: #F1EFE8 !important; border-color: #2D6A4F !important; }
         .sd-buyer { transition: background 0.12s, color 0.12s, border-color 0.12s; cursor: pointer; }
-        .sd-buyer:hover { border-color: #2D6A4F !important; }
+        .sd-buyer:hover { background: #EAF3DE !important; color: #1A1108 !important; border-color: #2D6A4F !important; }
+        .sd-buyer.sd-active:hover { background: #2D6A4F !important; color: #F1EFE8 !important; border-color: #2D6A4F !important; }
         input[type=text]:focus { outline: none; border-color: #2D6A4F !important; }
       `}</style>
       <SiteHeader />
@@ -549,7 +551,7 @@ function StampDuty() {
                   <button
                     key={id}
                     type="button"
-                    className="sd-pill"
+                    className={`sd-pill${region === id ? " sd-active" : ""}`}
                     onClick={() => handleRegion(id)}
                     style={{
                       padding: "7px 14px", fontSize: 13, fontWeight: 500,
@@ -606,7 +608,7 @@ function StampDuty() {
                   <button
                     key={id}
                     type="button"
-                    className="sd-buyer"
+                    className={`sd-buyer${buyer === id ? " sd-active" : ""}`}
                     onClick={() => handleBuyer(id)}
                     style={{
                       padding: "10px 12px", fontSize: 13, fontWeight: 500, textAlign: "center",

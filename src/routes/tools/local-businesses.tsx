@@ -475,6 +475,7 @@ function BusinessCard({
 
   return (
     <div
+      className="biz-card"
       style={{
         background: C.card,
         border: `0.5px solid ${C.border}`,
@@ -823,8 +824,11 @@ function LocalBusinesses() {
           box-shadow: 0 0 0px 1000px #FFFDF9 inset;
           -webkit-text-fill-color: #1A1108;
         }
-        .cat-card { transition: border-color 0.12s; }
-        .cat-card:hover { border-color: #2D6A4F !important; }
+        .cat-card { transition: border-color 0.12s, background 0.12s; }
+        .cat-card:hover { border-color: #2D6A4F !important; background: #EAF3DE !important; }
+        .cat-card.cat-card-active:hover { background: #2D6A4F !important; }
+        .biz-card { transition: border-color 0.15s; }
+        .biz-card:hover { border-color: #2D6A4F !important; }
         .cat-group-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
         @media (max-width: 640px) { .cat-group-grid { grid-template-columns: repeat(2, 1fr); } }
       `}</style>
@@ -971,7 +975,7 @@ function LocalBusinesses() {
                     <button
                       key={id}
                       type="button"
-                      className="cat-card"
+                      className={`cat-card${active ? " cat-card-active" : ""}`}
                       onClick={() => handleCategorySelect(id)}
                       style={{
                         display: "flex",

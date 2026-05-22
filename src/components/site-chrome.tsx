@@ -172,6 +172,7 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
           padding: "6px 10px 6px 6px",
           fontSize: 13,
           color: "#1A1108",
+          cursor: "pointer",
         }}
       >
         <span
@@ -235,12 +236,14 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
 
 // ── Nav constants ──────────────────────────────────────────────────────────────
 const NAV_ITEMS: { label: string; to: string }[] = [
+  { label: "Home",    to: "/" },
   { label: "Tools",   to: "/tools" },
   { label: "Pricing", to: "/pricing" },
   { label: "Blog",    to: "/blog/" },
 ];
 
 function isNavActive(to: string, pathname: string): boolean {
+  if (to === "/") return pathname === "/";
   if (to === "/blog/") return pathname === "/blog" || pathname.startsWith("/blog/");
   if (to === "/tools") return pathname === "/tools" || pathname.startsWith("/tools/");
   return pathname === to;
@@ -263,6 +266,16 @@ function NavPill({
   const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
   const [slider, setSlider] = useState({ left: 0, width: 0, opacity: 0 });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   const moveSliderTo = (el: HTMLElement | null) => {
     if (!el || !containerRef.current) return;
@@ -291,232 +304,107 @@ function NavPill({
 
   return (
     <>
-      {/* ── Desktop pill ── */}
-      <div
-        className="hidden md:flex items-center"
-        style={{
-          background: "rgba(255,253,249,0.95)",
-          border: "0.5px solid rgba(26,17,8,0.10)",
-          borderRadius: 100,
-          padding: "5px 6px",
-          gap: 2,
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        {/* Magic-line nav links */}
-        <div
-          ref={containerRef}
-          style={{ position: "relative", display: "flex", alignItems: "center" }}
-        >
-          {/* Sliding greenTint highlight */}
-          <div
-            aria-hidden
-            style={{
-              position: "absolute",
-              top: 0,
-              bottom: 0,
-              left: slider.left,
-              width: slider.width,
-              background: "#EAF3DE",
-              borderRadius: 100,
-              transition: "left 200ms ease, width 200ms ease, opacity 150ms ease",
-              opacity: slider.opacity,
-              pointerEvents: "none",
-            }}
-          />
-          {NAV_ITEMS.map((item, i) => (
-            <Link
-              key={item.to}
-              to={item.to as any}
-              ref={(el) => { linkRefs.current[i] = el; }}
-              onMouseEnter={() => moveSliderTo(linkRefs.current[i])}
-              onMouseLeave={restSlider}
-              style={{
-                fontSize: 13,
-                fontWeight: isNavActive(item.to, pathname) ? 500 : 400,
-                color: "#1A1108",
-                padding: "7px 14px",
-                borderRadius: 100,
-                textDecoration: "none",
-                position: "relative",
-                zIndex: 1,
-                display: "inline-flex",
-                alignItems: "center",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </div>
-
-        {/* Divider */}
+      {!isMobile ? (
+        /* ── Desktop pill ── */
         <div
           style={{
-            width: 1,
-            height: 16,
-            background: "rgba(26,17,8,0.12)",
-            margin: "0 4px",
-            flexShrink: 0,
-          }}
-        />
-
-        {/* Account actions */}
-        {loggedIn ? (
-          <>
-            <Link
-              to={hasPass ? "/dashboard" : "/my-reports"}
-              className="nav-acct-link"
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#2D6A4F",
-                padding: "7px 12px",
-                borderRadius: 100,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-              }}
-            >
-              Dashboard
-            </Link>
-            <UserMenu email={email!} hasPass={hasPass} />
-          </>
-        ) : (
-          <>
-            <Link
-              to="/buyer-login"
-              className="nav-signin-link"
-              style={{
-                fontSize: 13,
-                color: "#888780",
-                padding: "7px 12px",
-                borderRadius: 100,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-              }}
-            >
-              Sign in
-            </Link>
-            <Link
-              to="/"
-              className="nav-vett-cta"
-              style={{
-                fontSize: 13,
-                fontWeight: 500,
-                color: "#1A1108",
-                padding: "7px 14px",
-                borderRadius: 100,
-                textDecoration: "none",
-                display: "inline-flex",
-                alignItems: "center",
-                border: "0.5px solid rgba(26,17,8,0.15)",
-              }}
-            >
-              Vett a property →
-            </Link>
-          </>
-        )}
-      </div>
-
-      {/* ── Mobile: hamburger pill ── */}
-      <button
-        type="button"
-        className="md:hidden"
-        onClick={() => setMobileOpen((v) => !v)}
-        aria-label="Toggle menu"
-        style={{
-          background: "rgba(255,253,249,0.95)",
-          border: "0.5px solid rgba(26,17,8,0.10)",
-          borderRadius: 100,
-          padding: "9px 14px",
-          display: "flex",
-          alignItems: "center",
-          cursor: "pointer",
-          backdropFilter: "blur(8px)",
-        }}
-      >
-        {mobileOpen ? (
-          <X style={{ width: 18, height: 18, color: "#1A1108" }} />
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-            <path d="M2 5h14M2 9h14M2 13h14" stroke="#1A1108" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        )}
-      </button>
-
-      {/* ── Mobile dropdown ── */}
-      {mobileOpen && (
-        <div
-          style={{
-            position: "fixed",
-            top: 72,
-            left: 16,
-            right: 16,
-            zIndex: 50,
-            background: "#FFFDF9",
+            display: "flex",
+            alignItems: "center",
+            background: "rgba(255,253,249,0.95)",
             border: "0.5px solid rgba(26,17,8,0.10)",
-            borderRadius: 16,
-            padding: "10px 8px 14px",
-            boxShadow: "0 8px 32px rgba(26,17,8,0.10)",
+            borderRadius: 100,
+            padding: "5px 6px",
+            gap: 2,
+            backdropFilter: "blur(8px)",
           }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {NAV_ITEMS.map((item) => (
+          {/* Magic-line nav links */}
+          <div ref={containerRef} style={{ position: "relative", display: "flex", alignItems: "center" }}>
+            <div aria-hidden style={{ position: "absolute", top: 0, bottom: 0, left: slider.left, width: slider.width, background: "#EAF3DE", borderRadius: 100, transition: "left 200ms ease, width 200ms ease, opacity 150ms ease", opacity: slider.opacity, pointerEvents: "none" }} />
+            {NAV_ITEMS.map((item, i) => (
               <Link
                 key={item.to}
                 to={item.to as any}
-                onClick={() => setMobileOpen(false)}
-                style={{
-                  fontSize: 14,
-                  color: isNavActive(item.to, pathname) ? "#1A1108" : "#5F5E5A",
-                  fontWeight: isNavActive(item.to, pathname) ? 500 : 400,
-                  padding: "10px 14px",
-                  borderRadius: 10,
-                  textDecoration: "none",
-                  display: "block",
-                  background: isNavActive(item.to, pathname) ? "#EAF3DE" : "transparent",
-                }}
+                ref={(el) => { linkRefs.current[i] = el; }}
+                onMouseEnter={() => moveSliderTo(linkRefs.current[i])}
+                onMouseLeave={restSlider}
+                style={{ fontSize: 13, fontWeight: isNavActive(item.to, pathname) ? 500 : 400, color: "#1A1108", padding: "7px 14px", borderRadius: 100, textDecoration: "none", position: "relative", zIndex: 1, display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}
               >
                 {item.label}
               </Link>
             ))}
-            <div style={{ height: "0.5px", background: "rgba(26,17,8,0.08)", margin: "6px 14px" }} />
-            {loggedIn ? (
-              <Link
-                to={hasPass ? "/dashboard" : "/my-reports"}
-                onClick={() => setMobileOpen(false)}
-                style={{ fontSize: 14, color: "#5F5E5A", padding: "10px 14px", borderRadius: 10, textDecoration: "none", display: "block" }}
-              >
+          </div>
+
+          <div style={{ width: 1, height: 16, background: "rgba(26,17,8,0.12)", margin: "0 4px", flexShrink: 0 }} />
+
+          {loggedIn ? (
+            <>
+              <Link to={hasPass ? "/dashboard" : "/my-reports"} className="nav-acct-link" style={{ fontSize: 13, fontWeight: 500, color: "#2D6A4F", padding: "7px 12px", borderRadius: 100, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
                 Dashboard
               </Link>
-            ) : (
-              <Link
-                to="/buyer-login"
-                onClick={() => setMobileOpen(false)}
-                style={{ fontSize: 14, color: "#5F5E5A", padding: "10px 14px", borderRadius: 10, textDecoration: "none", display: "block" }}
-              >
+              <UserMenu email={email!} hasPass={hasPass} />
+            </>
+          ) : (
+            <>
+              <Link to="/buyer-login" className="nav-signin-link" style={{ fontSize: 13, color: "#888780", padding: "7px 12px", borderRadius: 100, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>
                 Sign in
               </Link>
-            )}
-          </div>
-          <div style={{ padding: "8px 6px 0" }}>
-            <Link
-              to="/"
-              onClick={() => setMobileOpen(false)}
-              style={{
-                display: "block", textAlign: "center",
-                background: "#1A1108", color: "#F1EFE8",
-                fontSize: 13, fontWeight: 500,
-                borderRadius: 100, padding: "11px 16px",
-                textDecoration: "none",
-              }}
-            >
-              Vett a property →
-            </Link>
-          </div>
+              <Link to="/" className="nav-vett-cta" style={{ fontSize: 13, fontWeight: 500, color: "#1A1108", padding: "7px 14px", borderRadius: 100, textDecoration: "none", display: "inline-flex", alignItems: "center", border: "0.5px solid rgba(26,17,8,0.15)" }}>
+                Vett a property →
+              </Link>
+            </>
+          )}
         </div>
+      ) : (
+        /* ── Mobile: hamburger + dropdown ── */
+        <>
+          <button
+            type="button"
+            onClick={() => setMobileOpen((v) => !v)}
+            aria-label="Toggle menu"
+            style={{ background: "rgba(255,253,249,0.95)", border: "0.5px solid rgba(26,17,8,0.10)", borderRadius: 100, padding: "9px 14px", display: "flex", alignItems: "center", cursor: "pointer", backdropFilter: "blur(8px)" }}
+          >
+            {mobileOpen ? (
+              <X style={{ width: 18, height: 18, color: "#1A1108" }} />
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+                <path d="M2 5h14M2 9h14M2 13h14" stroke="#1A1108" strokeWidth="1.5" strokeLinecap="round" />
+              </svg>
+            )}
+          </button>
+
+          {mobileOpen && (
+            <div style={{ position: "fixed", top: 72, left: 16, right: 16, zIndex: 50, background: "#FFFDF9", border: "0.5px solid rgba(26,17,8,0.10)", borderRadius: 16, padding: "10px 8px 14px", boxShadow: "0 8px 32px rgba(26,17,8,0.10)" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                {NAV_ITEMS.map((item) => (
+                  <Link
+                    key={item.to}
+                    to={item.to as any}
+                    onClick={() => setMobileOpen(false)}
+                    style={{ fontSize: 14, color: isNavActive(item.to, pathname) ? "#1A1108" : "#5F5E5A", fontWeight: isNavActive(item.to, pathname) ? 500 : 400, padding: "10px 14px", borderRadius: 10, textDecoration: "none", display: "block", background: isNavActive(item.to, pathname) ? "#EAF3DE" : "transparent" }}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+                <div style={{ height: "0.5px", background: "rgba(26,17,8,0.08)", margin: "6px 14px" }} />
+                {loggedIn ? (
+                  <Link to={hasPass ? "/dashboard" : "/my-reports"} onClick={() => setMobileOpen(false)} style={{ fontSize: 14, color: "#5F5E5A", padding: "10px 14px", borderRadius: 10, textDecoration: "none", display: "block" }}>
+                    Dashboard
+                  </Link>
+                ) : (
+                  <Link to="/buyer-login" onClick={() => setMobileOpen(false)} style={{ fontSize: 14, color: "#5F5E5A", padding: "10px 14px", borderRadius: 10, textDecoration: "none", display: "block" }}>
+                    Sign in
+                  </Link>
+                )}
+              </div>
+              <div style={{ padding: "8px 6px 0" }}>
+                <Link to="/" onClick={() => setMobileOpen(false)} style={{ display: "block", textAlign: "center", background: "#1A1108", color: "#F1EFE8", fontSize: 13, fontWeight: 500, borderRadius: 100, padding: "11px 16px", textDecoration: "none" }}>
+                  Vett a property →
+                </Link>
+              </div>
+            </div>
+          )}
+        </>
       )}
     </>
   );
