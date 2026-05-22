@@ -478,7 +478,7 @@ export function SiteHeader() {
           {/* Floating wordmark */}
           <Link
             to="/"
-            onMouseEnter={() => setWordmarkHovered(true)}
+            onMouseEnter={() => { if (window.matchMedia("(hover: hover) and (pointer: fine)").matches) setWordmarkHovered(true); }}
             onMouseLeave={() => setWordmarkHovered(false)}
             style={{
               pointerEvents: "all",

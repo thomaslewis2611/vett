@@ -281,8 +281,8 @@ function Index() {
           align-items: start;
         }
         .vett-hero-left { max-width: 640px; margin-left: auto; margin-right: auto; }
-        .vett-hero-section { padding: 48px 24px 48px; }
-        @media (min-width: 640px) { .vett-hero-section { padding: 80px 24px 48px; } }
+        .vett-hero-section { padding: 24px 24px 48px; }
+        @media (min-width: 768px) { .vett-hero-section { padding: 80px 24px 48px; } }
       `}</style>
 
       <section className="vett-hero-section">
