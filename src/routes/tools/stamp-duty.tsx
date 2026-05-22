@@ -390,7 +390,6 @@ function StampDuty() {
   const [buyer, setBuyer] = useState<BuyerType>("standard");
   const [nonUK, setNonUK] = useState(false);
   const [result, setResult] = useState<CalcResult | null>(null);
-  const [conflictError, setConflictError] = useState(false);
 
   const priceRef = useRef(0);
 
@@ -405,14 +404,10 @@ function StampDuty() {
   }, []);
 
   const recalc = useCallback((p: number, r: Region, b: BuyerType, n: boolean) => {
-    if (b === "ftb" && b === "ftb" && false) {/* placeholder */}
-    // FTB + additional is logically impossible; guard handled in UI
     if (p <= 0) {
       setResult(null);
-      setConflictError(false);
       return;
     }
-    setConflictError(false);
     const res = calculate(p, r, b, n);
     setResult(res);
     updateUrl(p, r, b, n);
@@ -458,15 +453,6 @@ function StampDuty() {
   };
 
   const handleBuyer = (b: BuyerType) => {
-    if (b === "ftb" && buyer === "additional") {
-      setConflictError(true);
-      return;
-    }
-    if (b === "additional" && buyer === "ftb") {
-      setConflictError(true);
-      return;
-    }
-    setConflictError(false);
     setBuyer(b);
     recalc(priceRef.current, region, b, nonUK);
   };
@@ -597,7 +583,7 @@ function StampDuty() {
           </div>
 
           {/* Buyer type */}
-          <div style={{ marginBottom: conflictError ? 8 : 20 }}>
+          <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 12, fontWeight: 500, textTransform: "uppercase", letterSpacing: "0.06em", color: C.veryMuted, marginBottom: 10 }}>
               Buyer type
             </div>
@@ -624,12 +610,6 @@ function StampDuty() {
               })}
             </div>
           </div>
-
-          {conflictError && (
-            <p style={{ fontSize: 13, color: "#C0392B", margin: "0 0 16px", lineHeight: 1.5 }}>
-              First-time buyer relief cannot be combined with additional dwelling rates. Please check your buyer type.
-            </p>
-          )}
 
           {/* Non-UK resident (England only) */}
           {region === "england" && (
