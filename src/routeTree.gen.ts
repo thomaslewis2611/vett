@@ -25,6 +25,7 @@ import { Route as BuyerLoginRouteImport } from './routes/buyer-login'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as BlogIndexRouteImport } from './routes/blog/index'
+import { Route as ToolsStampDutyRouteImport } from './routes/tools/stamp-duty'
 import { Route as ToolsRenovationCalculatorRouteImport } from './routes/tools/renovation-calculator'
 import { Route as ToolsLocalBusinessesRouteImport } from './routes/tools/local-businesses'
 import { Route as ReportTokenRouteImport } from './routes/report.$token'
@@ -118,6 +119,11 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   path: '/blog/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ToolsStampDutyRoute = ToolsStampDutyRouteImport.update({
+  id: '/tools/stamp-duty',
+  path: '/tools/stamp-duty',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ToolsRenovationCalculatorRoute =
   ToolsRenovationCalculatorRouteImport.update({
     id: '/tools/renovation-calculator',
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/report/$token': typeof ReportTokenRoute
   '/tools/local-businesses': typeof ToolsLocalBusinessesRoute
   '/tools/renovation-calculator': typeof ToolsRenovationCalculatorRoute
+  '/tools/stamp-duty': typeof ToolsStampDutyRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -238,6 +245,7 @@ export interface FileRoutesByTo {
   '/report/$token': typeof ReportTokenRoute
   '/tools/local-businesses': typeof ToolsLocalBusinessesRoute
   '/tools/renovation-calculator': typeof ToolsRenovationCalculatorRoute
+  '/tools/stamp-duty': typeof ToolsStampDutyRoute
   '/blog': typeof BlogIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -269,6 +277,7 @@ export interface FileRoutesById {
   '/report/$token': typeof ReportTokenRoute
   '/tools/local-businesses': typeof ToolsLocalBusinessesRoute
   '/tools/renovation-calculator': typeof ToolsRenovationCalculatorRoute
+  '/tools/stamp-duty': typeof ToolsStampDutyRoute
   '/blog/': typeof BlogIndexRoute
   '/api/public/cron/check-expiry-reminders': typeof ApiPublicCronCheckExpiryRemindersRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
@@ -301,6 +310,7 @@ export interface FileRouteTypes {
     | '/report/$token'
     | '/tools/local-businesses'
     | '/tools/renovation-calculator'
+    | '/tools/stamp-duty'
     | '/blog/'
     | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
@@ -331,6 +341,7 @@ export interface FileRouteTypes {
     | '/report/$token'
     | '/tools/local-businesses'
     | '/tools/renovation-calculator'
+    | '/tools/stamp-duty'
     | '/blog'
     | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
@@ -361,6 +372,7 @@ export interface FileRouteTypes {
     | '/report/$token'
     | '/tools/local-businesses'
     | '/tools/renovation-calculator'
+    | '/tools/stamp-duty'
     | '/blog/'
     | '/api/public/cron/check-expiry-reminders'
     | '/lovable/email/auth/preview'
@@ -392,6 +404,7 @@ export interface RootRouteChildren {
   ReportTokenRoute: typeof ReportTokenRoute
   ToolsLocalBusinessesRoute: typeof ToolsLocalBusinessesRoute
   ToolsRenovationCalculatorRoute: typeof ToolsRenovationCalculatorRoute
+  ToolsStampDutyRoute: typeof ToolsStampDutyRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ApiPublicCronCheckExpiryRemindersRoute: typeof ApiPublicCronCheckExpiryRemindersRoute
   LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
@@ -513,6 +526,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tools/stamp-duty': {
+      id: '/tools/stamp-duty'
+      path: '/tools/stamp-duty'
+      fullPath: '/tools/stamp-duty'
+      preLoaderRoute: typeof ToolsStampDutyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/tools/renovation-calculator': {
       id: '/tools/renovation-calculator'
       path: '/tools/renovation-calculator'
@@ -625,6 +645,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportTokenRoute: ReportTokenRoute,
   ToolsLocalBusinessesRoute: ToolsLocalBusinessesRoute,
   ToolsRenovationCalculatorRoute: ToolsRenovationCalculatorRoute,
+  ToolsStampDutyRoute: ToolsStampDutyRoute,
   BlogIndexRoute: BlogIndexRoute,
   ApiPublicCronCheckExpiryRemindersRoute:
     ApiPublicCronCheckExpiryRemindersRoute,
