@@ -698,14 +698,14 @@ function StampDuty() {
                 Get a vett report →
               </a>
               <a
-                href="/tools/local-businesses"
+                href="/tools/local-businesses?category=mortgage-brokers"
                 style={{
                   display: "block", textAlign: "center", background: "#F1EFE8", border: "none",
                   borderRadius: 20, padding: "11px 16px", fontSize: 13, fontWeight: 500,
                   color: "#1A1108", textDecoration: "none", boxSizing: "border-box",
                 }}
               >
-                Find tradespeople →
+                Find a mortgage broker →
               </a>
             </div>
           </div>
@@ -722,7 +722,7 @@ function StampDuty() {
             <strong style={{ color: C.dark }}>
               {stdComparison > 0 ? `${fmt(stdComparison)} more` : stdComparison < 0 ? `${fmt(Math.abs(stdComparison))} less` : "the same"}
             </strong>{" "}
-            than a standard buyer at this price.
+            {stdComparison === 0 ? "as" : "than"} a standard buyer at this price.
           </div>
         )}
 
