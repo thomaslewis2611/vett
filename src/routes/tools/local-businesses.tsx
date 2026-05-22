@@ -12,6 +12,7 @@ import {
   IconPlant,
   IconHomeSearch,
   IconTruck,
+  IconInfoCircle,
 } from "@tabler/icons-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import {
@@ -1102,6 +1103,36 @@ function LocalBusinesses() {
               {/* Results */}
               {results.length > 0 && (
                 <div>
+                  {category === "architects" && (
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "flex-start",
+                        gap: 10,
+                        background: "#EAF3DE",
+                        border: "0.5px solid #C0DD97",
+                        borderRadius: 12,
+                        padding: "12px 16px",
+                        fontSize: 13,
+                        color: "#3B6D11",
+                        marginBottom: 16,
+                        lineHeight: 1.55,
+                      }}
+                    >
+                      <IconInfoCircle size={16} aria-hidden style={{ flexShrink: 0, marginTop: 1 }} />
+                      <span>
+                        Tip: All UK architects must be registered with the ARB. For RIBA-accredited residential practices, you can also search{" "}
+                        <a
+                          href="https://find-an-architect.architecture.com/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: "#2D6A4F", textDecoration: "underline", textUnderlineOffset: 2 }}
+                        >
+                          RIBA's official directory →
+                        </a>
+                      </span>
+                    </div>
+                  )}
                   <p style={{ fontSize: 13, color: C.veryMuted, margin: "0 0 14px" }}>
                     Showing {results.length} professional{results.length !== 1 ? "s" : ""} near{" "}
                     <strong style={{ color: C.muted }}>{searchedPostcode}</strong>
