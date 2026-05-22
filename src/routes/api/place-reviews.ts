@@ -11,7 +11,7 @@ interface RawReview {
   relativePublishTimeDescription?: string;
 }
 
-const RATE_LIMIT = 30;
+const RATE_LIMIT = 50;
 
 export const Route = createFileRoute("/api/place-reviews")({
   server: {

@@ -45,7 +45,7 @@ function normalisePlace(p: RawPlace) {
   };
 }
 
-const RATE_LIMIT = 20;
+const RATE_LIMIT = 50;
 
 export const Route = createFileRoute("/api/local-businesses")({
   server: {

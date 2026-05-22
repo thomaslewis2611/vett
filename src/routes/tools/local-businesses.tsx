@@ -653,6 +653,7 @@ function LocalBusinesses() {
   const [initialCount, setInitialCount] = useState(0);
   const [reviewTarget, setReviewTarget] = useState<BusinessResult | null>(null);
   const initDone = useRef(false);
+  const cache = useRef<Map<string, BusinessResult[]>>(new Map());
 
   const updateUrl = useCallback(
     (pc: string, cat: string) => {
@@ -676,15 +677,26 @@ function LocalBusinesses() {
   const performSearch = useCallback(
     async (pc: string, cat: string) => {
       const normalised = pc.trim().toUpperCase();
-      setStatus("loading");
-      setResults([]);
+      const cacheKey = `${normalised}:${cat}`;
+
       setSearchedPostcode(normalised);
       setRadius(DEFAULT_RADIUS);
       setSeenNames([]);
       setLoadMoreExhausted(false);
       setLoadMoreRateLimited(false);
-      setInitialCount(0);
       updateUrl(normalised, cat);
+
+      const cached = cache.current.get(cacheKey);
+      if (cached) {
+        setResults(cached);
+        setInitialCount(cached.length);
+        setStatus("success");
+        return;
+      }
+
+      setStatus("loading");
+      setResults([]);
+      setInitialCount(0);
       try {
         const resp = await fetch(
           `/api/local-businesses?postcode=${encodeURIComponent(normalised)}&category=${encodeURIComponent(cat)}`,
@@ -696,6 +708,7 @@ function LocalBusinesses() {
           setStatus("error");
         } else {
           const fetched: BusinessResult[] = data.results ?? [];
+          cache.current.set(cacheKey, fetched);
           setResults(fetched);
           setInitialCount(fetched.length);
           setStatus("success");
@@ -710,7 +723,21 @@ function LocalBusinesses() {
   const handleLoadMore = useCallback(async () => {
     const nextRadius = Math.min(radius + RADIUS_STEP, MAX_RADIUS);
     const newSeen = [...seenNames, ...results.map((r) => r.name)];
+    const cacheKey = `${searchedPostcode}:${category}:more:${nextRadius}`;
+
     setSeenNames(newSeen);
+
+    const cached = cache.current.get(cacheKey);
+    if (cached) {
+      setRadius(nextRadius);
+      if (cached.length === 0) {
+        setLoadMoreExhausted(true);
+      } else {
+        setResults((prev) => [...prev, ...cached]);
+      }
+      return;
+    }
+
     setLoadMoreLoading(true);
     try {
       const resp = await fetch(
@@ -721,6 +748,7 @@ function LocalBusinesses() {
         setLoadMoreRateLimited(true);
       } else if (resp.ok) {
         const more: BusinessResult[] = data.results ?? [];
+        cache.current.set(cacheKey, more);
         setRadius(nextRadius);
         if (more.length === 0) {
           setLoadMoreExhausted(true);
