@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
 import { useState, useEffect, useRef, useCallback } from "react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
 import {
@@ -383,6 +383,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 
 // ── Main component ─────────────────────────────────────────────────────────────
 function StampDuty() {
+  const router = useRouter();
   const initDone = useRef(false);
 
   const [region, setRegion] = useState<Region>("england");
@@ -400,8 +401,11 @@ function StampDuty() {
     params.set("region", r);
     params.set("buyer", b);
     if (n) params.set("nonuk", "1");
+    const hist = (router as any).history;
+    hist._ignoreSubscribers = true;
     window.history.replaceState(null, "", `${window.location.pathname}?${params.toString()}`);
-  }, []);
+    hist._ignoreSubscribers = false;
+  }, [router]);
 
   const recalc = useCallback((p: number, r: Region, b: BuyerType, n: boolean) => {
     if (p <= 0) {
