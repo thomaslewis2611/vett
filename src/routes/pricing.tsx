@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Check } from "lucide-react";
@@ -29,6 +29,13 @@ export const Route = createFileRoute("/pricing")({
 });
 
 function PricingPage() {
+  const navigate = useNavigate();
+
+  const handleBuyReport = () => {
+    if (typeof sessionStorage !== "undefined") sessionStorage.setItem("vettFocusInput", "1");
+    navigate({ to: "/" });
+  };
+
   return (
     <div className="flex min-h-screen flex-col" style={{ background: "#F1EFE8" }}>
       <SiteHeader />
@@ -74,6 +81,7 @@ function PricingPage() {
               price="£4.99"
               cadence="One-off payment"
               cta="Buy a report"
+              onClick={handleBuyReport}
               features={[
                 "Full analysis with all red flags",
                 "EPC analysis",

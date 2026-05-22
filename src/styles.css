@@ -95,14 +95,28 @@
   --text-secondary: #5F5E5A;
 }
 
-@keyframes inputPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(45,106,79,0); }
-  35%  { box-shadow: 0 0 0 4px rgba(45,106,79,0.25); }
-  100% { box-shadow: 0 0 0 0 rgba(45,106,79,0); }
+@keyframes vettPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(45,106,79,0);
+    border-color: rgba(26,17,8,0.18);
+  }
+  35% {
+    transform: scale(1.025);
+    box-shadow: 0 0 0 6px rgba(45,106,79,0.16), 0 0 24px 5px rgba(45,106,79,0.26);
+    border-color: #2D6A4F;
+  }
+  70% {
+    transform: scale(0.998);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(45,106,79,0);
+    border-color: rgba(26,17,8,0.18);
+  }
 }
-.input-pulse {
-  border-color: #2D6A4F !important;
-  animation: inputPulse 1s ease-out forwards;
+.vett-url-pulse {
+  animation: vettPulse 1.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 @layer base {

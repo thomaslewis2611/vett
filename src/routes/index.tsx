@@ -22,6 +22,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { SiteHeader, SiteFooter } from "@/components/site-chrome";
+import { focusAndPulseInput } from "@/lib/focus-input";
 import {
   buildPageMeta,
   buildCanonicalLink,
@@ -230,33 +231,14 @@ function Index() {
   };
 
   const scrollToTop = () => {
-    if (typeof window === "undefined") return;
-    const el = document.getElementById("url-input");
-    if (el) {
-      el.scrollIntoView({ behavior: "smooth", block: "center" });
-      setTimeout(() => el.focus(), 400);
-    } else {
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    focusAndPulseInput();
   };
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof sessionStorage === "undefined") return;
     if (sessionStorage.getItem("vettFocusInput") === "1") {
       sessionStorage.removeItem("vettFocusInput");
-      const t = setTimeout(() => {
-        const form = document.getElementById("vett-form");
-        const input = document.getElementById("url-input");
-        if (form && input) {
-          form.scrollIntoView({ behavior: "smooth", block: "center" });
-          setTimeout(() => {
-            input.focus();
-            form.style.borderColor = "#2D6A4F";
-            form.style.boxShadow = "0 0 0 3px rgba(45,106,79,0.2)";
-            setTimeout(() => { form.style.borderColor = ""; form.style.boxShadow = ""; }, 900);
-          }, 350);
-        }
-      }, 100);
+      const t = setTimeout(() => focusAndPulseInput(), 100);
       return () => clearTimeout(t);
     }
   }, []);

@@ -5,6 +5,7 @@ import { LogOut, LayoutDashboard, Mail, ChevronDown, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkBuyerPassByEmail } from "@/lib/access.functions";
 import { sendBuyerPassMagicLink } from "@/lib/checkout.functions";
+import { focusAndPulseInput } from "@/lib/focus-input";
 
 
 function truncateEmail(email: string, max = 14) {
@@ -306,17 +307,7 @@ function NavPill({
   const handleVettClick = () => {
     setMobileOpen(false);
     if (pathname === "/") {
-      const form = document.getElementById("vett-form");
-      const input = document.getElementById("url-input");
-      if (form && input) {
-        form.scrollIntoView({ behavior: "smooth", block: "center" });
-        setTimeout(() => {
-          input.focus();
-          form.style.borderColor = "#2D6A4F";
-          form.style.boxShadow = "0 0 0 3px rgba(45,106,79,0.2)";
-          setTimeout(() => { form.style.borderColor = ""; form.style.boxShadow = ""; }, 900);
-        }, 350);
-      }
+      focusAndPulseInput();
     } else {
       if (typeof sessionStorage !== "undefined") sessionStorage.setItem("vettFocusInput", "1");
       navigate({ to: "/" });
