@@ -20,12 +20,22 @@ const TEXT_QUERIES: Record<string, string> = {
 
 const TEXT_QUERIES_OVERRIDE: Record<string, string> = {
   "estate-agents": "{postcode} residential estate agents house sales",
+  "architects": "{postcode} residential architects home extensions",
 };
 
 const ESTATE_AGENT_EXCLUDE_TERMS = [
   "apartment", "apartments", "serviced", "holiday", "short term", "short-term",
   "airbnb", "rental", "lettings only", "commercial", "office", "industrial",
 ];
+
+const ARCHITECT_EXCLUDE_TERMS = [
+  "llp", "co-partnership", "international", "global",
+  "urban design", "masterplanning", "masterplan", "commercial",
+  "developments", "consulting engineers", "engineering",
+];
+
+const ARCHITECT_RESIDENTIAL_TERMS = ["home", "residential", "house", "domestic"];
+const ARCHITECT_LARGE_REVIEW_THRESHOLD = 150;
 
 interface RawPlace {
   displayName?: { text?: string };
@@ -181,18 +191,29 @@ export const Route = createFileRoute("/api/local-businesses")({
         }
 
         // ── Step 3: Filter, normalise, sort ───────────────────────────────────
-        const results = rawPlaces
-          .filter(
-            (p) => {
-              if (p.businessStatus !== "OPERATIONAL" && p.businessStatus !== undefined) return false;
-              if (excludeSet && excludeSet.has((p.displayName?.text ?? "").toLowerCase())) return false;
-              if (category === "estate-agents") {
-                const nameLower = (p.displayName?.text ?? "").toLowerCase();
-                if (ESTATE_AGENT_EXCLUDE_TERMS.some((t) => nameLower.includes(t))) return false;
-              }
-              return true;
-            },
-          )
+        const nameFiltered = rawPlaces.filter((p) => {
+          if (p.businessStatus !== "OPERATIONAL" && p.businessStatus !== undefined) return false;
+          if (excludeSet && excludeSet.has((p.displayName?.text ?? "").toLowerCase())) return false;
+          const nameLower = (p.displayName?.text ?? "").toLowerCase();
+          if (category === "estate-agents" && ESTATE_AGENT_EXCLUDE_TERMS.some((t) => nameLower.includes(t))) return false;
+          if (category === "architects" && ARCHITECT_EXCLUDE_TERMS.some((t) => nameLower.includes(t))) return false;
+          return true;
+        });
+
+        let filtered = nameFiltered;
+        if (category === "architects") {
+          const withCountFilter = nameFiltered.filter((p) => {
+            const count = p.userRatingCount ?? 0;
+            if (count > ARCHITECT_LARGE_REVIEW_THRESHOLD) {
+              const nameLower = (p.displayName?.text ?? "").toLowerCase();
+              return ARCHITECT_RESIDENTIAL_TERMS.some((t) => nameLower.includes(t));
+            }
+            return true;
+          });
+          filtered = withCountFilter.length >= 3 ? withCountFilter : nameFiltered;
+        }
+
+        const results = filtered
           .map(normalisePlace)
           .sort((a, b) => {
             const rDiff = (b.rating ?? 0) - (a.rating ?? 0);
