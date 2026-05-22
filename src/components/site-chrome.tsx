@@ -1,6 +1,6 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { LogOut, LayoutDashboard, Mail, ChevronDown, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { checkBuyerPassByEmail } from "@/lib/access.functions";
@@ -233,299 +233,372 @@ function UserMenu({ email, hasPass }: { email: string; hasPass: boolean }) {
   );
 }
 
-const TOOLS_ITEMS = [
-  { label: "Renovation calculator", to: "/tools/renovation-calculator" as const },
-  { label: "Find local professionals", to: "/tools/local-businesses" as const },
-  { label: "Stamp duty calculator", to: "/tools/stamp-duty" as const },
+// ── Nav constants ──────────────────────────────────────────────────────────────
+const NAV_ITEMS: { label: string; to: string }[] = [
+  { label: "Tools",   to: "/tools" },
+  { label: "Pricing", to: "/pricing" },
+  { label: "Blog",    to: "/blog/" },
 ];
 
-function ToolsDropdown() {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+function isNavActive(to: string, pathname: string): boolean {
+  if (to === "/blog/") return pathname === "/blog" || pathname.startsWith("/blog/");
+  if (to === "/tools") return pathname === "/tools" || pathname.startsWith("/tools/");
+  return pathname === to;
+}
+
+// ── Floating pill nav (desktop) + hamburger (mobile) ──────────────────────────
+function NavPill({
+  loggedIn,
+  email,
+  hasPass,
+}: {
+  loggedIn: boolean;
+  email: string | null;
+  hasPass: boolean;
+}) {
+  const routerState = useRouterState();
+  const pathname = routerState.location.pathname;
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const linkRefs = useRef<(HTMLAnchorElement | null)[]>([]);
+  const [slider, setSlider] = useState({ left: 0, width: 0, opacity: 0 });
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const moveSliderTo = (el: HTMLElement | null) => {
+    if (!el || !containerRef.current) return;
+    const cr = containerRef.current.getBoundingClientRect();
+    const er = el.getBoundingClientRect();
+    setSlider({ left: er.left - cr.left, width: er.width, opacity: 1 });
+  };
+
+  const restSlider = useCallback(() => {
+    const activeIdx = NAV_ITEMS.findIndex((item) => isNavActive(item.to, pathname));
+    if (activeIdx >= 0) {
+      moveSliderTo(linkRefs.current[activeIdx]);
+    } else {
+      setSlider((s) => ({ ...s, opacity: 0 }));
+    }
+  }, [pathname]);
 
   useEffect(() => {
-    if (!open) return;
-    const onClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", onClick);
-    return () => document.removeEventListener("mousedown", onClick);
-  }, [open]);
+    restSlider();
+  }, [restSlider]);
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="nav-link inline-flex items-center"
+    <>
+      {/* ── Desktop pill ── */}
+      <div
+        className="hidden md:flex items-center"
         style={{
-          fontSize: 13,
-          color: "#5F5E5A",
-          padding: "6px 10px",
-          borderRadius: 6,
-          background: "transparent",
-          border: "none",
-          cursor: "pointer",
-          fontFamily: "inherit",
+          background: "rgba(255,253,249,0.95)",
+          border: "0.5px solid rgba(26,17,8,0.10)",
+          borderRadius: 100,
+          padding: "5px 6px",
+          gap: 2,
+          backdropFilter: "blur(8px)",
         }}
-        aria-expanded={open}
-        aria-haspopup="true"
       >
-        <span>vett Tools</span>
-        <ChevronDown style={{ width: 10, height: 10, opacity: 0.5, marginLeft: 3 }} />
-      </button>
-      {open && (
+        {/* Magic-line nav links */}
         <div
-          className="absolute left-0 mt-2 w-52 overflow-hidden"
-          style={{
-            background: "#FFFDF9",
-            borderRadius: 10,
-            border: "0.5px solid rgba(26,17,8,0.12)",
-            boxShadow: "0 8px 24px rgba(26,17,8,0.08)",
-          }}
+          ref={containerRef}
+          style={{ position: "relative", display: "flex", alignItems: "center" }}
         >
-          {TOOLS_ITEMS.map((item) => (
+          {/* Sliding greenTint highlight */}
+          <div
+            aria-hidden
+            style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: slider.left,
+              width: slider.width,
+              background: "#EAF3DE",
+              borderRadius: 100,
+              transition: "left 200ms ease, width 200ms ease, opacity 150ms ease",
+              opacity: slider.opacity,
+              pointerEvents: "none",
+            }}
+          />
+          {NAV_ITEMS.map((item, i) => (
             <Link
               key={item.to}
-              to={item.to}
-              onClick={() => setOpen(false)}
-              className="flex items-center px-3 py-2.5 transition-colors hover:bg-[#F1EFE8]"
-              style={{ fontSize: 13, color: "#1A1108" }}
+              to={item.to as any}
+              ref={(el) => { linkRefs.current[i] = el; }}
+              onMouseEnter={() => moveSliderTo(linkRefs.current[i])}
+              onMouseLeave={restSlider}
+              style={{
+                fontSize: 13,
+                fontWeight: isNavActive(item.to, pathname) ? 500 : 400,
+                color: "#1A1108",
+                padding: "7px 14px",
+                borderRadius: 100,
+                textDecoration: "none",
+                position: "relative",
+                zIndex: 1,
+                display: "inline-flex",
+                alignItems: "center",
+                whiteSpace: "nowrap",
+              }}
             >
               {item.label}
             </Link>
           ))}
         </div>
+
+        {/* Divider */}
+        <div
+          style={{
+            width: 1,
+            height: 16,
+            background: "rgba(26,17,8,0.12)",
+            margin: "0 4px",
+            flexShrink: 0,
+          }}
+        />
+
+        {/* Account actions */}
+        {loggedIn ? (
+          <>
+            <Link
+              to={hasPass ? "/dashboard" : "/my-reports"}
+              className="nav-acct-link"
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#2D6A4F",
+                padding: "7px 12px",
+                borderRadius: 100,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
+            >
+              Dashboard
+            </Link>
+            <UserMenu email={email!} hasPass={hasPass} />
+          </>
+        ) : (
+          <>
+            <Link
+              to="/buyer-login"
+              className="nav-signin-link"
+              style={{
+                fontSize: 13,
+                color: "#888780",
+                padding: "7px 12px",
+                borderRadius: 100,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+              }}
+            >
+              Sign in
+            </Link>
+            <Link
+              to="/"
+              className="nav-vett-cta"
+              style={{
+                fontSize: 13,
+                fontWeight: 500,
+                color: "#1A1108",
+                padding: "7px 14px",
+                borderRadius: 100,
+                textDecoration: "none",
+                display: "inline-flex",
+                alignItems: "center",
+                border: "0.5px solid rgba(26,17,8,0.15)",
+              }}
+            >
+              Vett a property →
+            </Link>
+          </>
+        )}
+      </div>
+
+      {/* ── Mobile: hamburger pill ── */}
+      <button
+        type="button"
+        className="md:hidden"
+        onClick={() => setMobileOpen((v) => !v)}
+        aria-label="Toggle menu"
+        style={{
+          background: "rgba(255,253,249,0.95)",
+          border: "0.5px solid rgba(26,17,8,0.10)",
+          borderRadius: 100,
+          padding: "9px 14px",
+          display: "flex",
+          alignItems: "center",
+          cursor: "pointer",
+          backdropFilter: "blur(8px)",
+        }}
+      >
+        {mobileOpen ? (
+          <X style={{ width: 18, height: 18, color: "#1A1108" }} />
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+            <path d="M2 5h14M2 9h14M2 13h14" stroke="#1A1108" strokeWidth="1.5" strokeLinecap="round" />
+          </svg>
+        )}
+      </button>
+
+      {/* ── Mobile dropdown ── */}
+      {mobileOpen && (
+        <div
+          style={{
+            position: "fixed",
+            top: 72,
+            left: 16,
+            right: 16,
+            zIndex: 50,
+            background: "#FFFDF9",
+            border: "0.5px solid rgba(26,17,8,0.10)",
+            borderRadius: 16,
+            padding: "10px 8px 14px",
+            boxShadow: "0 8px 32px rgba(26,17,8,0.10)",
+          }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to as any}
+                onClick={() => setMobileOpen(false)}
+                style={{
+                  fontSize: 14,
+                  color: isNavActive(item.to, pathname) ? "#1A1108" : "#5F5E5A",
+                  fontWeight: isNavActive(item.to, pathname) ? 500 : 400,
+                  padding: "10px 14px",
+                  borderRadius: 10,
+                  textDecoration: "none",
+                  display: "block",
+                  background: isNavActive(item.to, pathname) ? "#EAF3DE" : "transparent",
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
+            <div style={{ height: "0.5px", background: "rgba(26,17,8,0.08)", margin: "6px 14px" }} />
+            {loggedIn ? (
+              <Link
+                to={hasPass ? "/dashboard" : "/my-reports"}
+                onClick={() => setMobileOpen(false)}
+                style={{ fontSize: 14, color: "#5F5E5A", padding: "10px 14px", borderRadius: 10, textDecoration: "none", display: "block" }}
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                to="/buyer-login"
+                onClick={() => setMobileOpen(false)}
+                style={{ fontSize: 14, color: "#5F5E5A", padding: "10px 14px", borderRadius: 10, textDecoration: "none", display: "block" }}
+              >
+                Sign in
+              </Link>
+            )}
+          </div>
+          <div style={{ padding: "8px 6px 0" }}>
+            <Link
+              to="/"
+              onClick={() => setMobileOpen(false)}
+              style={{
+                display: "block", textAlign: "center",
+                background: "#1A1108", color: "#F1EFE8",
+                fontSize: 13, fontWeight: 500,
+                borderRadius: 100, padding: "11px 16px",
+                textDecoration: "none",
+              }}
+            >
+              Vett a property →
+            </Link>
+          </div>
+        </div>
       )}
-    </div>
+    </>
   );
 }
 
+// ── SiteHeader ─────────────────────────────────────────────────────────────────
 export function SiteHeader() {
   const { email, hasPass, ready } = useAuthUser();
-  const [mobileOpen, setMobileOpen] = useState(false);
   const loggedIn = ready && Boolean(email);
+  const [wordmarkHovered, setWordmarkHovered] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(max-width: 767px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
 
   return (
     <>
       <style>{`
-        .nav-link { transition: color 0.12s, background-color 0.12s; }
-        .nav-link:hover { color: #1A1108 !important; background-color: rgba(26,17,8,0.05) !important; }
+        .nav-acct-link { transition: background 150ms ease; }
+        .nav-acct-link:hover { background: #EAF3DE !important; }
+        .nav-signin-link { transition: color 150ms ease; }
+        .nav-signin-link:hover { color: #1A1108 !important; }
+        .nav-vett-cta { transition: background 150ms ease, color 150ms ease, border-color 150ms ease; }
+        .nav-vett-cta:hover { background: #2D6A4F !important; color: #F1EFE8 !important; border-color: #2D6A4F !important; }
       `}</style>
       <header
         className="sticky top-0 z-40"
         style={{
-          background: "#F1EFE8",
-          borderBottom: "0.5px solid rgba(26,17,8,0.08)",
+          background: "transparent",
+          pointerEvents: "none",
+          height: 72,
         }}
       >
-        {/* Desktop bar */}
         <div
           style={{
-            maxWidth: 1152,
-            margin: "0 auto",
             display: "flex",
-            alignItems: "center",
-            height: 58,
-            paddingLeft: 32,
-            paddingRight: 32,
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+            padding: "14px 20px",
+            height: "100%",
+            boxSizing: "border-box",
           }}
         >
-          {/* Logo */}
-          <Link to="/" style={{ display: "flex", alignItems: "center", textDecoration: "none", flexShrink: 0, lineHeight: 1 }}>
-            <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 32, fontWeight: 700, color: "#1A1108", letterSpacing: "-2px", lineHeight: 1 }}>
+          {/* Floating wordmark */}
+          <Link
+            to="/"
+            onMouseEnter={() => setWordmarkHovered(true)}
+            onMouseLeave={() => setWordmarkHovered(false)}
+            style={{
+              pointerEvents: "all",
+              textDecoration: "none",
+              display: "inline-flex",
+              alignItems: "flex-start",
+              lineHeight: 1,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: "'Playfair Display', Georgia, serif",
+                fontSize: isMobile ? 40 : 64,
+                fontWeight: 700,
+                color: "#1A1108",
+                letterSpacing: "-4px",
+                lineHeight: 1,
+                fontStyle: wordmarkHovered ? "italic" : "normal",
+              }}
+            >
               vett
             </span>
           </Link>
 
-          {/* Nav links — desktop */}
-          <nav
-            className="hidden md:flex items-center"
-            style={{ marginLeft: 28, gap: 2 }}
-          >
-            <ToolsDropdown />
-            <Link
-              to="/blog/"
-              className="nav-link"
-              style={{ fontSize: 13, color: "#5F5E5A", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-              activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-flex", alignItems: "center" } }}
-              activeOptions={{ includeChildMatches: true }}
-            >
-              Blog
-            </Link>
-            <Link
-              to="/pricing"
-              className="nav-link"
-              style={{ fontSize: 13, color: "#5F5E5A", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-flex", alignItems: "center" }}
-              activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "6px 10px", borderRadius: 6, textDecoration: "none", display: "inline-flex", alignItems: "center" } }}
-            >
-              Pricing
-            </Link>
-          </nav>
-
-          {/* Spacer */}
-          <div style={{ flex: 1 }} />
-
-          {/* Action buttons — desktop */}
-          <div className="hidden md:flex items-center" style={{ gap: 8 }}>
-            {loggedIn ? (
-              <>
-                <Link
-                  to={hasPass ? "/dashboard" : "/my-reports"}
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#F1EFE8",
-                    background: "#2D6A4F",
-                    borderRadius: 20,
-                    padding: "7px 16px",
-                    textDecoration: "none",
-                    display: "inline-flex",
-                    alignItems: "center",
-                  }}
-                >
-                  Dashboard
-                </Link>
-                <UserMenu email={email!} hasPass={hasPass} />
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/buyer-login"
-                  style={{
-                    fontSize: 13,
-                    color: "#1A1108",
-                    background: "transparent",
-                    border: "0.5px solid rgba(26,17,8,0.2)",
-                    borderRadius: 20,
-                    padding: "7px 14px",
-                    textDecoration: "none",
-                    display: "inline-flex",
-                    alignItems: "center",
-                  }}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/"
-                  style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#F1EFE8",
-                    background: "#2D6A4F",
-                    borderRadius: 20,
-                    padding: "7px 16px",
-                    textDecoration: "none",
-                    display: "inline-flex",
-                    alignItems: "center",
-                  }}
-                >
-                  Get started
-                </Link>
-              </>
-            )}
+          {/* Floating pill nav */}
+          <div style={{ pointerEvents: "all" }}>
+            <NavPill loggedIn={loggedIn} email={email} hasPass={hasPass} />
           </div>
-
-          {/* Hamburger — mobile only */}
-          <button
-            type="button"
-            className="md:hidden"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Toggle menu"
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 6, color: "#1A1108", marginLeft: "auto" }}
-          >
-            {mobileOpen ? (
-              <X style={{ width: 20, height: 20 }} />
-            ) : (
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path d="M3 5h14M3 10h14M3 15h14" stroke="#1A1108" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
-            )}
-          </button>
         </div>
-
-        {/* Mobile menu */}
-        {mobileOpen && (
-          <div
-            className="md:hidden"
-            style={{
-              background: "#F1EFE8",
-              borderTop: "0.5px solid rgba(26,17,8,0.08)",
-              padding: "8px 16px 20px",
-            }}
-          >
-            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {/* vett Tools sub-items */}
-              <div style={{ fontSize: 11, fontWeight: 500, color: "#888780", textTransform: "uppercase", letterSpacing: "0.06em", padding: "8px 10px 4px" }}>
-                vett Tools
-              </div>
-              {TOOLS_ITEMS.map((item) => (
-                <Link
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setMobileOpen(false)}
-                  style={{ fontSize: 13, color: "#5F5E5A", padding: "9px 10px 9px 20px", borderRadius: 8, textDecoration: "none", display: "block" }}
-                >
-                  {item.label}
-                </Link>
-              ))}
-              <Link
-                to="/blog/"
-                onClick={() => setMobileOpen(false)}
-                style={{ fontSize: 13, color: "#5F5E5A", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" }}
-                activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" } }}
-                activeOptions={{ includeChildMatches: true }}
-              >
-                Blog
-              </Link>
-              <Link
-                to="/pricing"
-                onClick={() => setMobileOpen(false)}
-                style={{ fontSize: 13, color: "#5F5E5A", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" }}
-                activeProps={{ style: { fontSize: 13, color: "#1A1108", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" } }}
-              >
-                Pricing
-              </Link>
-              {loggedIn ? (
-                <Link
-                  to={hasPass ? "/dashboard" : "/my-reports"}
-                  onClick={() => setMobileOpen(false)}
-                  style={{ fontSize: 13, color: "#5F5E5A", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" }}
-                >
-                  Dashboard
-                </Link>
-              ) : (
-                <Link
-                  to="/buyer-login"
-                  onClick={() => setMobileOpen(false)}
-                  style={{ fontSize: 13, color: "#5F5E5A", padding: "10px 10px", borderRadius: 8, textDecoration: "none", display: "block" }}
-                >
-                  Login
-                </Link>
-              )}
-            </div>
-            {/* Get started CTA */}
-            <div style={{ marginTop: 12 }}>
-              <Link
-                to="/"
-                onClick={() => setMobileOpen(false)}
-                style={{
-                  display: "block",
-                  textAlign: "center",
-                  background: "#2D6A4F",
-                  color: "#F1EFE8",
-                  fontSize: 13,
-                  fontWeight: 500,
-                  borderRadius: 20,
-                  padding: "10px 16px",
-                  textDecoration: "none",
-                }}
-              >
-                Get started
-              </Link>
-            </div>
-          </div>
-        )}
       </header>
     </>
   );
