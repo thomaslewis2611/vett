@@ -866,6 +866,8 @@ function RenovationCalculator() {
             fontSize: 11, fontWeight: 500, letterSpacing: "0.1em",
             textTransform: "uppercase", color: COLORS.green,
           }}>Free tool · Renovation calculator</div>
+          {/* Sentinel: bar appears as h1 title top reaches the viewport top */}
+          <div ref={heroEndRef} style={{ height: 0 }} />
           <h1 style={{
             margin: "12px 0 10px", fontFamily: HEADING_FONT,
             fontSize: "clamp(32px, 5vw, 44px)", fontWeight: 400,
@@ -873,8 +875,6 @@ function RenovationCalculator() {
           }}>
             Let's <Italic>cost it</Italic> properly.
           </h1>
-          {/* Sentinel: bar appears once the h1 title scrolls past the viewport top */}
-          <div ref={heroEndRef} style={{ height: 0 }} />
           <p style={{
             margin: 0, fontFamily: HEADING_FONT, fontStyle: "italic", fontSize: 17,
             color: COLORS.text2, lineHeight: 1.5,
