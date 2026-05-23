@@ -504,22 +504,35 @@ function StampDuty() {
       <main style={{ maxWidth: 720, margin: "0 auto", padding: "48px 20px 80px" }}>
 
         {/* Hero */}
-        <div style={{ marginBottom: 36 }}>
-          <span style={{
-            display: "inline-block", fontSize: 11, fontWeight: 500, textTransform: "uppercase",
-            letterSpacing: "0.08em", color: C.green, background: C.greenTint,
-            borderRadius: 100, padding: "4px 12px", marginBottom: 16,
+        <div style={{ textAlign: "center", marginBottom: 48, padding: "12px 0 0" }}>
+          <div style={{
+            fontSize: 11, fontWeight: 500, letterSpacing: "0.1em",
+            textTransform: "uppercase" as const, color: C.green,
           }}>
-            Free tool · vett
-          </span>
+            Free tool · Stamp duty calculator
+          </div>
           <h1 style={{
-            fontFamily: HEADING, fontSize: "clamp(28px, 4vw, 40px)", fontWeight: 400,
-            color: C.dark, letterSpacing: "-0.5px", lineHeight: 1.15, margin: "0 0 12px",
+            margin: "12px 0 14px",
+            fontFamily: HEADING,
+            fontSize: "clamp(36px, 5vw, 52px)",
+            fontWeight: 500,
+            color: C.dark,
+            letterSpacing: "-1.2px",
+            lineHeight: 1.04,
           }}>
-            Stamp duty calculator
+            Know what you'll{" "}
+            <span style={{ fontStyle: "italic", color: C.green }}>actually</span> pay.
           </h1>
-          <p style={{ fontSize: 15, color: C.muted, lineHeight: 1.6, margin: 0 }}>
-            Calculate your stamp duty instantly — covers England, Scotland, Wales and Northern Ireland. Updated for 2026.
+          <p style={{
+            margin: "0 auto",
+            fontFamily: HEADING,
+            fontStyle: "italic",
+            fontSize: "clamp(17px, 2.5vw, 20px)",
+            color: C.muted,
+            lineHeight: 1.5,
+            maxWidth: 560,
+          }}>
+            Stamp duty across England, Scotland, Wales &amp; Northern Ireland — to the pound, in seconds.
           </p>
         </div>
 
