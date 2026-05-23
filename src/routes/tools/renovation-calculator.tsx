@@ -110,8 +110,10 @@ const ITEMS: WorkItem[] = [
     configs: [
       { key: "type", label: "Type", options: ["Combi", "System", "Heat pump"], default: "Combi",
         weight: { "Combi": 1.0, "System": 1.2, "Heat pump": 3.5 } },
-      { key: "rads", label: "Extra radiators", type: "qty", unit: "extra rad", unitPlural: "extra rads",
-        min: 0, max: 20, recommend: () => 0, weight: (q) => 1 + 0.08 * q },
+      { key: "rads", label: "Radiators", type: "qty", unit: "radiator", unitPlural: "radiators",
+        min: 1, max: 30,
+        recommend: (prop) => ({ Flat: 3, Terrace: 6, "Semi-detached": 8, Detached: 12 }[prop] ?? 8),
+        weight: (q, { property }) => q / ({ Flat: 3, Terrace: 6, "Semi-detached": 8, Detached: 12 }[property] ?? 8) },
     ],
     note: "Heat pumps run 3–4× a like-for-like combi swap on capital cost. Worth it long-term — but model the BUS grant against your timeline.",
   },
@@ -384,14 +386,15 @@ function QtyStepper({ value, min, max, recommend, onChange, onReset, recommendLa
 }
 
 // ── QCard ─────────────────────────────────────────────────────────────────────
-type QState = "answered" | "active" | "locked";
+type QState = "answered" | "active" | "reached" | "locked";
 
-function QCard({ step, title, subtitle, state, summary, onEdit, children }: {
+function QCard({ step, title, subtitle, state, summary, onEdit, onActivate, children }: {
   step: number; title: string; subtitle?: string; state: QState;
-  summary?: string; onEdit?: () => void; children?: React.ReactNode;
+  summary?: string; onEdit?: () => void; onActivate?: () => void; children?: React.ReactNode;
 }) {
   const answered = state === "answered";
   const active = state === "active";
+  const reached = state === "reached";
   const locked = state === "locked";
 
   return (
@@ -431,6 +434,19 @@ function QCard({ step, title, subtitle, state, summary, onEdit, children }: {
                 textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer",
               }}
             >Edit</button>
+          </span>
+        )}
+        {reached && (
+          <span style={{ marginLeft: "auto", display: "inline-flex", alignItems: "center" }}>
+            <button
+              onClick={onActivate}
+              className="rc-edit-btn"
+              style={{
+                background: "transparent", border: 0, padding: "4px 8px",
+                fontSize: 12, color: COLORS.green, fontWeight: 500,
+                textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer",
+              }}
+            >Open →</button>
           </span>
         )}
         {locked && (
@@ -564,13 +580,13 @@ function StickyTallyBar({ total, low, high, selectedCount, emailItems, property,
         transition: "transform 220ms ease-in-out",
       }}
     >
-      <div>
+      <div className="rc-tally-left">
         <div style={{
           fontSize: 10, fontWeight: 500, letterSpacing: "0.1em",
           textTransform: "uppercase" as const, color: "rgba(241,239,232,0.55)",
         }}>Running estimate</div>
         <div style={{ marginTop: 2, display: "flex", alignItems: "baseline", gap: 12 }}>
-          <span style={{
+          <span className="rc-tally-total" style={{
             fontFamily: HEADING_FONT, fontSize: 32, fontWeight: 400,
             color: COLORS.bg, letterSpacing: "-0.5px", lineHeight: 1, transition: "all 200ms",
           }}>{fmt(total)}</span>
@@ -579,7 +595,7 @@ function StickyTallyBar({ total, low, high, selectedCount, emailItems, property,
           </span>
         </div>
       </div>
-      <div style={{ display: "flex", flexDirection: "column" as const, gap: 8, alignItems: "flex-end" }}>
+      <div className="rc-tally-right" style={{ display: "flex", flexDirection: "column" as const, gap: 8, alignItems: "flex-end" }}>
         <div style={{ display: "flex", gap: 8 }}>
           <button onClick={handleSave} className="rc-tally-btn" style={{
             background: "transparent", color: COLORS.bg,
@@ -717,6 +733,7 @@ function RenovationCalculator() {
   const [configs, setConfigs] = useState<Record<string, ItemCfg>>({});
   const [answered, setAnswered] = useState<Record<number, boolean>>({});
   const [active, setActive] = useState(1);
+  const [maxReached, setMaxReached] = useState(1);
   const [tallyVisible, setTallyVisible] = useState(false);
   const heroEndRef = useRef<HTMLDivElement>(null);
 
@@ -751,6 +768,7 @@ function RenovationCalculator() {
       for (let i = 1; i <= totalSteps; i++) ans[i] = true;
       setAnswered(ans);
       setActive(totalSteps + 1);
+      setMaxReached(totalSteps + 1);
     }
   }, []);
 
@@ -802,8 +820,8 @@ function RenovationCalculator() {
     .filter(o => selected[o.item.key])
     .map(o => ({ label: o.item.label, mid: o.est, low: o.low, high: o.high }));
 
-  const q1State: QState = active === 1 ? "active" : (answered[1] ? "answered" : "locked");
-  const q2State: QState = active === 2 ? "active" : (answered[2] ? "answered" : "locked");
+  const q1State: QState = active === 1 ? "active" : (answered[1] ? "answered" : (maxReached >= 1 ? "reached" : "locked"));
+  const q2State: QState = active === 2 ? "active" : (answered[2] ? "answered" : (maxReached >= 2 ? "reached" : "locked"));
 
   return (
     <div style={{ minHeight: "100vh", background: C.bg, color: C.dark, fontFamily: BODY_FONT }}>
@@ -841,12 +859,17 @@ function RenovationCalculator() {
         @media (max-width: 640px) {
           .rc-hero  { padding: 32px 20px 16px !important; }
           .rc-cards { padding: 8px 16px 32px !important; }
-          .rc-tally { padding: 12px 16px !important; }
+          .rc-tally { padding: 12px 16px !important; flex-direction: column !important; align-items: flex-start !important; gap: 12px !important; }
+          .rc-tally-total { font-size: 24px !important; }
+          .rc-tally-right { width: 100% !important; align-items: flex-start !important; }
           .rc-prose { padding: 8px 20px 80px !important; }
           .rc-config-split { flex-direction: column !important; }
           .rc-config-note { border-left: none !important; padding-left: 0 !important;
             border-top: 0.5px solid rgba(26,17,8,0.10) !important; padding-top: 12px !important; }
           .rc-tiein-wrap { flex-direction: column !important; }
+          .rc-work-grid { grid-template-columns: 1fr !important; }
+          .rc-work-card { flex-wrap: wrap !important; }
+          .rc-work-price { flex-basis: 100% !important; padding-left: 26px !important; }
         }
       `}</style>
 
@@ -895,6 +918,7 @@ function RenovationCalculator() {
             state={q1State}
             summary={`${property} · ${region}`}
             onEdit={() => setActive(1)}
+            onActivate={() => setActive(1)}
           >
             <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
               <div>
@@ -923,7 +947,7 @@ function RenovationCalculator() {
             <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
               <button
                 className="rc-continue-btn"
-                onClick={() => { setAnswered(a => ({ ...a, 1: true })); setActive(2); }}
+                onClick={() => { setAnswered(a => ({ ...a, 1: true })); setMaxReached(m => Math.max(m, 2)); setActive(2); }}
                 style={{
                   background: COLORS.dark, color: COLORS.bg, border: 0,
                   fontSize: 13, fontWeight: 500, borderRadius: 100,
@@ -940,8 +964,9 @@ function RenovationCalculator() {
             state={q2State}
             summary={`${selectedCount} ${selectedCount === 1 ? "item" : "items"} selected`}
             onEdit={() => setActive(2)}
+            onActivate={() => setActive(2)}
           >
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div className="rc-work-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {computed.items.map(({ item, est, low }) => {
                 const isOn = !!selected[item.key];
                 return (
@@ -963,7 +988,7 @@ function RenovationCalculator() {
                       flex: 1, fontSize: 13,
                       fontWeight: isOn ? 500 : 400, color: COLORS.dark,
                     }}>{item.label}</span>
-                    <span style={{
+                    <span className="rc-work-price" style={{
                       fontFamily: isOn ? HEADING_FONT : undefined,
                       fontSize: isOn ? 14 : 11,
                       color: isOn ? COLORS.dark : COLORS.muted,
@@ -992,6 +1017,7 @@ function RenovationCalculator() {
                     }
                     return next;
                   });
+                  setMaxReached(m => Math.max(m, 3));
                   setActive(3);
                 }}
                 style={{
@@ -1006,7 +1032,7 @@ function RenovationCalculator() {
           {/* Q3+ — one card per selected item */}
           {selectedItems.map((item, idx) => {
             const step = 3 + idx;
-            const itemState: QState = active === step ? "active" : (answered[step] ? "answered" : "locked");
+            const itemState: QState = active === step ? "active" : (answered[step] ? "answered" : (maxReached >= step ? "reached" : "locked"));
             const result = calcItem(item, configs[item.key], property, propMult, regionMult);
             return (
               <QCard
@@ -1017,6 +1043,7 @@ function RenovationCalculator() {
                 state={itemState}
                 summary={`${cfgSummary(item, configs[item.key], property)} · ${fmt(result.est)}`}
                 onEdit={() => setActive(step)}
+                onActivate={() => setActive(step)}
               >
                 <ItemConfigPanel
                   item={item}
@@ -1037,7 +1064,7 @@ function RenovationCalculator() {
                   >← Back</button>
                   <button
                     className="rc-continue-btn"
-                    onClick={() => { setAnswered(a => ({ ...a, [step]: true })); setActive(step + 1); }}
+                    onClick={() => { setAnswered(a => ({ ...a, [step]: true })); setMaxReached(m => Math.max(m, step + 1)); setActive(step + 1); }}
                     style={{
                       background: COLORS.dark, color: COLORS.bg, border: 0,
                       fontSize: 13, fontWeight: 500, borderRadius: 100,
